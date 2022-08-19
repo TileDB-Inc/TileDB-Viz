@@ -13,3 +13,6 @@ packages/visualizations/node_modules
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# ts build files
+packages/visualizations/tsconfig.tsbuildinfo
