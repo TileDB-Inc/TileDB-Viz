@@ -1,0 +1,15 @@
+# build
+packages/visualizations/lib
+
+# node_modules
+node_modules
+packages/visualizations/node_modules
+
+# yarn
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
