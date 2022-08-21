@@ -14,6 +14,7 @@ interface Values {
   mesh_scale: number[];
   gltf_multi: boolean;
   extents: number[];
+  xy_bbox: number[];
 }
 export interface TileDBVisualizationBaseOptions {
   width: string;
