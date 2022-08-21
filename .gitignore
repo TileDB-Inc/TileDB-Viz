@@ -1,11 +1,11 @@
-# build
+# Build files
 packages/visualizations/lib
 
 # node_modules
 node_modules
 packages/visualizations/node_modules
 
-# yarn
+# Yarn
 .yarn/*
 !.yarn/cache
 !.yarn/patches
@@ -14,5 +14,8 @@ packages/visualizations/node_modules
 !.yarn/sdks
 !.yarn/versions
 
-# ts build files
+# Typescript
 packages/visualizations/tsconfig.tsbuildinfo
+
+# Vscode
+.vscode

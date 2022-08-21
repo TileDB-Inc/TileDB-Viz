@@ -54,7 +54,6 @@ export class TileDBVisualization {
   }
 
   render(): void {
-    console.log('Rendering from TileDB-Visualizations');
     this.canvas = document.createElement('canvas');
     this.canvas.classList.add('renderCanvas');
     this.rootElement.appendChild(this.canvas);

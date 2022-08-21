@@ -4,9 +4,12 @@
     "description": "Visualize TileDB arrays",
     "main": "lib/index.js",
     "types": "./lib/index.d.ts",
+    "license": "MIT",
     "packageManager": "yarn@3.2.2",
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "lint": "eslint './src/**/*.{ts,tsx}'",
+        "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
     },
     "dependencies": {
         "@babylonjs/core": "^5.0.0",

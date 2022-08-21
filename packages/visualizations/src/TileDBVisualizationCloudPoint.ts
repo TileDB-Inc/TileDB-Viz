@@ -62,7 +62,6 @@ export class TileDBPointCloudVis extends TileDBVisualization {
     this._mode = options.mode;
     this._color_scheme = options.color_scheme;
     this._values = options.values;
-    console.log(options);
   }
 
   protected async createScene(): Promise<Scene> {
