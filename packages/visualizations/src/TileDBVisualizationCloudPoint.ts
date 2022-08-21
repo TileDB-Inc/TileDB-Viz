@@ -41,10 +41,9 @@ export interface TileDBCloudPointOptions
   extends TileDBVisualizationBaseOptions {
   mode: 'time' | 'classes' | 'topo' | 'gltf';
   color_scheme: string;
-  values: any;
 }
 
-export class TileDBPointCloudVis extends TileDBVisualization {
+export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
   private _util_layer!: UtilityLayerRenderer;
   private _moved_after_click = false;
@@ -55,13 +54,11 @@ export class TileDBPointCloudVis extends TileDBVisualization {
   private _curr_camera: int = 0;
   private _mode: TileDBCloudPointOptions['mode'];
   private _color_scheme: TileDBCloudPointOptions['color_scheme'];
-  private _values: any;
 
   constructor(options: TileDBCloudPointOptions) {
     super(options);
     this._mode = options.mode;
     this._color_scheme = options.color_scheme;
-    this._values = options.values;
   }
 
   protected async createScene(): Promise<Scene> {

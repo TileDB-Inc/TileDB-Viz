@@ -1,5 +1,20 @@
 import { Engine, Scene, SceneLoader } from '@babylonjs/core';
 
+interface Values {
+  data: any;
+  gltf_data: any;
+  topo_offset: number;
+  classes: { names: string[]; numbers: number[] };
+  time_offset: number;
+  point_size: number;
+  distance_colors?: boolean;
+  mapbox_img: BlobPart;
+  mesh_rotation: number[];
+  mesh_shift: number[];
+  mesh_scale: number[];
+  gltf_multi: boolean;
+  extents: number[];
+}
 export interface TileDBVisualizationBaseOptions {
   width: string;
   height: string;
@@ -8,6 +23,7 @@ export interface TileDBVisualizationBaseOptions {
   zScale: number;
   inspector: boolean;
   rootElement: HTMLElement;
+  values: Values;
 }
 export class TileDBVisualization {
   canvas?: HTMLCanvasElement;
@@ -19,6 +35,7 @@ export class TileDBVisualization {
   zScale: number;
   inspector: boolean;
   rootElement: HTMLElement;
+  _values: Values;
 
   constructor(options: TileDBVisualizationBaseOptions) {
     this.width = options.width;
@@ -28,6 +45,7 @@ export class TileDBVisualization {
     this.zScale = options.zScale;
     this.inspector = options.inspector;
     this.rootElement = options.rootElement;
+    this._values = options.values;
   }
 
   resizeCanvas(dimensions?: { width: string; height: string }): void {
