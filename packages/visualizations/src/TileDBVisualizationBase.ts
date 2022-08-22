@@ -1,4 +1,7 @@
 import { Engine, Scene, SceneLoader } from '@babylonjs/core';
+import '@babylonjs/loaders/glTF';
+import '@babylonjs/core/Debug/debugLayer';
+import '@babylonjs/inspector';
 
 interface Values {
   data: any;
