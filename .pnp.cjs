@@ -51,7 +51,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
       ]],\
       ["@babylonjs/core", [\
         ["npm:5.20.0", {\
-          "packageLocation": "./.yarn/cache/@babylonjs-core-npm-5.20.0-ec948dc860-f2bcc9becf.zip/node_modules/@babylonjs/core/",\
+          "packageLocation": "./.yarn/unplugged/@babylonjs-core-npm-5.20.0-ec948dc860/node_modules/@babylonjs/core/",\
           "packageDependencies": [\
             ["@babylonjs/core", "npm:5.20.0"],\
             ["tslib", "npm:2.4.0"]\
