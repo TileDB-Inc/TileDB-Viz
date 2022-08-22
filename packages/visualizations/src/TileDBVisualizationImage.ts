@@ -10,7 +10,7 @@ import {
 } from '@babylonjs/core';
 import { TileDBVisualization } from './TileDBVisualizationBase';
 
-export class TileDBImageViewVisualization extends TileDBVisualization {
+export class TileDBImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
       const data = this._values.data;
