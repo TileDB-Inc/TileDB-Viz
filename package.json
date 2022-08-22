@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "test": "yarn workspace @tiledb-inc/visualizations test",
     "build": "yarn workspace @tiledb-inc/visualizations build",
     "lint": "yarn workspace @tiledb-inc/visualizations lint",
     "lint:fix": "yarn workspace @tiledb-inc/visualizations lint:fix"
@@ -18,6 +19,7 @@
     "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^28.1.3",
     "prettier": "^2.7.1",
     "typescript": "4.7.4"
   },
