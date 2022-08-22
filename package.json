@@ -1,0 +1,24 @@
+{
+  "name": "@tiledb-inc/viz",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "yarn@3.2.2",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "yarn workspace @tiledb-inc/visualizations build",
+    "lint": "yarn workspace @tiledb-inc/visualizations lint",
+    "lint:fix": "yarn workspace @tiledb-inc/visualizations lint:fix"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "eslint": "^8.22.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "typescript": "4.7.4"
+  }
+}
