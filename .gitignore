@@ -1,9 +1,9 @@
 # Build files
-packages/visualizations/lib
+packages/**/lib
 
 # node_modules
 node_modules
-packages/visualizations/node_modules
+packages/**/node_modules
 
 # Yarn
 .yarn/cache
@@ -13,7 +13,7 @@ packages/visualizations/node_modules
 .pnp.cjs
 
 # Typescript
-packages/visualizations/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
 
 # Vscode
 .vscode
