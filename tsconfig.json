@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": true,
@@ -17,7 +17,7 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "target": "es2017",
-    "types": []
+    "types": [],
   },
   "include": ["./packages/visualizations/src"]
 }

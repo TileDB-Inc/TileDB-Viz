@@ -8,7 +8,7 @@ import {
   Vector3,
   Texture
 } from '@babylonjs/core';
-import { TileDBVisualization } from './TileDBVisualizationBase';
+import { TileDBVisualization } from '../base';
 
 export class TileDBImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
