@@ -26,18 +26,15 @@ import {
   Slider,
   TextBlock
 } from 'babylonjs-gui';
-import {
-  TileDBVisualizationBaseOptions,
-  TileDBVisualization
-} from './TileDBVisualizationBase';
+import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 import {
   setPointCloudSwitches,
   setSceneColors,
   getPointCloud
-} from './utils/data';
-import { DragGizmos } from './utils/drag_gizmos';
+} from '../utils/data';
+import { DragGizmos } from '../utils/drag_gizmos';
 
-export interface TileDBCloudPointOptions
+export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
   mode: 'time' | 'classes' | 'topo' | 'gltf';
   color_scheme: string;
@@ -52,10 +49,10 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _axes: Array<DragGizmos> = new Array<DragGizmos>();
   private _cameras: Array<Camera> = new Array<Camera>();
   private _curr_camera: int = 0;
-  private _mode: TileDBCloudPointOptions['mode'];
-  private _color_scheme: TileDBCloudPointOptions['color_scheme'];
+  private _mode: TileDBPointCloudOptions['mode'];
+  private _color_scheme: TileDBPointCloudOptions['color_scheme'];
 
-  constructor(options: TileDBCloudPointOptions) {
+  constructor(options: TileDBPointCloudOptions) {
     super(options);
     this._mode = options.mode;
     this._color_scheme = options.color_scheme;
