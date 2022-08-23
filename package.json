@@ -8,10 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "yarn workspace @tiledb-inc/visualizations test",
-    "build": "yarn workspace @tiledb-inc/visualizations build",
-    "lint": "yarn workspace @tiledb-inc/visualizations lint",
-    "lint:fix": "yarn workspace @tiledb-inc/visualizations lint:fix"
+    "test": "yarn workspace @tiledb-inc/viz-core test",
+    "build": "yarn workspace @tiledb-inc/viz-core build",
+    "lint": "yarn workspace @tiledb-inc/viz-core lint",
+    "lint:fix": "yarn workspace @tiledb-inc/viz-core lint:fix"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.33.1",

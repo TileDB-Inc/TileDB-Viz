@@ -1,5 +1,5 @@
 {
-    "name": "@tiledb-inc/visualizations",
+    "name": "@tiledb-inc/viz-core",
     "version": "0.0.1",
     "description": "Visualize TileDB arrays",
     "main": "lib/index.js",

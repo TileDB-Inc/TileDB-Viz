@@ -955,9 +955,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tiledb-inc/visualizations@workspace:packages/visualizations":
+"@tiledb-inc/viz-core@workspace:packages/core":
   version: 0.0.0-use.local
-  resolution: "@tiledb-inc/visualizations@workspace:packages/visualizations"
+  resolution: "@tiledb-inc/viz-core@workspace:packages/core"
   dependencies:
     "@babylonjs/core": ^5.0.0
     "@babylonjs/gui": ^5.0.0
