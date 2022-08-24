@@ -17,3 +17,6 @@ packages/**/node_modules
 
 # Vscode
 .vscode
+
+# Parcel
+.parcel-cache

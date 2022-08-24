@@ -19,5 +19,5 @@
     "target": "es2017",
     "types": [],
   },
-  "include": ["./packages/core/src"]
+  "include": ["./packages/core/src", "./packages/react/src"]
 }

@@ -1,0 +1,21 @@
+{
+  "name": "@tiledb-inc/viz-react",
+  "version": "0.0.1",
+  "description": "React port of @tiledb-inc/viz-core",
+  "source": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "module": "lib/module.js",
+  "packageManager": "yarn@3.2.2",
+  "dependencies": {
+    "@tiledb-inc/viz-core": "workspace:^",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "scripts": {
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.17"
+  }
+}
