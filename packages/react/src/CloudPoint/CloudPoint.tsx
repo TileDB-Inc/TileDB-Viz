@@ -4,12 +4,6 @@ import {
   TileDBPointCloudVisualization
 } from '@tiledb-inc/viz-core';
 
-export const CloudPointTest = () => (
-  <div>
-    <h1>This is a testttt!!!!</h1>
-  </div>
-);
-
 export const CloudPointVisuzalization = (
   props: Omit<TileDBPointCloudOptions, 'rootElement'>
 ) => {

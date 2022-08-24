@@ -7,15 +7,27 @@
   "types": "./lib/index.d.ts",
   "module": "lib/module.js",
   "packageManager": "yarn@3.2.2",
+  "scripts": {
+    "build": "parcel build",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
+  },
   "dependencies": {
     "@tiledb-inc/viz-core": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
-  "scripts": {
-    "build": "parcel build"
-  },
   "devDependencies": {
+    "@mdx-js/react": "^1.6.22",
+    "@storybook/addon-actions": "^6.5.10",
+    "@storybook/addon-docs": "^6.5.10",
+    "@storybook/addon-essentials": "^6.5.10",
+    "@storybook/addon-interactions": "^6.5.10",
+    "@storybook/addon-links": "^6.5.10",
+    "@storybook/builder-webpack4": "^6.5.10",
+    "@storybook/manager-webpack4": "^6.5.10",
+    "@storybook/react": "^6.5.10",
+    "@storybook/testing-library": "^0.0.13",
     "@types/react": "^18.0.17"
   }
 }
