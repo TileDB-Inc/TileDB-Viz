@@ -27,17 +27,33 @@ import {
   TextBlock
 } from 'babylonjs-gui';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
-import {
-  setPointCloudSwitches,
-  setSceneColors,
-  getPointCloud
-} from '../utils/data';
 import { DragGizmos } from '../utils/drag_gizmos';
+import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
   mode: 'time' | 'classes' | 'topo' | 'gltf';
   color_scheme: string;
+  /**
+   * Data to render
+   */
+  data: any;
+  gltf_data: any;
+  topo_offset: number;
+  classes: { names: string[]; numbers: number[] };
+  time_offset: number;
+  /**
+   * size of the points
+   */
+  point_size: number;
+  distance_colors?: boolean;
+  mapbox_img: BlobPart;
+  mesh_rotation: number[];
+  mesh_shift: number[];
+  mesh_scale: number[];
+  gltf_multi: boolean;
+  extents: number[];
+  xy_bbox: number[];
 }
 
 export class TileDBPointCloudVisualization extends TileDBVisualization {

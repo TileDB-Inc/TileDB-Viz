@@ -20,12 +20,33 @@ interface Values {
   xy_bbox: number[];
 }
 export interface TileDBVisualizationBaseOptions {
+  /**
+   * Width of widget canvas
+   */
   width: string;
+  /**
+   * Height of widget canvas
+   */
   height: string;
+  /**
+   * Gets or Set the mouse wheel precision or how fast is the camera zooming.
+   */
   wheelPrecision: number;
+  /**
+   * When camera view in first-person determines how fast to move
+   */
   moveSpeed: number;
+  /**
+   * Scale the z values of each point
+   */
   zScale: number;
+  /**
+   * Show BabylonJS inspector
+   */
   inspector: boolean;
+  /**
+   * The HTML element to render the canvas
+   */
   rootElement: HTMLElement;
   values: Values;
 }
