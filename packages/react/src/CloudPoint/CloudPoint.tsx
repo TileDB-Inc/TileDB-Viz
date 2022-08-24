@@ -10,7 +10,6 @@ export const CloudPointVisuzalization = (
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    console.log('Loading visualiztion...');
     if (rootDivElementRef.current) {
       const visualization = new TileDBPointCloudVisualization({
         ...props,
