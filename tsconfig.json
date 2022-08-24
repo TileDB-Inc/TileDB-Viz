@@ -19,5 +19,5 @@
     "target": "es2017",
     "types": [],
   },
-  "include": ["./packages/visualizations/src"]
+  "include": ["./packages/core/src"]
 }
