@@ -32,30 +32,79 @@ import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
+  /**
+   * Optional modes
+   * time: add an interactive time slider 
+   * classes: add an interactive classes slider
+   * topo: add a mapbox base layer
+   * gltf: add gltf meshes
+   */
   mode: 'time' | 'classes' | 'topo' | 'gltf';
+  /**
+   * Color scheme
+   */
   color_scheme: string;
   /**
-   * Data to render
+   * Data to render [all modes]
    */
   data: any;
+  /**
+   * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
+   */
   gltf_data: any;
+  /**
+   * Move the point cloud along the z-axis to better align with the mapbox base layer [mode='topo']
+   */
   topo_offset: number;
+  /**
+   * Lookup table with the index and names of all classes [mode='classes']
+   */
   classes: { names: string[]; numbers: number[] };
+  /**
+   * Time offset
+   */
   time_offset: number;
   /**
-   * size of the points
+   * Size of the points
    */
   point_size: number;
+  /**
+   * Perform clash detection between mesh and point cloud if true
+   */
   distance_colors?: boolean;
+  /**
+   * Blob mpabox image png image as blob
+   */
   mapbox_img: BlobPart;
+  /**
+   * Rotate the mesh with [alpha,beta,gamma]
+   */
   mesh_rotation: number[];
+  /**
+   * Shift the mesh with [x,y,z]
+   */
   mesh_shift: number[];
+  /**
+   * Scale the size [x,y,z] of the mesh
+   */
   mesh_scale: number[];
+  /**
+   * gltf_data is an array with blobs when true
+   */
   gltf_multi: boolean;
+  /**
+   * The extends (min/max) of each mbrs
+   */
   extents: number[];
+  /**
+   * The min and max values of x and y
+   */
   xy_bbox: number[];
 }
 
+/**
+* 
+*/
 export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
   private _util_layer!: UtilityLayerRenderer;
@@ -83,9 +132,15 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         this._mode
       );
 
+      /**
+       * Load color scheme colors 
+       */  
       const { backgroundColor, accentColor, secondColor, textColor } =
         setSceneColors(this._color_scheme);
 
+      /**
+       * Load point cloud data 
+       */  
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._values).then(results => {
           return results;
@@ -250,6 +305,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           scene
         );
 
+        /**
+         * Set up sliders
+         */  
         const panel = new StackPanel();
         panel.width = '220px';
         panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -285,6 +343,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
         panel.addControl(header);
 
+        /**
+         * Set up sliders
+         */  
         pcs.updateParticle = function (particle_3: any) {
           if (doClear) {
             particle_3.color = scene.clearColor;
@@ -302,6 +363,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           return particle_3;
         };
 
+        /**
+         * Update slider label when changed 
+         */  
         slider.onValueChangedObservable.add((value: any) => {
           if (isTime) {
             header.text = 'Time: ' + (offset + times[value]).toFixed(0);
@@ -336,20 +400,22 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
         panel.addControl(slider);
       }
+       
       if (isTopo) {
+        /**
+         * Display a mapbox map as an image on TiledGround
+         */ 
         const mapbox_img = this._values.mapbox_img;
         const blob_1 = new Blob([mapbox_img]);
         const url_1 = URL.createObjectURL(blob_1);
 
         const mat = new StandardMaterial('mat', scene);
-        //mat.emissiveColor = Color3.Random();
         mat.diffuseTexture = new Texture(url_1, scene);
         mat.diffuseTexture.wrapU = Texture.CLAMP_ADDRESSMODE;
         mat.diffuseTexture.wrapV = Texture.CLAMP_ADDRESSMODE;
         mat.specularColor = new Color3(0, 0, 0);
         mat.backFaceCulling = false;
-        //mat.ambientTexture = new Texture(url_1, scene);
-
+        
         const options = { xmin: xmin, zmin: ymin, xmax: xmax, zmax: ymax };
         const ground = MeshBuilder.CreateTiledGround(
           'tiled ground',
@@ -359,10 +425,14 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         ground.material = mat;
       }
 
-      // create gizmos utility
+      /**
+       * Create gizmos utility
+       */  
       main._util_layer = new UtilityLayerRenderer(scene);
 
-      // handle mouse clicks to select/deselect meshes
+      /**
+       * Handle mouse clicks to select/deselect meshes
+       */  
       scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
           case PointerEventTypes.POINTERDOWN:
@@ -451,6 +521,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       });
 
+      /**
+       * Set up camera and light
+       */ 
       scene.createDefaultCameraOrLight(true, true, true);
 
       const light = new HemisphericLight('light1', new Vector3(0, 1, 0), scene);
@@ -467,6 +540,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       camera.setTarget(new Vector3(center_x, center_z, center_y));
       this._cameras.push(camera);
 
+      /**
+       * Add second camera
+       */ 
       const camera2 = new FreeCamera(
         'free',
         new Vector3(center_x, center_z, center_y),
@@ -492,7 +568,6 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   }
 
   /**
-   *
    * EXTRAS/ helpers
    */
   addAxes(mesh: Mesh): DragGizmos {
