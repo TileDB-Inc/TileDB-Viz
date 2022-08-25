@@ -24,7 +24,7 @@ interface TileDBMBRSVisualizationOptions
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
   private _data: any;
-  private _extents: any;
+  private _extents: number[];
 
   constructor(options: TileDBMBRSVisualizationOptions) {
     super(options);
