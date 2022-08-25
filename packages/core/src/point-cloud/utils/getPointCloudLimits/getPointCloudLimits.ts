@@ -1,7 +1,7 @@
 interface GetPointCloudLimitsOptions {
   bbox?: { X: number[]; Y: number[]; Z: number[] };
-  point_shift?: number[];
-  rgb_max?: number;
+  pointShift?: number[];
+  rgbMax?: number;
 }
 
 function getPointCloudLimits(values: GetPointCloudLimitsOptions, data: any) {
@@ -14,8 +14,8 @@ function getPointCloudLimits(values: GetPointCloudLimitsOptions, data: any) {
   let rgbMax: number;
 
   if (values.bbox) {
-    if (values.point_shift) {
-      const [x, y, z] = values.point_shift;
+    if (values.pointShift) {
+      const [x, y, z] = values.pointShift;
       xmin = values.bbox.X[0] + x;
       xmax = values.bbox.X[1] + x;
       ymin = values.bbox.Y[0] + y;
@@ -51,8 +51,8 @@ function getPointCloudLimits(values: GetPointCloudLimitsOptions, data: any) {
     );
   }
 
-  if (values.rgb_max) {
-    rgbMax = values.rgb_max;
+  if (values.rgbMax) {
+    rgbMax = values.rgbMax;
   } else {
     const redmax = data.Red.reduce((accum: number, currentNumber: number) =>
       Math.max(accum, currentNumber)

@@ -1,6 +1,6 @@
 import reduceArrays from '../reduceArrays';
 
-function reduceDataArrays(data: any, show_fraction: number) {
+function reduceDataArrays(data: any, showFraction: number) {
   const GpsTime = data.GpsTime;
   const X = data.X;
   const Y = data.Y;
@@ -11,7 +11,7 @@ function reduceDataArrays(data: any, show_fraction: number) {
 
   const reducedData = reduceArrays(
     { GpsTime, X, Y, Z, Red, Green, Blue },
-    show_fraction
+    showFraction
   );
 
   return reducedData;

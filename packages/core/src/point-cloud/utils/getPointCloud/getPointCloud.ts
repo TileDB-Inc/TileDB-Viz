@@ -7,14 +7,14 @@ interface GetPointCloudOptions {
   source: string;
   mode: string;
   data: any;
-  show_fraction?: number;
-  point_shift?: number[];
+  showFraction?: number;
+  pointShift?: number[];
   namespace?: string;
   arrayName?: string;
   token?: string;
   bbox?: { X: number[]; Y: number[]; Z: number[] };
-  tiledb_env?: string;
-  rgb_max?: number;
+  tiledbEnv?: string;
+  rgbMax?: number;
 }
 
 async function getPointCloud(values: GetPointCloudOptions) {
@@ -37,8 +37,8 @@ async function getPointCloud(values: GetPointCloudOptions) {
     dataIn = values.data;
   }
 
-  if (values.show_fraction) {
-    data = reduceDataArrays(dataIn, values.show_fraction);
+  if (values.showFraction) {
+    data = reduceDataArrays(dataIn, values.showFraction);
   } else {
     data = dataIn;
   }
@@ -47,8 +47,8 @@ async function getPointCloud(values: GetPointCloudOptions) {
   let { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } = getPointCloudLimits(
     {
       bbox: values.bbox,
-      point_shift: values.point_shift,
-      rgb_max: values.rgb_max
+      pointShift: values.pointShift,
+      rgbMax: values.rgbMax
     },
     data
   );
@@ -65,8 +65,8 @@ async function getPointCloud(values: GetPointCloudOptions) {
   zmin = 0;
 
   // shift points with user defined values (optional)
-  if (values.point_shift) {
-    const [x, y, z] = values.point_shift;
+  if (values.pointShift) {
+    const [x, y, z] = values.pointShift;
     data.X = data.X.map((n: any) => n + x);
     data.Y = data.Y.map((n: any) => n + y);
     data.Z = data.Z.map((n: any) => n + z);

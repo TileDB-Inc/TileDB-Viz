@@ -7,42 +7,42 @@ import {
 } from '@babylonjs/core';
 
 export class DragGizmos {
-  private gizmo_x: AxisDragGizmo;
-  private gizmo_y: AxisDragGizmo;
-  private gizmo_z: AxisDragGizmo;
+  private gizmoX: AxisDragGizmo;
+  private gizmoY: AxisDragGizmo;
+  private gizmoZ: AxisDragGizmo;
 
-  constructor(mesh: Mesh, util_layer: UtilityLayerRenderer) {
-    this.gizmo_x = new AxisDragGizmo(
+  constructor(mesh: Mesh, utilLayer: UtilityLayerRenderer) {
+    this.gizmoX = new AxisDragGizmo(
       new Vector3(1, 0, 0),
       Color3.FromHexString('#ff0000'),
-      util_layer
+      utilLayer
     );
-    this.gizmo_x.updateGizmoRotationToMatchAttachedMesh = false;
-    this.gizmo_x.updateGizmoPositionToMatchAttachedMesh = true;
-    this.gizmo_x.attachedMesh = mesh;
+    this.gizmoX.updateGizmoRotationToMatchAttachedMesh = false;
+    this.gizmoX.updateGizmoPositionToMatchAttachedMesh = true;
+    this.gizmoX.attachedMesh = mesh;
 
-    this.gizmo_y = new AxisDragGizmo(
+    this.gizmoY = new AxisDragGizmo(
       new Vector3(0, 1, 0),
       Color3.FromHexString('#00ff00'),
-      util_layer
+      utilLayer
     );
-    this.gizmo_y.updateGizmoRotationToMatchAttachedMesh = false;
-    this.gizmo_y.updateGizmoPositionToMatchAttachedMesh = true;
-    this.gizmo_y.attachedMesh = mesh;
+    this.gizmoY.updateGizmoRotationToMatchAttachedMesh = false;
+    this.gizmoY.updateGizmoPositionToMatchAttachedMesh = true;
+    this.gizmoY.attachedMesh = mesh;
 
-    this.gizmo_z = new AxisDragGizmo(
+    this.gizmoZ = new AxisDragGizmo(
       new Vector3(0, 0, 1),
       Color3.FromHexString('#0000ff'),
-      util_layer
+      utilLayer
     );
-    this.gizmo_z.updateGizmoRotationToMatchAttachedMesh = false;
-    this.gizmo_z.updateGizmoPositionToMatchAttachedMesh = true;
-    this.gizmo_z.attachedMesh = mesh;
+    this.gizmoZ.updateGizmoRotationToMatchAttachedMesh = false;
+    this.gizmoZ.updateGizmoPositionToMatchAttachedMesh = true;
+    this.gizmoZ.attachedMesh = mesh;
   }
 
   dispose() {
-    this.gizmo_x.dispose();
-    this.gizmo_y.dispose();
-    this.gizmo_z.dispose();
+    this.gizmoX.dispose();
+    this.gizmoY.dispose();
+    this.gizmoZ.dispose();
   }
 }

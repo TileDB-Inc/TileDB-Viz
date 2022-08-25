@@ -6,7 +6,7 @@ export interface LoadPointCloudOptions {
   arrayName: string;
   bbox: { X: number[]; Y: number[]; Z: number[] };
   token: string;
-  tiledb_env?: string;
+  tiledbEnv?: string;
 }
 
 async function loadPointCloud(values: LoadPointCloudOptions) {
@@ -14,8 +14,8 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
 
   config.apiKey = values.token;
 
-  if (values.tiledb_env) {
-    config.basePath = values.tiledb_env;
+  if (values.tiledbEnv) {
+    config.basePath = values.tiledbEnv;
   }
 
   const tiledbClient = new Client(config);

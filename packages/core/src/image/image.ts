@@ -18,22 +18,22 @@ interface TileImageVisualizationOptions extends TileDBVisualizationBaseOptions {
   /**
    * The min and max values of x and y
    */
-  xy_bbox: number[];
+  xyBbox: number[];
 }
 export class TileDBImageVisualization extends TileDBVisualization {
   private _data: any;
-  private _xy_bbox: number[];
+  private _xyBbox: number[];
 
   constructor(options: TileImageVisualizationOptions) {
     super(options);
     this._data = options.data;
-    this._xy_bbox = options.xy_bbox;
+    this._xyBbox = options.xyBbox;
   }
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
       const data = this._data;
-      const bbox = this._xy_bbox;
+      const bbox = this._xyBbox;
 
       scene.createDefaultCameraOrLight(true, true, true);
       scene.clearColor = new Color4(0.95, 0.94, 0.92, 1);
