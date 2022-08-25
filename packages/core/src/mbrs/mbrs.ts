@@ -10,7 +10,7 @@ import {
 } from '@babylonjs/core';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 
-interface TileDBMBRSVisualizationOptions
+export interface TileDBMBRSVisualizationOptions
   extends TileDBVisualizationBaseOptions {
   /**
    * Data to render [all modes]

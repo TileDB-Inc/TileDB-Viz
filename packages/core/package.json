@@ -2,8 +2,10 @@
     "name": "@tiledb-inc/viz-core",
     "version": "0.0.1",
     "description": "Visualize TileDB arrays",
+    "source": "src/index.ts",
     "main": "lib/index.js",
     "types": "./lib/index.d.ts",
+    "module": "lib/module.js",
     "license": "MIT",
     "packageManager": "yarn@3.2.2",
     "scripts": {

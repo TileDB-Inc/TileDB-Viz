@@ -17,3 +17,10 @@ packages/**/node_modules
 
 # Vscode
 .vscode
+
+# Parcel
+.parcel-cache
+
+# MacOS
+.DS_Store
+**/.DS_Store
