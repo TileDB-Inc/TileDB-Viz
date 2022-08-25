@@ -3,22 +3,6 @@ import '@babylonjs/loaders/glTF';
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
 
-interface Values {
-  data: any;
-  gltf_data: any;
-  topo_offset: number;
-  classes: { names: string[]; numbers: number[] };
-  time_offset: number;
-  point_size: number;
-  distance_colors?: boolean;
-  mapbox_img: BlobPart;
-  mesh_rotation: number[];
-  mesh_shift: number[];
-  mesh_scale: number[];
-  gltf_multi: boolean;
-  extents: number[];
-  xy_bbox: number[];
-}
 export interface TileDBVisualizationBaseOptions {
   /**
    * Width of widget canvas
@@ -31,24 +15,23 @@ export interface TileDBVisualizationBaseOptions {
   /**
    * Gets or Set the mouse wheel precision or how fast is the camera zooming.
    */
-  wheelPrecision: number;
+  wheelPrecision?: number;
   /**
    * When camera view in first-person determines how fast to move
    */
-  moveSpeed: number;
+  moveSpeed?: number;
   /**
    * Scale the z values of each point
    */
-  zScale: number;
+  zScale?: number;
   /**
    * Show BabylonJS inspector
    */
-  inspector: boolean;
+  inspector?: boolean;
   /**
    * The HTML element to render the canvas
    */
   rootElement: HTMLElement;
-  values: Values;
 }
 export class TileDBVisualization {
   canvas?: HTMLCanvasElement;
@@ -58,19 +41,17 @@ export class TileDBVisualization {
   wheelPrecision: number;
   moveSpeed: number;
   zScale: number;
-  inspector: boolean;
+  inspector?: boolean;
   rootElement: HTMLElement;
-  _values: Values;
 
   constructor(options: TileDBVisualizationBaseOptions) {
     this.width = options.width;
     this.height = options.height;
-    this.wheelPrecision = options.wheelPrecision;
-    this.moveSpeed = options.moveSpeed;
-    this.zScale = options.zScale;
+    this.wheelPrecision = options.wheelPrecision || -1;
+    this.moveSpeed = options.moveSpeed || -1;
+    this.zScale = options.zScale || 1;
     this.inspector = options.inspector;
     this.rootElement = options.rootElement;
-    this._values = options.values;
   }
 
   resizeCanvas(dimensions?: { width: string; height: string }): void {

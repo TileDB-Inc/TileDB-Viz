@@ -1,13 +1,15 @@
 import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
-async function loadPointCloud(values: {
-  name_space: string;
-  array_name: string;
+export interface LoadPointCloudOptions {
+  namespace: string;
+  arrayName: string;
   bbox: { X: number[]; Y: number[]; Z: number[] };
   token: string;
-  tiledb_env: string;
-}) {
+  tiledb_env?: string;
+}
+
+async function loadPointCloud(values: LoadPointCloudOptions) {
   const config: Record<string, any> = {};
 
   config.apiKey = values.token;
@@ -42,8 +44,8 @@ async function loadPointCloud(values: {
   const concatenatedResults: Record<string, any> = {};
 
   for await (const results of tiledbClient.query.ReadQuery(
-    values.name_space,
-    values.array_name,
+    values.namespace,
+    values.arrayName,
     query
   )) {
     for (const [attributeKey, attributeValues] of Object.entries(results)) {

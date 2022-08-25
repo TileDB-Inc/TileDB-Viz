@@ -8,13 +8,34 @@ import {
   MeshBuilder,
   Vector3
 } from '@babylonjs/core';
-import { TileDBVisualization } from '../base';
+import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
+
+interface TileDBMBRSVisualizationOptions
+  extends TileDBVisualizationBaseOptions {
+  /**
+   * Data to render [all modes]
+   */
+  data: any;
+  /**
+   * The extends (min/max) of each mbrs
+   */
+  extents: number[];
+}
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
+  private _data: any;
+  private _extents: any;
+
+  constructor(options: TileDBMBRSVisualizationOptions) {
+    super(options);
+    this._data = options.data;
+    this._extents = options.extents;
+  }
+
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
-      const data = this._values.data;
-      const extents = this._values.extents;
+      const data = this._data;
+      const extents = this._extents;
       const minx = extents[0];
       const maxx = extents[1];
       const miny = extents[2];
