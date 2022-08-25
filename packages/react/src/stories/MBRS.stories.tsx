@@ -22,4 +22,4 @@ const Template = () => (
   />
 );
 
-export const WithData = Template.bind({});
+export const Mbrs = Template.bind({});

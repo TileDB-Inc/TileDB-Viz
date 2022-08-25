@@ -51,4 +51,4 @@ const Template = () => (
   />
 );
 
-export const CloudPointViz = Template.bind({});
+export const CloudPoint = Template.bind({});
