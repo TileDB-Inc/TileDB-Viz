@@ -8,19 +8,40 @@ import {
   MeshBuilder,
   Vector3
 } from '@babylonjs/core';
-import { TileDBVisualization } from '../base';
+import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
+
+interface TileDBMBRSVisualizationOptions
+  extends TileDBVisualizationBaseOptions {
+  /**
+   * Data to render [all modes]
+   */
+  data: any;
+  /**
+   * The extends (min/max) of each mbrs
+   */
+  extents: number[];
+}
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
+  private _data: any;
+  private _extents: number[];
+
+  constructor(options: TileDBMBRSVisualizationOptions) {
+    super(options);
+    this._data = options.data;
+    this._extents = options.extents;
+  }
+
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
-      const data = this._values.data;
-      const extents = this._values.extents;
+      const data = this._data;
+      const extents = this._extents;
       const minx = extents[0];
       const maxx = extents[1];
       const miny = extents[2];
       const maxy = extents[3];
       const minz = extents[4];
-      const xy_length = Math.min(
+      const xyLength = Math.min(
         Math.max(maxx) - Math.min(minx),
         Math.max(maxy) - Math.min(miny)
       );
@@ -42,9 +63,9 @@ export class TileDBMBRSVisualization extends TileDBVisualization {
 
       camera.setTarget(
         new Vector3(
-          ((maxx + minx) / 2 - minx) / xy_length,
+          ((maxx + minx) / 2 - minx) / xyLength,
           0,
-          ((maxy + miny) / 2 - miny) / xy_length
+          ((maxy + miny) / 2 - miny) / xyLength
         )
       );
       camera.attachControl(this.canvas, false);
@@ -69,15 +90,15 @@ export class TileDBMBRSVisualization extends TileDBVisualization {
         for (let p = 0; p < SPS.nbParticles; p++) {
           const particle = SPS.particles[p];
           particle.position.x =
-            ((data.Xmax[p] + data.Xmin[p]) / 2 - minx) / xy_length;
+            ((data.Xmax[p] + data.Xmin[p]) / 2 - minx) / xyLength;
           particle.position.y =
-            (((data.Zmax[p] + data.Zmin[p]) / 2 - minz) / xy_length) * scale;
+            (((data.Zmax[p] + data.Zmin[p]) / 2 - minz) / xyLength) * scale;
           particle.position.z =
-            ((data.Ymax[p] + data.Ymin[p]) / 2 - miny) / xy_length;
-          particle.scaling.x = (data.Xmax[p] - data.Xmin[p]) / xy_length;
+            ((data.Ymax[p] + data.Ymin[p]) / 2 - miny) / xyLength;
+          particle.scaling.x = (data.Xmax[p] - data.Xmin[p]) / xyLength;
           particle.scaling.y =
-            ((data.Zmax[p] - data.Zmin[p]) / xy_length) * scale;
-          particle.scaling.z = (data.Ymax[p] - data.Ymin[p]) / xy_length;
+            ((data.Zmax[p] - data.Zmin[p]) / xyLength) * scale;
+          particle.scaling.z = (data.Ymax[p] - data.Ymin[p]) / xyLength;
           particle.color = new Color4(
             0.5 + Math.random() * 0.6,
             0.5 + Math.random() * 0.6,

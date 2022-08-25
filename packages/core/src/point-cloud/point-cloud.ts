@@ -34,16 +34,16 @@ export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
   /**
    * Optional modes
-   * time: add an interactive time slider 
+   * time: add an interactive time slider
    * classes: add an interactive classes slider
    * topo: add a mapbox base layer
    * gltf: add gltf meshes
    */
-  mode: 'time' | 'classes' | 'topo' | 'gltf';
+  mode?: 'time' | 'classes' | 'topo' | 'gltf';
   /**
    * Color scheme
    */
-  color_scheme: string;
+  colorScheme?: string;
   /**
    * Data to render [all modes]
    */
@@ -51,76 +51,111 @@ export interface TileDBPointCloudOptions
   /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
-  gltf_data: any;
+  gltfData?: any;
   /**
    * Move the point cloud along the z-axis to better align with the mapbox base layer [mode='topo']
    */
-  topo_offset: number;
+  topoOffset?: number;
   /**
    * Lookup table with the index and names of all classes [mode='classes']
    */
-  classes: { names: string[]; numbers: number[] };
+  classes?: { names: string[]; numbers: number[] };
   /**
    * Time offset
    */
-  time_offset: number;
+  timeOffset?: number;
   /**
    * Size of the points
    */
-  point_size: number;
+  pointSize?: number;
   /**
    * Perform clash detection between mesh and point cloud if true
    */
-  distance_colors?: boolean;
+  distanceColors?: boolean;
   /**
    * Blob mpabox image png image as blob
    */
-  mapbox_img: BlobPart;
+  mapboxImg?: BlobPart;
   /**
    * Rotate the mesh with [alpha,beta,gamma]
    */
-  mesh_rotation: number[];
+  meshRotation?: number[];
   /**
    * Shift the mesh with [x,y,z]
    */
-  mesh_shift: number[];
+  meshShift?: number[];
   /**
    * Scale the size [x,y,z] of the mesh
    */
-  mesh_scale: number[];
+  meshScale?: number[];
   /**
-   * gltf_data is an array with blobs when true
+   * gltfData is an array with blobs when true
    */
-  gltf_multi: boolean;
+  gltfMulti?: boolean;
+  source?: string;
+  showFraction?: number;
+  pointShift?: number[];
+  rgbMax?: number;
   /**
-   * The extends (min/max) of each mbrs
+   * The min and max values of x, y and z
    */
-  extents: number[];
-  /**
-   * The min and max values of x and y
-   */
-  xy_bbox: number[];
+  bbox?: { X: number[]; Y: number[]; Z: number[] };
 }
 
 /**
-* 
-*/
+ *
+ */
 export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
-  private _util_layer!: UtilityLayerRenderer;
-  private _moved_after_click = false;
-  private _shift_pressed = false;
+  private _utilLayer!: UtilityLayerRenderer;
+  private _movedAfterClick = false;
+  private _shiftPressed = false;
   private _selected: Array<Mesh> = new Array<Mesh>();
   private _axes: Array<DragGizmos> = new Array<DragGizmos>();
   private _cameras: Array<Camera> = new Array<Camera>();
-  private _curr_camera: int = 0;
-  private _mode: TileDBPointCloudOptions['mode'];
-  private _color_scheme: TileDBPointCloudOptions['color_scheme'];
+  private _currCamera: int = 0;
+  private _mode: string;
+  private _colorScheme: string;
+  private _gltfData: any;
+  private _pointSize: number;
+  private _timeOffset: number;
+  private _classes: { names: string[]; numbers: number[] };
+  private _topoOffset: number;
+  private _distanceColors: boolean;
+  private _gltfMulti: boolean;
+  private _meshShift: number[];
+  private _meshRotation: number[];
+  private _meshScale: number[];
+  private _mapboxImg?: BlobPart;
+  private _source: string;
+  private _data: any;
+  private _showFraction?: number;
+  private _pointShift?: number[];
+  private _rgbMax?: number;
+  private _bbox?: { X: number[]; Y: number[]; Z: number[] };
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
-    this._mode = options.mode;
-    this._color_scheme = options.color_scheme;
+    this._data = options.data;
+    this._gltfData = options.gltfData;
+    this._mode = options.mode || 'gltf';
+    this._colorScheme = options.colorScheme || 'dark';
+    this._pointSize = options.pointSize || 5;
+    this._timeOffset = options.timeOffset || 0;
+    this._classes = options.classes || { numbers: [], names: [] };
+    this._topoOffset = options.topoOffset || 0;
+    this._distanceColors = options.distanceColors || false;
+    this._gltfMulti = options.gltfMulti || false;
+    this._meshShift = options.meshShift || [0, 0, 0];
+    this._meshRotation = options.meshRotation || [0, 0, 0];
+    this._meshScale = options.meshScale || [1, 1, 1];
+    this._mapboxImg = options.mapboxImg;
+    this._source = options.source || 'dict';
+    this._data = options.data;
+    this._showFraction = options.showFraction;
+    this._pointShift = options.pointShift;
+    this._rgbMax = options.rgbMax;
+    this._bbox = options.bbox;
   }
 
   protected async createScene(): Promise<Scene> {
@@ -133,16 +168,24 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       );
 
       /**
-       * Load color scheme colors 
-       */  
+       * Load color scheme colors
+       */
       const { backgroundColor, accentColor, secondColor, textColor } =
-        setSceneColors(this._color_scheme);
+        setSceneColors(this._colorScheme);
 
       /**
-       * Load point cloud data 
-       */  
+       * Load point cloud data
+       */
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
-        await getPointCloud(this._values).then(results => {
+        await getPointCloud({
+          source: this._source,
+          mode: this._mode,
+          data: this._data,
+          showFraction: this._showFraction,
+          pointShift: this._pointShift,
+          rgbMax: this._rgbMax,
+          bbox: this._bbox
+        }).then(results => {
           return results;
         });
 
@@ -157,11 +200,11 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       const times = data.GpsTime;
       const classification = data.Classification;
 
-      const gltfData = this._values.gltf_data;
-      const pointSize = this._values.point_size;
-      const offset = this._values.time_offset;
-      const classes = this._values.classes;
-      const topo_offset = this._values.topo_offset;
+      const gltfData = this._gltfData;
+      const pointSize = this._pointSize;
+      const offset = this._timeOffset;
+      const classes = this._classes;
+      const topoOffset = this._topoOffset;
       const scale = this.zScale;
 
       let doClear = false;
@@ -178,18 +221,18 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           updatable: isTime
         });
       }
-      const distance_colors = this._values.distance_colors;
+      const distanceColors = this._distanceColors;
 
       const pcLoader = (particle: any, i: number, _: string) => {
         // Y is up
         particle.position = new Vector3(
           data.X[i],
-          (data.Z[i] - topo_offset) * scale,
+          (data.Z[i] - topoOffset) * scale,
           data.Y[i]
         );
         if (isTime) {
           particle.color = scene.clearColor;
-          particle.position.y = (data.Z[i] - topo_offset) * scale - 100;
+          particle.position.y = (data.Z[i] - topoOffset) * scale - 100;
         } else {
           particle.color = new Color3(
             data.Red[i] / rgbMax,
@@ -198,7 +241,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           );
         }
 
-        if (distance_colors) {
+        if (distanceColors) {
           // check if inside meshes
           let minDist = 999999999999;
           particle.color.set(0, 1, 0, 1);
@@ -226,9 +269,8 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       };
 
       const tasks: Promise<any>[] = [];
-
       if (isGltf) {
-        if (this._values.gltf_multi === false) {
+        if (this._gltfMulti === false) {
           const blob = new Blob([gltfData]);
           const url = URL.createObjectURL(blob);
 
@@ -236,25 +278,25 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
             SceneLoader.ImportMeshAsync('', url, '', scene, null, '.gltf').then(
               container => {
                 container.meshes[0].rotation = new Vector3(
-                  this._values.mesh_rotation[0],
-                  this._values.mesh_rotation[1],
-                  this._values.mesh_rotation[2]
+                  this._meshRotation[0],
+                  this._meshRotation[1],
+                  this._meshRotation[2]
                 );
                 container.meshes[0].scaling = new Vector3(
-                  this._values.mesh_scale[0],
-                  this._values.mesh_scale[1],
-                  this._values.mesh_scale[2]
+                  this._meshScale[0],
+                  this._meshScale[1],
+                  this._meshScale[2]
                 );
                 container.meshes[0].position.x =
-                  container.meshes[0].position.x + this._values.mesh_shift[0];
+                  container.meshes[0].position.x + this._meshShift[0];
                 container.meshes[0].position.y =
-                  container.meshes[0].position.y + this._values.mesh_shift[1];
+                  container.meshes[0].position.y + this._meshShift[1];
                 container.meshes[0].position.z =
-                  container.meshes[0].position.z + this._values.mesh_shift[2];
+                  container.meshes[0].position.z + this._meshShift[2];
               }
             )
           );
-        } else if (this._values.gltf_multi === true) {
+        } else if (this._gltfMulti === true) {
           for (let i = 0; i < gltfData.length; i++) {
             const blob = new Blob([gltfData[i]]);
             const url = URL.createObjectURL(blob);
@@ -269,21 +311,21 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
                 '.gltf'
               ).then(container => {
                 container.meshes[0].rotation = new Vector3(
-                  this._values.mesh_rotation[0],
-                  this._values.mesh_rotation[1],
-                  this._values.mesh_rotation[2]
+                  this._meshRotation[0],
+                  this._meshRotation[1],
+                  this._meshRotation[2]
                 );
                 container.meshes[0].scaling = new Vector3(
-                  this._values.mesh_scale[0],
-                  this._values.mesh_scale[1],
-                  this._values.mesh_scale[2]
+                  this._meshScale[0],
+                  this._meshScale[1],
+                  this._meshScale[2]
                 );
                 container.meshes[0].position.x =
-                  container.meshes[0].position.x + this._values.mesh_shift[0];
+                  container.meshes[0].position.x + this._meshShift[0];
                 container.meshes[0].position.y =
-                  container.meshes[0].position.y + this._values.mesh_shift[1];
+                  container.meshes[0].position.y + this._meshShift[1];
                 container.meshes[0].position.z =
-                  container.meshes[0].position.z + this._values.mesh_shift[2];
+                  container.meshes[0].position.z + this._meshShift[2];
               })
             );
           }
@@ -307,7 +349,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
         /**
          * Set up sliders
-         */  
+         */
         const panel = new StackPanel();
         panel.width = '220px';
         panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -345,12 +387,12 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
         /**
          * Set up sliders
-         */  
+         */
         pcs.updateParticle = function (particle_3: any) {
           if (doClear) {
             particle_3.color = scene.clearColor;
             particle_3.position.y =
-              (data.Z[particle_3.idx] - topo_offset) * scale - 100;
+              (data.Z[particle_3.idx] - topoOffset) * scale - 100;
           } else {
             particle_3.color = new Color3(
               data.Red[particle_3.idx] / rgbMax,
@@ -358,14 +400,14 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
               data.Blue[particle_3.idx] / rgbMax
             );
             particle_3.position.y =
-              (data.Z[particle_3.idx] - topo_offset) * scale;
+              (data.Z[particle_3.idx] - topoOffset) * scale;
           }
           return particle_3;
         };
 
         /**
-         * Update slider label when changed 
-         */  
+         * Update slider label when changed
+         */
         slider.onValueChangedObservable.add((value: any) => {
           if (isTime) {
             header.text = 'Time: ' + (offset + times[value]).toFixed(0);
@@ -400,13 +442,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
         panel.addControl(slider);
       }
-       
-      if (isTopo) {
-        /**
-         * Display a mapbox map as an image on TiledGround
-         */ 
-        const mapbox_img = this._values.mapbox_img;
-        const blob_1 = new Blob([mapbox_img]);
+      if (isTopo && this._mapboxImg) {
+        const mapboxImg = this._mapboxImg as BlobPart;
+        const blob_1 = new Blob([mapboxImg]);
         const url_1 = URL.createObjectURL(blob_1);
 
         const mat = new StandardMaterial('mat', scene);
@@ -415,7 +453,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         mat.diffuseTexture.wrapV = Texture.CLAMP_ADDRESSMODE;
         mat.specularColor = new Color3(0, 0, 0);
         mat.backFaceCulling = false;
-        
+
         const options = { xmin: xmin, zmin: ymin, xmax: xmax, zmax: ymax };
         const ground = MeshBuilder.CreateTiledGround(
           'tiled ground',
@@ -427,24 +465,24 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
       /**
        * Create gizmos utility
-       */  
-      main._util_layer = new UtilityLayerRenderer(scene);
+       */
+      main._utilLayer = new UtilityLayerRenderer(scene);
 
       /**
        * Handle mouse clicks to select/deselect meshes
-       */  
+       */
       scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
           case PointerEventTypes.POINTERDOWN:
-            main._moved_after_click = false;
+            main._movedAfterClick = false;
             break;
           case PointerEventTypes.POINTERUP:
-            if (!main._moved_after_click) {
+            if (!main._movedAfterClick) {
               main.pickMesh();
             }
             break;
           case PointerEventTypes.POINTERMOVE:
-            main._moved_after_click = true;
+            main._movedAfterClick = true;
             break;
           case PointerEventTypes.POINTERWHEEL:
             break;
@@ -463,17 +501,16 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           case KeyboardEventTypes.KEYDOWN:
             // toggle current camera
             if (kbInfo.event.key === 'c') {
-              main._cameras[main._curr_camera].detachControl();
-              main._curr_camera =
-                (main._curr_camera + 1) % main._cameras.length;
-              main._cameras[main._curr_camera].attachControl(true);
-              const cam_name = main._cameras[main._curr_camera].name;
+              main._cameras[main._currCamera].detachControl();
+              main._currCamera = (main._currCamera + 1) % main._cameras.length;
+              main._cameras[main._currCamera].attachControl(true);
+              const cam_name = main._cameras[main._currCamera].name;
               main._scene.setActiveCameraByName(cam_name);
             }
 
             // perform clash detection
             if (kbInfo.event.key === '=') {
-              this._values.distance_colors = true;
+              this._distanceColors = true;
               pcs = new PointsCloudSystem('pcs', pointSize, scene, {
                 updatable: isClass || isTime
               });
@@ -483,7 +520,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
             // perform clash detection
             if (kbInfo.event.key === '-') {
-              this._values.distance_colors = false;
+              this._distanceColors = false;
               pcs = new PointsCloudSystem('pcs', pointSize, scene, {
                 updatable: isClass || isTime
               });
@@ -508,14 +545,14 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
             if (kbInfo.event.key === 'Shift') {
               // shift
-              main._shift_pressed = true;
+              main._shiftPressed = true;
             }
 
             break;
           case KeyboardEventTypes.KEYUP:
             if (kbInfo.event.key === 'Shift') {
               // shift
-              main._shift_pressed = false;
+              main._shiftPressed = false;
             }
             break;
         }
@@ -523,7 +560,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
       /**
        * Set up camera and light
-       */ 
+       */
       scene.createDefaultCameraOrLight(true, true, true);
 
       const light = new HemisphericLight('light1', new Vector3(0, 1, 0), scene);
@@ -542,7 +579,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
 
       /**
        * Add second camera
-       */ 
+       */
       const camera2 = new FreeCamera(
         'free',
         new Vector3(center_x, center_z, center_y),
@@ -571,7 +608,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
    * EXTRAS/ helpers
    */
   addAxes(mesh: Mesh): DragGizmos {
-    const gizmo = new DragGizmos(mesh, this._util_layer);
+    const gizmo = new DragGizmos(mesh, this._utilLayer);
     return gizmo;
   }
 
@@ -640,7 +677,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       center.addInPlace(this._selected[s].position);
     }
     center.scaleInPlace(this._selected.length);
-    (this._cameras[this._curr_camera] as ArcRotateCamera).setTarget(center);
+    (this._cameras[this._currCamera] as ArcRotateCamera).setTarget(center);
   }
 
   // Show info about selected mesh -- just position for now
@@ -668,7 +705,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       while (sel.parent) {
         sel = sel.parent as Mesh;
       }
-      if (!this._shift_pressed) {
+      if (!this._shiftPressed) {
         this.unselectAll();
       }
       this.select(sel as Mesh, true);
