@@ -4,7 +4,7 @@ import {
   TileDBPointCloudVisualization
 } from '@tiledb-inc/viz-core';
 
-export const CloudPointVisuzalization = (
+export const PointCloudVisuzalization = (
   props: Omit<TileDBPointCloudOptions, 'rootElement'>
 ) => {
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);

@@ -1,12 +1,12 @@
 import React from 'react';
 
-import { CloudPointVisuzalization } from '../CloudPoint/CloudPoint';
+import { PointCloudVisuzalization } from '../PointCloud/PointCloud';
 import data from './assets/data.json';
 import gltf_data from './assets/gltf_data.json';
 
 export default {
-  title: 'Visualizations/CloudPointVisuzalization',
-  component: CloudPointVisuzalization,
+  title: 'Visualizations/PointCloudVisuzalization',
+  component: PointCloudVisuzalization,
   argTypes: {
     color_scheme: {
       control: 'select',
@@ -17,18 +17,12 @@ export default {
 };
 
 const Template = () => (
-  <CloudPointVisuzalization
-    mode="gltf"
-    colorScheme="dark"
+  <PointCloudVisuzalization
     width="800"
     height="600"
-    wheelPrecision={-1}
-    moveSpeed={-1}
-    inspector={false}
-    zScale={1}
     gltfData={gltf_data}
     data={data.data}
   />
 );
 
-export const CloudPoint = Template.bind({});
+export const PointCloud = Template.bind({});

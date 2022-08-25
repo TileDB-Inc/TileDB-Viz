@@ -1,3 +1,3 @@
-export * from './CloudPoint';
+export * from './PointCloud';
 export * from './Mbrs';
 export * from './Image';
