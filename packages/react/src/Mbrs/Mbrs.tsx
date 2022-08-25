@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  TileDBVisualizationBaseOptions,
+  TileDBMBRSVisualizationOptions,
   TileDBMBRSVisualization
 } from '@tiledb-inc/viz-core';
 
 export const MbrsVisualization = (
-  props: Omit<TileDBVisualizationBaseOptions, 'rootElement'>
+  props: Omit<TileDBMBRSVisualizationOptions, 'rootElement'>
 ) => {
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
 

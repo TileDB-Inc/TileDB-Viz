@@ -12,21 +12,13 @@ export default {
   component: ImageVisualization,
   argTypes: {}
 };
-const values: any = {
-  image_type: 'sar',
-  band: 1,
-  xy_bbox: [11500, 14000, 11500, 14000],
-  attribute: 'TDB_VALUES',
-  sar_scale_factor: 0.0008292495109880846,
-  width: 800,
-  height: 600,
-  data: uintArray.buffer
-};
+
 const Template = () => (
   <ImageVisualization
     width="800"
     height="600"
-    values={values}
+    xyBbox={[11500, 14000, 11500, 14000]}
+    data={uintArray.buffer}
     zScale={5}
     moveSpeed={-1}
     wheelPrecision={-1}

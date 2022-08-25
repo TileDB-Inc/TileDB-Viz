@@ -12,7 +12,8 @@ export default {
 
 const Template = () => (
   <MbrsVisualization
-    values={data.values as any}
+    data={data.values.data}
+    extents={data.values.extents}
     width="1200"
     height="800"
     zScale={5}
