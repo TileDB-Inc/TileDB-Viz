@@ -1,29 +1,36 @@
 {
-    "name": "@tiledb-inc/viz-core",
-    "version": "0.0.1",
-    "description": "Visualize TileDB arrays",
-    "source": "src/index.ts",
-    "main": "lib/index.js",
-    "types": "./lib/index.d.ts",
-    "module": "lib/module.js",
-    "license": "MIT",
-    "packageManager": "yarn@3.2.2",
-    "scripts": {
-        "test": "jest",
-        "build": "rm -rf lib && rm -f tsconfig.tsbuildinfo && tsc",
-        "lint": "eslint './src/**/*.{ts,tsx}'",
-        "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
-    },
-    "dependencies": {
-        "@babylonjs/core": "^5.0.0",
-        "@babylonjs/gui": "^5.0.0",
-        "@babylonjs/gui-editor": "^5.0.0",
-        "@babylonjs/inspector": "^5.0.0",
-        "@babylonjs/loaders": "^5.0.0",
-        "@babylonjs/materials": "^5.0.0",
-        "@babylonjs/serializers": "^5.0.0",
-        "@tiledb-inc/tiledb-cloud": "^1.0.8",
-        "babylonjs-gui": "^4.2.1",
-        "babylonjs-materials": "^5.0.0"
-    }
+  "name": "@tiledb-inc/viz-core",
+  "version": "0.0.1",
+  "description": "Visualize TileDB arrays",
+  "source": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
+  },
+  "packageManager": "yarn@3.2.2",
+  "scripts": {
+    "test": "jest",
+    "build": "rm -rf lib && rm -f tsconfig.tsbuildinfo && tsc",
+    "lint": "eslint './src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix",
+    "version": "npm version $1 --no-commit-hooks --no-git-tag-version"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^5.0.0",
+    "@babylonjs/gui": "^5.0.0",
+    "@babylonjs/gui-editor": "^5.0.0",
+    "@babylonjs/inspector": "^5.0.0",
+    "@babylonjs/loaders": "^5.0.0",
+    "@babylonjs/materials": "^5.0.0",
+    "@babylonjs/serializers": "^5.0.0",
+    "@tiledb-inc/tiledb-cloud": "^1.0.8",
+    "babylonjs-gui": "^4.2.1",
+    "babylonjs-materials": "^5.0.0"
+  }
 }

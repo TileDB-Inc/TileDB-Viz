@@ -1,0 +1,30 @@
+name: Publish Packages to npm registry
+on:
+  release:
+    types: [created]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Setup .npmrc file to publish to npm
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: echo releasing $GIT_TAG_VERSION
+      # Enable corepack to have yarn v3
+      - run: corepack enable
+      # Verify that yarn 3.x is used
+      - run: yarn --version
+      # Install dependencies
+      - run: yarn install
+      # Build packages
+      - run: yarn build
+      # Publish packages
+      - run: ./publish.sh react && ./publish.sh core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_TAG_VERSION: ${{ git describe --tags --abbrev=0 }}
