@@ -18,8 +18,7 @@
     "test": "jest",
     "build": "rm -rf lib && rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint './src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix",
-    "version": "npm version $1 --no-commit-hooks --no-git-tag-version"
+    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
     "@babylonjs/core": "^5.0.0",

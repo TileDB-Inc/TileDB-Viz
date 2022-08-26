@@ -14,7 +14,6 @@ jobs:
         with:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
-      - run: echo releasing $GIT_TAG_VERSION
       # Enable corepack to have yarn v3
       - run: corepack enable
       # Verify that yarn 3.x is used
@@ -27,4 +26,3 @@ jobs:
       - run: ./publish.sh react && ./publish.sh core
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GIT_TAG_VERSION: ${{ git describe --tags --abbrev=0 }}

@@ -16,8 +16,7 @@
     "build": "yarn workspace @tiledb-inc/viz-core build && yarn workspace @tiledb-inc/viz-react build",
     "storybook": "yarn workspace @tiledb-inc/viz-react storybook",
     "lint": "yarn workspace @tiledb-inc/viz-core lint",
-    "lint:fix": "yarn workspace @tiledb-inc/viz-core lint:fix",
-    "version": "yarn workspace @tiledb-inc/viz-core version -- $1 && yarn workspace @tiledb-inc/viz-react version -- $1"
+    "lint:fix": "yarn workspace @tiledb-inc/viz-core lint:fix"
   },
   "devDependencies": {
     "@babel/core": "^7.18.13",

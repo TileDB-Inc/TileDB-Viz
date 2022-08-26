@@ -18,8 +18,7 @@
   "scripts": {
     "build": "parcel build",
     "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook",
-    "version": "npm version $1 --no-commit-hooks --no-git-tag-version"
+    "build-storybook": "build-storybook"
   },
   "dependencies": {
     "@tiledb-inc/viz-core": "workspace:^",
