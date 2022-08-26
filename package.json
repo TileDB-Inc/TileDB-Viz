@@ -7,6 +7,10 @@
   "workspaces": [
     "packages/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
+  },
   "scripts": {
     "test": "yarn workspace @tiledb-inc/viz-core test",
     "build": "yarn workspace @tiledb-inc/viz-core build && yarn workspace @tiledb-inc/viz-react build",
