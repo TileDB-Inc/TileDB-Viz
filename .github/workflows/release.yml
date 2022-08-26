@@ -3,7 +3,7 @@ on:
   release:
     types: [created]
 jobs:
-  build:
+  build_and_publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,6 +22,8 @@ jobs:
       - run: yarn install
       # Build packages
       - run: yarn build
+      # Set Yarn config for npm token
+      - run: yarn config set npmAuthToken $NODE_AUTH_TOKEN
       # Publish packages
       - run: ./publish.sh react && ./publish.sh core
         env:
