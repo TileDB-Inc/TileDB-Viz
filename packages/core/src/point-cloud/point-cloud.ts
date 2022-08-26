@@ -100,6 +100,18 @@ export interface TileDBPointCloudOptions
    * The min and max values of x, y and z
    */
   bbox?: { X: number[]; Y: number[]; Z: number[] };
+  /**
+   * Namespace of the array registered in TileDB Cloud (if mode === "cloud")
+   */
+  namespace?: string;
+  /**
+   * Name of the array registered in TileDB Cloud (if mode === "cloud")
+   */
+  arrayName?: string;
+  /**
+   * TileDB Cloud api token (if mode === "cloud")
+   */
+  token?: string;
 }
 
 /**
@@ -133,6 +145,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _pointShift?: number[];
   private _rgbMax?: number;
   private _bbox?: { X: number[]; Y: number[]; Z: number[] };
+  private _namespace?: string;
+  private _arrayName?: string;
+  private _token?: string;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -156,6 +171,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._pointShift = options.pointShift;
     this._rgbMax = options.rgbMax;
     this._bbox = options.bbox;
+    this._namespace = options.namespace;
+    this._arrayName = options.arrayName;
+    this._token = options.token;
   }
 
   protected async createScene(): Promise<Scene> {
@@ -184,7 +202,10 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           showFraction: this._showFraction,
           pointShift: this._pointShift,
           rgbMax: this._rgbMax,
-          bbox: this._bbox
+          bbox: this._bbox,
+          namespace: this._namespace,
+          arrayName: this._arrayName,
+          token: this._token
         }).then(results => {
           return results;
         });
