@@ -6,8 +6,7 @@ import data from './assets/mbrs_data.json';
 export default {
   title: 'Visualizations/MbrsVisualization',
   component: MbrsVisualization,
-  argTypes: {
-  }
+  argTypes: {}
 };
 
 const Template = () => (

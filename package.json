@@ -11,11 +11,15 @@
     "type": "git",
     "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
   },
+  "author": {
+    "name": "TileDB",
+    "email": "support@tiledb.com"
+  },
   "scripts": {
     "test": "yarn workspace @tiledb-inc/viz-core test",
     "build": "yarn workspace @tiledb-inc/viz-core build && yarn workspace @tiledb-inc/viz-react build",
     "storybook": "yarn workspace @tiledb-inc/viz-react storybook",
-    "lint": "yarn workspace @tiledb-inc/viz-core lint",
+    "lint": "yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
     "lint:fix": "yarn workspace @tiledb-inc/viz-core lint:fix"
   },
   "devDependencies": {
