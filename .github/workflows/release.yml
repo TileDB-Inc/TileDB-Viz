@@ -17,14 +17,14 @@ jobs:
       # Enable corepack to have yarn v3
       - run: corepack enable
       # Verify that yarn 3.x is used
-      - run: yarn --version
+      - run: echo Using yarn version $(yarn --version)
       # Install dependencies
       - run: yarn install
       # Build packages
       - run: yarn build
       # Set Yarn config for npm token
       - run: yarn config set npmAuthToken $NODE_AUTH_TOKEN
-      # Publish packages
-      - run: ./publish.sh core && ./publish.sh react
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Publish packages
+      - run: ./publish.sh core && ./publish.sh react
