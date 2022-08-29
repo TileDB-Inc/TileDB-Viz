@@ -127,7 +127,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _cameras: Array<Camera> = new Array<Camera>();
   private _currCamera: int = 0;
   private _mode: string;
-  private _colorScheme: string;
+  colorScheme: string;
   private _gltfData: any;
   private _pointSize: number;
   private _timeOffset: number;
@@ -154,7 +154,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._data = options.data;
     this._gltfData = options.gltfData;
     this._mode = options.mode || 'gltf';
-    this._colorScheme = options.colorScheme || 'dark';
+    this.colorScheme = options.colorScheme || 'dark';
     this._pointSize = options.pointSize || 1;
     this._timeOffset = options.timeOffset || 0;
     this._classes = options.classes || { numbers: [], names: [] };
@@ -189,7 +189,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
        * Load color scheme colors
        */
       const { backgroundColor, accentColor, secondColor, textColor } =
-        setSceneColors(this._colorScheme);
+        setSceneColors(this.colorScheme);
 
       /**
        * Load point cloud data

@@ -43,6 +43,7 @@ export class TileDBVisualization {
   zScale: number;
   inspector?: boolean;
   rootElement: HTMLElement;
+  scene?: Scene;
 
   constructor(options: TileDBVisualizationBaseOptions) {
     this.width = options.width;
@@ -74,13 +75,21 @@ export class TileDBVisualization {
       });
     }
 
+    this.scene = scene;
+
     return scene;
   }
 
+  resizeListener(): void {
+    this.engine?.resize();
+  }
+
   render(): void {
-    this.canvas = document.createElement('canvas');
-    this.canvas.classList.add('renderCanvas');
-    this.rootElement.appendChild(this.canvas);
+    if (!this.canvas) {
+      this.canvas = document.createElement('canvas');
+      this.canvas.classList.add('renderCanvas');
+      this.rootElement.appendChild(this.canvas);
+    }
 
     this.engine = new Engine(this.canvas, true);
 
@@ -91,12 +100,21 @@ export class TileDBVisualization {
     this.resizeCanvas();
 
     // window resize event handler
-    window.addEventListener('resize', () => {
-      this.engine?.resize();
-    });
+    window.addEventListener('resize', this.resizeListener);
 
     this.createScene().then(scene => {
       engine.runRenderLoop(() => {
+        scene.render();
+      });
+    });
+  }
+
+  rerender(): void {
+    this.scene?.dispose();
+    this.engine?.stopRenderLoop();
+
+    this.createScene().then(scene => {
+      this.engine?.runRenderLoop(() => {
         scene.render();
       });
     });
