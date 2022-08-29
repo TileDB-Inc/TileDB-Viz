@@ -14,11 +14,20 @@
     "type": "git",
     "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
   },
+  "author": {
+    "name": "TileDB",
+    "email": "support@tiledb.com"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "packageManager": "yarn@3.2.2",
   "scripts": {
     "build": "parcel build",
     "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook"
+    "build-storybook": "build-storybook",
+    "lint": "eslint './src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
     "@tiledb-inc/viz-core": "workspace:^",

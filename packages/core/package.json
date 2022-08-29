@@ -13,6 +13,13 @@
     "type": "git",
     "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
   },
+  "author": {
+    "name": "TileDB",
+    "email": "support@tiledb.com"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "packageManager": "yarn@3.2.2",
   "scripts": {
     "test": "jest",
