@@ -25,6 +25,6 @@ jobs:
       # Set Yarn config for npm token
       - run: yarn config set npmAuthToken $NODE_AUTH_TOKEN
       # Publish packages
-      - run: ./publish.sh react && ./publish.sh core
+      - run: ./publish.sh core && ./publish.sh react
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
