@@ -92,7 +92,7 @@ export interface TileDBPointCloudOptions
    * gltfData is an array with blobs when true
    */
   gltfMulti?: boolean;
-  source?: string;
+  source?: 'dict' | 'cloud';
   showFraction?: number;
   pointShift?: number[];
   rgbMax?: number;
@@ -155,7 +155,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._gltfData = options.gltfData;
     this._mode = options.mode || 'gltf';
     this._colorScheme = options.colorScheme || 'dark';
-    this._pointSize = options.pointSize || 5;
+    this._pointSize = options.pointSize || 1;
     this._timeOffset = options.timeOffset || 0;
     this._classes = options.classes || { numbers: [], names: [] };
     this._topoOffset = options.topoOffset || 0;
