@@ -28,15 +28,15 @@
     "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
-    "@babylonjs/core": "^5.0.0",
-    "@babylonjs/gui": "^5.0.0",
-    "@babylonjs/gui-editor": "^5.0.0",
-    "@babylonjs/inspector": "^5.0.0",
-    "@babylonjs/loaders": "^5.0.0",
-    "@babylonjs/materials": "^5.0.0",
-    "@babylonjs/serializers": "^5.0.0",
+    "@babylonjs/core": "^5.21.0",
+    "@babylonjs/gui": "^5.21.0",
+    "@babylonjs/gui-editor": "^5.21.0",
+    "@babylonjs/inspector": "^5.21.0",
+    "@babylonjs/loaders": "^5.21.0",
+    "@babylonjs/materials": "^5.21.0",
+    "@babylonjs/serializers": "^5.21.0",
     "@tiledb-inc/tiledb-cloud": "^1.0.8",
-    "babylonjs-gui": "^4.2.1",
-    "babylonjs-materials": "^5.0.0"
+    "babylonjs-gui": "^4.2.2",
+    "babylonjs-materials": "^5.21.0"
   }
 }
