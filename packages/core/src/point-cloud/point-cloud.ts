@@ -92,7 +92,7 @@ export interface TileDBPointCloudOptions
    * gltfData is an array with blobs when true
    */
   gltfMulti?: boolean;
-  source?: string;
+  source?: 'dict' | 'cloud';
   showFraction?: number;
   pointShift?: number[];
   rgbMax?: number;
