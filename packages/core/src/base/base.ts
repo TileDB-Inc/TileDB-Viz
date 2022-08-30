@@ -7,11 +7,11 @@ export interface TileDBVisualizationBaseOptions {
   /**
    * Width of widget canvas
    */
-  width: string;
+  width: number;
   /**
    * Height of widget canvas
    */
-  height: string;
+  height: number;
   /**
    * Gets or Set the mouse wheel precision or how fast is the camera zooming.
    */
@@ -36,8 +36,8 @@ export interface TileDBVisualizationBaseOptions {
 export class TileDBVisualization {
   canvas?: HTMLCanvasElement;
   engine?: Engine;
-  width: string;
-  height: string;
+  width: number;
+  height: number;
   wheelPrecision: number;
   moveSpeed: number;
   zScale: number;
@@ -54,14 +54,14 @@ export class TileDBVisualization {
     this.rootElement = options.rootElement;
   }
 
-  resizeCanvas(dimensions?: { width: string; height: string }): void {
+  resizeCanvas(dimensions?: { width: number; height: number }): void {
     if (dimensions) {
       const { width, height } = dimensions;
       this.width = width;
       this.height = height;
     }
-    this.canvas?.setAttribute('width', this.width);
-    this.canvas?.setAttribute('height', this.height);
+    this.canvas?.setAttribute('width', this.width?.toString());
+    this.canvas?.setAttribute('height', this.height?.toString());
     this.engine?.resize();
   }
 
