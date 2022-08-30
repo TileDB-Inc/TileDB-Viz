@@ -5,7 +5,7 @@ import sortDataArrays from '../sortDataArrays';
 
 interface GetPointCloudOptions {
   source: string;
-  mode: string;
+  mode?: string;
   data: any;
   showFraction?: number;
   pointShift?: number[];
