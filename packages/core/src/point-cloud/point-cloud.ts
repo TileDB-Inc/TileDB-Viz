@@ -126,7 +126,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _axes: Array<DragGizmos> = new Array<DragGizmos>();
   private _cameras: Array<Camera> = new Array<Camera>();
   private _currCamera: int = 0;
-  private _mode: string;
+  private _mode?: string;
   private _colorScheme: string;
   private _gltfData: any;
   private _pointSize: number;
@@ -153,7 +153,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this._data = options.data;
     this._gltfData = options.gltfData;
-    this._mode = options.mode || 'gltf';
+    this._mode = options.mode;
     this._colorScheme = options.colorScheme || 'dark';
     this._pointSize = options.pointSize || 1;
     this._timeOffset = options.timeOffset || 0;

@@ -1,4 +1,4 @@
-function setPointCloudSwitches(mode: string) {
+function setPointCloudSwitches(mode?: string) {
   let isTime = false;
   let isClass = false;
   let isTopo = false;
