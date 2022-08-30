@@ -242,9 +242,9 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           updatable: isTime
         });
       }
-      const distanceColors = this._distanceColors;
 
       const pcLoader = (particle: any, i: number, _: string) => {
+        const distanceColors = this._distanceColors;
         // Y is up
         particle.position = new Vector3(
           data.X[i],
