@@ -5,14 +5,6 @@ import '@babylonjs/inspector';
 
 export interface TileDBVisualizationBaseOptions {
   /**
-   * Width of widget canvas
-   */
-  width: number;
-  /**
-   * Height of widget canvas
-   */
-  height: number;
-  /**
    * Gets or Set the mouse wheel precision or how fast is the camera zooming.
    */
   wheelPrecision?: number;
@@ -36,8 +28,6 @@ export interface TileDBVisualizationBaseOptions {
 export class TileDBVisualization {
   canvas?: HTMLCanvasElement;
   engine?: Engine;
-  width: number;
-  height: number;
   wheelPrecision: number;
   moveSpeed: number;
   zScale: number;
@@ -45,8 +35,6 @@ export class TileDBVisualization {
   rootElement: HTMLElement;
 
   constructor(options: TileDBVisualizationBaseOptions) {
-    this.width = options.width;
-    this.height = options.height;
     this.wheelPrecision = options.wheelPrecision || -1;
     this.moveSpeed = options.moveSpeed || -1;
     this.zScale = options.zScale || 1;
@@ -57,11 +45,9 @@ export class TileDBVisualization {
   resizeCanvas(dimensions?: { width: number; height: number }): void {
     if (dimensions) {
       const { width, height } = dimensions;
-      this.width = width;
-      this.height = height;
+      this.canvas?.setAttribute('width', width.toString());
+      this.canvas?.setAttribute('height', height.toString());
     }
-    this.canvas?.setAttribute('width', this.width?.toString());
-    this.canvas?.setAttribute('height', this.height?.toString());
     this.engine?.resize();
   }
 
@@ -78,8 +64,11 @@ export class TileDBVisualization {
   }
 
   render(): void {
-    this.canvas = document.createElement('canvas');
-    this.canvas.classList.add('renderCanvas');
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    this.canvas = canvas;
+
     this.rootElement.appendChild(this.canvas);
 
     this.engine = new Engine(this.canvas, true);
