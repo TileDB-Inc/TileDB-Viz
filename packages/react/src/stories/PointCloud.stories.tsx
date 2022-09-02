@@ -19,16 +19,13 @@ export default {
 
 const Template = () => (
   <PointCloudVisuzalization
-    width="800"
-    height="600"
     gltfData={gltfData}
     data={data.data}
     mode="gltf"
+    pointSize={5}
   />
 );
 
 export const PointCloud = Template.bind({});
 
-export const Boulder = () => (
-  <PointCloudVisuzalization width="800" height="600" data={boulderData} />
-);
+export const Boulder = () => <PointCloudVisuzalization data={boulderData} />;
