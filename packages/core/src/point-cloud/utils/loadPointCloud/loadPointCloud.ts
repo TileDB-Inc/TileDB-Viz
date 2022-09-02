@@ -1,7 +1,15 @@
 import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PointCloudBBox } from '../../point-cloud';
+import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
+import stringifyQuery from '../stringifyQuery';
 
+export interface Query {
+  layout: Layout;
+  ranges: number[][];
+  bufferSize: number;
+  attributes: string[];
+}
 export interface LoadPointCloudOptions {
   namespace: string;
   arrayName: string;
@@ -19,15 +27,8 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
     config.basePath = values.tiledbEnv;
   }
 
-  const tiledbClient = new Client(config);
-
-  const query: {
-    layout: any;
-    ranges: number[][];
-    bufferSize: number;
-    attributes: any;
-  } = {
-    layout: Layout.Unordered,
+  const query: Query = {
+    layout: Layout.RowMajor,
     ranges: [values.bbox.X, values.bbox.Y, values.bbox.Z],
     bufferSize: 150000000000,
     attributes: [
@@ -41,12 +42,60 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
       'Classification'
     ]
   };
+
+  const queryCacheKey = stringifyQuery(
+    query,
+    values.namespace,
+    values.arrayName
+  );
+
+  const dataFromCache = await getQueryDataFromCache(queryCacheKey);
+  console.log('dataFromCache is');
+  console.log(dataFromCache);
+
+  if (dataFromCache) {
+    /**
+     * Don't wait for results, instead return data from cache
+     */
+    // setTimeout(() => {
+    //   getResultsFromQuery(query, {
+    //     namespace: values.namespace,
+    //     arrayName: values.arrayName,
+    //     config
+    //   });
+    // }, 0);
+    console.log('=====================');
+    console.log(`Getting cached result with key ${queryCacheKey}`);
+    console.log(dataFromCache);
+    console.log('=====================');
+    return dataFromCache;
+  }
+
+  const results = await getResultsFromQuery(query, {
+    namespace: values.namespace,
+    arrayName: values.arrayName,
+    config
+  });
+
+  return results;
+}
+
+const getResultsFromQuery = async (
+  query: Query,
+  options: {
+    namespace: string;
+    arrayName: string;
+    config: Record<string, unknown>;
+  }
+) => {
+  const { namespace, arrayName, config } = options;
+  const tiledbClient = new Client(config);
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
   for await (const results of tiledbClient.query.ReadQuery(
-    values.namespace,
-    values.arrayName,
+    namespace,
+    arrayName,
     query
   )) {
     for (const [attributeKey, attributeValues] of Object.entries(results)) {
@@ -59,7 +108,17 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
       }
     }
   }
+
+  const queryCacheKey = stringifyQuery(query, namespace, arrayName);
+  console.log('=====================');
+  console.log(`Writing to cache with ${queryCacheKey}`);
+  console.log(concatenatedResults);
+  console.log('====================');
+  setTimeout(() => {
+    writeToCache(queryCacheKey, concatenatedResults);
+  }, 0);
+
   return concatenatedResults;
-}
+};
 
 export default loadPointCloud;

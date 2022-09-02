@@ -4636,6 +4636,7 @@ __metadata:
     "@types/jest": ^29.0.0
     babylonjs-gui: ^4.2.2
     babylonjs-materials: ^5.21.0
+    idb: ^7.0.2
   languageName: unknown
   linkType: soft
 
@@ -4681,8 +4682,6 @@ __metadata:
     ts-node: ^10.9.1
     typescript: 4.7.4
   dependenciesMeta:
-    "@babylonjs/core@5.20.0":
-      unplugged: true
     "@babylonjs/core@5.21.0":
       unplugged: true
   languageName: unknown
@@ -10288,6 +10287,13 @@ __metadata:
   dependencies:
     postcss: ^7.0.14
   checksum: a4ca2c6b82cb3eb879d635bd4028d74bca174edc49ee48ef5f01988489747d340a389d5a0ac6f6887a5c24ab8fc4386c781daab32a7ade5344a2edff66207635
+  languageName: node
+  linkType: hard
+
+"idb@npm:^7.0.2":
+  version: 7.0.2
+  resolution: "idb@npm:7.0.2"
+  checksum: 60ebe6d5c25d9d82d400fa90e769045a9a3f44dfbc3094b105f8666f025d84f2a779e5416211572fc51f6057f8e130cb1bbfaa06cfd6f196701a8fca9f0eda17
   languageName: node
   linkType: hard
 

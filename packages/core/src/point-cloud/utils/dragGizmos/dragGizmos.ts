@@ -6,7 +6,7 @@ import {
   Vector3
 } from '@babylonjs/core';
 
-export class DragGizmos {
+export default class DragGizmos {
   private gizmoX: AxisDragGizmo;
   private gizmoY: AxisDragGizmo;
   private gizmoZ: AxisDragGizmo;

@@ -28,7 +28,7 @@ import {
   TextBlock
 } from 'babylonjs-gui';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
-import { DragGizmos } from '../utils/drag_gizmos';
+import DragGizmos from './utils/dragGizmos';
 import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
 import pointIsInsideMesh from './utils/pointIsInsideMesh';
 
