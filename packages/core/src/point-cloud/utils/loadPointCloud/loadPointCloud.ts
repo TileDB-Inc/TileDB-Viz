@@ -1,10 +1,11 @@
 import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { PointCloudBBox } from '../../point-cloud';
 
 export interface LoadPointCloudOptions {
   namespace: string;
   arrayName: string;
-  bbox: { X: number[]; Y: number[]; Z: number[] };
+  bbox: PointCloudBBox;
   token: string;
   tiledbEnv?: string;
 }

@@ -1,3 +1,4 @@
+import { PointCloudBBox } from '../../point-cloud';
 import getPointCloudLimits from '../getPointCloudLimits';
 import loadPointCloud, { LoadPointCloudOptions } from '../loadPointCloud';
 import reduceDataArrays from '../reduceDataArrays';
@@ -12,7 +13,7 @@ interface GetPointCloudOptions {
   namespace?: string;
   arrayName?: string;
   token?: string;
-  bbox?: { X: number[]; Y: number[]; Z: number[] };
+  bbox?: PointCloudBBox;
   tiledbEnv?: string;
   rgbMax?: number;
 }

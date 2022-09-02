@@ -17,7 +17,7 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "target": "es2017",
-    "types": [],
+    "types": ["jest"]
   },
   "include": ["./packages/**/src"]
 }

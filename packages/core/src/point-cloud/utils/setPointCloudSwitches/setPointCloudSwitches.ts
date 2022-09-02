@@ -1,4 +1,13 @@
-function setPointCloudSwitches(mode?: string) {
+import { PointCloudMode } from '../../point-cloud';
+
+interface PointCloudSwitches {
+  isTime: boolean;
+  isClass: boolean;
+  isTopo: boolean;
+  isGltf: boolean;
+}
+
+function setPointCloudSwitches(mode?: PointCloudMode): PointCloudSwitches {
   let isTime = false;
   let isClass = false;
   let isTopo = false;

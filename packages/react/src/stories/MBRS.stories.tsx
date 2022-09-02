@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { MbrsVisualization } from '../Mbrs/Mbrs';
-import data from './assets/mbrs_data.json';
+import data from '../../../../__mocks__/mbrs-data.json';
 
 export default {
   title: 'Visualizations/MbrsVisualization',
