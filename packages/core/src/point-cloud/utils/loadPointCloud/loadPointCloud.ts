@@ -1,7 +1,11 @@
 import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PointCloudBBox } from '../../point-cloud';
-import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
+import {
+  cacheInvalidation,
+  getQueryDataFromCache,
+  writeToCache
+} from '../../../utils/cache';
 import stringifyQuery from '../stringifyQuery';
 
 export interface Query {
@@ -16,6 +20,7 @@ export interface LoadPointCloudOptions {
   bbox: PointCloudBBox;
   token: string;
   tiledbEnv?: string;
+  cacheInvalidation?: number;
 }
 
 async function loadPointCloud(values: LoadPointCloudOptions) {
@@ -42,6 +47,10 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
       'Classification'
     ]
   };
+
+  if (values.cacheInvalidation) {
+    cacheInvalidation(values.cacheInvalidation);
+  }
 
   const queryCacheKey = stringifyQuery(
     query,

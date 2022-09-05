@@ -123,6 +123,10 @@ export interface TileDBPointCloudOptions
    * TileDB Cloud api token (if mode === "cloud")
    */
   token?: string;
+  /**
+   * Number of milliseconds to invalidate point cloud data from cache
+   */
+  cacheInvalidation?: number;
 }
 
 /**
@@ -158,6 +162,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _namespace?: string;
   private _arrayName?: string;
   private _token?: string;
+  private _cacheInvalidation?: number;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -184,6 +189,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._namespace = options.namespace;
     this._arrayName = options.arrayName;
     this._token = options.token;
+    this._cacheInvalidation = options.cacheInvalidation;
   }
 
   static async clearCache() {
@@ -257,7 +263,8 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           bbox: this._bbox,
           namespace: this._namespace,
           arrayName: this._arrayName,
-          token: this._token
+          token: this._token,
+          cacheInvalidation: this._cacheInvalidation
         });
 
       const size_x = xmax - xmin;

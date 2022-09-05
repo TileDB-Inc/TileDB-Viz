@@ -15,6 +15,7 @@ interface GetPointCloudOptions {
   token?: string;
   bbox?: PointCloudBBox;
   tiledbEnv?: string;
+  cacheInvalidation?: number;
   rgbMax?: number;
 }
 
@@ -27,7 +28,8 @@ async function getPointCloud(values: GetPointCloudOptions) {
       namespace: values.namespace,
       arrayName: values.arrayName,
       token: values.token,
-      bbox: values.bbox
+      bbox: values.bbox,
+      cacheInvalidation: values.cacheInvalidation
     } as LoadPointCloudOptions);
     if (values.mode === 'time') {
       dataIn = sortDataArrays(dataUnsorted);
