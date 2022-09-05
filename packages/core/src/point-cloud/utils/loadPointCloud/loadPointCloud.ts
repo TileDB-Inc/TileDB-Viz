@@ -50,24 +50,19 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
   );
 
   const dataFromCache = await getQueryDataFromCache(queryCacheKey);
-  console.log('dataFromCache is');
-  console.log(dataFromCache);
 
   if (dataFromCache) {
     /**
      * Don't wait for results, instead return data from cache
      */
-    // setTimeout(() => {
-    //   getResultsFromQuery(query, {
-    //     namespace: values.namespace,
-    //     arrayName: values.arrayName,
-    //     config
-    //   });
-    // }, 0);
-    console.log('=====================');
-    console.log(`Getting cached result with key ${queryCacheKey}`);
-    console.log(dataFromCache);
-    console.log('=====================');
+    setTimeout(() => {
+      getResultsFromQuery(query, {
+        namespace: values.namespace,
+        arrayName: values.arrayName,
+        config
+      });
+    }, 0);
+
     return dataFromCache;
   }
 
@@ -108,15 +103,9 @@ const getResultsFromQuery = async (
       }
     }
   }
-
   const queryCacheKey = stringifyQuery(query, namespace, arrayName);
-  console.log('=====================');
-  console.log(`Writing to cache with ${queryCacheKey}`);
-  console.log(concatenatedResults);
-  console.log('====================');
-  setTimeout(() => {
-    writeToCache(queryCacheKey, concatenatedResults);
-  }, 0);
+
+  await writeToCache(queryCacheKey, concatenatedResults);
 
   return concatenatedResults;
 };
