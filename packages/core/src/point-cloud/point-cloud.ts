@@ -1,3 +1,4 @@
+import { PointCloudData } from './utils/loadPointCloud/loadPointCloud';
 import {
   ArcRotateCamera,
   Color3,
@@ -58,7 +59,7 @@ export interface TileDBPointCloudOptions
   /**
    * Data to render [all modes]
    */
-  data: any;
+  data: PointCloudData;
   /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
@@ -154,7 +155,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _meshScale: number[];
   private _mapboxImg?: BlobPart;
   private _source: string;
-  private _data: any;
+  private _data: PointCloudData;
   private _showFraction?: number;
   private _pointShift?: number[];
   private _rgbMax?: number;
@@ -275,7 +276,6 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       const center_z = zmin + size_z / 2;
 
       const numCoords = data.X.length;
-      const times = data.GpsTime;
       const classification = data.Classification;
 
       const gltfData = this._gltfData;
@@ -403,6 +403,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         slider.background = secondColor;
 
         if (isTime) {
+          const times = data.GpsTime as number[];
           header.text = 'Time: ' + (offset + times[0]).toFixed(0);
 
           slider.maximum = times.length - 1;
@@ -444,6 +445,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
          */
         slider.onValueChangedObservable.add((value: any) => {
           if (isTime) {
+            const times = data.GpsTime as number[];
             header.text = 'Time: ' + (offset + times[value]).toFixed(0);
 
             if (value > pcs.counter) {
@@ -456,6 +458,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
             pcs.counter = value;
           }
           if (isClass) {
+            const classification = data.Classification as number[];
             const v: number = classes.numbers.indexOf(slider_classes[value]);
             header.text = classes.names[v];
 

@@ -23,7 +23,20 @@ export interface LoadPointCloudOptions {
   cacheInvalidation?: number;
 }
 
-async function loadPointCloud(values: LoadPointCloudOptions) {
+export interface PointCloudData {
+  X: number[];
+  Y: number[];
+  Z: number[];
+  Red: number[];
+  Green: number[];
+  Blue: number[];
+  Classification?: number[];
+  GpsTime?: number[];
+}
+
+async function loadPointCloud(
+  values: LoadPointCloudOptions
+): Promise<PointCloudData> {
   const config: Record<string, any> = {};
 
   config.apiKey = values.token;
@@ -81,7 +94,7 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
     config
   });
 
-  return results;
+  return results as PointCloudData;
 }
 
 const getResultsFromQuery = async (

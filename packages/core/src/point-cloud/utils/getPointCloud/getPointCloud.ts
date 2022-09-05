@@ -1,13 +1,16 @@
 import { PointCloudBBox } from '../../point-cloud';
 import getPointCloudLimits from '../getPointCloudLimits';
-import loadPointCloud, { LoadPointCloudOptions } from '../loadPointCloud';
+import loadPointCloud, {
+  LoadPointCloudOptions,
+  PointCloudData
+} from '../loadPointCloud';
 import reduceDataArrays from '../reduceDataArrays';
 import sortDataArrays from '../sortDataArrays';
 
 interface GetPointCloudOptions {
   source: string;
   mode?: string;
-  data: any;
+  data?: PointCloudData;
   showFraction?: number;
   pointShift?: number[];
   namespace?: string;
@@ -20,8 +23,8 @@ interface GetPointCloudOptions {
 }
 
 async function getPointCloud(values: GetPointCloudOptions) {
-  let dataIn: any;
-  let data: any;
+  let dataIn: PointCloudData;
+  let data: PointCloudData;
 
   if (values.source === 'cloud') {
     const dataUnsorted = await loadPointCloud({
@@ -37,7 +40,7 @@ async function getPointCloud(values: GetPointCloudOptions) {
       dataIn = dataUnsorted;
     }
   } else {
-    dataIn = values.data;
+    dataIn = values.data as PointCloudData;
   }
 
   if (values.showFraction) {
