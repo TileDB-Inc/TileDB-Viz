@@ -31,6 +31,7 @@ import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 import DragGizmos from './utils/dragGizmos';
 import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
 import pointIsInsideMesh from './utils/pointIsInsideMesh';
+import { clearCache } from '../utils/cache';
 
 export type PointCloudMode = 'time' | 'classes' | 'topo' | 'gltf';
 
@@ -183,6 +184,10 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._namespace = options.namespace;
     this._arrayName = options.arrayName;
     this._token = options.token;
+  }
+
+  static async clearCache() {
+    await clearCache();
   }
 
   protected particleLoader =

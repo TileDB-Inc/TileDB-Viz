@@ -24,3 +24,9 @@ export const writeToCache = async (key: string, data: any) => {
 
   await db.put(QUERIES_STORE, data, key);
 };
+
+export const clearCache = async () => {
+  const db = await getCacheDB();
+
+  await db.clear(QUERIES_STORE);
+};
