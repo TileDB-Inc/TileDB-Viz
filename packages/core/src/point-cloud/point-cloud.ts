@@ -17,7 +17,9 @@ import {
   FreeCamera,
   KeyboardEventTypes,
   PointerEventTypes,
-  HemisphericLight
+  HemisphericLight,
+  Particle,
+  Color4
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -176,6 +178,45 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._token = options.token;
   }
 
+  protected particleLoader =
+    (data: any, isTime: boolean, rgbMax: number) =>
+    (particle: Particle, i: number) => {
+      const distanceColors = this._distanceColors;
+      const scene = this._scene;
+      const topoOffset = this._topoOffset;
+      const scale = this.zScale;
+      // Y is up
+      particle.position = new Vector3(
+        data.X[i],
+        (data.Z[i] - topoOffset) * scale,
+        data.Y[i]
+      );
+      if (isTime) {
+        particle.color = scene.clearColor;
+        particle.position.y = (data.Z[i] - topoOffset) * scale - 100;
+      } else {
+        particle.color = new Color4(
+          data.Red[i] / rgbMax,
+          data.Green[i] / rgbMax,
+          data.Blue[i] / rgbMax
+        );
+      }
+
+      if (distanceColors) {
+        // check if inside meshes
+        particle.color.set(0, 1, 0, 1);
+        const meshesLength = scene.meshes.length;
+
+        for (let k = 0; k < meshesLength; k++) {
+          const mesh = scene.meshes[k] as Mesh;
+          const bounds = mesh.getHierarchyBoundingVectors(true);
+          if (this.pointIsInsideMesh(mesh, bounds, particle.position)) {
+            particle.color.set(1, 0, 0, 1);
+          }
+        }
+      }
+    };
+
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       const main = this;
@@ -243,51 +284,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         });
       }
 
-      const pcLoader = (particle: any, i: number, _: string) => {
-        const distanceColors = this._distanceColors;
-        // Y is up
-        particle.position = new Vector3(
-          data.X[i],
-          (data.Z[i] - topoOffset) * scale,
-          data.Y[i]
-        );
-        if (isTime) {
-          particle.color = scene.clearColor;
-          particle.position.y = (data.Z[i] - topoOffset) * scale - 100;
-        } else {
-          particle.color = new Color3(
-            data.Red[i] / rgbMax,
-            data.Green[i] / rgbMax,
-            data.Blue[i] / rgbMax
-          );
-        }
-
-        if (distanceColors) {
-          // check if inside meshes
-          let minDist = 999999999999;
-          particle.color.set(0, 1, 0, 1);
-
-          for (let i = 0; i < scene.meshes.length; i++) {
-            const mesh = scene.meshes[i] as Mesh;
-            const bounds = scene.meshes[i].getHierarchyBoundingVectors(true);
-            if (main.pointIsInsideMesh(mesh, bounds, particle.position)) {
-              particle.color.set(1, 0, 0, 1);
-              minDist = 1;
-            } else {
-              // find minimum distance
-              const dist = Math.max(
-                1,
-                particle.position
-                  .subtract(scene.meshes[i].position)
-                  .lengthSquared() * 0.0004
-              );
-              if (dist < minDist) {
-                minDist = dist;
-              }
-            }
-          }
-        }
-      };
+      const pcLoader = this.particleLoader(data, isTime, rgbMax);
 
       const tasks: Promise<any>[] = [];
       if (isGltf) {
