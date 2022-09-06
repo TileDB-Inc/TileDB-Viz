@@ -13,8 +13,6 @@ const Template = () => (
   <MbrsVisualization
     data={data.values.data}
     extents={data.values.extents}
-    width="1200"
-    height="800"
     zScale={5}
     moveSpeed={-1}
     wheelPrecision={-1}

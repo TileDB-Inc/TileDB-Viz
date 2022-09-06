@@ -3,10 +3,17 @@ import {
   TileDBMBRSVisualizationOptions,
   TileDBMBRSVisualization
 } from '@tiledb-inc/viz-core';
+import classNames from 'classnames';
 
-export const MbrsVisualization = (
-  props: Omit<TileDBMBRSVisualizationOptions, 'rootElement'>
-) => {
+interface TileDBMBRSVisualizationProps
+  extends Omit<TileDBMBRSVisualizationOptions, 'rootElement'> {
+  className?: string;
+}
+
+export const MbrsVisualization: React.FC<
+  TileDBMBRSVisualizationProps
+> = props => {
+  const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -19,5 +26,10 @@ export const MbrsVisualization = (
       visualization.render();
     }
   }, [rootDivElementRef]);
-  return <div ref={rootDivElementRef} />;
+  return (
+    <div
+      ref={rootDivElementRef}
+      className={classNames('TDB-Viz TDB-Viz--mbrs', className)}
+    />
+  );
 };

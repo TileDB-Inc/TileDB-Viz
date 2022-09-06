@@ -3,10 +3,15 @@ import {
   TileImageVisualizationOptions,
   TileDBImageVisualization
 } from '@tiledb-inc/viz-core';
+import classnames from 'classnames';
 
-export const ImageVisualization = (
-  props: Omit<TileImageVisualizationOptions, 'rootElement'>
-) => {
+interface ImageVisualizationProps
+  extends Omit<TileImageVisualizationOptions, 'rootElement'> {
+  className?: string;
+}
+
+export const ImageVisualization: React.FC<ImageVisualizationProps> = props => {
+  const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -19,5 +24,10 @@ export const ImageVisualization = (
       visualization.render();
     }
   }, [rootDivElementRef]);
-  return <div ref={rootDivElementRef} />;
+  return (
+    <div
+      className={classnames('TDB-Viz TDB-Viz--image', className)}
+      ref={rootDivElementRef}
+    />
+  );
 };

@@ -15,8 +15,6 @@ export default {
 
 const Template = () => (
   <ImageVisualization
-    width="800"
-    height="600"
     xyBbox={[11500, 14000, 11500, 14000]}
     data={uintArray.buffer}
     zScale={5}

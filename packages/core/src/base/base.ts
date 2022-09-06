@@ -7,11 +7,11 @@ export interface TileDBVisualizationBaseOptions {
   /**
    * Width of widget canvas
    */
-  width: number;
+  width?: number;
   /**
    * Height of widget canvas
    */
-  height: number;
+  height?: number;
   /**
    * Gets or Set the mouse wheel precision or how fast is the camera zooming.
    */
@@ -34,10 +34,10 @@ export interface TileDBVisualizationBaseOptions {
   rootElement: HTMLElement;
 }
 export class TileDBVisualization {
+  width: string | number;
+  height: string | number;
   canvas?: HTMLCanvasElement;
   engine?: Engine;
-  width: number;
-  height: number;
   wheelPrecision: number;
   moveSpeed: number;
   zScale: number;
@@ -45,8 +45,8 @@ export class TileDBVisualization {
   rootElement: HTMLElement;
 
   constructor(options: TileDBVisualizationBaseOptions) {
-    this.width = options.width;
-    this.height = options.height;
+    this.width = options.width || '100%';
+    this.height = options.height || '100%';
     this.wheelPrecision = options.wheelPrecision || -1;
     this.moveSpeed = options.moveSpeed || -1;
     this.zScale = options.zScale || 1;
@@ -59,9 +59,9 @@ export class TileDBVisualization {
       const { width, height } = dimensions;
       this.width = width;
       this.height = height;
+      this.canvas?.setAttribute('width', width.toString());
+      this.canvas?.setAttribute('height', height.toString());
     }
-    this.canvas?.setAttribute('width', this.width?.toString());
-    this.canvas?.setAttribute('height', this.height?.toString());
     this.engine?.resize();
   }
 
@@ -78,8 +78,11 @@ export class TileDBVisualization {
   }
 
   render(): void {
-    this.canvas = document.createElement('canvas');
-    this.canvas.classList.add('renderCanvas');
+    const canvas = document.createElement('canvas');
+    canvas.style.width = this.width.toString();
+    canvas.style.height = this.height.toString();
+    this.canvas = canvas;
+
     this.rootElement.appendChild(this.canvas);
 
     this.engine = new Engine(this.canvas, true);
