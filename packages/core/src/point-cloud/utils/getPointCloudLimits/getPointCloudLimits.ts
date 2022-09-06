@@ -1,3 +1,5 @@
+import getArrayBounds from '../../../utils/getArrayBounds';
+
 interface GetPointCloudLimitsOptions {
   bbox?: { X: number[]; Y: number[]; Z: number[] };
   pointShift?: number[];
@@ -14,41 +16,28 @@ function getPointCloudLimits(values: GetPointCloudLimitsOptions, data: any) {
   let rgbMax: number;
 
   if (values.bbox) {
-    if (values.pointShift) {
-      const [x, y, z] = values.pointShift;
-      xmin = values.bbox.X[0] + x;
-      xmax = values.bbox.X[1] + x;
-      ymin = values.bbox.Y[0] + y;
-      ymax = values.bbox.Y[1] + y;
-      zmin = values.bbox.Z[0] + z;
-      zmax = values.bbox.Z[1] + z;
-    } else {
-      xmin = values.bbox.X[0];
-      xmax = values.bbox.X[1];
-      ymin = values.bbox.Y[0];
-      ymax = values.bbox.Y[1];
-      zmin = values.bbox.Z[0];
-      zmax = values.bbox.Z[1];
-    }
+    /**
+     * In case pointShift exists add them to the respected values,
+     * otherwise default to zero.
+     */
+    const [x = 0, y = 0, z = 0] = values.pointShift || [];
+    xmin = values.bbox.X[0] + x;
+    xmax = values.bbox.X[1] + x;
+    ymin = values.bbox.Y[0] + y;
+    ymax = values.bbox.Y[1] + y;
+    zmin = values.bbox.Z[0] + z;
+    zmax = values.bbox.Z[1] + z;
   } else {
-    xmin = data.X.reduce((accum: number, currentNumber: number) =>
-      Math.min(accum, currentNumber)
-    );
-    xmax = data.X.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
-    ymin = data.Y.reduce((accum: number, currentNumber: number) =>
-      Math.min(accum, currentNumber)
-    );
-    ymax = data.Y.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
-    zmin = data.Z.reduce((accum: number, currentNumber: number) =>
-      Math.min(accum, currentNumber)
-    );
-    zmax = data.Z.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
+    const xBounds = getArrayBounds(data.X);
+    const yBounds = getArrayBounds(data.Y);
+    const zBounds = getArrayBounds(data.Z);
+
+    xmin = xBounds[0];
+    xmax = xBounds[1];
+    ymin = yBounds[0];
+    ymax = yBounds[1];
+    zmin = zBounds[0];
+    zmax = zBounds[1];
   }
 
   if (values.rgbMax) {
@@ -65,6 +54,7 @@ function getPointCloudLimits(values: GetPointCloudLimitsOptions, data: any) {
     );
     rgbMax = Math.max(redmax, greenmax, bluemax);
   }
+
   return { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax };
 }
 
