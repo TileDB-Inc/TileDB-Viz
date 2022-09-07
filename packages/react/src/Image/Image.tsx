@@ -22,6 +22,10 @@ export const ImageVisualization: React.FC<ImageVisualizationProps> = props => {
       });
 
       visualization.render();
+
+      return () => {
+        visualization.destroy();
+      };
     }
   }, [rootDivElementRef]);
   return (

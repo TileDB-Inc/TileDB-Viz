@@ -24,6 +24,10 @@ export const MbrsVisualization: React.FC<
       });
 
       visualization.render();
+
+      return () => {
+        visualization.destroy();
+      };
     }
   }, [rootDivElementRef]);
   return (

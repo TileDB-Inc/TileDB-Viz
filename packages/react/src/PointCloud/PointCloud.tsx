@@ -24,6 +24,10 @@ export const PointCloudVisuzalization: React.FC<
       });
 
       visualization.render();
+
+      return () => {
+        visualization.destroy();
+      };
     }
   }, [rootDivElementRef]);
   return (

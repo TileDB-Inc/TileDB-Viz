@@ -34,6 +34,7 @@ export interface TileDBVisualizationBaseOptions {
   rootElement: HTMLElement;
 }
 export class TileDBVisualization {
+  _scene!: Scene;
   width: string | number;
   height: string | number;
   canvas?: HTMLCanvasElement;
@@ -65,8 +66,15 @@ export class TileDBVisualization {
     this.engine?.resize();
   }
 
+  destroy() {
+    this.engine?.dispose();
+    this._scene.dispose();
+    this.canvas?.remove();
+  }
+
   protected async createScene(): Promise<Scene> {
     const scene = new Scene(this.engine as Engine);
+    this._scene = scene;
 
     if (this.inspector) {
       scene.debugLayer.show({
