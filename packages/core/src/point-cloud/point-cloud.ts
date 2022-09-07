@@ -120,7 +120,6 @@ export interface TileDBPointCloudOptions
  *
  */
 export class TileDBPointCloudVisualization extends TileDBVisualization {
-  private _scene!: Scene;
   private _utilLayer!: UtilityLayerRenderer;
   private _movedAfterClick = false;
   private _shiftPressed = false;
@@ -220,7 +219,6 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       const main = this;
-      this._scene = scene;
 
       const { isTime, isClass, isTopo, isGltf } = setPointCloudSwitches(
         this._mode
