@@ -245,8 +245,6 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
           namespace: this._namespace,
           arrayName: this._arrayName,
           token: this._token
-        }).then(results => {
-          return results;
         });
 
       const size_x = xmax - xmin;
