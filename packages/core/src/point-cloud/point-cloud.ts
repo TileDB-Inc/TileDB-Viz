@@ -198,7 +198,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   }
 
   protected particleLoader =
-    (data: any, isTime: boolean, rgbMax: number) =>
+    (data: PointCloudData, isTime: boolean, rgbMax: number) =>
     (particle: Particle, i: number) => {
       const distanceColors = this._distanceColors;
       const scene = this._scene;
