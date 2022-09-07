@@ -4,6 +4,7 @@ import { PointCloudVisuzalization } from '../PointCloud/PointCloud';
 import data from './assets/data.json';
 import gltfData from './assets/gltf_data.json';
 import boulderData from './assets/boulder.json';
+import timeData from './assets/point_cloud_time.json';
 
 export default {
   title: 'Visualizations/PointCloudVisuzalization',
@@ -27,5 +28,9 @@ const Template = () => (
 );
 
 export const PointCloud = Template.bind({});
+
+export const TimeMode = () => (
+  <PointCloudVisuzalization data={timeData} mode="time" />
+);
 
 export const Boulder = () => <PointCloudVisuzalization data={boulderData} />;
