@@ -56,13 +56,14 @@ export class TileDBVisualization {
   }
 
   resizeCanvas(dimensions?: { width: number; height: number }): void {
+    const width = dimensions?.width || this.width;
+    const height = dimensions?.height || this.height;
     if (dimensions) {
-      const { width, height } = dimensions;
-      this.width = width;
-      this.height = height;
-      this.canvas?.setAttribute('width', width.toString());
-      this.canvas?.setAttribute('height', height.toString());
+      this.width = dimensions.width;
+      this.height = dimensions.height;
     }
+    this.canvas?.setAttribute('width', width.toString());
+    this.canvas?.setAttribute('height', height.toString());
     this.engine?.resize();
   }
 
