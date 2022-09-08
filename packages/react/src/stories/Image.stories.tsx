@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { ImageVisualization } from '../Image/Image';
-import imageBuffer from './assets/image_data.json';
+import imageBuffer from '../../../../__mocks__/image-data.json';
 interface JSONInterface {
   data: number[];
   type: 'Buffer';

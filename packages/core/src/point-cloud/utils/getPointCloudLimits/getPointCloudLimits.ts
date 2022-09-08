@@ -1,7 +1,8 @@
 import getArrayBounds from '../../../utils/getArrayBounds';
+import { PointCloudBBox } from '../../point-cloud';
 
 interface GetPointCloudLimitsOptions {
-  bbox?: { X: number[]; Y: number[]; Z: number[] };
+  bbox?: PointCloudBBox;
   pointShift?: number[];
   rgbMax?: number;
 }

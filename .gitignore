@@ -1,6 +1,9 @@
 # Build files
 packages/**/lib
 
+# Test coverage
+packages/**/coverage
+
 # node_modules
 node_modules
 packages/**/node_modules

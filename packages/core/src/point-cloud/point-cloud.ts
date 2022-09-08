@@ -32,6 +32,14 @@ import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 import { DragGizmos } from '../utils/drag_gizmos';
 import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
 
+export type PointCloudMode = 'time' | 'classes' | 'topo' | 'gltf';
+
+export interface PointCloudBBox {
+  X: number[];
+  Y: number[];
+  Z: number[];
+}
+
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
   /**
@@ -41,7 +49,7 @@ export interface TileDBPointCloudOptions
    * topo: add a mapbox base layer
    * gltf: add gltf meshes
    */
-  mode?: 'time' | 'classes' | 'topo' | 'gltf';
+  mode?: PointCloudMode;
   /**
    * Color scheme
    */
@@ -101,7 +109,7 @@ export interface TileDBPointCloudOptions
   /**
    * The min and max values of x, y and z
    */
-  bbox?: { X: number[]; Y: number[]; Z: number[] };
+  bbox?: PointCloudBBox;
   /**
    * Namespace of the array registered in TileDB Cloud (if mode === "cloud")
    */
@@ -127,7 +135,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _axes: Array<DragGizmos> = new Array<DragGizmos>();
   private _cameras: Array<Camera> = new Array<Camera>();
   private _currCamera: int = 0;
-  private _mode?: string;
+  private _mode?: PointCloudMode;
   private _colorScheme: string;
   private _gltfData: any;
   private _pointSize: number;
@@ -145,7 +153,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _showFraction?: number;
   private _pointShift?: number[];
   private _rgbMax?: number;
-  private _bbox?: { X: number[]; Y: number[]; Z: number[] };
+  private _bbox?: PointCloudBBox;
   private _namespace?: string;
   private _arrayName?: string;
   private _token?: string;

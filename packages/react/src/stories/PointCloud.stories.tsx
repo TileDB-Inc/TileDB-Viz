@@ -1,10 +1,10 @@
 import React from 'react';
 
 import { PointCloudVisuzalization } from '../PointCloud/PointCloud';
-import data from './assets/data.json';
-import gltfData from './assets/gltf_data.json';
-import boulderData from './assets/boulder.json';
-import timeData from './assets/point_cloud_time.json';
+import data from '../../../../__mocks__/point-cloud-data.json';
+import gltfData from '../../../../__mocks__/gltf-data.json';
+import boulderData from '../../../../__mocks__/boulder.json';
+import timeData from '../../../../__mocks__/point-cloud-time-data.json';
 
 export default {
   title: 'Visualizations/PointCloudVisuzalization',
@@ -21,7 +21,7 @@ export default {
 const Template = () => (
   <PointCloudVisuzalization
     gltfData={gltfData}
-    data={data.data}
+    data={data}
     mode="gltf"
     pointSize={5}
   />
