@@ -23,9 +23,11 @@ const getCacheDB = async () => {
 export const getQueryDataFromCache = async (key: string) => {
   const db = await getCacheDB();
   const value = await db.get(QUERIES_STORE, key);
-  const { namespace, arrayName } = deserializeQueryFromKey(key);
+  if (value) {
+    const { namespace, arrayName } = deserializeQueryFromKey(key);
 
-  checkActivityAndInvalidate(namespace, arrayName);
+    checkActivityAndInvalidate(namespace, arrayName);
+  }
   return value;
 };
 
@@ -55,11 +57,16 @@ const checkActivityAndInvalidate = async (
 
 const getLatestWriteActivity = async (namespace: string, arrayName: string) => {
   const client = getTileDBClient();
-  const response = await client.ArrayApi.arrayActivityLog(namespace, arrayName);
-  const activities = response.data;
-  const latestWriteActivity = activities.find(
-    activity => activity.action === 'query_write'
+  const response = await client.arrayActivity(
+    namespace,
+    arrayName,
+    undefined,
+    undefined,
+    'query_write'
   );
+  const writeActivities = response.data || [];
+  const [latestWriteActivity] = writeActivities;
+
   if (latestWriteActivity) {
     const eventTimestamp = new Date(latestWriteActivity.event_at as string);
     return Number(eventTimestamp);
