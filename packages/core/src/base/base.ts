@@ -2,6 +2,8 @@ import { Engine, Scene, SceneLoader } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
+import { RERENDER_EVT } from '../constants';
+import pubSub from '../utils/pubSub';
 
 export interface TileDBVisualizationBaseOptions {
   /**
@@ -53,7 +55,13 @@ export class TileDBVisualization {
     this.zScale = options.zScale || 1;
     this.inspector = options.inspector;
     this.rootElement = options.rootElement;
+
+    pubSub.removeAllListeners(RERENDER_EVT);
   }
+
+  rerenderCanvas = async () => {
+    this.createScene();
+  };
 
   resizeCanvas(dimensions?: { width: number; height: number }): void {
     const width = dimensions?.width || this.width;
@@ -71,6 +79,7 @@ export class TileDBVisualization {
     this.engine?.dispose();
     this._scene.dispose();
     this.canvas?.remove();
+    pubSub.removeAllListeners(RERENDER_EVT);
   }
 
   protected async createScene(): Promise<Scene> {
@@ -91,6 +100,7 @@ export class TileDBVisualization {
     canvas.style.width = this.width.toString();
     canvas.style.height = this.height.toString();
     this.canvas = canvas;
+    pubSub.subscribe(RERENDER_EVT, this.rerenderCanvas);
 
     this.rootElement.appendChild(this.canvas);
 

@@ -1,6 +1,8 @@
 import { openDB } from 'idb/with-async-ittr';
+import { RERENDER_EVT } from '../../constants';
 import deserializeQueryFromKey from '../../point-cloud/utils/deserializeQueryFromKey';
 import getTileDBClient from '../getTileDBClient';
+import pubSub from '../pubSub';
 
 const DB_NAME = 'TILEDB_VIZ_CACHE';
 const DB_VERSION = 1;
@@ -40,7 +42,14 @@ const checkActivityAndInvalidate = async (
 ) => {
   const timestamp = await getLatestWriteActivity(namespace, arrayName);
   if (timestamp) {
-    await invalidateCacheBeforeTimestamp(timestamp, namespace, arrayName);
+    const deletedKeys = await invalidateCacheBeforeTimestamp(
+      timestamp,
+      namespace,
+      arrayName
+    );
+    if (deletedKeys.length) {
+      pubSub.publish(RERENDER_EVT);
+    }
   }
 };
 
@@ -65,6 +74,7 @@ const invalidateCacheBeforeTimestamp = async (
   arrayName: string
 ) => {
   const db = await getCacheDB();
+  const deletedKeys = [];
 
   const index = db
     .transaction(QUERIES_STORE, 'readwrite')
@@ -75,8 +85,11 @@ const invalidateCacheBeforeTimestamp = async (
 
     if (entry.arrayName === arrayName && entry.namespace === namespace) {
       await cursor.delete();
+      deletedKeys.push(cursor.primaryKey);
     }
   }
+
+  return deletedKeys;
 };
 
 export const clearCache = async () => {
