@@ -18,33 +18,31 @@ interface GetPointCloudOptions {
   token?: string;
   bbox?: PointCloudBBox;
   tiledbEnv?: string;
-  cacheInvalidation?: number;
   rgbMax?: number;
 }
 
-async function getPointCloud(values: GetPointCloudOptions) {
+async function getPointCloud(config: GetPointCloudOptions) {
   let dataIn: PointCloudData;
   let data: PointCloudData;
 
-  if (values.source === 'cloud') {
+  if (config.source === 'cloud') {
     const dataUnsorted = await loadPointCloud({
-      namespace: values.namespace,
-      arrayName: values.arrayName,
-      token: values.token,
-      bbox: values.bbox,
-      cacheInvalidation: values.cacheInvalidation
+      namespace: config.namespace,
+      arrayName: config.arrayName,
+      token: config.token,
+      bbox: config.bbox
     } as LoadPointCloudOptions);
-    if (values.mode === 'time') {
+    if (config.mode === 'time') {
       dataIn = sortDataArrays(dataUnsorted);
     } else {
       dataIn = dataUnsorted;
     }
   } else {
-    dataIn = values.data as PointCloudData;
+    dataIn = config.data as PointCloudData;
   }
 
-  if (values.showFraction) {
-    data = reduceDataArrays(dataIn, values.showFraction);
+  if (config.showFraction) {
+    data = reduceDataArrays(dataIn, config.showFraction);
   } else {
     data = dataIn;
   }
@@ -52,9 +50,9 @@ async function getPointCloud(values: GetPointCloudOptions) {
   // eslint-disable-next-line
   let { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } = getPointCloudLimits(
     {
-      bbox: values.bbox,
-      pointShift: values.pointShift,
-      rgbMax: values.rgbMax
+      bbox: config.bbox,
+      pointShift: config.pointShift,
+      rgbMax: config.rgbMax
     },
     data
   );
@@ -71,8 +69,8 @@ async function getPointCloud(values: GetPointCloudOptions) {
   zmin = 0;
 
   // shift points with user defined values (optional)
-  if (values.pointShift) {
-    const [x, y, z] = values.pointShift;
+  if (config.pointShift) {
+    const [x, y, z] = config.pointShift;
     data.X = data.X.map((n: any) => n + x);
     data.Y = data.Y.map((n: any) => n + y);
     data.Z = data.Z.map((n: any) => n + z);

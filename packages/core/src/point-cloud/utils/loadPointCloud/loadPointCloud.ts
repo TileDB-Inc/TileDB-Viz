@@ -1,7 +1,7 @@
-import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PointCloudBBox } from '../../point-cloud';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
+import getTileDBClient from '../../../utils/getTileDBClient';
 import stringifyQuery from '../stringifyQuery';
 
 export interface Query {
@@ -16,7 +16,6 @@ export interface LoadPointCloudOptions {
   bbox: PointCloudBBox;
   token: string;
   tiledbEnv?: string;
-  cacheInvalidation?: number;
 }
 
 export interface PointCloudData {
@@ -62,7 +61,7 @@ async function loadPointCloud(
     config.namespace,
     config.arrayName
   );
-
+  const tiledbClient = getTileDBClient(tiledbClientConfig);
   const dataFromCache = await getQueryDataFromCache(queryCacheKey);
 
   if (dataFromCache) {
@@ -72,8 +71,7 @@ async function loadPointCloud(
   const results = await getResultsFromQuery(query, {
     namespace: config.namespace,
     arrayName: config.arrayName,
-    cacheInvalidation: config.cacheInvalidation,
-    config: tiledbClientConfig
+    tiledbClient
   });
 
   return results as PointCloudData;
@@ -84,12 +82,10 @@ const getResultsFromQuery = async (
   options: {
     namespace: string;
     arrayName: string;
-    config: Record<string, unknown>;
-    cacheInvalidation?: number;
+    tiledbClient: ReturnType<typeof getTileDBClient>;
   }
 ) => {
-  const { namespace, arrayName, config, cacheInvalidation } = options;
-  const tiledbClient = new Client(config);
+  const { namespace, arrayName, tiledbClient } = options;
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
@@ -110,7 +106,7 @@ const getResultsFromQuery = async (
   }
   const queryCacheKey = stringifyQuery(query, namespace, arrayName);
 
-  await writeToCache(queryCacheKey, concatenatedResults, cacheInvalidation);
+  await writeToCache(queryCacheKey, concatenatedResults);
 
   return concatenatedResults;
 };
