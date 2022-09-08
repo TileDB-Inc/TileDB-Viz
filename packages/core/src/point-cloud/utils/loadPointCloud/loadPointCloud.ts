@@ -31,19 +31,19 @@ export interface PointCloudData {
 }
 
 async function loadPointCloud(
-  values: LoadPointCloudOptions
+  config: LoadPointCloudOptions
 ): Promise<PointCloudData> {
-  const config: Record<string, any> = {};
+  const tiledbClientConfig: Record<string, any> = {};
 
-  config.apiKey = values.token;
+  tiledbClientConfig.apiKey = config.token;
 
-  if (values.tiledbEnv) {
-    config.basePath = values.tiledbEnv;
+  if (config.tiledbEnv) {
+    tiledbClientConfig.basePath = config.tiledbEnv;
   }
 
   const query: Query = {
     layout: Layout.RowMajor,
-    ranges: [values.bbox.X, values.bbox.Y, values.bbox.Z],
+    ranges: [config.bbox.X, config.bbox.Y, config.bbox.Z],
     bufferSize: 150000000000,
     attributes: [
       'X',
@@ -59,33 +59,21 @@ async function loadPointCloud(
 
   const queryCacheKey = stringifyQuery(
     query,
-    values.namespace,
-    values.arrayName
+    config.namespace,
+    config.arrayName
   );
 
   const dataFromCache = await getQueryDataFromCache(queryCacheKey);
 
   if (dataFromCache) {
-    /**
-     * Don't wait for results, instead return data from cache
-     */
-    setTimeout(() => {
-      getResultsFromQuery(query, {
-        namespace: values.namespace,
-        arrayName: values.arrayName,
-        cacheInvalidation: values.cacheInvalidation,
-        config
-      });
-    }, 0);
-
     return dataFromCache;
   }
 
   const results = await getResultsFromQuery(query, {
-    namespace: values.namespace,
-    arrayName: values.arrayName,
-    cacheInvalidation: values.cacheInvalidation,
-    config
+    namespace: config.namespace,
+    arrayName: config.arrayName,
+    cacheInvalidation: config.cacheInvalidation,
+    config: tiledbClientConfig
   });
 
   return results as PointCloudData;
