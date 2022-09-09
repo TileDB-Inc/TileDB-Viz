@@ -1,7 +1,15 @@
-import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PointCloudBBox } from '../../point-cloud';
+import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
+import getTileDBClient from '../../../utils/getTileDBClient';
+import stringifyQuery from '../stringifyQuery';
 
+export interface Query {
+  layout: Layout;
+  ranges: number[][];
+  bufferSize: number;
+  attributes: string[];
+}
 export interface LoadPointCloudOptions {
   namespace: string;
   arrayName: string;
@@ -10,25 +18,31 @@ export interface LoadPointCloudOptions {
   tiledbEnv?: string;
 }
 
-async function loadPointCloud(values: LoadPointCloudOptions) {
-  const config: Record<string, any> = {};
+export interface PointCloudData {
+  X: number[];
+  Y: number[];
+  Z: number[];
+  Red: number[];
+  Green: number[];
+  Blue: number[];
+  Classification?: number[];
+  GpsTime?: number[];
+}
 
-  config.apiKey = values.token;
+async function loadPointCloud(
+  config: LoadPointCloudOptions
+): Promise<PointCloudData> {
+  const tiledbClientConfig: Record<string, any> = {};
 
-  if (values.tiledbEnv) {
-    config.basePath = values.tiledbEnv;
+  tiledbClientConfig.apiKey = config.token;
+
+  if (config.tiledbEnv) {
+    tiledbClientConfig.basePath = config.tiledbEnv;
   }
 
-  const tiledbClient = new Client(config);
-
-  const query: {
-    layout: any;
-    ranges: number[][];
-    bufferSize: number;
-    attributes: any;
-  } = {
-    layout: Layout.Unordered,
-    ranges: [values.bbox.X, values.bbox.Y, values.bbox.Z],
+  const query: Query = {
+    layout: Layout.RowMajor,
+    ranges: [config.bbox.X, config.bbox.Y, config.bbox.Z],
     bufferSize: 150000000000,
     attributes: [
       'X',
@@ -41,12 +55,43 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
       'Classification'
     ]
   };
+
+  const queryCacheKey = stringifyQuery(
+    query,
+    config.namespace,
+    config.arrayName
+  );
+  const tiledbClient = getTileDBClient(tiledbClientConfig);
+  const dataFromCache = await getQueryDataFromCache(queryCacheKey);
+
+  if (dataFromCache) {
+    return dataFromCache;
+  }
+
+  const results = await getResultsFromQuery(query, {
+    namespace: config.namespace,
+    arrayName: config.arrayName,
+    tiledbClient
+  });
+
+  return results as PointCloudData;
+}
+
+const getResultsFromQuery = async (
+  query: Query,
+  options: {
+    namespace: string;
+    arrayName: string;
+    tiledbClient: ReturnType<typeof getTileDBClient>;
+  }
+) => {
+  const { namespace, arrayName, tiledbClient } = options;
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
   for await (const results of tiledbClient.query.ReadQuery(
-    values.namespace,
-    values.arrayName,
+    namespace,
+    arrayName,
     query
   )) {
     for (const [attributeKey, attributeValues] of Object.entries(results)) {
@@ -59,7 +104,11 @@ async function loadPointCloud(values: LoadPointCloudOptions) {
       }
     }
   }
+  const queryCacheKey = stringifyQuery(query, namespace, arrayName);
+
+  await writeToCache(queryCacheKey, concatenatedResults);
+
   return concatenatedResults;
-}
+};
 
 export default loadPointCloud;

@@ -1,3 +1,4 @@
+import { PointCloudData } from './utils/loadPointCloud/loadPointCloud';
 import {
   ArcRotateCamera,
   Color3,
@@ -8,7 +9,6 @@ import {
   MeshBuilder,
   Vector3,
   Texture,
-  Axis,
   Camera,
   int,
   Mesh,
@@ -29,8 +29,10 @@ import {
   TextBlock
 } from 'babylonjs-gui';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
-import { DragGizmos } from '../utils/drag_gizmos';
+import DragGizmos from './utils/dragGizmos';
 import { getPointCloud, setPointCloudSwitches, setSceneColors } from './utils';
+import pointIsInsideMesh from './utils/pointIsInsideMesh';
+import { clearCache } from '../utils/cache';
 
 export type PointCloudMode = 'time' | 'classes' | 'topo' | 'gltf';
 
@@ -57,7 +59,7 @@ export interface TileDBPointCloudOptions
   /**
    * Data to render [all modes]
    */
-  data: any;
+  data: PointCloudData;
   /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
@@ -149,7 +151,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
   private _meshScale: number[];
   private _mapboxImg?: BlobPart;
   private _source: string;
-  private _data: any;
+  private _data: PointCloudData;
   private _showFraction?: number;
   private _pointShift?: number[];
   private _rgbMax?: number;
@@ -185,8 +187,12 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     this._token = options.token;
   }
 
+  static async clearCache() {
+    await clearCache();
+  }
+
   protected particleLoader =
-    (data: any, isTime: boolean, rgbMax: number) =>
+    (data: PointCloudData, isTime: boolean, rgbMax: number) =>
     (particle: Particle, i: number) => {
       const distanceColors = this._distanceColors;
       const scene = this._scene;
@@ -217,7 +223,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         for (let k = 0; k < meshesLength; k++) {
           const mesh = scene.meshes[k] as Mesh;
           const bounds = mesh.getHierarchyBoundingVectors(true);
-          if (this.pointIsInsideMesh(mesh, bounds, particle.position)) {
+          if (pointIsInsideMesh(mesh, bounds, particle.position)) {
             particle.color.set(1, 0, 0, 1);
           }
         }
@@ -263,7 +269,6 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
       const center_z = zmin + size_z / 2;
 
       const numCoords = data.X.length;
-      const times = data.GpsTime;
       const classification = data.Classification;
 
       const gltfData = this._gltfData;
@@ -391,6 +396,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
         slider.background = secondColor;
 
         if (isTime) {
+          const times = data.GpsTime as number[];
           header.text = 'Time: ' + (offset + times[0]).toFixed(0);
 
           slider.maximum = times.length - 1;
@@ -432,6 +438,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
          */
         slider.onValueChangedObservable.add((value: any) => {
           if (isTime) {
+            const times = data.GpsTime as number[];
             header.text = 'Time: ' + (offset + times[value]).toFixed(0);
 
             if (value > pcs.counter) {
@@ -444,6 +451,7 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
             pcs.counter = value;
           }
           if (isClass) {
+            const classification = data.Classification as number[];
             const v: number = classes.numbers.indexOf(slider_classes[value]);
             header.text = classes.names[v];
 
@@ -734,45 +742,5 @@ export class TileDBPointCloudVisualization extends TileDBVisualization {
     } else {
       this.unselectAll();
     }
-  }
-
-  pointIsInsideMesh(
-    mesh: Mesh,
-    boundInfo: { min: Vector3; max: Vector3 },
-    point: Vector3
-  ): boolean {
-    const max = boundInfo.max.add(mesh.position);
-    const min = boundInfo.min.add(mesh.position);
-    const diameter = max.subtract(min).length() * 2;
-
-    if (point.x < min.x || point.x > max.x) {
-      return false;
-    }
-
-    if (point.y < min.y || point.y > max.y) {
-      return false;
-    }
-
-    if (point.z < min.z || point.z > max.z) {
-      return false;
-    }
-
-    const directions: Vector3[] = [
-      new Vector3(0, 1, 0),
-      //new Vector3(0, -1, 0),
-      new Vector3(-0.89, 0.45, 0),
-      new Vector3(0.89, 0.45, 0)
-    ];
-
-    const ray = new Ray(point, Axis.X, diameter);
-
-    for (let c = 0; c < directions.length; c++) {
-      ray.direction = directions[c];
-      if (!ray.intersectsMesh(mesh).hit) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

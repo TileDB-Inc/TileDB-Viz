@@ -37,7 +37,8 @@
     "@babylonjs/serializers": "^5.21.0",
     "@tiledb-inc/tiledb-cloud": "^1.0.8",
     "babylonjs-gui": "^4.2.2",
-    "babylonjs-materials": "^5.21.0"
+    "babylonjs-materials": "^5.21.0",
+    "idb": "^7.0.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.18.10",
