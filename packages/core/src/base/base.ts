@@ -36,7 +36,6 @@ export interface TileDBVisualizationBaseOptions {
   rootElement: HTMLElement;
 }
 export class TileDBVisualization {
-  _scene!: Scene;
   width: string | number;
   height: string | number;
   canvas?: HTMLCanvasElement;
@@ -64,19 +63,17 @@ export class TileDBVisualization {
   };
 
   resizeCanvas(dimensions?: { width: number; height: number }): void {
-    const width = dimensions?.width || this.width;
-    const height = dimensions?.height || this.height;
     if (dimensions) {
-      this.width = dimensions.width;
-      this.height = dimensions.height;
+      const { width, height } = dimensions;
+      this.width = width;
+      this.height = height;
+      this.canvas?.setAttribute('width', width.toString());
+      this.canvas?.setAttribute('height', height.toString());
     }
-    this.canvas?.setAttribute('width', width.toString());
-    this.canvas?.setAttribute('height', height.toString());
     this.engine?.resize();
   }
 
   destroy() {
-    this._scene?.dispose();
     this.engine?.dispose();
     this.canvas?.remove();
     pubSub.removeAllListeners(RERENDER_EVT);
@@ -84,7 +81,6 @@ export class TileDBVisualization {
 
   protected async createScene(): Promise<Scene> {
     const scene = new Scene(this.engine as Engine);
-    this._scene = scene;
 
     if (this.inspector) {
       scene.debugLayer.show({
