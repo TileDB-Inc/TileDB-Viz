@@ -5,13 +5,13 @@ import {
 } from '@tiledb-inc/viz-core';
 import classnames from 'classnames';
 
-interface PointCloudVisuzalizationProps
+interface PointCloudVisualizationProps
   extends Omit<TileDBPointCloudOptions, 'rootElement'> {
   className?: string;
 }
 
-export const PointCloudVisuzalization: React.FC<
-  PointCloudVisuzalizationProps
+export const PointCloudVisualization: React.FC<
+  PointCloudVisualizationProps
 > = props => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);

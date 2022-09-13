@@ -1,14 +1,21 @@
-import getPointCloud from './getPointCloud';
-import getPointCloudLimits from './getPointCloudLimits';
-import loadPointCloud from './loadPointCloud';
-import reduceArrays from './reduceArrays';
-import reduceDataArrays from './reduceDataArrays';
-import setPointCloudSwitches from './setPointCloudSwitches';
-import setSceneColors from './setSceneColors';
-import sortArrays from './sortArrays';
-import sortDataArrays from './sortDataArrays';
+import {
+  setPointCloudSwitches,
+  getNonEmptyDomain,
+  getPointCloud,
+  getPointCloudLimits,
+  loadPointCloud,
+  TileDBPointCloudOptions
+} from './tiledb-pc';
+import setSceneColors from './scene-colors';
+import {
+  reduceArrays,
+  reduceDataArrays,
+  sortArrays,
+  sortDataArrays
+} from './arrays';
 
 export {
+  getNonEmptyDomain,
   getPointCloud,
   getPointCloudLimits,
   loadPointCloud,
@@ -17,5 +24,6 @@ export {
   setPointCloudSwitches,
   setSceneColors,
   sortArrays,
-  sortDataArrays
+  sortDataArrays,
+  TileDBPointCloudOptions
 };

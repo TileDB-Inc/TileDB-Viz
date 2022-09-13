@@ -1,14 +1,14 @@
 import React from 'react';
 
-import { PointCloudVisuzalization } from '../PointCloud/PointCloud';
+import { PointCloudVisualization } from '../PointCloud/PointCloud';
 import data from '../../../../__mocks__/point-cloud-data.json';
 import gltfData from '../../../../__mocks__/gltf-data.json';
 import boulderData from '../../../../__mocks__/boulder.json';
 import timeData from '../../../../__mocks__/point-cloud-time-data.json';
 
 export default {
-  title: 'Visualizations/PointCloudVisuzalization',
-  component: PointCloudVisuzalization,
+  title: 'Visualizations/PointCloudVisualization',
+  component: PointCloudVisualization,
   argTypes: {
     color_scheme: {
       control: 'select',
@@ -19,7 +19,7 @@ export default {
 };
 
 const Template = () => (
-  <PointCloudVisuzalization
+  <PointCloudVisualization
     gltfData={gltfData}
     data={data}
     mode="gltf"
@@ -30,7 +30,19 @@ const Template = () => (
 export const PointCloud = Template.bind({});
 
 export const TimeMode = () => (
-  <PointCloudVisuzalization data={timeData} mode="time" />
+  <PointCloudVisualization data={timeData} mode="time" />
 );
 
-export const Boulder = () => <PointCloudVisuzalization data={boulderData} />;
+export const Boulder = () => <PointCloudVisualization data={boulderData} />;
+
+const token = '';
+export const Streamer = () => (
+  <PointCloudVisualization
+    streaming={true}
+    arrayName={'arrayName'}
+    namespace={'namespace'}
+    token={token}
+    height={100}
+    maxLevels={4}
+  />
+);
