@@ -8,7 +8,7 @@ import {
 } from '@babylonjs/core';
 import { SparsePoint } from '../model';
 
-let blockId=0;
+let blockId = 0;
 
 class PointOctree extends Octree<SparsePoint> {
   constructor(maxBlockCapacity: number, maxDepth: number) {

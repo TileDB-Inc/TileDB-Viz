@@ -29,6 +29,10 @@ const Template = () => (
 
 export const PointCloud = Template.bind({});
 
+export const TimeMode = () => (
+  <PointCloudVisualization data={timeData} mode="time" />
+);
+
 export const Boulder = () => <PointCloudVisualization data={boulderData} />;
 
 const token = '';
