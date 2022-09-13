@@ -76,8 +76,8 @@ export class TileDBVisualization {
   }
 
   destroy() {
+    this._scene?.dispose();
     this.engine?.dispose();
-    this._scene.dispose();
     this.canvas?.remove();
     pubSub.removeAllListeners(RERENDER_EVT);
   }

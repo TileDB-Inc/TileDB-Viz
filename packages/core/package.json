@@ -20,12 +20,13 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
-  "packageManager": "yarn@3.2.2",
+  "packageManager": "yarn@3.2.3",
   "scripts": {
     "test": "jest",
-    "build": "rm -rf lib && rm -f tsconfig.tsbuildinfo && tsc",
-    "lint": "eslint './src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
+    "clean": "rm -rf lib && rm -f tsconfig.tsbuildinfo",
+    "build": "yarn clean && yarn g:tsc",
+    "lint": "yarn g:eslint './src/**/*.{ts,tsx}'",
+    "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
     "@babylonjs/core": "^5.21.0",
@@ -42,7 +43,6 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.18.10",
-    "@babel/preset-typescript": "^7.18.6",
-    "@types/jest": "^29.0.0"
+    "@babel/preset-typescript": "^7.18.6"
   }
 }
