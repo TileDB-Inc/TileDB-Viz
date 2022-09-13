@@ -22,53 +22,17 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    */
   data: any;
   /**
-   * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
-   */
-  gltfData?: any;
-  /**
-   * Move the point cloud along the z-axis to better align with the mapbox base layer [mode='topo']
-   */
-  topoOffset?: number;
-  /**
-   * Lookup table with the index and names of all classes [mode='classes']
-   */
-  classes?: { names: string[]; numbers: number[] };
-  /**
    * Time offset
    */
   timeOffset?: number;
-  /**
-   * Size of the points
-   */
-  pointSize?: number;
-  /**
-   * Perform clash detection between mesh and point cloud if true
-   */
-  distanceColors?: boolean;
-  /**
-   * Blob mpabox image png image as blob
-   */
-  mapboxImg?: BlobPart;
-  /**
-   * Rotate the mesh with [alpha,beta,gamma]
-   */
-  meshRotation?: number[];
-  /**
-   * Shift the mesh with [x,y,z]
-   */
-  meshShift?: number[];
-  /**
-   * Scale the size [x,y,z] of the mesh
-   */
-  meshScale?: number[];
-  /**
-   * gltfData is an array with blobs when true
-   */
-  gltfMulti?: boolean;
   source?: 'dict' | 'cloud';
   showFraction?: number;
   pointShift?: number[];
-  rgbMax?: number;
+  /**
+   * Scale the z values of each point
+   */
+  zScale?: number;
+  rgbMax?: number;   
   /**
    * The min and max values of x, y and z
    */
@@ -218,7 +182,6 @@ async function loadPointCloud(options: TileDBPointCloudOptions) {
       'Green',
       'Blue',
       'GpsTime',
-      'Classification'
     ]
   };
 

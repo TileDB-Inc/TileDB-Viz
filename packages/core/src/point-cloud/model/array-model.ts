@@ -36,6 +36,7 @@ class ArrayModel {
   refreshRate: number;
   particleType: string;
   particleSize: number;
+  zScale: number;
   translateX = 0;
   translateY = 0;
   translateZ = 0;
@@ -52,6 +53,7 @@ class ArrayModel {
     this.pointBudget = options.pointBudget || 2_000_000;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.1;
+    this.zScale = options.zScale || 1.0;
   }
 
   private getActiveBlocks(scene: Scene, acc: Array<PointOctreeBlock>) {
@@ -237,9 +239,12 @@ class ArrayModel {
         }
         this.sps.buildMesh();
 
+        console.log("ArrayModel zScale");
+        console.log(this.zScale);
+    
         for (let i = 0; i < this.sps.nbParticles; i++) {
           const p = pts.data[i];
-          this.sps.particles[i].position = new Vector3(p.x, p.y, p.z);
+          this.sps.particles[i].position = new Vector3(p.x, p.y * this.zScale, p.z);
           this.sps.particles[i].color = new Color4(p.red, p.green, p.blue);
         }
 

@@ -17,6 +17,10 @@ export interface TileDBMBRSVisualizationOptions
    */
   data: any;
   /**
+   * Scale the z values of each point
+   */
+  zScale?: number;
+  /**
    * The extends (min/max) of each mbrs
    */
   extents: number[];
@@ -24,11 +28,13 @@ export interface TileDBMBRSVisualizationOptions
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
   private _data: any;
+  private _zScale: any;
   private _extents: number[];
 
   constructor(options: TileDBMBRSVisualizationOptions) {
     super(options);
     this._data = options.data;
+    this._zScale = options.zScale;
     this._extents = options.extents;
   }
 
@@ -45,7 +51,7 @@ export class TileDBMBRSVisualization extends TileDBVisualization {
         Math.max(maxx) - Math.min(minx),
         Math.max(maxy) - Math.min(miny)
       );
-      const scale = this.zScale;
+      const scale = this._zScale;
 
       // set up camera
       scene.createDefaultCameraOrLight(true, true, true);

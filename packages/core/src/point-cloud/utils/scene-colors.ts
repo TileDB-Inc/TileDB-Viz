@@ -4,15 +4,17 @@
 import { Color4 } from '@babylonjs/core';
 
 function setSceneColors(colorScheme: string) {
-  let backgroundColor: Color4;
-  let accentColor: string;
-  let secondColor: string;
-  let textColor: string;
+  let backgroundColor: Color4 = new Color4(0, 24 / 255, 92 / 255, 1);
+  let accentColor: string = '#CC0055';
+  let secondColor: string = '#C7C7C7';
+  let textColor: string = '#F5F7FA';
 
-  backgroundColor = new Color4(0, 24 / 255, 92 / 255, 1);
-  accentColor = '#CC0055';
-  secondColor = '#C7C7C7';
-  textColor = '#F5F7FA';
+  if (colorScheme === 'dark') {
+    backgroundColor = new Color4(0, 24 / 255, 92 / 255, 1);
+    accentColor = '#CC0055';
+    secondColor = '#C7C7C7';
+    textColor = '#F5F7FA';
+  }
   if (colorScheme === 'dark') {
     backgroundColor = new Color4(28 / 255, 28 / 255, 28 / 255, 1);
     accentColor = '#C7C7C7';

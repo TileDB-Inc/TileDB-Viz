@@ -7,27 +7,19 @@ import pubSub from '../utils/pubSub';
 
 export interface TileDBVisualizationBaseOptions {
   /**
-   * Width of widget canvas
+   * Width of the widget canvas
    */
   width?: number;
   /**
-   * Height of widget canvas
+   * Height of the widget canvas
    */
   height?: number;
   /**
-   * Gets or Set the mouse wheel precision or how fast is the camera zooming.
+   * Gets or Set the mouse wheel precision or how fast the camera is zooming.
    */
   wheelPrecision?: number;
   /**
-   * When camera view in first-person determines how fast to move
-   */
-  moveSpeed?: number;
-  /**
-   * Scale the z values of each point
-   */
-  zScale?: number;
-  /**
-   * Show BabylonJS inspector
+   * Show the BabylonJS inspector
    */
   inspector?: boolean;
   /**
@@ -41,8 +33,6 @@ export class TileDBVisualization {
   canvas?: HTMLCanvasElement;
   engine?: Engine;
   wheelPrecision: number;
-  moveSpeed: number;
-  zScale: number;
   inspector?: boolean;
   rootElement: HTMLElement;
 
@@ -50,8 +40,6 @@ export class TileDBVisualization {
     this.width = options.width || '100%';
     this.height = options.height || '100%';
     this.wheelPrecision = options.wheelPrecision || -1;
-    this.moveSpeed = options.moveSpeed || -1;
-    this.zScale = options.zScale || 1;
     this.inspector = options.inspector;
     this.rootElement = options.rootElement;
 
@@ -63,13 +51,14 @@ export class TileDBVisualization {
   };
 
   resizeCanvas(dimensions?: { width: number; height: number }): void {
+    const width = dimensions?.width || this.width;
+    const height = dimensions?.height || this.height;
     if (dimensions) {
-      const { width, height } = dimensions;
-      this.width = width;
-      this.height = height;
-      this.canvas?.setAttribute('width', width.toString());
-      this.canvas?.setAttribute('height', height.toString());
+      this.width = dimensions.width;
+      this.height = dimensions.height;
     }
+    this.canvas?.setAttribute('width', width.toString());
+    this.canvas?.setAttribute('height', height.toString());
     this.engine?.resize();
   }
 
