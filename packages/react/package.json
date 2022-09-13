@@ -21,13 +21,13 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
-  "packageManager": "yarn@3.2.2",
+  "packageManager": "yarn@3.2.3",
   "scripts": {
     "build": "parcel build",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
-    "lint": "eslint './src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
+    "lint": "yarn g:eslint './src/**/*.{ts,tsx}'",
+    "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
     "@tiledb-inc/viz-core": "workspace:^",
