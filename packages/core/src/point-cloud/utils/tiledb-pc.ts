@@ -98,11 +98,7 @@ async function getPointCloud(options: TileDBPointCloudOptions) {
   if (!options.streaming) {
     if (options.source === 'cloud') {
       const dataUnsorted = await loadPointCloud(options);
-      //if (options.mode === 'time') {
-      //  dataIn = sortDataArrays(dataUnsorted);
-      //} else {
       dataIn = dataUnsorted;
-      //}
     } else {
       dataIn = options.data;
     }
