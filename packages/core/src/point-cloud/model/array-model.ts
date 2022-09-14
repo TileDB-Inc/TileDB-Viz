@@ -119,7 +119,7 @@ class ArrayModel {
     ymax: number,
     zmin: number,
     zmax: number,
-    rgbMax?: number,
+    rgbMax: number,
     data?: SparseResult
   ) {
     this.sps = new SolidParticleSystem('sps', scene, { expandable: true });
@@ -145,7 +145,7 @@ class ArrayModel {
 
     this.octree = new PointOctree(this.maxBlockCapacity, this.depth);
     this.octree.update(this.minVector, this.maxVector, [], -1);
-
+    
     // maintain compatibility with directly loading data
     if (data) {
       this.octree.blocks.forEach(block => {
@@ -155,9 +155,9 @@ class ArrayModel {
             x: data.X[p] - this.translateX,
             y: data.Z[p] - this.translateY,
             z: data.Y[p] - this.translateZ,
-            red: data.Red[p],
-            green: data.Green[p],
-            blue: data.Blue[p]
+            red: data.Red[p] / rgbMax,
+            green: data.Green[p] / rgbMax,
+            blue: data.Blue[p] / rgbMax
           });
           b.lod++;
         }
@@ -239,9 +239,6 @@ class ArrayModel {
         }
         this.sps.buildMesh();
 
-        console.log("ArrayModel zScale");
-        console.log(this.zScale);
-    
         for (let i = 0; i < this.sps.nbParticles; i++) {
           const p = pts.data[i];
           this.sps.particles[i].position = new Vector3(p.x, p.y * this.zScale, p.z);

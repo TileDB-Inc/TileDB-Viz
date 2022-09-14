@@ -31,8 +31,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this._scene = scene;
 
-      console.log(this._options);
-
       /**
        * Load point cloud data extents and data if bound
        */

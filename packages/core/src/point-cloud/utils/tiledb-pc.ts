@@ -145,7 +145,8 @@ async function getPointCloud(options: TileDBPointCloudOptions) {
       ymin: dom[2],
       ymax: dom[3],
       zmin: dom[4],
-      zmax: dom[5]
+      zmax: dom[5],
+      rgbMax: 1
     };
   }
 }
@@ -256,9 +257,10 @@ function getPointCloudLimits(options: TileDBPointCloudOptions, data: any) {
     );
     rgbMax = Math.max(redmax, greenmax, bluemax);
   }
-
   return { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax };
 }
+
+
 
 function setPointCloudSwitches(mode?: string) {
   let isTime = false;
