@@ -29,11 +29,11 @@ const Template = () => (
 
 export const PointCloud = Template.bind({});
 
-export const TimeMode = () => (
-  <PointCloudVisualization data={timeData} mode="time" />
-);
-
-export const Boulder = () => <PointCloudVisualization data={boulderData} />;
+export const Boulder = () => 
+  <PointCloudVisualization 
+    data={boulderData} 
+    color_scheme={'light'} 
+  />;
 
 const token = '';
 export const Streamer = () => (

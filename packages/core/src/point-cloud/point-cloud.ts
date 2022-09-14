@@ -8,7 +8,7 @@ import {
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
-import { getPointCloud } from './utils';
+import { getPointCloud, setSceneColors } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 
@@ -36,6 +36,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
        */
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._options);
+
+      const sceneColors = setSceneColors(this._options.colorScheme!);
+
+      scene.clearColor = sceneColors.backgroundColor;
 
       const defaultRadius = 25;
       const camera = new ArcRotateCamera(

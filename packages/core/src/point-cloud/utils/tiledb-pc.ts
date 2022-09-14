@@ -2,7 +2,7 @@ import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { TileDBVisualizationBaseOptions } from '../../base';
 import getArrayBounds from '../../utils/getArrayBounds';
-import { reduceDataArrays, sortDataArrays } from './arrays';
+import { reduceDataArrays } from './arrays';
 
 interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
   /**
@@ -12,7 +12,7 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    * topo: add a mapbox base layer
    * gltf: add gltf meshes
    */
-  mode?: 'time' | 'classes' | 'topo' | 'gltf';
+  mode?: 'default';
   /**
    * Color scheme
    */
@@ -21,10 +21,6 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    * Data to render [all modes]
    */
   data: any;
-  /**
-   * Time offset
-   */
-  timeOffset?: number;
   source?: 'dict' | 'cloud';
   showFraction?: number;
   pointShift?: number[];
@@ -102,11 +98,11 @@ async function getPointCloud(options: TileDBPointCloudOptions) {
   if (!options.streaming) {
     if (options.source === 'cloud') {
       const dataUnsorted = await loadPointCloud(options);
-      if (options.mode === 'time') {
-        dataIn = sortDataArrays(dataUnsorted);
-      } else {
-        dataIn = dataUnsorted;
-      }
+      //if (options.mode === 'time') {
+      //  dataIn = sortDataArrays(dataUnsorted);
+      //} else {
+      dataIn = dataUnsorted;
+      //}
     } else {
       dataIn = options.data;
     }
