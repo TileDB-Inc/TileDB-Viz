@@ -23,7 +23,7 @@
   },
   "packageManager": "yarn@3.2.3",
   "scripts": {
-    "build": "parcel build",
+    "build": "yarn g:parcel build",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
     "lint": "yarn g:eslint './src/**/*.{ts,tsx}'",
