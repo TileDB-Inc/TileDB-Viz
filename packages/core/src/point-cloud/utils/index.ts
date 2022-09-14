@@ -3,9 +3,9 @@ import {
   getNonEmptyDomain,
   getPointCloud,
   getPointCloudLimits,
-  loadPointCloud,
-  TileDBPointCloudOptions
+  loadPointCloud
 } from './tiledb-pc';
+import type { TileDBPointCloudOptions } from './tiledb-pc';
 import setSceneColors from './scene-colors';
 import {
   reduceArrays,
@@ -13,6 +13,8 @@ import {
   sortArrays,
   sortDataArrays
 } from './arrays';
+
+export type { TileDBPointCloudOptions };
 
 export {
   getNonEmptyDomain,
@@ -24,6 +26,5 @@ export {
   setPointCloudSwitches,
   setSceneColors,
   sortArrays,
-  sortDataArrays,
-  TileDBPointCloudOptions
+  sortDataArrays
 };
