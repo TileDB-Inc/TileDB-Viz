@@ -2,14 +2,14 @@ import {
   Color4,
   MeshBuilder,
   Scene,
-  SmartArray,
+  SolidParticle,
   SolidParticleSystem,
   Vector3
 } from '@babylonjs/core';
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
 
-import { PointOctree, PointOctreeBlock } from '../octree';
-import { SparsePoint, SparseResult } from '.';
+import { Moctree, MoctreeBlock } from '../octree';
+import { SparseResult } from '.';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 
 /**
@@ -18,94 +18,127 @@ import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 class ArrayModel {
   arrayName?: string;
   namespace?: string;
-  octree!: PointOctree;
+  octree!: Moctree;
   bufferSize: number;
+  particleScale: number;
   minVector!: Vector3;
   maxVector!: Vector3;
   rgbMax?: number;
-  maxLevel?: number;
+  maxLevel: number;
   tiledbQuery!: TileDBQuery;
   tiledbClient!: TileDBClient;
   token?: string;
-  depth: number;
-  maxBlockCapacity: number;
-  isDirty = false;
   sps!: SolidParticleSystem;
   frame = 0;
-  pointBudget: number;
   refreshRate: number;
   particleType: string;
   particleSize: number;
   translateX = 0;
   translateY = 0;
   translateZ = 0;
+  pickedBlockCode = 0;
+  renderBlocks: MoctreeBlock[] = [];
+  particleSystems: SolidParticleSystem[] = [];
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
     this.namespace = options.namespace;
-    this.depth = options.depth || 10;
     this.token = options.token;
-    this.maxBlockCapacity = options.maxBlockCapacity || 5000;
     this.bufferSize = options.bufferSize || 200000000;
-    this.maxLevel = options.maxLevels;
+    this.particleScale = options.particleScale || 0.001;
+    this.maxLevel = options.maxLevels || 1;
     this.refreshRate = options.refreshRate || 15;
-    this.pointBudget = options.pointBudget || 2_000_000;
     this.particleType = options.particleType || 'box';
-    this.particleSize = options.particleSize || 0.1;
+    this.particleSize = options.particleSize || 0.05;
   }
 
-  private getActiveBlocks(scene: Scene, acc: Array<PointOctreeBlock>) {
-    this.octree.blocks.forEach(block => {
-      (block as PointOctreeBlock).getActiveBlocks(scene, acc);
-    });
-    return acc;
-  }
+  private loadSystem(index: number, result: SparseResult) {
+    const trans_x = this.translateX;
+    const trans_y = this.translateY;
+    const trans_z = this.translateZ;
+    const sps = this.particleSystems[index];
+    let numPoints = result.X.length;
 
-  private async fetchData(block: PointOctreeBlock) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    if (++block.lod < this.maxLevel!) {
-      block.loading = true; // stop future updates on this block while the data is retrieved
-      // load points into block
-      const ranges = [
-        [
-          block.minPoint.x + this.translateX,
-          block.maxPoint.x + this.translateX
-        ],
-        [
-          block.minPoint.z + this.translateZ, // Y is Z
-          block.maxPoint.z + this.translateZ
-        ],
-        [block.minPoint.y + this.translateY, block.maxPoint.y + this.translateY]
-      ];
-
-      const queryData = {
-        layout: 'row-major',
-        ranges: ranges,
-        attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
-        bufferSize: this.bufferSize
-      } as QueryData;
-
-      for await (const results of this.tiledbQuery.ReadQuery(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this.namespace!,
-        this.arrayName + '_' + block.lod,
-        queryData
-      )) {
-        const r = results as SparseResult;
-        for (let p = 0; p < r.X.length; p++) {
-          block.addEntry({
-            x: r.X[p] - this.translateX,
-            y: r.Z[p] - this.translateY,
-            z: r.Y[p] - this.translateZ,
-            red: r.Red[p],
-            green: r.Green[p],
-            blue: r.Blue[p]
-          });
-        }
-
-        this.isDirty = true;
-        block.loading = false;
+    const pointBuilder = function (particle: SolidParticle, i: number) {
+      // set properties of particle
+      particle.position.set(
+        result.X[i] - trans_x,
+        result.Z[i] - trans_y,
+        result.Y[i] - trans_z
+      );
+      if (particle.color) {
+        particle.color?.set(result.Red[i], result.Green[i], result.Blue[i], 1);
+      } else {
+        particle.color = new Color4(
+          result.Red[i],
+          result.Green[i],
+          result.Blue[i]
+        );
       }
+    };
+    if (index === 0) {
+      // immutable SPS for LoD 0
+      const particle = MeshBuilder.CreateBox(this.particleType, {
+        size: this.particleSize // TODO scale particle size according to index level
+      });
+      // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
+      sps.addShape(particle, numPoints, {
+        positionFunction: pointBuilder
+      });
+      particle.dispose();
+      sps.buildMesh();
+    } else {
+      if (numPoints > sps.nbParticles) {
+        numPoints = numPoints - sps.nbParticles;
+        const particle = MeshBuilder.CreateBox(this.particleType, {
+          size: this.particleSize + index * this.particleScale // increase particle point size for higher LODs
+        });
+        sps.addShape(particle, numPoints);
+        particle.dispose();
+      } else {
+        // TODO cache removed particles to save future creation time
+        sps.removeParticles(numPoints, sps.nbParticles);
+      }
+      sps.buildMesh();
+
+      // set particle properties
+      for (let i = 0; i < sps.nbParticles; i++) {
+        pointBuilder(sps.particles[i], i);
+      }
+      sps.setParticles();
+      // we didn't use a position function when creating particles so refresh bbox so we can pick
+      sps.refreshVisibleSize();
+    }
+  }
+
+  private async fetchData(block: MoctreeBlock) {
+    block.loading = true; // stop future updates on this block while the data is retrieved
+
+    // load points into block
+    const ranges = [
+      [block.minPoint.x + this.translateX, block.maxPoint.x + this.translateX],
+      [
+        block.minPoint.z + this.translateZ, // Y is Z
+        block.maxPoint.z + this.translateZ
+      ],
+      [block.minPoint.y + this.translateY, block.maxPoint.y + this.translateY]
+    ];
+
+    const queryData = {
+      layout: 'row-major',
+      ranges: ranges,
+      attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
+      bufferSize: this.bufferSize
+    } as QueryData;
+
+    for await (const results of this.tiledbQuery.ReadQuery(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.namespace!,
+      this.arrayName + '_' + block.lod,
+      queryData
+    )) {
+      block.entries = results as SparseResult;
+      block.loading = false;
     }
   }
 
@@ -120,7 +153,23 @@ class ArrayModel {
     rgbMax?: number,
     data?: SparseResult
   ) {
-    this.sps = new SolidParticleSystem('sps', scene, { expandable: true });
+    for (let i = 0; i < this.maxLevel; i++) {
+      if (i === 0) {
+        this.particleSystems.push(
+          new SolidParticleSystem('sps_0', scene, {
+            expandable: false,
+            isPickable: true
+          })
+        );
+      } else {
+        this.particleSystems.push(
+          new SolidParticleSystem('sps_' + i, scene, {
+            expandable: true,
+            isPickable: true
+          })
+        );
+      }
+    }
 
     const config = {
       apiKey: this.token
@@ -141,117 +190,72 @@ class ArrayModel {
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
 
-    this.octree = new PointOctree(this.maxBlockCapacity, this.depth);
-    this.octree.update(this.minVector, this.maxVector, [], -1);
+    this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
     // maintain compatibility with directly loading data
     if (data) {
-      this.octree.blocks.forEach(block => {
-        for (let p = 0; p < data.X.length; p++) {
-          const b = block as PointOctreeBlock;
-          b.addEntry({
-            x: data.X[p] - this.translateX,
-            y: data.Z[p] - this.translateY,
-            z: data.Y[p] - this.translateZ,
-            red: data.Red[p],
-            green: data.Green[p],
-            blue: data.Blue[p]
-          });
-          b.lod++;
-        }
-      });
-      this.isDirty = true;
+      // load into first SPS
+      this.loadSystem(0, data);
     } else {
       scene.onAfterRenderObservable.add(scene => {
         this.afterRender(scene);
       });
     }
-    scene.onBeforeRenderObservable.add(scene => {
-      this.beforeRender(scene);
-    });
     return scene;
   }
 
-  public select(scene: Scene): SmartArray<SparsePoint> | undefined {
-    if (scene.frustumPlanes) {
-      return this.octree.select(scene.frustumPlanes, true);
-    } else {
-      return undefined;
-    }
-  }
-
   public async fetchPoints(scene: Scene) {
-    const activeBlocks = this.getActiveBlocks(
-      scene,
-      new Array<PointOctreeBlock>()
-    );
-    // load all data at lod zero for the scene
-    activeBlocks.forEach(async (block: PointOctreeBlock) => {
-      if (!block.loading) {
-        if (block.lod === -1) {
-          this.fetchData(block);
+    // fully load immutable layer
+    if (this.particleSystems[0].nbParticles > 0) {
+      // find centre point and load higher resolution around it
+      if (scene.activeCamera) {
+        const ray = scene.activeCamera.getForwardRay();
+        const pickingInfo = ray.intersectsMesh(this.particleSystems[0].mesh);
+        if (pickingInfo.pickedPoint !== null) {
+          const pickCode = this.octree.getCode(
+            pickingInfo.pickedPoint,
+            this.maxLevel
+          ).code;
+
+          if (pickCode !== this.pickedBlockCode) {
+            // start loading high resolution from the lowest block, find parent blocks and load next resolution and so on up
+            this.pickedBlockCode = pickCode;
+            this.renderBlocks = this.octree.getParentBlocks(
+              pickingInfo.pickedPoint,
+              this.maxLevel
+            );
+          }
         }
-      }
-    });
-    // find centre block
-    let centreBlock: PointOctreeBlock | undefined;
-    for (let b = 0; b < activeBlocks.length; b++) {
-      const blk = activeBlocks[b];
-      if (!blk.loading) {
-        if (scene.activeCamera) {
-          const ray = scene.activeCamera.getForwardRay();
-          if (ray.intersectsBoxMinMax(blk.minPoint, blk.maxPoint)) {
-            if (!centreBlock || blk.minPoint.y < centreBlock.minPoint.y) {
-              centreBlock = blk;
-            }
+        if (this.renderBlocks.length > 0) {
+          const block = this.renderBlocks.pop();
+          // fetch if not cached
+          if (block && !block.entries) {
+            await this.fetchData(block);
+          }
+          if (block?.entries) {
+            this.loadSystem(block.lod, block.entries);
           }
         }
       }
-    }
-    if (centreBlock) {
-      this.fetchData(centreBlock);
-    }
-  }
-
-  public beforeRender(scene: Scene) {
-    if (this.isDirty && this.frame % this.refreshRate === 0) {
-      const pts = this.select(scene);
-      if (pts) {
-        this.isDirty = false;
-        // expand as needed
-        if (pts.length > this.sps.nbParticles) {
-          const particle = MeshBuilder.CreateBox(this.particleType, {
-            size: this.particleSize
-          });
-          let n = pts.length - this.sps.nbParticles;
-
-          if (pts.length > this.pointBudget) {
-            console.log('Exceeded point budget in render');
-            n = this.pointBudget - this.sps.nbParticles;
-          }
-
-          this.sps.addShape(particle, n);
-          particle.dispose();
-        } else {
-          this.sps.removeParticles(pts.length, this.sps.nbParticles);
+    } else {
+      // load immutable layer first and wait
+      const block = this.octree.blocks[0][0];
+      if (!block.entries && !block.loading) {
+        await this.fetchData(block);
+        if (block.entries) {
+          this.loadSystem(0, block.entries);
         }
-        this.sps.buildMesh();
-
-        for (let i = 0; i < this.sps.nbParticles; i++) {
-          const p = pts.data[i];
-          this.sps.particles[i].position = new Vector3(p.x, p.y, p.z);
-          this.sps.particles[i].color = new Color4(p.red, p.green, p.blue);
-        }
-
-        this.sps.setParticles();
       }
     }
-    this.frame++;
   }
 
   public afterRender(scene: Scene) {
-    // load point after render asynchronously
-    this.fetchPoints(scene);
+    if (
+      this.frame % this.refreshRate === 0 ||
+      !this.particleSystems[0].nbParticles
+    ) {
+      this.fetchPoints(scene);
+    }
   }
 }
 

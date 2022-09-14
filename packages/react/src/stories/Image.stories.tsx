@@ -8,7 +8,7 @@ interface JSONInterface {
 }
 const uintArray = Uint8Array.from((imageBuffer as JSONInterface).data);
 export default {
-  title: 'Visualizations/ImageVisuazalization',
+  title: 'Visualizations/ImageVisualization',
   component: ImageVisualization,
   argTypes: {}
 };

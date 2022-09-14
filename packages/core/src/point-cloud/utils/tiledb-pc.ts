@@ -94,10 +94,6 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    */
   depth?: number;
   /**
-   * Maximum capacity for each octree block before splitting
-   */
-  maxBlockCapacity?: number;
-  /**
    * TileDB query buffer size
    */
   bufferSize?: number;
@@ -114,10 +110,6 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    */
   refreshRate?: number;
   /**
-   * Maximum number of points
-   */
-  pointBudget?: number;
-  /**
    * Select particle rendering type, 'box' is supported for now
    */
   particleType?: string;
@@ -125,6 +117,10 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
    * Particle size
    */
   particleSize?: number;
+  /**
+   * Particle scale, the increase in particle size between resolution levels
+   */
+  particleScale?: number;
   /**
    * Camera radius
    */
