@@ -35,12 +35,14 @@ export const TimeMode = () => (
 
 export const Boulder = () => <PointCloudVisualization data={boulderData} />;
 
-const token = '';
+const token = process.env.STORYBOOK_REST_TOKEN;
+const namespace = process.env.STORYBOOK_NAMESPACE;
+const arrayName = process.env.STORYBOOK_ARRAY_NAME;
 export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}
-    arrayName={'arrayName'}
-    namespace={'namespace'}
+    arrayName={arrayName}
+    namespace={namespace}
     token={token}
     height={100}
     maxLevels={4}
