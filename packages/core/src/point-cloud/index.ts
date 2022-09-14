@@ -1,4 +1,5 @@
 import TileDBPointCloudVisualization from './point-cloud';
-import { TileDBPointCloudOptions } from './utils';
+import type { TileDBPointCloudOptions } from './utils';
 
-export { TileDBPointCloudVisualization, TileDBPointCloudOptions };
+export { TileDBPointCloudVisualization };
+export type { TileDBPointCloudOptions };

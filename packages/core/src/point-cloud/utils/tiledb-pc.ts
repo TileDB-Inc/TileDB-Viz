@@ -4,7 +4,8 @@ import { TileDBVisualizationBaseOptions } from '../../base';
 import getArrayBounds from '../../utils/getArrayBounds';
 import { reduceDataArrays, sortDataArrays } from './arrays';
 
-interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
+export interface TileDBPointCloudOptions
+  extends TileDBVisualizationBaseOptions {
   /**
    * Optional modes
    * time: add an interactive time slider
@@ -127,7 +128,7 @@ interface TileDBPointCloudOptions extends TileDBVisualizationBaseOptions {
   cameraRadius?: number;
 }
 
-async function getPointCloud(options: TileDBPointCloudOptions) {
+export async function getPointCloud(options: TileDBPointCloudOptions) {
   let dataIn: any;
   let data: any;
 
@@ -182,7 +183,7 @@ async function getPointCloud(options: TileDBPointCloudOptions) {
   }
 }
 
-async function loadPointCloud(options: TileDBPointCloudOptions) {
+export async function loadPointCloud(options: TileDBPointCloudOptions) {
   const config: Record<string, any> = {};
 
   config.apiKey = options.token;
@@ -241,7 +242,10 @@ async function loadPointCloud(options: TileDBPointCloudOptions) {
   return concatenatedResults;
 }
 
-function getPointCloudLimits(options: TileDBPointCloudOptions, data: any) {
+export function getPointCloudLimits(
+  options: TileDBPointCloudOptions,
+  data: any
+) {
   let xmin: number;
   let xmax: number;
   let ymin: number;
@@ -293,7 +297,7 @@ function getPointCloudLimits(options: TileDBPointCloudOptions, data: any) {
   return { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax };
 }
 
-function setPointCloudSwitches(mode?: string) {
+export function setPointCloudSwitches(mode?: string) {
   let isTime = false;
   let isClass = false;
   let isTopo = false;
@@ -311,7 +315,7 @@ function setPointCloudSwitches(mode?: string) {
   return { isTime, isClass, isTopo, isGltf };
 }
 
-async function getNonEmptyDomain(
+export async function getNonEmptyDomain(
   options: TileDBPointCloudOptions
 ): Promise<number[]> {
   const config: Record<string, any> = {};
@@ -332,12 +336,3 @@ async function getNonEmptyDomain(
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return resp.data.nonEmptyDomain.float64!;
 }
-
-export {
-  setPointCloudSwitches,
-  getNonEmptyDomain,
-  getPointCloud,
-  getPointCloudLimits,
-  loadPointCloud,
-  TileDBPointCloudOptions
-};
