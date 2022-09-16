@@ -10,7 +10,7 @@ import {
 } from '@babylonjs/core';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 
-export interface TileImageVisualizationOptions
+export interface TileDBImageVisualizationOptions
   extends TileDBVisualizationBaseOptions {
   /**
    * Data to render [all modes]
@@ -25,7 +25,7 @@ export class TileDBImageVisualization extends TileDBVisualization {
   private _data: any;
   private _xyBbox: number[];
 
-  constructor(options: TileImageVisualizationOptions) {
+  constructor(options: TileDBImageVisualizationOptions) {
     super(options);
     this._data = options.data;
     this._xyBbox = options.xyBbox;

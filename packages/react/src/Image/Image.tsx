@@ -1,37 +1,56 @@
 import React from 'react';
 import {
-  TileImageVisualizationOptions,
+  TileDBImageVisualizationOptions,
   TileDBImageVisualization
 } from '@tiledb-inc/viz-core';
-import classnames from 'classnames';
+import classNames from 'classnames';
 
-interface ImageVisualizationProps
-  extends Omit<TileImageVisualizationOptions, 'rootElement'> {
+interface TileDBImageVisualizationProps
+  extends Omit<TileDBImageVisualizationOptions, 'rootElement'> {
   className?: string;
 }
 
-export const ImageVisualization: React.FC<ImageVisualizationProps> = props => {
+export const ImageVisualization: React.FC<
+  TileDBImageVisualizationProps
+> = props => {
   const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
+  const instanceRef = React.useRef<TileDBImageVisualization>()
 
   React.useEffect(() => {
+    if (instanceRef.current) {
+      /**
+       * Destroy current canvas on prop change
+       */
+      instanceRef.current?.destroy();
+    }
     if (rootDivElementRef.current) {
-      const visualization = new TileDBImageVisualization({
+      /**
+       * Create visualization instance
+       */
+       instanceRef.current = new TileDBImageVisualization({
         ...props,
         rootElement: rootDivElementRef.current
       });
 
-      visualization.render();
+      /**
+       * Render canvas
+       */
+       instanceRef.current?.render();
 
-      return () => {
-        visualization.destroy();
-      };
-    }
-  }, [rootDivElementRef]);
+       /**
+        * Destroy canvas on unmount
+        */
+       return () => {
+         instanceRef.current?.destroy();
+       };
+     }
+  }, [props]);
+
   return (
     <div
-      className={classnames('TDB-Viz TDB-Viz--image', className)}
       ref={rootDivElementRef}
+      className={classNames('TDB-Viz TDB-Viz--image', className)}
     />
   );
 };
