@@ -15,21 +15,38 @@ export const PointCloudVisualization: React.FC<
 > = props => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
+  const instanceRef = React.useRef<TileDBPointCloudVisualization>()
 
   React.useEffect(() => {
+    if (instanceRef.current) {
+      /**
+       * Destroy current canvas on prop change
+       */
+      instanceRef.current?.destroy();
+    }
     if (rootDivElementRef.current) {
-      const visualization = new TileDBPointCloudVisualization({
+      /**
+       * Create visualization instance
+       */
+      instanceRef.current = new TileDBPointCloudVisualization({
         ...rest,
         rootElement: rootDivElementRef.current
       });
 
-      visualization.render();
+      /**
+       * Render canvas
+       */
+      instanceRef.current?.render();
 
+      /**
+       * Destroy canvas on unmount
+       */
       return () => {
-        visualization.destroy();
+        instanceRef.current?.destroy();
       };
     }
-  }, [rootDivElementRef]);
+  }, [props]);
+
   return (
     <div
       ref={rootDivElementRef}

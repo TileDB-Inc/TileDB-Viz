@@ -15,21 +15,38 @@ export const MbrsVisualization: React.FC<
 > = props => {
   const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
+  const instanceRef = React.useRef<TileDBMBRSVisualization>()
 
   React.useEffect(() => {
+    if (instanceRef.current) {
+      /**
+       * Destroy current canvas on prop change
+       */
+      instanceRef.current?.destroy();
+    }
     if (rootDivElementRef.current) {
-      const visualization = new TileDBMBRSVisualization({
+      /**
+       * Create visualization instance
+       */
+       instanceRef.current = new TileDBMBRSVisualization({
         ...props,
         rootElement: rootDivElementRef.current
       });
 
-      visualization.render();
+      /**
+       * Render canvas
+       */
+       instanceRef.current?.render();
 
-      return () => {
-        visualization.destroy();
-      };
-    }
-  }, [rootDivElementRef]);
+       /**
+        * Destroy canvas on unmount
+        */
+       return () => {
+         instanceRef.current?.destroy();
+       };
+     }
+  }, [props]);
+
   return (
     <div
       ref={rootDivElementRef}

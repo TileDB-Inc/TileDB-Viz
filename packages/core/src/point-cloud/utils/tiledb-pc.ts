@@ -21,7 +21,7 @@ export interface TileDBPointCloudOptions
   /**
    * Data to render [all modes]
    */
-  data: any;
+  data?: any;
   /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
