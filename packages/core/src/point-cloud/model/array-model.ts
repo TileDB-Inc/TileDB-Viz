@@ -11,6 +11,9 @@ import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
 import { Moctree, MoctreeBlock } from '../octree';
 import { SparseResult } from '.';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
+import getTileDBClient from '../../utils/getTileDBClient';
+import stringifyQuery from '../utils/stringifyQuery';
+import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 
 /**
  * The ArrayModel manages to the local octree
@@ -131,6 +134,20 @@ class ArrayModel {
       bufferSize: this.bufferSize
     } as QueryData;
 
+    const queryCacheKey = stringifyQuery(
+      queryData,
+      this.namespace as string,
+      this.arrayName + '_' + block.lod
+    );
+
+    const dataFromCache = await getQueryDataFromCache(queryCacheKey);
+
+    if (dataFromCache) {
+      block.entries = dataFromCache as SparseResult;
+      block.loading = false;
+      return;
+    }
+
     for await (const results of this.tiledbQuery.ReadQuery(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.namespace!,
@@ -139,6 +156,7 @@ class ArrayModel {
     )) {
       block.entries = results as SparseResult;
       block.loading = false;
+      await writeToCache(queryCacheKey, results);
     }
   }
 
@@ -174,7 +192,7 @@ class ArrayModel {
     const config = {
       apiKey: this.token
     };
-    this.tiledbClient = new TileDBClient(config);
+    this.tiledbClient = getTileDBClient(config);
     this.tiledbQuery = this.tiledbClient.query;
 
     this.rgbMax = rgbMax;

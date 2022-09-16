@@ -1,13 +1,10 @@
-import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { QueryData } from '@tiledb-inc/tiledb-cloud';
 
-export interface Query {
-  layout: Layout;
-  ranges: number[][];
-  bufferSize: number;
-  attributes: string[];
-}
-
-const stringifyQuery = (query: Query, namespace: string, arrayName: string) => {
+const stringifyQuery = (
+  query: QueryData,
+  namespace: string,
+  arrayName: string
+) => {
   return `${namespace}/${arrayName}/${query.ranges}`;
 };
 

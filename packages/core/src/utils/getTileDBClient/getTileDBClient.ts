@@ -4,13 +4,16 @@ const getTileDBClient = () => {
   let client: Client | undefined;
 
   return (config?: Client['config']) => {
-    if (client) {
+    // If there is a client already instatiated with an api key return it
+    if (client?.config.apiKey) {
       return client;
     }
 
-    client = new Client(config);
+    if (config) {
+      client = new Client(config);
+    }
 
-    return client;
+    return new Client();
   };
 };
 

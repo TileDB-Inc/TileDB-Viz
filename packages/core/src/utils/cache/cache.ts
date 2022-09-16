@@ -1,6 +1,7 @@
 import { openDB } from 'idb/with-async-ittr';
 import { RERENDER_EVT } from '../../constants';
 import deserializeQueryFromKey from '../../point-cloud/utils/deserializeQueryFromKey';
+import debounce from '../debounce';
 import getTileDBClient from '../getTileDBClient';
 import pubSub from '../pubSub';
 
@@ -25,8 +26,7 @@ export const getQueryDataFromCache = async (key: string) => {
   const value = await db.get(QUERIES_STORE, key);
   if (value) {
     const { namespace, arrayName } = deserializeQueryFromKey(key);
-
-    checkActivityAndInvalidate(namespace, arrayName);
+    checkArrayActivityAndInvalidate(namespace, arrayName);
   }
   return value;
 };
@@ -34,7 +34,6 @@ export const getQueryDataFromCache = async (key: string) => {
 export const writeToCache = async (key: string, data: any) => {
   const db = await getCacheDB();
   const now = Date.now();
-
   await db.put(QUERIES_STORE, Object.assign(data, { __timestamp: now }), key);
 };
 
@@ -55,8 +54,17 @@ const checkActivityAndInvalidate = async (
   }
 };
 
+const checkArrayActivityAndInvalidate = debounce(
+  checkActivityAndInvalidate,
+  5000
+);
+
 const getLatestWriteActivity = async (namespace: string, arrayName: string) => {
   const client = getTileDBClient();
+
+  if (!client) {
+    return;
+  }
   const response = await client.arrayActivity(
     namespace,
     arrayName,
