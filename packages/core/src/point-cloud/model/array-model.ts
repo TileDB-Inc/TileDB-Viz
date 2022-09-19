@@ -10,15 +10,13 @@ import {
 import { Moctree, MoctreeBlock } from '../octree';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 import getTileDBClient from '../../utils/getTileDBClient';
-import stringifyQuery from '../utils/stringifyQuery';
-import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import {
-  //   DataRequest,
-  //   InitialRequest,
-  SparseResult
-  //   WorkerType
+  DataRequest,
+  InitialRequest,
+  SparseResult,
+  WorkerType
 } from './sparse-result';
-import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
+import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 
 /**
  * The ArrayModel manages to the local octree
@@ -47,7 +45,7 @@ class ArrayModel {
   particleSystems: SolidParticleSystem[] = [];
   tiledbClient!: TileDBClient;
   tiledbQuery!: TileDBQuery;
-  // worker?: Worker;
+  worker?: Worker;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -97,7 +95,7 @@ class ArrayModel {
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
-          size: this.particleSize // TODO scale particle size according to index level
+          size: this.particleSize
         });
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
@@ -133,79 +131,29 @@ class ArrayModel {
     }
   }
 
-  // private onData(evt: MessageEvent) {
-  //   const block = evt.data as MoctreeBlock;
-  //   this.octree.blocks[block.lod][block.mortonNumber] = block;
-  //   // TODO we should load in afterRender so we can see if the block is in frustum or not
-  //   this.loadSystem(block.lod, block);
-  //   // send the next data request
-  //   this.fetchBlock(this.renderBlocks.pop());
-  // }
+  private onData(evt: MessageEvent) {
+    console.log(evt);
+    const block = evt.data as MoctreeBlock;
+    block.isLoading = false;
+    this.octree.blocks[block.lod][block.mortonNumber] = block;
+    // TODO we should load in afterRender so we can see if the block is in frustum or not
+    this.loadSystem(block.lod, block);
+    // send the next data request
+    if (this.renderBlocks.length) {
+      this.fetchBlock(this.renderBlocks.pop());
+    }
+  }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
     // fetch if not cached
-    if (block && !block.loading && !block.entries) {
-      block.loading = true;
-      // this.worker?.postMessage({
-      //   type: WorkerType.data,
-      //   block: block
-      // } as DataRequest);
-
-      const queryCacheKey = stringifyQuery(
-        block.mortonNumber,
-        this.namespace as string,
-        this.arrayName + '_' + block.lod
-      );
-      // we might have the data cached but not in memory
-      const dataFromCache = await getQueryDataFromCache(queryCacheKey);
-
-      if (dataFromCache) {
-        block.entries = dataFromCache as SparseResult;
-        block.loading = false;
-        this.loadSystem(block.lod, block);
-      } else {
-        // load points into block
-        const ranges = [
-          [
-            block.minPoint.x + this.translateX,
-            block.maxPoint.x + this.translateX
-          ],
-          [
-            block.minPoint.z + this.translateZ, // Y is Z
-            block.maxPoint.z + this.translateZ
-          ],
-          [
-            block.minPoint.y + this.translateY,
-            block.maxPoint.y + this.translateY
-          ]
-        ];
-
-        const queryData = {
-          layout: 'row-major',
-          ranges: ranges,
-          attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
-          bufferSize: this.bufferSize
-        } as QueryData;
-
-        for await (const results of this.tiledbQuery.ReadQuery(
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          this.namespace!,
-          this.arrayName + '_' + block.lod,
-          queryData
-        )) {
-          block.entries = results as SparseResult;
-          block.loading = false;
-          await writeToCache(queryCacheKey, results);
-          this.loadSystem(block.lod, block);
-        }
-      }
+    if (block && !block.isLoading && !block.entries) {
+      block.isLoading = true;
+      this.worker?.postMessage({
+        type: WorkerType.data,
+        block: block
+      } as DataRequest);
     } else if (block?.entries) {
       this.loadSystem(block.lod, block);
-    }
-
-    // load next block
-    if (this.renderBlocks.length > 0) {
-      this.fetchBlock(this.renderBlocks.pop());
     }
   }
 
@@ -265,22 +213,24 @@ class ArrayModel {
       const block = new MoctreeBlock(0, 0, Vector3.Zero(), Vector3.Zero());
       block.entries = data;
       this.loadSystem(0, block);
+      // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
-      // this.worker = new Worker(
-      //   new URL('data-url:../workers/tiledb.worker', import.meta.url),
-      //   { type: 'module' }
-      // );
-      // this.worker.onmessage = this.onData;
-      // this.worker.postMessage({
-      //   type: WorkerType.init,
-      //   namespace: this.namespace,
-      //   token: this.token,
-      //   translateX: this.translateX,
-      //   translateY: this.translateY,
-      //   translateZ: this.translateZ,
-      //   bufferSize: this.bufferSize
-      // } as InitialRequest);
+      this.worker = new Worker(
+        new URL('../workers/tiledb.worker', import.meta.url),
+        { type: 'module' }
+      );
+      this.worker.onmessage = this.onData.bind(this);
+      this.worker.postMessage({
+        type: WorkerType.init,
+        namespace: this.namespace,
+        token: this.token,
+        arrayName: this.arrayName,
+        translateX: this.translateX,
+        translateY: this.translateY,
+        translateZ: this.translateZ,
+        bufferSize: this.bufferSize
+      } as InitialRequest);
 
       scene.onAfterRenderObservable.add(scene => {
         this.afterRender(scene);
