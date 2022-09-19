@@ -62,7 +62,6 @@ class Moctree {
         ((y & (1 << i)) << (2 * i + 1)) |
         ((z & (1 << i)) << (2 * i + 2));
     }
-
     return { code, x, y, z, childBlockSize };
   }
 

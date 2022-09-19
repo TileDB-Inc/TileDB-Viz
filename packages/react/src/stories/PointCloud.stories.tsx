@@ -35,14 +35,13 @@ export const TimeMode = () => (
 
 export const Boulder = () => <PointCloudVisualization data={boulderData} />;
 
-const token = process.env.STORYBOOK_REST_TOKEN;
-const namespace = process.env.STORYBOOK_NAMESPACE;
-const arrayName = process.env.STORYBOOK_ARRAY_NAME;
+const token =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDg5NjI3ZDYtZGQ4NC00ZmUyLTkzOWQtMjdkMWM2YmUyOTZiIiwiU2VlZCI6NDYwOTc5Mzc5MjA3NTYyOSwiZXhwIjoxNjYzMzkwNzk5LCJpYXQiOjE2NjI5MzExMzEsIm5iZiI6MTY2MjkzMTEzMSwic3ViIjoibm9ybWFuIn0.KIgoVfH1VC5sdG6prVOXk7x1N3c2abqupIuPxXDg5vQ';
 export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}
-    arrayName={arrayName}
-    namespace={namespace}
+    arrayName={'allen'}
+    namespace={'norman'}
     token={token}
     height={100}
     maxLevels={4}

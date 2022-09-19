@@ -2779,93 +2779,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/css-darwin-arm64@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-darwin-arm64@npm:1.13.0"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@parcel/css-darwin-x64@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-darwin-x64@npm:1.13.0"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@parcel/css-linux-arm-gnueabihf@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-linux-arm-gnueabihf@npm:1.13.0"
-  conditions: os=linux & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@parcel/css-linux-arm64-gnu@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-linux-arm64-gnu@npm:1.13.0"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@parcel/css-linux-arm64-musl@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-linux-arm64-musl@npm:1.13.0"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@parcel/css-linux-x64-gnu@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-linux-x64-gnu@npm:1.13.0"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@parcel/css-linux-x64-musl@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-linux-x64-musl@npm:1.13.0"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@parcel/css-win32-x64-msvc@npm:1.13.0":
-  version: 1.13.0
-  resolution: "@parcel/css-win32-x64-msvc@npm:1.13.0"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@parcel/css@npm:^1.12.2":
-  version: 1.13.0
-  resolution: "@parcel/css@npm:1.13.0"
+  version: 1.14.0
+  resolution: "@parcel/css@npm:1.14.0"
   dependencies:
-    "@parcel/css-darwin-arm64": 1.13.0
-    "@parcel/css-darwin-x64": 1.13.0
-    "@parcel/css-linux-arm-gnueabihf": 1.13.0
-    "@parcel/css-linux-arm64-gnu": 1.13.0
-    "@parcel/css-linux-arm64-musl": 1.13.0
-    "@parcel/css-linux-x64-gnu": 1.13.0
-    "@parcel/css-linux-x64-musl": 1.13.0
-    "@parcel/css-win32-x64-msvc": 1.13.0
-    detect-libc: ^1.0.3
-  dependenciesMeta:
-    "@parcel/css-darwin-arm64":
-      optional: true
-    "@parcel/css-darwin-x64":
-      optional: true
-    "@parcel/css-linux-arm-gnueabihf":
-      optional: true
-    "@parcel/css-linux-arm64-gnu":
-      optional: true
-    "@parcel/css-linux-arm64-musl":
-      optional: true
-    "@parcel/css-linux-x64-gnu":
-      optional: true
-    "@parcel/css-linux-x64-musl":
-      optional: true
-    "@parcel/css-win32-x64-msvc":
-      optional: true
-  checksum: 97f319baeec4d628bc84fd293cc048645d66f31c370fad9f1537cd775291e1ac56b3892daeee4d4a2cf9b39653cdfed2e19a63d8d051f6d7279683ae3becbf7f
+    lightningcss: ^1.14.0
+  checksum: 3ed88310051ed96940a3653cce76819d44cc90cddabbdd0d0e2c8d9c76f137442207a30aea2fe04df0a7e3e75aef06fa7c593e50bb410bccb2ddd9a7ee267e07
   languageName: node
   linkType: hard
 
@@ -2984,6 +2903,18 @@ __metadata:
     browserslist: ^4.6.6
     nullthrows: ^1.1.1
   checksum: 3799e128cb1cafc57c4de384a9b7339c5be7d4a0205887424a7265d31205439bce25195b1c06036e91acb32cb354edd9ccf9116f5a46a04db72e16b4e185e664
+  languageName: node
+  linkType: hard
+
+"@parcel/optimizer-data-url@npm:2.7.0":
+  version: 2.7.0
+  resolution: "@parcel/optimizer-data-url@npm:2.7.0"
+  dependencies:
+    "@parcel/plugin": 2.7.0
+    "@parcel/utils": 2.7.0
+    isbinaryfile: ^4.0.2
+    mime: ^2.4.4
+  checksum: cbfd39eb51a2000cb3c151d133c47fa4b9fed8a3d5a95aec20faf25875be8c19beb348f1a80bb0e06b0a3eb5f240e54ca4c2650eef724f00a5c048f5173a98d2
   languageName: node
   linkType: hard
 
@@ -3279,6 +3210,15 @@ __metadata:
   peerDependencies:
     "@parcel/core": ^2.7.0
   checksum: 1decacc1a4b037de9c7838fce34057338262c03e16a199d00e9641be0ad80885ff77119bd571765268e5f0d2f1f2d1863b759aaaaba6de2f64fe5b2c44b69b4c
+  languageName: node
+  linkType: hard
+
+"@parcel/transformer-inline-string@npm:2.7.0":
+  version: 2.7.0
+  resolution: "@parcel/transformer-inline-string@npm:2.7.0"
+  dependencies:
+    "@parcel/plugin": 2.7.0
+  checksum: 469bfeeadcb6f09b5b0470a118baf808d2d574df9c36899af75fd6973d3dc354a0c39141872d9129cdbb28d3411173b3b85a3aa450a7a300cb218f30c3b58f5a
   languageName: node
   linkType: hard
 
@@ -4923,11 +4863,11 @@ __metadata:
   linkType: hard
 
 "@swc/helpers@npm:^0.4.2":
-  version: 0.4.9
-  resolution: "@swc/helpers@npm:0.4.9"
+  version: 0.4.11
+  resolution: "@swc/helpers@npm:0.4.11"
   dependencies:
     tslib: ^2.4.0
-  checksum: b456f7b6f183bee4cd7b7d7bff5e844398259dec43a4f18f51eb1a9a632e416dc3707a9954ae27d88fa6040a658a6cbcecdf0619d49c9454e94f4f34d9bc5ecb
+  checksum: 736857d524b41a8a4db81094e9b027f554004e0fa3e86325d85bdb38f7e6459ce022db079edb6c61ba0f46fe8583b3e663e95f7acbd13e51b8da6c34e45bba2e
   languageName: node
   linkType: hard
 
@@ -5021,7 +4961,9 @@ __metadata:
   resolution: "@tiledb-inc/viz@workspace:."
   dependencies:
     "@babel/core": ^7.18.13
+    "@parcel/optimizer-data-url": 2.7.0
     "@parcel/packager-ts": 2.7.0
+    "@parcel/transformer-inline-string": 2.7.0
     "@parcel/transformer-typescript-types": 2.7.0
     "@types/jest": ^29.0.0
     "@typescript-eslint/eslint-plugin": ^5.33.1
@@ -7133,7 +7075,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.12.0, browserslist@npm:^4.14.5, browserslist@npm:^4.20.2, browserslist@npm:^4.21.3, browserslist@npm:^4.6.6":
+"browserslist@npm:^4.12.0, browserslist@npm:^4.14.5, browserslist@npm:^4.20.2, browserslist@npm:^4.21.3":
   version: 4.21.3
   resolution: "browserslist@npm:4.21.3"
   dependencies:
@@ -7144,6 +7086,20 @@ __metadata:
   bin:
     browserslist: cli.js
   checksum: ff512a7bcca1c530e2854bbdfc7be2791d0fb524097a6340e56e1d5924164c7e4e0a9b070de04cdc4c149d15cb4d4275cb7c626ebbce954278a2823aaad2452a
+  languageName: node
+  linkType: hard
+
+"browserslist@npm:^4.6.6":
+  version: 4.21.4
+  resolution: "browserslist@npm:4.21.4"
+  dependencies:
+    caniuse-lite: ^1.0.30001400
+    electron-to-chromium: ^1.4.251
+    node-releases: ^2.0.6
+    update-browserslist-db: ^1.0.9
+  bin:
+    browserslist: cli.js
+  checksum: 4af3793704dbb4615bcd29059ab472344dc7961c8680aa6c4bb84f05340e14038d06a5aead58724eae69455b8fade8b8c69f1638016e87e5578969d74c078b79
   languageName: node
   linkType: hard
 
@@ -7409,6 +7365,13 @@ __metadata:
   version: 1.0.30001381
   resolution: "caniuse-lite@npm:1.0.30001381"
   checksum: c6de3370eaa47239618da8cc26188c71f0ca63fd0448459bda91a7b0cb71fd72e692359cd48b8315b9741ee380481f764215d5fa20a425ae768dbbe1eee2b44a
+  languageName: node
+  linkType: hard
+
+"caniuse-lite@npm:^1.0.30001400":
+  version: 1.0.30001400
+  resolution: "caniuse-lite@npm:1.0.30001400"
+  checksum: 984e29d3c02fd02a59cc92ef4a5e9390fce250de3791056362347cf901f0d91041246961a57cfa8fed800538d03ee341bc4f7eaed19bf7be0ef8a181d94cd848
   languageName: node
   linkType: hard
 
@@ -8737,6 +8700,13 @@ __metadata:
   version: 1.4.225
   resolution: "electron-to-chromium@npm:1.4.225"
   checksum: 54b5c5550e33ce5df1d2ab71543b9dc24e4dd55dc4650b29cc19b2911b932b072317e662ce3236c500a498ad69e90d2ceebe2433a772e53a337e97bd53cc7dc9
+  languageName: node
+  linkType: hard
+
+"electron-to-chromium@npm:^1.4.251":
+  version: 1.4.251
+  resolution: "electron-to-chromium@npm:1.4.251"
+  checksum: 470a04dfe1d34814f8bc7e1dde606851b6f787a6d78655a57df063844fc71feb64ce793c52a3a130ceac1fc368b8d3e25a4c55c847a1e9c02c3090f9dcbf40ac
   languageName: node
   linkType: hard
 
@@ -11600,6 +11570,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"isbinaryfile@npm:^4.0.2":
+  version: 4.0.10
+  resolution: "isbinaryfile@npm:4.0.10"
+  checksum: a6b28db7e23ac7a77d3707567cac81356ea18bd602a4f21f424f862a31d0e7ab4f250759c98a559ece35ffe4d99f0d339f1ab884ffa9795172f632ab8f88e686
+  languageName: node
+  linkType: hard
+
 "isexe@npm:^2.0.0":
   version: 2.0.0
   resolution: "isexe@npm:2.0.0"
@@ -12570,6 +12547,96 @@ __metadata:
     prelude-ls: ~1.1.2
     type-check: ~0.3.2
   checksum: 0d084a524231a8246bb10fec48cdbb35282099f6954838604f3c7fc66f2e16fa66fd9cc2f3f20a541a113c4dafdf181e822c887c8a319c9195444e6c64ac395e
+  languageName: node
+  linkType: hard
+
+"lightningcss-darwin-arm64@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-darwin-arm64@npm:1.15.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"lightningcss-darwin-x64@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-darwin-x64@npm:1.15.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"lightningcss-linux-arm-gnueabihf@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-linux-arm-gnueabihf@npm:1.15.0"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"lightningcss-linux-arm64-gnu@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-linux-arm64-gnu@npm:1.15.0"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"lightningcss-linux-arm64-musl@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-linux-arm64-musl@npm:1.15.0"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"lightningcss-linux-x64-gnu@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-linux-x64-gnu@npm:1.15.0"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"lightningcss-linux-x64-musl@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-linux-x64-musl@npm:1.15.0"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"lightningcss-win32-x64-msvc@npm:1.15.0":
+  version: 1.15.0
+  resolution: "lightningcss-win32-x64-msvc@npm:1.15.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"lightningcss@npm:^1.14.0":
+  version: 1.15.0
+  resolution: "lightningcss@npm:1.15.0"
+  dependencies:
+    detect-libc: ^1.0.3
+    lightningcss-darwin-arm64: 1.15.0
+    lightningcss-darwin-x64: 1.15.0
+    lightningcss-linux-arm-gnueabihf: 1.15.0
+    lightningcss-linux-arm64-gnu: 1.15.0
+    lightningcss-linux-arm64-musl: 1.15.0
+    lightningcss-linux-x64-gnu: 1.15.0
+    lightningcss-linux-x64-musl: 1.15.0
+    lightningcss-win32-x64-msvc: 1.15.0
+  dependenciesMeta:
+    lightningcss-darwin-arm64:
+      optional: true
+    lightningcss-darwin-x64:
+      optional: true
+    lightningcss-linux-arm-gnueabihf:
+      optional: true
+    lightningcss-linux-arm64-gnu:
+      optional: true
+    lightningcss-linux-arm64-musl:
+      optional: true
+    lightningcss-linux-x64-gnu:
+      optional: true
+    lightningcss-linux-x64-musl:
+      optional: true
+    lightningcss-win32-x64-msvc:
+      optional: true
+  checksum: 743eaa39dade0bc678c8587beb66a573b719df8aa7bd7ab9b0e771b961030e5a73fd6e85268cd30d15404edc0094197e159071059bdd6611d564a85eb4cefb1f
   languageName: node
   linkType: hard
 
@@ -17559,6 +17626,20 @@ __metadata:
   bin:
     browserslist-lint: cli.js
   checksum: 7e425fe5dbbebdccf72a84ce70ec47fc74dce561d28f47bc2b84a1c2b84179a862c2261b18ab66a5e73e261c7e2ef9e11c6129112989d4d52e8f75a56bb923f8
+  languageName: node
+  linkType: hard
+
+"update-browserslist-db@npm:^1.0.9":
+  version: 1.0.9
+  resolution: "update-browserslist-db@npm:1.0.9"
+  dependencies:
+    escalade: ^3.1.1
+    picocolors: ^1.0.0
+  peerDependencies:
+    browserslist: ">= 4.21.0"
+  bin:
+    browserslist-lint: cli.js
+  checksum: f625899b236f6a4d7f62b56be1b8da230c5563d1fef84d3ef148f2e1a3f11a5a4b3be4fd7e3703e51274c116194017775b10afb4de09eb2c0d09d36b90f1f578
   languageName: node
   linkType: hard
 
