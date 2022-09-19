@@ -24,10 +24,11 @@ const getCacheDB = async () => {
 export const getQueryDataFromCache = async (key: string) => {
   const db = await getCacheDB();
   const value = await db.get(QUERIES_STORE, key);
-  if (value) {
-    const { namespace, arrayName } = deserializeQueryFromKey(key);
-    checkArrayActivityAndInvalidate(namespace, arrayName);
-  }
+  // TODO is this necessary on every query
+  // if (value) {
+  //   const { namespace, arrayName } = deserializeQueryFromKey(key);
+  //   checkArrayActivityAndInvalidate(namespace, arrayName);
+  // }
   return value;
 };
 

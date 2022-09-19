@@ -38,6 +38,7 @@ export const Boulder = () => <PointCloudVisualization data={boulderData} />;
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 const arrayName = process.env.STORYBOOK_ARRAY_NAME;
+
 export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}

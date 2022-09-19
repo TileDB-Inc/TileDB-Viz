@@ -219,7 +219,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   const concatenatedResults: Record<string, any> = {};
 
   const queryCacheKey = stringifyQuery(
-    query,
+    query.ranges,
     options.namespace as string,
     options.arrayName as string
   );
