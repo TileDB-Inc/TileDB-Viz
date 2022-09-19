@@ -93,7 +93,7 @@ class Moctree {
 
 class MoctreeBlock {
   private _boundingVectors = new Array<Vector3>();
-  loading = false;
+  isLoading = false;
   minPoint: Vector3;
   maxPoint: Vector3;
   entries?: SparseResult;
