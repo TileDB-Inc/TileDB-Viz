@@ -60,6 +60,7 @@ class ArrayModel {
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
+    // for now lets print the debug to show we are loading data, replace with visually showing the boxes and ray trace
     console.log('Loading: ' + index + ' LOD: ' + block.lod);
     if (block.entries !== undefined) {
       const trans_x = this.translateX;
@@ -132,8 +133,7 @@ class ArrayModel {
   }
 
   private onData(evt: MessageEvent) {
-    console.log(evt);
-    const block = evt.data as MoctreeBlock;
+    const block = evt.data;
     block.isLoading = false;
     this.octree.blocks[block.lod][block.mortonNumber] = block;
     // TODO we should load in afterRender so we can see if the block is in frustum or not

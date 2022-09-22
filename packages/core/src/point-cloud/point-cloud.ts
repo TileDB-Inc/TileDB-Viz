@@ -31,8 +31,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     }
   }
 
-  static async clearCache() {
-    await clearCache();
+  static async clearCache(storeName: string) {
+    await clearCache(storeName);
   }
 
   protected async createScene(): Promise<Scene> {
