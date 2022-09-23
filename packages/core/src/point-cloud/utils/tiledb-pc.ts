@@ -1,8 +1,10 @@
-import Client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { TileDBVisualizationBaseOptions } from '../../base';
+import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
+import getTileDBClient from '../../utils/getTileDBClient';
 import { reduceDataArrays, sortDataArrays } from './arrays';
+import stringifyQuery from './stringifyQuery';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
@@ -95,10 +97,6 @@ export interface TileDBPointCloudOptions
    */
   depth?: number;
   /**
-   * Maximum capacity for each octree block before splitting
-   */
-  maxBlockCapacity?: number;
-  /**
    * TileDB query buffer size
    */
   bufferSize?: number;
@@ -115,10 +113,6 @@ export interface TileDBPointCloudOptions
    */
   refreshRate?: number;
   /**
-   * Maximum number of points
-   */
-  pointBudget?: number;
-  /**
    * Select particle rendering type, 'box' is supported for now
    */
   particleType?: string;
@@ -126,6 +120,10 @@ export interface TileDBPointCloudOptions
    * Particle size
    */
   particleSize?: number;
+  /**
+   * Particle scale, the increase in particle size between resolution levels
+   */
+  particleScale?: number;
   /**
    * Camera radius
    */
@@ -195,19 +193,13 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   if (options.tiledbEnv) {
     config.basePath = options.tiledbEnv;
   }
-
-  const tiledbClient = new Client(config);
+  const tiledbClient = getTileDBClient(config);
 
   let ranges: number[][] = [];
   if (options.bbox) {
     ranges = [options.bbox.X, options.bbox.Y, options.bbox.Z];
   }
-  const query: {
-    layout: any;
-    ranges: number[][];
-    bufferSize: number;
-    attributes: any;
-  } = {
+  const query = {
     layout: Layout.Unordered,
     bufferSize: options.bufferSize || 150000000000,
     ranges: ranges,
@@ -226,6 +218,20 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
+  const queryCacheKey = stringifyQuery(
+    query.ranges,
+    options.namespace as string,
+    options.arrayName as string
+  );
+
+  const storeName = options.namespace + ':' + options.arrayName;
+
+  const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
+
+  if (dataFromCache) {
+    return dataFromCache;
+  }
+
   for await (const results of tiledbClient.query.ReadQuery(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     options.namespace!,
@@ -243,6 +249,9 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
       }
     }
   }
+
+  await writeToCache(storeName, queryCacheKey, concatenatedResults);
+
   return concatenatedResults;
 }
 
@@ -329,8 +338,8 @@ export async function getNonEmptyDomain(
   if (options.tiledbEnv) {
     config.basePath = options.tiledbEnv;
   }
+  const tiledbClient = getTileDBClient(config);
 
-  const tiledbClient = new Client(config);
   const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     options.namespace!,

@@ -11,6 +11,7 @@ import ArrayModel from './model/array-model';
 import { getPointCloud } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
+import getTileDBClient from '../utils/getTileDBClient';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
@@ -21,10 +22,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   constructor(options: TileDBPointCloudOptions) {
     super(options);
     this._options = options;
+
+    // Initialize first time the TileDB client
+    if (options.token) {
+      getTileDBClient({
+        apiKey: options.token
+      });
+    }
   }
 
-  static async clearCache() {
-    await clearCache();
+  static async clearCache(storeName: string) {
+    await clearCache(storeName);
   }
 
   protected async createScene(): Promise<Scene> {
