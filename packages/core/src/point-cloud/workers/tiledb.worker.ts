@@ -11,8 +11,6 @@ import {
 import { MoctreeBlock } from '../octree';
 import stringifyQuery from '../utils/stringifyQuery';
 
-// const self = globalThis as unknown as DedicatedWorkerGlobalScope;
-
 let namespace = '';
 let arrayName = '';
 let translateX = 0;
@@ -88,8 +86,6 @@ async function fetchData(block: MoctreeBlock) {
       queryData
     )) {
       block.entries = results as SparseResult;
-
-      console.log(block.entries);
 
       returnData(block);
       await writeToCache(storeName, queryCacheKey, results);

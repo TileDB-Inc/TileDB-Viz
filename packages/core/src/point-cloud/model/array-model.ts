@@ -29,7 +29,7 @@ class ArrayModel {
   particleScale: number;
   minVector!: Vector3;
   maxVector!: Vector3;
-  rgbMax?: number;
+  rgbMax!: number;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -66,6 +66,7 @@ class ArrayModel {
       const trans_x = this.translateX;
       const trans_y = this.translateY;
       const trans_z = this.translateZ;
+      const rgbMax = this.rgbMax;
       const sps = this.particleSystems[index];
       let numPoints = block.entries.X.length;
 
@@ -79,16 +80,16 @@ class ArrayModel {
           );
           if (particle.color) {
             particle.color?.set(
-              block.entries.Red[i],
-              block.entries.Green[i],
-              block.entries.Blue[i],
+              block.entries.Red[i] / rgbMax,
+              block.entries.Green[i] / rgbMax,
+              block.entries.Blue[i] / rgbMax,
               1
             );
           } else {
             particle.color = new Color4(
-              block.entries.Red[i],
-              block.entries.Green[i],
-              block.entries.Blue[i]
+              block.entries.Red[i] / rgbMax,
+              block.entries.Green[i] / rgbMax,
+              block.entries.Blue[i] / rgbMax
             );
           }
         }
@@ -192,7 +193,7 @@ class ArrayModel {
     this.tiledbClient = getTileDBClient(config);
     this.tiledbQuery = this.tiledbClient.query;
 
-    this.rgbMax = rgbMax;
+    this.rgbMax = rgbMax || 1;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
