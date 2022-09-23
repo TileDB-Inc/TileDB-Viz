@@ -49,17 +49,6 @@ function returnData(block: MoctreeBlock) {
   // post block back
   if (block.entries) {
     // TODO use transferable objects
-    // const transfers = [
-    //   block.entries.X.buffer,
-    //   block.entries.Y.buffer,
-    //   block.entries.Z.buffer,
-    //   block.entries.Red.buffer,
-    //   block.entries.Green.buffer,
-    //   block.entries.Blue.buffer
-    // ];
-    // if (block.entries.GpsTime) {
-    //   transfers.push(block.entries.GpsTime);
-    // }
     self.postMessage(block);
   }
 }
@@ -70,8 +59,9 @@ async function fetchData(block: MoctreeBlock) {
     namespace as string,
     arrayName + '_' + block.lod
   );
+  const storeName = namespace + ':' + arrayName;
   // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache(queryCacheKey);
+  const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
 
   if (dataFromCache) {
     block.entries = dataFromCache as SparseResult;
@@ -79,12 +69,9 @@ async function fetchData(block: MoctreeBlock) {
   } else {
     // load points into block
     const ranges = [
-      [block.minPoint.x + translateX, block.maxPoint.x + translateX],
-      [
-        block.minPoint.z + translateZ, // Y is Z
-        block.maxPoint.z + translateZ
-      ],
-      [block.minPoint.y + translateY, block.maxPoint.y + translateY]
+      [block.minPoint._x + translateX, block.maxPoint._x + translateX],
+      [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
+      [block.minPoint._y + translateY, block.maxPoint._y + translateY]
     ];
 
     const queryData = {
@@ -102,8 +89,10 @@ async function fetchData(block: MoctreeBlock) {
     )) {
       block.entries = results as SparseResult;
 
+      console.log(block.entries);
+
       returnData(block);
-      await writeToCache(queryCacheKey, results);
+      await writeToCache(storeName, queryCacheKey, results);
     }
   }
 }

@@ -224,7 +224,9 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
     options.arrayName as string
   );
 
-  const dataFromCache = await getQueryDataFromCache(queryCacheKey);
+  const storeName = options.namespace + ':' + options.arrayName;
+
+  const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
 
   if (dataFromCache) {
     return dataFromCache;
@@ -248,7 +250,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
     }
   }
 
-  await writeToCache(queryCacheKey, concatenatedResults);
+  await writeToCache(storeName, queryCacheKey, concatenatedResults);
 
   return concatenatedResults;
 }
