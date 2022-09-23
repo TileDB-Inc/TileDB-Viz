@@ -180,7 +180,8 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
       ymin: dom[2],
       ymax: dom[3],
       zmin: dom[4],
-      zmax: dom[5]
+      zmax: dom[5],
+      rgbMax: 1
     };
   }
 }

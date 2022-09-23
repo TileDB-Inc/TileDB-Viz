@@ -9,9 +9,10 @@ function setSceneColors(colorScheme: string) {
   let secondColor: string;
   let textColor: string;
 
-  backgroundColor = new Color4(0, 24 / 255, 92 / 255, 1);
-  accentColor = '#CC0055';
-  secondColor = '#C7C7C7';
+  //default
+  backgroundColor = new Color4(28 / 255, 28 / 255, 28 / 255, 1);
+  accentColor = '#C7C7C7';
+  secondColor = '#F5F7FA';
   textColor = '#F5F7FA';
   if (colorScheme === 'dark') {
     backgroundColor = new Color4(28 / 255, 28 / 255, 28 / 255, 1);
@@ -24,6 +25,12 @@ function setSceneColors(colorScheme: string) {
     accentColor = '#352F4D';
     secondColor = '#C7C7C7';
     textColor = '#352F4D';
+  }
+  if (colorScheme === 'blue') {
+    backgroundColor = new Color4(0, 24 / 255, 92 / 255, 1);
+    accentColor = '#CC0055';
+    secondColor = '#C7C7C7';
+    textColor = '#C7C7C7';
   }
   return { backgroundColor, accentColor, secondColor, textColor };
 }

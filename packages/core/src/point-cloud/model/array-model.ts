@@ -18,9 +18,9 @@ import {
 } from './sparse-result';
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 
-/**
- * The ArrayModel manages to the local octree
- */
+/*
+The ArrayModel manages to the local octree
+*/
 class ArrayModel {
   arrayName?: string;
   namespace?: string;
@@ -29,7 +29,6 @@ class ArrayModel {
   particleScale: number;
   minVector!: Vector3;
   maxVector!: Vector3;
-  rgbMax?: number;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -40,6 +39,7 @@ class ArrayModel {
   translateX = 0;
   translateY = 0;
   translateZ = 0;
+  rgbMax = 1;
   pickedBlockCode = 0;
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
@@ -57,15 +57,17 @@ class ArrayModel {
     this.refreshRate = options.refreshRate || 15;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
+    this.rgbMax = options.rgbMax || 1;
   }
 
-  private loadSystem(index: number, block: MoctreeBlock) {
+  private loadSystem(index: number, block: MoctreeBlock, scene: Scene) {
     // for now lets print the debug to show we are loading data, replace with visually showing the boxes and ray trace
     console.log('Loading: ' + index + ' LOD: ' + block.lod);
     if (block.entries !== undefined) {
       const trans_x = this.translateX;
       const trans_y = this.translateY;
       const trans_z = this.translateZ;
+      const rgbMax = this.rgbMax;
       const sps = this.particleSystems[index];
       let numPoints = block.entries.X.length;
 
@@ -79,20 +81,21 @@ class ArrayModel {
           );
           if (particle.color) {
             particle.color?.set(
-              block.entries.Red[i],
-              block.entries.Green[i],
-              block.entries.Blue[i],
+              block.entries.Red[i] / rgbMax,
+              block.entries.Green[i] / rgbMax,
+              block.entries.Blue[i] / rgbMax,
               1
             );
           } else {
             particle.color = new Color4(
-              block.entries.Red[i],
-              block.entries.Green[i],
-              block.entries.Blue[i]
+              block.entries.Red[i] / rgbMax,
+              block.entries.Green[i] / rgbMax,
+              block.entries.Blue[i] / rgbMax
             );
           }
         }
       };
+      
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
@@ -132,19 +135,19 @@ class ArrayModel {
     }
   }
 
-  private onData(evt: MessageEvent) {
+  private onData(evt: MessageEvent, scene: Scene) {
     const block = evt.data;
     block.isLoading = false;
     this.octree.blocks[block.lod][block.mortonNumber] = block;
     // TODO we should load in afterRender so we can see if the block is in frustum or not
-    this.loadSystem(block.lod, block);
+    this.loadSystem(block.lod, block, scene);
     // send the next data request
     if (this.renderBlocks.length) {
-      this.fetchBlock(this.renderBlocks.pop());
+      this.fetchBlock(this.renderBlocks.pop(), scene);
     }
   }
 
-  private async fetchBlock(block: MoctreeBlock | undefined) {
+  private async fetchBlock(block: MoctreeBlock | undefined, scene: Scene) {
     // fetch if not cached
     if (block && !block.isLoading && !block.entries) {
       block.isLoading = true;
@@ -153,7 +156,7 @@ class ArrayModel {
         block: block
       } as DataRequest);
     } else if (block?.entries) {
-      this.loadSystem(block.lod, block);
+      this.loadSystem(block.lod, block, scene);
     }
   }
 
@@ -165,7 +168,7 @@ class ArrayModel {
     ymax: number,
     zmin: number,
     zmax: number,
-    rgbMax?: number,
+    rgbMax: number,
     data?: SparseResult
   ) {
     for (let i = 0; i < this.maxLevel; i++) {
@@ -192,8 +195,6 @@ class ArrayModel {
     this.tiledbClient = getTileDBClient(config);
     this.tiledbQuery = this.tiledbClient.query;
 
-    this.rgbMax = rgbMax;
-
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
@@ -204,6 +205,7 @@ class ArrayModel {
     this.translateX = xmin + spanX;
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
+    this.rgbMax = rgbMax;
 
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
@@ -212,7 +214,7 @@ class ArrayModel {
       // load into first SPS
       const block = new MoctreeBlock(0, 0, Vector3.Zero(), Vector3.Zero());
       block.entries = data;
-      this.loadSystem(0, block);
+      this.loadSystem(0, block, scene);
       // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
@@ -259,13 +261,13 @@ class ArrayModel {
               pickingInfo.pickedPoint,
               this.maxLevel
             );
-            this.fetchBlock(this.renderBlocks.pop());
+            this.fetchBlock(this.renderBlocks.pop(), scene);
           }
         }
       }
     } else {
       // load immutable layer immediately
-      this.fetchBlock(this.octree.blocks[0][0]);
+      this.fetchBlock(this.octree.blocks[0][0], scene);
       // no need to save entries for LOD 0
       this.octree.blocks[0][0].entries = undefined;
     }

@@ -5,6 +5,7 @@ import data from '../../../../__mocks__/point-cloud-data.json';
 import gltfData from '../../../../__mocks__/gltf-data.json';
 import boulderData from '../../../../__mocks__/boulder.json';
 import timeData from '../../../../__mocks__/point-cloud-time-data.json';
+import autzenData from '../../../../__mocks__/autzen-sample.json';
 
 export default {
   title: 'Visualizations/PointCloudVisualization',
@@ -34,6 +35,15 @@ export const TimeMode = () => (
 );
 
 export const Boulder = () => <PointCloudVisualization data={boulderData} />;
+
+export const Autzen = () => (
+  <PointCloudVisualization 
+    data={autzenData} 
+    particleSize={2}
+    cameraRadius={2000}
+    colorScheme="light"
+  />
+);
 
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;

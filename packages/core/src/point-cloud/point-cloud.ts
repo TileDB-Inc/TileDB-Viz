@@ -1,14 +1,16 @@
 import {
   ArcRotateCamera,
+  Color3,
   Scene,
   Vector3,
   Camera,
+  DirectionalLight,
   HemisphericLight
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
-import { getPointCloud } from './utils';
+import { getPointCloud, setSceneColors } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
@@ -23,7 +25,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this._options = options;
 
-    // Initialize first time the TileDB client
+    // initialize the TileDB client
     if (options.token) {
       getTileDBClient({
         apiKey: options.token
@@ -39,11 +41,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this._scene = scene;
 
-      /**
-       * Load point cloud data extents and data if bound
-       */
+      /*
+      Load point cloud data extents and data if bounding box not provided
+      */
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._options);
+
+      const sceneColors = setSceneColors(this._options.colorScheme!);
+      scene.clearColor = sceneColors.backgroundColor;
+      
+      /*
+      Set up camera 
+      */
 
       const defaultRadius = 25;
       const camera = new ArcRotateCamera(
@@ -54,14 +63,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         Vector3.Zero(),
         scene
       );
-
       camera.attachControl();
-      const light1: HemisphericLight = new HemisphericLight(
-        'light1',
-        new Vector3(-1, 1, 0),
-        scene
-      );
-      light1.intensity = 0.8;
 
       if (this.wheelPrecision > 0) {
         camera.wheelPrecision = this.wheelPrecision;
@@ -69,6 +71,29 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       camera.setTarget(Vector3.Zero());
       this._cameras.push(camera);
+
+      /*
+      Set up lights
+      */
+
+      // general light
+      const light1: HemisphericLight = new HemisphericLight(
+        'light1',
+        camera.position,
+        scene
+      );
+      light1.intensity = 0.9;
+      light1.specular = Color3.Black()
+
+      // light for generating shadows
+      const light2: DirectionalLight = new DirectionalLight("Point", camera.cameraDirection, scene); 
+      light2.position = camera.position;
+      light2.intensity = 0.7;
+      light2.specular = Color3.Black()
+      
+      /*
+      Initialize SolidParticleSystem
+      */
 
       this._model = new ArrayModel(this._options);
       await this._model.init(
