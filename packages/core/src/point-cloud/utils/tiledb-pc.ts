@@ -224,7 +224,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
     options.arrayName as string
   );
 
-  const storeName = options.namespace + ':' + options.arrayName;
+  const storeName = `${options.namespace}:${options.arrayName}`;
 
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
 
@@ -328,24 +328,40 @@ export function setPointCloudSwitches(mode?: string) {
   return { isTime, isClass, isTopo, isGltf };
 }
 
+export function getStoreName(namespace: string, arrayName: string) {
+  return `${namespace}:${arrayName}`;
+}
+
 export async function getNonEmptyDomain(
   options: TileDBPointCloudOptions
 ): Promise<number[]> {
-  const config: Record<string, any> = {};
-
-  config.apiKey = options.token;
-
-  if (options.tiledbEnv) {
-    config.basePath = options.tiledbEnv;
-  }
-  const tiledbClient = getTileDBClient(config);
-
-  const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    options.namespace!,
-    options.arrayName + '_0', // naming convention for groups of multi-resolution arrays
-    'application/json'
-  );
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return resp.data.nonEmptyDomain.float64!;
+  const storeName = getStoreName(options.namespace!, options.arrayName!);
+  const key = `${options.namespace}/${options.arrayName}/nonEmptyDomain`;
+  // we might have the data cached
+  const dataFromCache = await getQueryDataFromCache(storeName, key);
+
+  if (!dataFromCache) {
+    const config: Record<string, any> = {};
+
+    config.apiKey = options.token;
+
+    if (options.tiledbEnv) {
+      config.basePath = options.tiledbEnv;
+    }
+    const tiledbClient = getTileDBClient(config);
+
+    const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace!,
+      options.arrayName + '_0', // naming convention for groups of multi-resolution arrays
+      'application/json'
+    );
+
+    writeToCache(storeName, key, resp.data.nonEmptyDomain.float64);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return resp.data.nonEmptyDomain.float64!;
+  } else {
+    return dataFromCache;
+  }
 }
