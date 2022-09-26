@@ -17,6 +17,7 @@ import {
   WorkerType
 } from './sparse-result';
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
+import ParticleShaderMaterial from './particle-shader';
 
 /*
 The ArrayModel manages to the local octree
@@ -30,6 +31,9 @@ class ArrayModel {
   minVector!: Vector3;
   maxVector!: Vector3;
   rgbMax!: number;
+  edlStrength: number;
+  edlRadius: number;
+  edlNeighbours: number;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -40,7 +44,6 @@ class ArrayModel {
   translateX = 0;
   translateY = 0;
   translateZ = 0;
-  //rgbMax = 1;
   pickedBlockCode = 0;
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
@@ -58,7 +61,9 @@ class ArrayModel {
     this.refreshRate = options.refreshRate || 15;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
-    this.rgbMax = options.rgbMax || 1;
+    this.edlStrength = options.edlStrength || 4.0;
+    this.edlRadius = options.edlRadius || 1.4;
+    this.edlNeighbours = options.edlNeighbours || 8;
   }
 
   private loadSystem(index: number, block: MoctreeBlock, scene: Scene) {
@@ -97,11 +102,15 @@ class ArrayModel {
         }
       };
       
+      // particle shader material
+      const shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
+
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
           size: this.particleSize
         });
+        particle.material = shaderMaterial.shaderMaterial;
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
           positionFunction: pointBuilder
@@ -115,6 +124,7 @@ class ArrayModel {
             const particle = MeshBuilder.CreateBox(this.particleType, {
               size: this.particleSize + index * this.particleScale // increase particle point size for higher LODs
             });
+            particle.material = shaderMaterial.shaderMaterial;
             sps.addShape(particle, numPoints);
             particle.dispose();
           } else {
@@ -169,7 +179,7 @@ class ArrayModel {
     ymax: number,
     zmin: number,
     zmax: number,
-    rgbMax: number,
+    rgbMax?: number,
     data?: SparseResult
   ) {
     for (let i = 0; i < this.maxLevel; i++) {
@@ -208,8 +218,7 @@ class ArrayModel {
     this.translateX = xmin + spanX;
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
-    this.rgbMax = rgbMax;
-
+    
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
     // maintain compatibility with directly loading data

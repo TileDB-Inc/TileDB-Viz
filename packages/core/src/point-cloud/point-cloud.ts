@@ -5,7 +5,8 @@ import {
   Vector3,
   Camera,
   DirectionalLight,
-  HemisphericLight
+  HemisphericLight,
+  PostProcess
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -70,6 +71,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       camera.setTarget(Vector3.Zero());
+
       this._cameras.push(camera);
 
       /*
@@ -107,6 +109,37 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         rgbMax,
         data as SparseResult
       );
+
+      /*
+      Shader post processing
+      */
+
+      const edlStrength = this._options.edlStrength || 4.0;
+      const edlRadius = this._options.edlRadius || 1.4;
+      const neighbourCount = this._options.edlNeighbours || 8;
+      const neighbours: number[] = [];
+      for (let c = 0; c < neighbourCount; c++) {
+        neighbours[2 * c + 0] = Math.cos(2 * c * Math.PI / neighbourCount);
+        neighbours[2 * c + 1] = Math.sin(2 * c * Math.PI / neighbourCount);
+      }
+
+      var depthRenderer = scene.enableDepthRenderer(camera);
+      var depthTex = depthRenderer.getDepthMap();
+
+      var screenWidth = this?.engine?.getRenderWidth();
+      var screenHeight = this?.engine?.getRenderHeight();
+            
+      var postProcess = new PostProcess("My custom post process", "custom",
+        ["screenWidth", "screenHeight", "neighbours", "edlStrength", "radius"], ["uEDLDepth"], 1.0, camera);
+      
+      postProcess.onApply = function (effect: any) {
+        effect.setFloat("screenWidth", screenWidth);
+        effect.setFloat("screenHeight", screenHeight);
+        effect.setArray2("neighbours", neighbours);
+        effect.setFloat("edlStrength", edlStrength);
+        effect.setFloat("radius", edlRadius);
+        effect.setTexture('uEDLDepth', depthTex);
+      };
 
       return scene;
     });
