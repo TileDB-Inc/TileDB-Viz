@@ -128,6 +128,19 @@ export interface TileDBPointCloudOptions
    * Camera radius
    */
   cameraRadius?: number;
+  /**
+   * EDL shader strength
+   */
+   edlStrength?: number;
+   /**
+   * EDL shader radius
+   */
+  edlRadius?: number;
+  /**
+   * Number of neightbours used in EDL shader
+   */
+  edlNeighbours?: number;
+  
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {

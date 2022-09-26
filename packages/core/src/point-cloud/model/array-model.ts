@@ -17,8 +17,9 @@ import {
   WorkerType
 } from './sparse-result';
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
+import ParticleShaderMaterial from './particle-shader';
 
-/**
+/** 
  * The ArrayModel manages to the local octree
  */
 class ArrayModel {
@@ -30,6 +31,10 @@ class ArrayModel {
   minVector!: Vector3;
   maxVector!: Vector3;
   rgbMax!: number;
+  edlStrength: number;
+  edlRadius: number;
+  edlNeighbours: number;
+  shaderMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -57,6 +62,9 @@ class ArrayModel {
     this.refreshRate = options.refreshRate || 15;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
+    this.edlStrength = options.edlStrength || 4.0;
+    this.edlRadius = options.edlRadius || 1.4;
+    this.edlNeighbours = options.edlNeighbours || 8;
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
@@ -94,11 +102,13 @@ class ArrayModel {
           }
         }
       };
+      
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
           size: this.particleSize
         });
+        particle.material = this?.shaderMaterial?.shaderMaterial;
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
           positionFunction: pointBuilder
@@ -112,6 +122,7 @@ class ArrayModel {
             const particle = MeshBuilder.CreateBox(this.particleType, {
               size: this.particleSize + index * this.particleScale // increase particle point size for higher LODs
             });
+            particle.material = this?.shaderMaterial?.shaderMaterial;
             sps.addShape(particle, numPoints);
             particle.dispose();
           } else {
@@ -195,17 +206,18 @@ class ArrayModel {
 
     this.rgbMax = rgbMax || 1;
 
+    this.shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
+
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
     const spanZ = (zmax - zmin) / 2.0;
     this.minVector = new Vector3(-spanX, -spanZ, -spanY);
     this.maxVector = new Vector3(spanX, spanZ, spanY);
-
+    
     this.translateX = xmin + spanX;
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
-
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
     // maintain compatibility with directly loading data

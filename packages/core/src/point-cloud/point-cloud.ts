@@ -1,14 +1,17 @@
 import {
   ArcRotateCamera,
+  Color3,
   Scene,
   Vector3,
   Camera,
-  HemisphericLight
+  DirectionalLight,
+  HemisphericLight,
+  PostProcess
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
-import { getPointCloud } from './utils';
+import { getPointCloud, setSceneColors } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
@@ -23,7 +26,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this._options = options;
 
-    // Initialize first time the TileDB client
+    // initialize the TileDB client
     if (options.token) {
       getTileDBClient({
         apiKey: options.token
@@ -40,10 +43,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this._scene = scene;
 
       /**
-       * Load point cloud data extents and data if bound
+       * Load point cloud data extents and data if bounding box not provided
        */
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._options);
+
+      const sceneColors = setSceneColors(this._options.colorScheme!);
+      scene.clearColor = sceneColors.backgroundColor;
+      
+      /**
+       * Set up camera 
+       */
 
       const defaultRadius = 25;
       const camera = new ArcRotateCamera(
@@ -54,21 +64,38 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         Vector3.Zero(),
         scene
       );
-
       camera.attachControl();
-      const light1: HemisphericLight = new HemisphericLight(
-        'light1',
-        new Vector3(-1, 1, 0),
-        scene
-      );
-      light1.intensity = 0.8;
 
       if (this.wheelPrecision > 0) {
         camera.wheelPrecision = this.wheelPrecision;
       }
 
       camera.setTarget(Vector3.Zero());
+
       this._cameras.push(camera);
+
+      /**
+       * Set up lights
+       */
+
+      // general light
+      const light1: HemisphericLight = new HemisphericLight(
+        'light1',
+        camera.position,
+        scene
+      );
+      light1.intensity = 0.9;
+      light1.specular = Color3.Black()
+
+      // light for generating shadows
+      const light2: DirectionalLight = new DirectionalLight("Point", camera.cameraDirection, scene); 
+      light2.position = camera.position;
+      light2.intensity = 0.7;
+      light2.specular = Color3.Black()
+      
+      /**
+       * Initialize SolidParticleSystem
+       */
 
       this._model = new ArrayModel(this._options);
       await this._model.init(
@@ -82,6 +109,37 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         rgbMax,
         data as SparseResult
       );
+
+      /**
+       * Shader post processing
+       */
+
+      var edlStrength = this._options.edlStrength || 4.0;
+      var edlRadius = this._options.edlRadius || 1.4;
+      var neighbourCount = this._options.edlNeighbours || 8;
+      var neighbours: number[] = [];
+      for (let c = 0; c < neighbourCount; c++) {
+        neighbours[2 * c + 0] = Math.cos(2 * c * Math.PI / neighbourCount);
+        neighbours[2 * c + 1] = Math.sin(2 * c * Math.PI / neighbourCount);
+      }
+
+      var depthRenderer = scene.enableDepthRenderer(camera);
+      var depthTex = depthRenderer.getDepthMap();
+
+      var screenWidth = this?.engine?.getRenderWidth();
+      var screenHeight = this?.engine?.getRenderHeight();
+            
+      var postProcess = new PostProcess("My custom post process", "custom",
+        ["screenWidth", "screenHeight", "neighbours", "edlStrength", "radius"], ["uEDLDepth"], 1.0, camera);
+      
+      postProcess.onApply = function (effect: any) {
+        effect.setFloat("screenWidth", screenWidth);
+        effect.setFloat("screenHeight", screenHeight);
+        effect.setArray2("neighbours", neighbours);
+        effect.setFloat("edlStrength", edlStrength);
+        effect.setFloat("radius", edlRadius);
+        effect.setTexture('uEDLDepth', depthTex);
+      };
 
       return scene;
     });
