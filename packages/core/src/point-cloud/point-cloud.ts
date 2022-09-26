@@ -42,18 +42,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this._scene = scene;
 
-      /*
-      Load point cloud data extents and data if bounding box not provided
-      */
+      /**
+       * Load point cloud data extents and data if bounding box not provided
+       */
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._options);
 
       const sceneColors = setSceneColors(this._options.colorScheme!);
       scene.clearColor = sceneColors.backgroundColor;
       
-      /*
-      Set up camera 
-      */
+      /**
+       * Set up camera 
+       */
 
       const defaultRadius = 25;
       const camera = new ArcRotateCamera(
@@ -74,9 +74,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       this._cameras.push(camera);
 
-      /*
-      Set up lights
-      */
+      /**
+       * Set up lights
+       */
 
       // general light
       const light1: HemisphericLight = new HemisphericLight(
@@ -93,9 +93,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       light2.intensity = 0.7;
       light2.specular = Color3.Black()
       
-      /*
-      Initialize SolidParticleSystem
-      */
+      /**
+       * Initialize SolidParticleSystem
+       */
 
       this._model = new ArrayModel(this._options);
       await this._model.init(
@@ -110,14 +110,14 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         data as SparseResult
       );
 
-      /*
-      Shader post processing
-      */
+      /**
+       * Shader post processing
+       */
 
-      const edlStrength = this._options.edlStrength || 4.0;
-      const edlRadius = this._options.edlRadius || 1.4;
-      const neighbourCount = this._options.edlNeighbours || 8;
-      const neighbours: number[] = [];
+      var edlStrength = this._options.edlStrength || 4.0;
+      var edlRadius = this._options.edlRadius || 1.4;
+      var neighbourCount = this._options.edlNeighbours || 8;
+      var neighbours: number[] = [];
       for (let c = 0; c < neighbourCount; c++) {
         neighbours[2 * c + 0] = Math.cos(2 * c * Math.PI / neighbourCount);
         neighbours[2 * c + 1] = Math.sin(2 * c * Math.PI / neighbourCount);

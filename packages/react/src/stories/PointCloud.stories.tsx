@@ -47,9 +47,9 @@ export const Autzen = () => (
     particleSize={3}
     cameraRadius={2000}
     colorScheme="light"
-    edlStrength={5} //4
-    edlRadius={1.4} //1.4
-    edlNeighbours={8} //8
+    edlStrength={5} 
+    edlRadius={1.4} 
+    edlNeighbours={8} 
   />
 );
 

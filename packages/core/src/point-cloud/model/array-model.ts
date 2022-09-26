@@ -19,9 +19,9 @@ import {
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 import ParticleShaderMaterial from './particle-shader';
 
-/*
-The ArrayModel manages to the local octree
-*/
+/** 
+ * The ArrayModel manages to the local octree
+ */
 class ArrayModel {
   arrayName?: string;
   namespace?: string;
@@ -34,6 +34,7 @@ class ArrayModel {
   edlStrength: number;
   edlRadius: number;
   edlNeighbours: number;
+  shaderMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -66,7 +67,7 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
   }
 
-  private loadSystem(index: number, block: MoctreeBlock, scene: Scene) {
+  private loadSystem(index: number, block: MoctreeBlock) {
     // for now lets print the debug to show we are loading data, replace with visually showing the boxes and ray trace
     console.log('Loading: ' + index + ' LOD: ' + block.lod);
     if (block.entries !== undefined) {
@@ -102,15 +103,12 @@ class ArrayModel {
         }
       };
       
-      // particle shader material
-      const shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
-
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
           size: this.particleSize
         });
-        particle.material = shaderMaterial.shaderMaterial;
+        particle.material = this?.shaderMaterial?.shaderMaterial;
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
           positionFunction: pointBuilder
@@ -124,7 +122,7 @@ class ArrayModel {
             const particle = MeshBuilder.CreateBox(this.particleType, {
               size: this.particleSize + index * this.particleScale // increase particle point size for higher LODs
             });
-            particle.material = shaderMaterial.shaderMaterial;
+            particle.material = this?.shaderMaterial?.shaderMaterial;
             sps.addShape(particle, numPoints);
             particle.dispose();
           } else {
@@ -146,19 +144,19 @@ class ArrayModel {
     }
   }
 
-  private onData(evt: MessageEvent, scene: Scene) {
+  private onData(evt: MessageEvent) {
     const block = evt.data;
     block.isLoading = false;
     this.octree.blocks[block.lod][block.mortonNumber] = block;
     // TODO we should load in afterRender so we can see if the block is in frustum or not
-    this.loadSystem(block.lod, block, scene);
+    this.loadSystem(block.lod, block);
     // send the next data request
     if (this.renderBlocks.length) {
-      this.fetchBlock(this.renderBlocks.pop(), scene);
+      this.fetchBlock(this.renderBlocks.pop());
     }
   }
 
-  private async fetchBlock(block: MoctreeBlock | undefined, scene: Scene) {
+  private async fetchBlock(block: MoctreeBlock | undefined) {
     // fetch if not cached
     if (block && !block.isLoading && !block.entries) {
       block.isLoading = true;
@@ -167,7 +165,7 @@ class ArrayModel {
         block: block
       } as DataRequest);
     } else if (block?.entries) {
-      this.loadSystem(block.lod, block, scene);
+      this.loadSystem(block.lod, block);
     }
   }
 
@@ -208,17 +206,18 @@ class ArrayModel {
 
     this.rgbMax = rgbMax || 1;
 
+    this.shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
+
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
     const spanZ = (zmax - zmin) / 2.0;
     this.minVector = new Vector3(-spanX, -spanZ, -spanY);
     this.maxVector = new Vector3(spanX, spanZ, spanY);
-
+    
     this.translateX = xmin + spanX;
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
-    
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
     // maintain compatibility with directly loading data
@@ -226,7 +225,7 @@ class ArrayModel {
       // load into first SPS
       const block = new MoctreeBlock(0, 0, Vector3.Zero(), Vector3.Zero());
       block.entries = data;
-      this.loadSystem(0, block, scene);
+      this.loadSystem(0, block);
       // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
@@ -273,13 +272,13 @@ class ArrayModel {
               pickingInfo.pickedPoint,
               this.maxLevel
             );
-            this.fetchBlock(this.renderBlocks.pop(), scene);
+            this.fetchBlock(this.renderBlocks.pop());
           }
         }
       }
     } else {
       // load immutable layer immediately
-      this.fetchBlock(this.octree.blocks[0][0], scene);
+      this.fetchBlock(this.octree.blocks[0][0]);
       // no need to save entries for LOD 0
       this.octree.blocks[0][0].entries = undefined;
     }
