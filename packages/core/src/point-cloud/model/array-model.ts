@@ -29,6 +29,7 @@ class ArrayModel {
   particleScale: number;
   minVector!: Vector3;
   maxVector!: Vector3;
+  rgbMax!: number;
   maxLevel: number;
   token?: string;
   sps!: SolidParticleSystem;
@@ -39,7 +40,7 @@ class ArrayModel {
   translateX = 0;
   translateY = 0;
   translateZ = 0;
-  rgbMax = 1;
+  //rgbMax = 1;
   pickedBlockCode = 0;
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
@@ -194,6 +195,8 @@ class ArrayModel {
     };
     this.tiledbClient = getTileDBClient(config);
     this.tiledbQuery = this.tiledbClient.query;
+
+    this.rgbMax = rgbMax || 1;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
