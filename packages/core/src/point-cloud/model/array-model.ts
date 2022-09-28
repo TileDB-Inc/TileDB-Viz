@@ -1,5 +1,6 @@
 import {
   Color4,
+  Material,
   MeshBuilder,
   Scene,
   SolidParticle,
@@ -18,6 +19,7 @@ import {
 } from './sparse-result';
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 import ParticleShaderMaterial from './particle-shader';
+import PointCloudGUI from '../gui/point-cloud-gui';
 
 /** 
  * The ArrayModel manages to the local octree
@@ -108,7 +110,7 @@ class ArrayModel {
         const particle = MeshBuilder.CreateBox(this.particleType, {
           size: this.particleSize
         });
-        particle.material = this?.shaderMaterial?.shaderMaterial;
+        particle.material = this.shaderMaterial?.shaderMaterial as Material;
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
           positionFunction: pointBuilder
@@ -122,7 +124,7 @@ class ArrayModel {
             const particle = MeshBuilder.CreateBox(this.particleType, {
               size: this.particleSize + index * this.particleScale // increase particle point size for higher LODs
             });
-            particle.material = this?.shaderMaterial?.shaderMaterial;
+            particle.material = this.shaderMaterial?.shaderMaterial as Material;
             sps.addShape(particle, numPoints);
             particle.dispose();
           } else {
@@ -208,6 +210,11 @@ class ArrayModel {
 
     this.shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
 
+    var pointCloudGUI = new PointCloudGUI(scene);
+    console.log(pointCloudGUI);
+    pointCloudGUI.init(this);
+      
+
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
@@ -249,6 +256,7 @@ class ArrayModel {
         this.afterRender(scene);
       });
     }
+
     return scene;
   }
 

@@ -15,6 +15,7 @@ import { getPointCloud, setSceneColors } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
+//import PointCloudGUI from './gui/point-cloud-gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
@@ -109,6 +110,21 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         rgbMax,
         data as SparseResult
       );
+
+      /**
+       * Set up GUI 
+       */
+
+      //var pointCloudGUI = new PointCloudGUI(scene);
+      //pointCloudGUI.init(this._model);
+      //this.shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
+
+
+      //console.log(pointCloudGUI);
+
+      //var advancedTexture = new pointCloudGUI(this._model);
+
+      //console.log(advancedTexture);
 
       /**
        * Shader post processing
