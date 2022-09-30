@@ -131,8 +131,8 @@ export interface TileDBPointCloudOptions
   /**
    * EDL shader strength
    */
-   edlStrength?: number;
-   /**
+  edlStrength?: number;
+  /**
    * EDL shader radius
    */
   edlRadius?: number;
@@ -140,7 +140,6 @@ export interface TileDBPointCloudOptions
    * Number of neightbours used in EDL shader
    */
   edlNeighbours?: number;
-  
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {

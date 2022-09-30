@@ -19,7 +19,7 @@ import {
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 import ParticleShaderMaterial from './particle-shader';
 
-/** 
+/**
  * The ArrayModel manages to the local octree
  */
 class ArrayModel {
@@ -102,7 +102,7 @@ class ArrayModel {
           }
         }
       };
-      
+
       if (index === 0) {
         // immutable SPS for LoD 0
         const particle = MeshBuilder.CreateBox(this.particleType, {
@@ -206,7 +206,11 @@ class ArrayModel {
 
     this.rgbMax = rgbMax || 1;
 
-    this.shaderMaterial = new ParticleShaderMaterial(scene, this.edlNeighbours, this.particleSize);
+    this.shaderMaterial = new ParticleShaderMaterial(
+      scene,
+      this.edlNeighbours,
+      this.particleSize
+    );
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
@@ -214,7 +218,7 @@ class ArrayModel {
     const spanZ = (zmax - zmin) / 2.0;
     this.minVector = new Vector3(-spanX, -spanZ, -spanY);
     this.maxVector = new Vector3(spanX, spanZ, spanY);
-    
+
     this.translateX = xmin + spanX;
     this.translateY = zmin + spanZ;
     this.translateZ = ymin + spanY;
