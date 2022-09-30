@@ -35,21 +35,18 @@ export const TimeMode = () => (
 );
 
 export const Boulder = () => (
-  <PointCloudVisualization 
-    data={boulderData}
-    colorScheme="light"
-  />
+  <PointCloudVisualization data={boulderData} colorScheme="light" />
 );
 
 export const Autzen = () => (
-  <PointCloudVisualization 
-    data={autzenData} 
+  <PointCloudVisualization
+    data={autzenData}
     particleSize={3}
     cameraRadius={2000}
     colorScheme="light"
-    edlStrength={5} 
-    edlRadius={1.4} 
-    edlNeighbours={8} 
+    edlStrength={5}
+    edlRadius={1.4}
+    edlNeighbours={8}
   />
 );
 

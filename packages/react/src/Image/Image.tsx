@@ -15,7 +15,7 @@ export const ImageVisualization: React.FC<
 > = props => {
   const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBImageVisualization>()
+  const instanceRef = React.useRef<TileDBImageVisualization>();
 
   React.useEffect(() => {
     if (instanceRef.current) {
@@ -28,7 +28,7 @@ export const ImageVisualization: React.FC<
       /**
        * Create visualization instance
        */
-       instanceRef.current = new TileDBImageVisualization({
+      instanceRef.current = new TileDBImageVisualization({
         ...props,
         rootElement: rootDivElementRef.current
       });
@@ -36,15 +36,15 @@ export const ImageVisualization: React.FC<
       /**
        * Render canvas
        */
-       instanceRef.current?.render();
+      instanceRef.current?.render();
 
-       /**
-        * Destroy canvas on unmount
-        */
-       return () => {
-         instanceRef.current?.destroy();
-       };
-     }
+      /**
+       * Destroy canvas on unmount
+       */
+      return () => {
+        instanceRef.current?.destroy();
+      };
+    }
   }, [props]);
 
   return (
