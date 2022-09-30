@@ -15,7 +15,7 @@ export const PointCloudVisualization: React.FC<
 > = props => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBPointCloudVisualization>()
+  const instanceRef = React.useRef<TileDBPointCloudVisualization>();
 
   React.useEffect(() => {
     if (instanceRef.current) {
