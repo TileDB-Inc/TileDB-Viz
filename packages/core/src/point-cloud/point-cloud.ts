@@ -49,11 +49,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
         await getPointCloud(this._options);
 
-      const sceneColors = setSceneColors(this._options.colorScheme!);
+      const sceneColors = setSceneColors(this._options.colorScheme as string);
       scene.clearColor = sceneColors.backgroundColor;
-      
+
       /**
-       * Set up camera 
+       * Set up camera
        */
 
       const defaultRadius = 25;
@@ -86,14 +86,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         scene
       );
       light1.intensity = 0.9;
-      light1.specular = Color3.Black()
+      light1.specular = Color3.Black();
 
       // light for generating shadows
-      const light2: DirectionalLight = new DirectionalLight("Point", camera.cameraDirection, scene); 
+      const light2: DirectionalLight = new DirectionalLight(
+        'Point',
+        camera.cameraDirection,
+        scene
+      );
       light2.position = camera.position;
       light2.intensity = 0.7;
-      light2.specular = Color3.Black()
-      
+      light2.specular = Color3.Black();
+
       /**
        * Initialize SolidParticleSystem
        */
@@ -130,30 +134,36 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
        * Shader post processing
        */
 
-      var edlStrength = this._options.edlStrength || 4.0;
-      var edlRadius = this._options.edlRadius || 1.4;
-      var neighbourCount = this._options.edlNeighbours || 8;
-      var neighbours: number[] = [];
+      const edlStrength = this._options.edlStrength || 4.0;
+      const edlRadius = this._options.edlRadius || 1.4;
+      const neighbourCount = this._options.edlNeighbours || 8;
+      const neighbours: number[] = [];
       for (let c = 0; c < neighbourCount; c++) {
-        neighbours[2 * c + 0] = Math.cos(2 * c * Math.PI / neighbourCount);
-        neighbours[2 * c + 1] = Math.sin(2 * c * Math.PI / neighbourCount);
+        neighbours[2 * c + 0] = Math.cos((2 * c * Math.PI) / neighbourCount);
+        neighbours[2 * c + 1] = Math.sin((2 * c * Math.PI) / neighbourCount);
       }
 
-      var depthRenderer = scene.enableDepthRenderer(camera);
-      var depthTex = depthRenderer.getDepthMap();
+      const depthRenderer = scene.enableDepthRenderer(camera);
+      const depthTex = depthRenderer.getDepthMap();
 
-      var screenWidth = this?.engine?.getRenderWidth();
-      var screenHeight = this?.engine?.getRenderHeight();
-            
-      var postProcess = new PostProcess("My custom post process", "custom",
-        ["screenWidth", "screenHeight", "neighbours", "edlStrength", "radius"], ["uEDLDepth"], 1.0, camera);
-      
+      const screenWidth = this?.engine?.getRenderWidth();
+      const screenHeight = this?.engine?.getRenderHeight();
+
+      const postProcess = new PostProcess(
+        'My custom post process',
+        'custom',
+        ['screenWidth', 'screenHeight', 'neighbours', 'edlStrength', 'radius'],
+        ['uEDLDepth'],
+        1.0,
+        camera
+      );
+
       postProcess.onApply = function (effect: any) {
-        effect.setFloat("screenWidth", screenWidth);
-        effect.setFloat("screenHeight", screenHeight);
-        effect.setArray2("neighbours", neighbours);
-        effect.setFloat("edlStrength", edlStrength);
-        effect.setFloat("radius", edlRadius);
+        effect.setFloat('screenWidth', screenWidth);
+        effect.setFloat('screenHeight', screenHeight);
+        effect.setArray2('neighbours', neighbours);
+        effect.setFloat('edlStrength', edlStrength);
+        effect.setFloat('radius', edlRadius);
         effect.setTexture('uEDLDepth', depthTex);
       };
 

@@ -1,18 +1,10 @@
-import {
-    Effect,
-    Scene,
-    ShaderMaterial
-  } from '@babylonjs/core';
+import { Effect, Scene, ShaderMaterial } from '@babylonjs/core';
 
-class ParticleShaderMaterial{
-    shaderMaterial: ShaderMaterial
+class ParticleShaderMaterial {
+  shaderMaterial: ShaderMaterial;
 
-    constructor(
-        scene: Scene,
-        neighbourCount: number,
-        pointSize: number
-    ) {
-        Effect.ShadersStore["customVertexShader"]=  `
+  constructor(scene: Scene, neighbourCount: number, pointSize: number) {
+    Effect.ShadersStore['customVertexShader'] = `
         attribute vec3 position;
         #include<bonesDeclaration>
         #include<morphTargetsVertexGlobalDeclaration>
@@ -60,7 +52,7 @@ class ParticleShaderMaterial{
         }
         `;
 
-        Effect.ShadersStore["customFragmentShader"]= `
+    Effect.ShadersStore['customFragmentShader'] = `
         #extension GL_EXT_frag_depth : enable
         precision highp float;
 
@@ -128,19 +120,28 @@ class ParticleShaderMaterial{
             }*/
         }
         `;
-      
-      this.shaderMaterial = new ShaderMaterial("shader", scene, {
-        vertex: "custom",
-        fragment: "custom",
-        },
-        {
-        attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
-        });
-      
-      this.shaderMaterial.backFaceCulling = false;
 
-    }
+    this.shaderMaterial = new ShaderMaterial(
+      'shader',
+      scene,
+      {
+        vertex: 'custom',
+        fragment: 'custom'
+      },
+      {
+        attributes: ['position', 'normal', 'uv'],
+        uniforms: [
+          'world',
+          'worldView',
+          'worldViewProjection',
+          'view',
+          'projection'
+        ]
+      }
+    );
+
+    this.shaderMaterial.backFaceCulling = false;
+  }
 }
 
 export default ParticleShaderMaterial;

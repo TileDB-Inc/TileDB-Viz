@@ -1,8 +1,8 @@
 name: CI
 on: [push]
 jobs:
-  build:
-    name: Test
+  build_test_lint:
+    name: Test and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -15,3 +15,6 @@ jobs:
       - uses: borales/actions-yarn@v3.0.0
         with:
           cmd: test # will run `yarn test` command
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: lint # will run `yarn lint` command
