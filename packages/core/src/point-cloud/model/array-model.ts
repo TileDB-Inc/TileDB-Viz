@@ -208,14 +208,19 @@ class ArrayModel {
 
     this.rgbMax = rgbMax || 1;
 
+    /**
+     * EDL shader material
+     */
     this.shaderMaterial = new ParticleShaderMaterial(
       scene,
       this.edlNeighbours,
       this.particleSize
     );
 
+    /**
+     * Add an interactive GUI
+     */
     const pointCloudGUI = new PointCloudGUI(scene);
-    console.log(pointCloudGUI);
     pointCloudGUI.init(this);
 
     // centred on 0, 0, 0 with z being y
@@ -259,7 +264,6 @@ class ArrayModel {
         this.afterRender(scene);
       });
     }
-
     return scene;
   }
 
