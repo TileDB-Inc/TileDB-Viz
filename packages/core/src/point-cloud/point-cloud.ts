@@ -15,12 +15,14 @@ import { getPointCloud, setSceneColors } from './utils';
 import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
+import PointCloudGUI from './gui/point-cloud-gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
   private _cameras: Array<Camera> = new Array<Camera>();
   private _options: TileDBPointCloudOptions;
   private _model!: ArrayModel;
+  private _gui!: PointCloudGUI;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -113,6 +115,20 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         rgbMax,
         data as SparseResult
       );
+
+      /**
+       * Add an interactive GUI
+       */
+
+      this._gui = new PointCloudGUI(this._scene);
+      await this._gui.init(this._scene, this._model, this._options);
+
+      console.log('scene in scene');
+      console.log(this._scene);
+      console.log('model in scene');
+      console.log(this._model);
+      console.log('options in scene');
+      console.log(this._gui);
 
       /**
        * Shader post processing

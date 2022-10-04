@@ -3,7 +3,6 @@ import {
   AdvancedDynamicTexture,
   Button,
   Control,
-  CheckboxGroup,
   Grid,
   RadioGroup,
   SelectionPanel,
@@ -13,25 +12,40 @@ import {
   TextBlock
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
+import setSceneColors from '../utils/scene-colors';
+import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 
 class PointCloudGUI {
-  scene: Scene;
   advancedDynamicTexture: AdvancedDynamicTexture;
 
   constructor(scene: Scene) {
-    this.scene = scene;
     this.advancedDynamicTexture = AdvancedDynamicTexture.CreateFullscreenUI(
       'PC-UI',
       true,
-      this.scene
+      scene
     );
   }
 
-  init(arrayModel: ArrayModel) {
+  public async init(
+    scene: Scene,
+    model: ArrayModel,
+    options: TileDBPointCloudOptions
+  ) {
     // TODO - check these values
     this.advancedDynamicTexture.idealWidth = 800;
     this.advancedDynamicTexture.idealHeight = 900;
     this.advancedDynamicTexture.useSmallestIdeal = true;
+
+    console.log('scene in gui');
+    console.log(scene);
+    console.log('model in gui');
+    console.log(model);
+    console.log('options in gui');
+    console.log(options);
+    console.log('gui in gui');
+    console.log(this.advancedDynamicTexture);
+
+    let sceneColors = setSceneColors(options.colorScheme as string);
 
     // set up GUI grid
     const grid = new Grid();
@@ -42,47 +56,78 @@ class PointCloudGUI {
 
     grid.addRowDefinition(64, true);
     grid.addRowDefinition(1);
-    grid.addRowDefinition(80, true);
+    grid.addRowDefinition(64, true);
 
-    this.advancedDynamicTexture.addControl(grid);
-
-    // add hamburger button
+    // add button that expands customization menu
     const button = Button.CreateSimpleButton('button', 'Customize');
-    button.background = '#FFFFFF55';
-    grid.addControl(button, 0, 0);
+    button.fontSizeInPixels = 9;
+    button.background = sceneColors.secondColor;
+    button.fontWeight = 'bold';
+    button.color = sceneColors.textColor;
+    button.highlightColor = sceneColors.accentColor;
+    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 
-    // open and close panel menu on click
+    // open and close the customization panel menu on click of button
     button.onPointerUpObservable.add(() => {
       changeMenu();
     });
 
-    const selectPanel = new SelectionPanel('selectBox');
-    selectPanel.width = 1;
-    selectPanel.height = 1;
-    selectPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    selectPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    selectPanel.background = '#33804D55';
-    grid.addControl(selectPanel, 1, 0);
+    // add the customization panel
+    const customizePanel = new SelectionPanel('customizeBox');
+    customizePanel.width = 1;
+    customizePanel.height = 1;
+    customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    customizePanel.background = sceneColors.backgroundColor.toHexString();
+    customizePanel.fontSize = 8;
+    customizePanel.color = sceneColors.textColor;
+    customizePanel.barColor = sceneColors.accentColor;
+    customizePanel.headerColor = sceneColors.textColor;
+    customizePanel.buttonColor = sceneColors.accentColor;
+    customizePanel.buttonBackground = sceneColors.secondColor;
+    customizePanel.labelColor = sceneColors.textColor;
 
+    // select color scheme
+    const setColor = (but: any) => {
+      switch (but) {
+        case 'dark':
+          sceneColors = setSceneColors('dark');
+          scene.clearColor = sceneColors.backgroundColor;
+          scene.render();
+          break;
+        case 'light':
+          sceneColors = setSceneColors('light');
+          scene.clearColor = sceneColors.backgroundColor;
+          scene.render();
+          break;
+        case 'blue':
+          sceneColors = setSceneColors('blue');
+          scene.clearColor = sceneColors.backgroundColor;
+          scene.render();
+          break;
+      }
+    };
+
+    const colorGroup = new RadioGroup('Color scheme');
+    colorGroup.addRadio('dark', setColor);
+    colorGroup.addRadio('light', setColor);
+    colorGroup.addRadio('blue', setColor);
+    customizePanel.addGroup(colorGroup);
+
+    // place holder
     const transformGroup = new RadioGroup('Point type');
     transformGroup.addRadio('Box');
     transformGroup.addRadio('Sphere');
-
-    const colorGroup = new CheckboxGroup('Color');
-    colorGroup.addCheckbox('Blue');
-    colorGroup.addCheckbox('Red');
-
-    selectPanel.addGroup(transformGroup);
-    selectPanel.addGroup(colorGroup);
+    customizePanel.addGroup(transformGroup);
 
     let _menu = 0;
     const changeMenu = function () {
       if (_menu === 0) {
         _menu = 1;
-        selectPanel.isVisible = true;
+        customizePanel.isVisible = true;
       } else if (_menu === 1) {
         button.background = 'transparent';
-        selectPanel.isVisible = false;
+        customizePanel.isVisible = false;
         _menu = 0;
       }
       return _menu;
@@ -90,7 +135,7 @@ class PointCloudGUI {
 
     // make sure the menu is collapsed at the start
     const sceneInit = function () {
-      selectPanel.isVisible = false;
+      customizePanel.isVisible = false;
     };
 
     sceneInit();
@@ -100,14 +145,12 @@ class PointCloudGUI {
     sliderPanel.height = 1;
     sliderPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     sliderPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    sliderPanel.background = '#33804D55';
+    sliderPanel.background = sceneColors.backgroundColor.toHexString();
     sliderPanel.fontSize = 10;
-    grid.addControl(sliderPanel, 1, 4);
 
     // add slider menu button
     const sliderButton = Button.CreateSimpleButton('button', 'Slide');
     sliderButton.background = '#FFFFFF55';
-    grid.addControl(sliderButton, 0, 4);
 
     // open and close panel menu on click
     sliderButton.onPointerUpObservable.add(() => {
@@ -116,9 +159,9 @@ class PointCloudGUI {
 
     // add sliders
     addSlider2(
-      arrayModel,
+      model,
       'Point size',
-      arrayModel.particleSize,
+      model.particleSize,
       0.5,
       10,
       0.5,
@@ -127,9 +170,9 @@ class PointCloudGUI {
     );
     addSeparator(sliderPanel);
     addSlider2(
-      arrayModel,
+      model,
       'Shadow strength',
-      arrayModel.edlStrength,
+      model.edlStrength,
       0,
       20,
       1,
@@ -153,6 +196,12 @@ class PointCloudGUI {
     const sceneInit2 = function () {
       sliderPanel.isVisible = false;
     };
+
+    grid.addControl(button, 0, 0);
+    grid.addControl(customizePanel, 1, 0);
+    grid.addControl(sliderButton, 0, 4);
+    grid.addControl(sliderPanel, 1, 4);
+    this.advancedDynamicTexture.addControl(grid);
 
     sceneInit2();
   }

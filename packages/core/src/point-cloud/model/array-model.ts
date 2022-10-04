@@ -19,7 +19,6 @@ import {
 } from './sparse-result';
 import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 import ParticleShaderMaterial from './particle-shader';
-import PointCloudGUI from '../gui/point-cloud-gui';
 
 /**
  * The ArrayModel manages to the local octree
@@ -53,6 +52,7 @@ class ArrayModel {
   tiledbClient!: TileDBClient;
   tiledbQuery!: TileDBQuery;
   worker?: Worker;
+  colorScheme?: string;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -67,6 +67,7 @@ class ArrayModel {
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
+    this.colorScheme = options.colorScheme || 'blue';
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
@@ -216,12 +217,6 @@ class ArrayModel {
       this.edlNeighbours,
       this.particleSize
     );
-
-    /**
-     * Add an interactive GUI
-     */
-    const pointCloudGUI = new PointCloudGUI(scene);
-    pointCloudGUI.init(this);
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
