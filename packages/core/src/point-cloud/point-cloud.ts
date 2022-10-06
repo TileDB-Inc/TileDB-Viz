@@ -93,6 +93,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     button.cornerRadius = 4;
     button.zIndex = 2;
     button.onPointerUpObservable.add(() => {
+      if (this._options.namespace && this._options.arrayName) {
+        const storeName = `${this._options.namespace}:${this._options.arrayName}`;
+
+        clearCache(storeName);
+      }
       panel.dispose();
     });
     panel.addControl(button);
