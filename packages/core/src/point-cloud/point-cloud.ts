@@ -117,23 +117,15 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       );
 
       /**
-       * Add an interactive GUI
+       * Interactive GUI
        */
 
       this._gui = new PointCloudGUI(this._scene);
       await this._gui.init(this._scene, this._model, this._options);
 
-      console.log('scene in scene');
-      console.log(this._scene);
-      console.log('model in scene');
-      console.log(this._model);
-      console.log('options in scene');
-      console.log(this._gui);
-
       /**
        * Shader post processing
        */
-
       const edlStrength = this._options.edlStrength || 4.0;
       const edlRadius = this._options.edlRadius || 1.4;
       const neighbourCount = this._options.edlNeighbours || 8;
@@ -146,8 +138,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const depthRenderer = scene.enableDepthRenderer(camera);
       const depthTex = depthRenderer.getDepthMap();
 
-      const screenWidth = this?.engine?.getRenderWidth();
-      const screenHeight = this?.engine?.getRenderHeight();
+      const screenWidth = this.engine?.getRenderWidth();
+      const screenHeight = this.engine?.getRenderHeight();
 
       const postProcess = new PostProcess(
         'My custom post process',

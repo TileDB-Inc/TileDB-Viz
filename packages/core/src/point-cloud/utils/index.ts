@@ -6,7 +6,7 @@ import {
   loadPointCloud
 } from './tiledb-pc';
 import type { TileDBPointCloudOptions } from './tiledb-pc';
-import setSceneColors from './scene-colors';
+import { setSceneColors, updateSceneColors } from './scene-colors';
 import {
   reduceArrays,
   reduceDataArrays,
@@ -25,6 +25,7 @@ export {
   reduceDataArrays,
   setPointCloudSwitches,
   setSceneColors,
+  updateSceneColors,
   sortArrays,
   sortDataArrays
 };
