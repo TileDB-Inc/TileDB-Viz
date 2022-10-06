@@ -10,6 +10,7 @@ import {
   KeyboardEventTypes,
   Plane,
   Matrix
+  KeyboardEventTypes
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -19,6 +20,14 @@ import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import PointCloudGUI from './gui/point-cloud-gui';
+import {
+  AdvancedDynamicTexture,
+  Button,
+  Control,
+  Grid,
+  TextBlock,
+  TextWrapping
+} from '@babylonjs/gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private _scene!: Scene;
@@ -43,6 +52,87 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     await clearCache(storeName);
   }
 
+  attachKeys() {
+    this._scene.onKeyboardObservable.add(kbInfo => {
+      if (
+        kbInfo.type === KeyboardEventTypes.KEYUP &&
+        kbInfo.event.code === 'Delete'
+      ) {
+        console.log('User pressed Delete');
+        this.createConfirmationDialog(
+          "Are you sure you want to delete the array's cache?",
+          'Clear cache'
+        );
+      }
+    });
+  }
+
+  createConfirmationDialog(msg: string, titleText: string) {
+    const advancedDynamicTexture = AdvancedDynamicTexture.CreateFullscreenUI(
+      'CONFIRMATION_DIALOG',
+      true,
+      this._scene
+    );
+
+    const panel = new Grid();
+    panel.background = '#f5f5f5';
+    panel.width = 0.3;
+    panel.height = 0.35;
+    panel.setPadding('16px', '16px', '16px', '16px');
+    advancedDynamicTexture.addControl(panel);
+
+    const button = Button.CreateSimpleButton('acceptButton', 'Clear cache');
+    button.width = 0.45;
+    button.height = '36px';
+    button.color = 'white';
+    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    button.left = 10;
+    button.top = -8;
+    button.background = '#0070f0';
+    button.cornerRadius = 4;
+    button.zIndex = 2;
+    button.onPointerUpObservable.add(() => {
+      panel.dispose();
+    });
+    panel.addControl(button);
+
+    const button2 = Button.CreateSimpleButton('cancelButton', 'Cancel');
+    button2.width = 0.45;
+    button2.height = '36px';
+    button2.color = '#333';
+    button2.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button2.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    button2.left = -10;
+    button2.top = -8;
+    button2.cornerRadius = 4;
+    button2.zIndex = 2;
+    button2.onPointerUpObservable.add(() => {
+      panel.dispose();
+    });
+    panel.addControl(button2);
+
+    const text = new TextBlock('dialogText');
+    text.height = 1;
+    text.color = 'black';
+    text.textWrapping = TextWrapping.WordWrap;
+    text.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    text.text = msg;
+    text.top = -10;
+    panel.addControl(text);
+
+    const title = new TextBlock('dialogTitle');
+    title.height = 1;
+    title.color = 'black';
+    title.fontWeight = 'bold';
+    title.fontSize = 18;
+    title.textWrapping = TextWrapping.WordWrap;
+    title.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    title.top = -50;
+    title.text = titleText;
+    panel.addControl(title);
+  }
+
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this._scene = scene;
@@ -51,6 +141,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
         this._options
       );
+      this.attachKeys();
 
       const sceneColors = setSceneColors(this._options.colorScheme as string);
       this._scene.clearColor = sceneColors.backgroundColor;
