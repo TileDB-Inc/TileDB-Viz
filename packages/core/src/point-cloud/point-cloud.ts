@@ -45,8 +45,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       /**
        * Load point cloud data extents and data if bounding box not provided
        */
-      const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
-        await getPointCloud(this._options);
+      const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
+        this._options
+      );
 
       const sceneColors = setSceneColors(this._options.colorScheme as string);
       scene.clearColor = sceneColors.backgroundColor;
@@ -110,7 +111,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         ymax,
         zmin,
         zmax,
-        rgbMax,
+        this._options.rgbMax || 1.0,
         data as SparseResult
       );
 
