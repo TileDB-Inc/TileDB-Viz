@@ -1,10 +1,24 @@
 import { openDB } from 'idb/with-async-ittr';
 
 const DB_NAME = 'TILEDB_VIZ_CACHE';
-const DB_VERSION = 1;
+let DB_VERSION = 1;
 const INDEX_NAME = 'timestamp';
 
 const getCacheDB = async (storeName: string) => {
+  /**
+   * Get current version of IndexedDB,
+   * If objectStore doesn't exist we close the DB
+   * and upgrade DB to create the store.
+   */
+  const db = await openDB(DB_NAME);
+
+  if (db.objectStoreNames.contains(storeName)) {
+    return db;
+  }
+  db.close();
+
+  DB_VERSION = db.version + 1;
+
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       const store = db.createObjectStore(storeName, {
