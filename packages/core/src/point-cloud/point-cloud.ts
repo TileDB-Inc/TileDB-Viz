@@ -6,7 +6,8 @@ import {
   Camera,
   DirectionalLight,
   HemisphericLight,
-  PostProcess
+  PostProcess,
+  KeyboardEventTypes
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -151,6 +152,22 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         effect.setFloat('radius', edlRadius);
         effect.setTexture('uEDLDepth', depthTex);
       };
+
+      // add debug for key press
+      this._scene.onKeyboardObservable.add(kbInfo => {
+        switch (kbInfo.type) {
+          case KeyboardEventTypes.KEYDOWN:
+            if (kbInfo.event.key === 'Control') {
+              this._model.debug = true;
+            }
+            break;
+          case KeyboardEventTypes.KEYUP:
+            if (kbInfo.event.key === 'Control') {
+              this._model.debug = false;
+            }
+            break;
+        }
+      });
 
       return scene;
     });

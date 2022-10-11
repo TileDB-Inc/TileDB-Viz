@@ -1,7 +1,9 @@
 import {
+  Color3,
   Color4,
   Material,
   MeshBuilder,
+  RayHelper,
   Scene,
   SolidParticle,
   SolidParticleSystem,
@@ -10,14 +12,12 @@ import {
 
 import { Moctree, MoctreeBlock } from '../octree';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
-import getTileDBClient from '../../utils/getTileDBClient';
 import {
   DataRequest,
   InitialRequest,
   SparseResult,
   WorkerType
 } from './sparse-result';
-import TileDBClient, { TileDBQuery } from '@tiledb-inc/tiledb-cloud';
 import ParticleShaderMaterial from './particle-shader';
 
 /**
@@ -49,10 +49,9 @@ class ArrayModel {
   maxNumCacheBlocks: number;
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
-  tiledbClient!: TileDBClient;
-  tiledbQuery!: TileDBQuery;
   worker?: Worker;
   particlePool: Array<SolidParticle> = [];
+  debug = false;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -184,11 +183,11 @@ class ArrayModel {
   private onData(evt: MessageEvent) {
     const block = evt.data;
     block.isLoading = false;
-    // no need to save the entries for LOD 0 (morton number < 0)
-    if (block.mortonNumber >= 0) {
+    // no need to save the entries for LOD 0
+    if (block.mortonNumber !== Moctree.startBlockIndex) {
       this.octree.blocks.set(block.mortonNumber, block);
     }
-    // TODO we should load in afterRender so we can see if the block is in frustum or not
+
     this.loadSystem(block.lod, block);
     // send the next data request
     if (this.renderBlocks.length) {
@@ -238,12 +237,6 @@ class ArrayModel {
       }
     }
 
-    const config = {
-      apiKey: this.token
-    };
-    this.tiledbClient = getTileDBClient(config);
-    this.tiledbQuery = this.tiledbClient.query;
-
     this.rgbMax = rgbMax || 65535;
 
     this.shaderMaterial = new ParticleShaderMaterial(
@@ -269,7 +262,7 @@ class ArrayModel {
       // load into first SPS
       const block = new MoctreeBlock(
         0,
-        Moctree.startBlockIndex,
+        Moctree.startBlockIndex.toString(),
         Vector3.Zero(),
         Vector3.Zero()
       );
@@ -307,12 +300,17 @@ class ArrayModel {
       // find centre point and load higher resolution around it
       if (scene.activeCamera) {
         const ray = scene.activeCamera.getForwardRay();
-        const pickingInfo = ray.intersectsMesh(this.particleSystems[0].mesh);
-        if (pickingInfo.pickedPoint !== null) {
-          const parentBlocks = this.octree.getContainingBlocks(
-            pickingInfo.pickedPoint,
-            this.maxLevel - 1
-          );
+
+        if (this.debug) {
+          RayHelper.CreateAndShow(ray, scene, new Color3(1, 1, 0.1));
+        }
+
+        const parentBlocks = this.octree.getContainingBlocksByRay(
+          ray,
+          this.maxLevel - 1
+        );
+
+        if (parentBlocks.length > 0) {
           const pickCode = parentBlocks[0].mortonNumber;
 
           if (pickCode !== this.pickedBlockCode) {
@@ -325,7 +323,9 @@ class ArrayModel {
       }
     } else {
       // load immutable layer immediately
-      this.fetchBlock(this.octree.blocks.get(Moctree.startBlockIndex));
+      this.fetchBlock(
+        this.octree.blocks.get(Moctree.startBlockIndex.toString())
+      );
     }
   }
 

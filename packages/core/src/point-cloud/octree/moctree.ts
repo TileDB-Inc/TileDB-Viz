@@ -1,4 +1,4 @@
-import { Vector3 } from '@babylonjs/core';
+import { Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/
@@ -34,26 +34,27 @@ function encodeMorton(v: Vector3) {
 
 class Moctree {
   blocks = new Map<string, MoctreeBlock>();
-  static startBlockIndex = '-1';
+  static startBlockIndex = 1n;
 
   constructor(
     private _minPoint: Vector3,
     private _maxPoint: Vector3,
     public maxDepth: number
   ) {
-    // lod zero is stored with a code of -1 as zero is the first block of an octree division
+    // lod zero is stored with a code of 1
     this.blocks.set(
-      Moctree.startBlockIndex,
+      Moctree.startBlockIndex.toString(),
       new MoctreeBlock(
         0,
-        Moctree.startBlockIndex,
+        Moctree.startBlockIndex.toString(),
         this._minPoint,
         this._maxPoint
       )
     );
   }
 
-  public getContainingBlocks(point: Vector3, lod: number) {
+  public getContainingBlocksByRay(ray: Ray, lod: number) {
+    // this only queries the front octant that the ray is looking at
     const resultBlocks: MoctreeBlock[] = [];
     if (lod > 0) {
       if (lod > this.maxDepth) {
@@ -61,7 +62,51 @@ class Moctree {
       }
 
       let minVector = this._minPoint;
-      let code = -1n;
+      let code = Moctree.startBlockIndex;
+      let childBlockSize = Vector3.Zero();
+      const indexes = [
+        new Vector3(0, 0, 0),
+        new Vector3(1, 0, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(1, 1, 0),
+        new Vector3(0, 0, 1),
+        new Vector3(1, 0, 1),
+        new Vector3(0, 1, 1),
+        new Vector3(1, 1, 1)
+      ];
+
+      for (let l = 1; l <= lod; l++) {
+        childBlockSize = this._maxPoint
+          .subtract(this._minPoint)
+          .scale(1 / Math.pow(2, l));
+
+        for (let i = 0; i < indexes.length; i++) {
+          const st = minVector.add(childBlockSize.multiply(indexes[i]));
+          const ed = st.add(childBlockSize);
+          if (ray.intersectsBoxMinMax(st, ed)) {
+            code = (code << 3n) + BigInt(i);
+            resultBlocks.push(
+              this.blocks.get(code.toString()) ||
+                new MoctreeBlock(l, code.toString(), st, ed)
+            );
+            minVector = st;
+            break;
+          }
+        }
+      }
+    }
+    return resultBlocks.reverse();
+  }
+
+  public getContainingBlocksByPoint(point: Vector3, lod: number) {
+    const resultBlocks: MoctreeBlock[] = [];
+    if (lod > 0) {
+      if (lod > this.maxDepth) {
+        lod = this.maxDepth;
+      }
+
+      let minVector = this._minPoint;
+      let code = Moctree.startBlockIndex;
       let childBlockSize = Vector3.Zero();
 
       for (let l = 1; l <= lod; l++) {
@@ -75,11 +120,7 @@ class Moctree {
         const z = Math.floor(indexVector.z);
         const v = new Vector3(x, y, z);
 
-        if (code !== -1n) {
-          code = (code << 3n) + encodeMorton(v);
-        } else {
-          code = encodeMorton(v);
-        }
+        code = (code << 3n) + encodeMorton(v);
 
         minVector = minVector.add(v.multiply(childBlockSize));
 
