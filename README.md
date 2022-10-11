@@ -1,6 +1,11 @@
 # TileDB-Visualizations
 A collection of packages to help user create beautiful visualizations from TileDB arrays
 
+## Install node
+Preferred way with [nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+`nvm install`
+
 ## Install package
 Node v16 is recommended. Please note packages use yarn 3.x. [Yarn v3 installation](https://yarnpkg.com/getting-started/install) </br>
 In order to install the dependencies run:
