@@ -3,12 +3,15 @@ import {
   Color4,
   Material,
   MeshBuilder,
+  Ray,
   RayHelper,
   Scene,
   SolidParticle,
   SolidParticleSystem,
   Vector3
 } from '@babylonjs/core';
+
+import { GridMaterial } from '@babylonjs/materials';
 
 import { Moctree, MoctreeBlock } from '../octree';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
@@ -47,6 +50,7 @@ class ArrayModel {
   translateZ = 0;
   pickedBlockCode = '';
   maxNumCacheBlocks: number;
+  numGridSubdivisions: number;
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
   worker?: Worker;
@@ -67,7 +71,8 @@ class ArrayModel {
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
-    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 20;
+    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
+    this.numGridSubdivisions = options.numGridSubdivisions || 10;
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
@@ -210,6 +215,26 @@ class ArrayModel {
     }
   }
 
+  private showDebug(
+    debugOn: boolean,
+    scene: Scene,
+    ray: Ray,
+    blocks: MoctreeBlock[]
+  ) {
+    if (debugOn) {
+      // TODO make debug colors configurable
+      const c = new Color3(1, 1, 0.1);
+      if (!this.rayHelper) {
+        this.rayHelper = RayHelper.CreateAndShow(ray, scene, c);
+      } else {
+        this.rayHelper.ray = ray;
+        this.rayHelper.show(scene, c);
+      }
+    } else {
+      this.rayHelper?.hide();
+    }
+  }
+
   public async init(
     scene: Scene,
     xmin: number,
@@ -250,12 +275,11 @@ class ArrayModel {
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
-    const spanZ = (zmax - zmin) / 2.0;
-    this.minVector = new Vector3(-spanX, -spanZ, -spanY);
-    this.maxVector = new Vector3(spanX, spanZ, spanY);
+    this.minVector = new Vector3(-spanX, 0, -spanY);
+    this.maxVector = new Vector3(spanX, zmax - zmin, spanY);
 
     this.translateX = xmin + spanX;
-    this.translateY = zmin + spanZ;
+    this.translateY = zmin;
     this.translateZ = ymin + spanY;
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
 
@@ -273,6 +297,22 @@ class ArrayModel {
       // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
+      // create a ground so we always having picking for panning the scene
+      const ground = MeshBuilder.CreateGround(
+        'ground',
+        {
+          width: spanX * 2,
+          height: spanY * 2,
+          subdivisions: this.numGridSubdivisions
+        },
+        scene
+      );
+
+      // TODO make grid material configurable or even transparent
+      const gridMaterial = new GridMaterial('groundMaterial', scene);
+      gridMaterial.majorUnitFrequency = this.numGridSubdivisions;
+      ground.material = gridMaterial;
+
       this.worker = new Worker(
         new URL('../workers/tiledb.worker', import.meta.url),
         { type: 'module' }
@@ -303,14 +343,16 @@ class ArrayModel {
       if (scene.activeCamera) {
         const ray = scene.activeCamera.getForwardRay();
 
-        if (this.debug) {
-          RayHelper.CreateAndShow(ray, scene, new Color3(1, 1, 0.1));
-        }
-
         const parentBlocks = this.octree.getContainingBlocksByRay(
           ray,
           this.maxLevel - 1
         );
+
+        if (this.debug) {
+          this.showDebug(true, scene, ray, parentBlocks);
+        } else {
+          this.showDebug(false, scene, ray, parentBlocks);
+        }
 
         if (parentBlocks.length > 0) {
           // highest resolution

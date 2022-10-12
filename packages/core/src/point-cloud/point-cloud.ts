@@ -7,7 +7,9 @@ import {
   DirectionalLight,
   HemisphericLight,
   PostProcess,
-  KeyboardEventTypes
+  KeyboardEventTypes,
+  Plane,
+  Matrix
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -157,17 +159,63 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this._scene.onKeyboardObservable.add(kbInfo => {
         switch (kbInfo.type) {
           case KeyboardEventTypes.KEYDOWN:
-            if (kbInfo.event.key === 'Control') {
+            if (kbInfo.event.key === 'r') {
               this._model.debug = true;
             }
             break;
           case KeyboardEventTypes.KEYUP:
-            if (kbInfo.event.key === 'Control') {
+            if (kbInfo.event.key === 'r') {
               this._model.debug = false;
             }
             break;
         }
       });
+
+      // add panning control
+      let plane: Plane;
+      let pickOrigin: Vector3;
+
+      let isPanning = false;
+      scene.onPointerDown = evt => {
+        if (evt.ctrlKey) {
+          const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+          if (pickResult?.pickedPoint) {
+            const normal = camera.position
+              .subtract(pickResult.pickedPoint)
+              .normalize();
+            plane = Plane.FromPositionAndNormal(pickResult.pickedPoint, normal);
+            pickOrigin = pickResult.pickedPoint;
+            isPanning = true;
+            camera.detachControl();
+          }
+        }
+      };
+
+      scene.onPointerUp = () => {
+        isPanning = false;
+        camera.attachControl(true, true);
+      };
+
+      const identity = Matrix.Identity();
+      scene.onPointerMove = evt => {
+        if (isPanning) {
+          const ray = scene.createPickingRay(
+            scene.pointerX,
+            scene.pointerY,
+            identity,
+            camera,
+            false
+          );
+          const distance = ray.intersectsPlane(plane);
+
+          if (distance === null) {
+            return;
+          }
+          const pickedPoint = ray.direction.scale(distance).add(ray.origin);
+          const diff = pickedPoint.subtract(pickOrigin);
+          camera.target.subtractInPlace(diff);
+        }
+      };
 
       return scene;
     });

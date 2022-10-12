@@ -139,11 +139,14 @@ export interface TileDBPointCloudOptions
    * Number of neightbours used in EDL shader
    */
   edlNeighbours?: number;
-
   /**
    * Number of blocks in LRU cache
    */
   maxNumCacheBlocks?: number;
+  /**
+   * Grid subdivisions on X/Y plane
+   */
+  numGridSubdivisions?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
