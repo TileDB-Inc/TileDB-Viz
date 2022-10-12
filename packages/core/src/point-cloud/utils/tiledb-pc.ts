@@ -4,7 +4,6 @@ import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
 import getTileDBClient from '../../utils/getTileDBClient';
 import { reduceDataArrays, sortDataArrays } from './arrays';
-import stringifyQuery from './stringifyQuery';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
@@ -235,11 +234,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
-  const queryCacheKey = stringifyQuery(
-    query.ranges,
-    options.namespace as string,
-    options.arrayName as string
-  );
+  const queryCacheKey = query.ranges.toString();
 
   const storeName = `${options.namespace}:${options.arrayName}`;
 

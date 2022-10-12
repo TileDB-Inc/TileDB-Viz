@@ -1,4 +1,4 @@
-import { Ray, Vector3 } from '@babylonjs/core';
+import { BoundingBox, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/
@@ -34,6 +34,7 @@ function encodeMorton(v: Vector3) {
 
 class Moctree {
   blocks = new Map<string, MoctreeBlock>();
+  bounds: BoundingBox;
   static startBlockIndex = 1n;
 
   constructor(
@@ -51,46 +52,53 @@ class Moctree {
         this._maxPoint
       )
     );
+    this.bounds = new BoundingBox(this._minPoint, this._maxPoint);
   }
 
   public getContainingBlocksByRay(ray: Ray, lod: number) {
-    // this only queries the front octant that the ray is looking at
+    // this only queries the front octant that the ray is looking at, it will however look past empty octants
     const resultBlocks: MoctreeBlock[] = [];
     if (lod > 0) {
-      if (lod > this.maxDepth) {
-        lod = this.maxDepth;
-      }
+      if (ray.intersectsBoxMinMax(this._minPoint, this._maxPoint)) {
+        if (lod > this.maxDepth) {
+          lod = this.maxDepth;
+        }
+        let minVector = this._minPoint;
+        let code = Moctree.startBlockIndex;
+        let childBlockSize = Vector3.Zero();
+        const indexes = [
+          new Vector3(0, 0, 0),
+          new Vector3(1, 0, 0),
+          new Vector3(0, 1, 0),
+          new Vector3(1, 1, 0),
+          new Vector3(0, 0, 1),
+          new Vector3(1, 0, 1),
+          new Vector3(0, 1, 1),
+          new Vector3(1, 1, 1)
+        ];
 
-      let minVector = this._minPoint;
-      let code = Moctree.startBlockIndex;
-      let childBlockSize = Vector3.Zero();
-      const indexes = [
-        new Vector3(0, 0, 0),
-        new Vector3(1, 0, 0),
-        new Vector3(0, 1, 0),
-        new Vector3(1, 1, 0),
-        new Vector3(0, 0, 1),
-        new Vector3(1, 0, 1),
-        new Vector3(0, 1, 1),
-        new Vector3(1, 1, 1)
-      ];
+        for (let l = 1; l <= lod; l++) {
+          childBlockSize = this._maxPoint
+            .subtract(this._minPoint)
+            .scale(1 / Math.pow(2, l));
 
-      for (let l = 1; l <= lod; l++) {
-        childBlockSize = this._maxPoint
-          .subtract(this._minPoint)
-          .scale(1 / Math.pow(2, l));
+          for (let i = 0; i < indexes.length; i++) {
+            const st = minVector.add(childBlockSize.multiply(indexes[i]));
+            const ed = st.add(childBlockSize);
+            if (ray.intersectsBoxMinMax(st, ed)) {
+              const v = (code << 3n) + BigInt(i);
+              const block = this.blocks.get(v.toString());
+              if (block?.isEmpty) {
+                continue;
+              }
 
-        for (let i = 0; i < indexes.length; i++) {
-          const st = minVector.add(childBlockSize.multiply(indexes[i]));
-          const ed = st.add(childBlockSize);
-          if (ray.intersectsBoxMinMax(st, ed)) {
-            code = (code << 3n) + BigInt(i);
-            resultBlocks.push(
-              this.blocks.get(code.toString()) ||
-                new MoctreeBlock(l, code.toString(), st, ed)
-            );
-            minVector = st;
-            break;
+              resultBlocks.push(
+                block || new MoctreeBlock(l, v.toString(), st, ed)
+              );
+              minVector = st;
+              code = v;
+              break;
+            }
           }
         }
       }
@@ -101,51 +109,51 @@ class Moctree {
   public getContainingBlocksByPoint(point: Vector3, lod: number) {
     const resultBlocks: MoctreeBlock[] = [];
     if (lod > 0) {
-      if (lod > this.maxDepth) {
-        lod = this.maxDepth;
-      }
+      if (this.bounds.intersectsPoint(point)) {
+        if (lod > this.maxDepth) {
+          lod = this.maxDepth;
+        }
+        let minVector = this._minPoint;
+        let code = Moctree.startBlockIndex;
+        let childBlockSize = Vector3.Zero();
 
-      let minVector = this._minPoint;
-      let code = Moctree.startBlockIndex;
-      let childBlockSize = Vector3.Zero();
+        for (let l = 1; l <= lod; l++) {
+          childBlockSize = this._maxPoint
+            .subtract(this._minPoint)
+            .scale(1 / Math.pow(2, l));
 
-      for (let l = 1; l <= lod; l++) {
-        childBlockSize = this._maxPoint
-          .subtract(this._minPoint)
-          .scale(1 / Math.pow(2, l));
+          const indexVector = point.subtract(minVector).divide(childBlockSize);
+          const x = Math.floor(indexVector.x);
+          const y = Math.floor(indexVector.y);
+          const z = Math.floor(indexVector.z);
+          const v = new Vector3(x, y, z);
 
-        const indexVector = point.subtract(minVector).divide(childBlockSize);
-        const x = Math.floor(indexVector.x);
-        const y = Math.floor(indexVector.y);
-        const z = Math.floor(indexVector.z);
-        const v = new Vector3(x, y, z);
+          code = (code << 3n) + encodeMorton(v);
 
-        code = (code << 3n) + encodeMorton(v);
+          minVector = minVector.add(v.multiply(childBlockSize));
 
-        minVector = minVector.add(v.multiply(childBlockSize));
-
-        resultBlocks.push(
-          this.blocks.get(code.toString()) ||
-            new MoctreeBlock(
-              l,
-              code.toString(),
-              minVector,
-              minVector.add(childBlockSize)
-            )
-        );
+          resultBlocks.push(
+            this.blocks.get(code.toString()) ||
+              new MoctreeBlock(
+                l,
+                code.toString(),
+                minVector,
+                minVector.add(childBlockSize)
+              )
+          );
+        }
       }
     }
-
     // high resolution returned first
     return resultBlocks.reverse();
   }
 }
 
 class MoctreeBlock {
-  private _boundingVectors = new Array<Vector3>();
   isLoading = false;
   minPoint: Vector3;
   maxPoint: Vector3;
+  isEmpty = false;
   entries?: SparseResult;
 
   constructor(
@@ -156,26 +164,6 @@ class MoctreeBlock {
   ) {
     this.minPoint = minPoint.clone();
     this.maxPoint = maxPoint.clone();
-    this._boundingVectors.push(this.minPoint.clone());
-    this._boundingVectors.push(this.maxPoint.clone());
-
-    this._boundingVectors.push(this.minPoint.clone());
-    this._boundingVectors[2].x = this.maxPoint.x;
-
-    this._boundingVectors.push(this.minPoint.clone());
-    this._boundingVectors[3].y = this.maxPoint.y;
-
-    this._boundingVectors.push(this.minPoint.clone());
-    this._boundingVectors[4].z = this.maxPoint.z;
-
-    this._boundingVectors.push(this.maxPoint.clone());
-    this._boundingVectors[5].z = this.minPoint.z;
-
-    this._boundingVectors.push(this.maxPoint.clone());
-    this._boundingVectors[6].x = this.minPoint.x;
-
-    this._boundingVectors.push(this.maxPoint.clone());
-    this._boundingVectors[7].y = this.minPoint.y;
   }
 }
 

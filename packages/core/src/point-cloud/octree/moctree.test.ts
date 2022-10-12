@@ -147,10 +147,7 @@ describe('moctree tests', () => {
     expect(blocks.length).toBe(1);
     expect(blocks[0].minPoint.equals(minPoint));
     expect(blocks[0].maxPoint.equals(minPoint.add(blockSize)));
-
-    for (let b = 0; b < blocks.length; b++) {
-      expect(blocks[b].lod).toBe(lod - b);
-    }
+    expect(blocks[0].lod).toBe(1);
 
     // opposite block, reverse direction
     ray.origin = maxPoint;
@@ -159,10 +156,7 @@ describe('moctree tests', () => {
     expect(blocks.length).toBe(1);
     expect(blocks[0].minPoint.equals(minPoint.add(blockSize)));
     expect(blocks[0].maxPoint.equals(maxPoint));
-
-    for (let b = 0; b < blocks.length; b++) {
-      expect(blocks[b].lod).toBe(lod - b);
-    }
+    expect(blocks[0].lod === 1);
 
     // test at lod 2, a diagonal ray
     lod = 2;
@@ -208,5 +202,62 @@ describe('moctree tests', () => {
     const lod = 10;
     const ray = new Ray(minPoint, maxPoint.subtract(minPoint));
     expect(tree.getContainingBlocksByRay(ray, lod).length).toBe(lod);
+  });
+
+  test('empty blocks in moctree', () => {
+    // instantiate blocks and then mark as empty to simulate an empty return from the server
+    const maxDepth = 2;
+    const tree = new Moctree(minPoint, maxPoint, maxDepth);
+
+    // test at lod 2, 64 blocks, a diagonal ray
+    const lod = 2;
+    const blockSize = maxPoint.subtract(minPoint).scale(1 / Math.pow(2, lod));
+    const ray = new Ray(minPoint, maxPoint.subtract(minPoint));
+
+    // test that we get the expected lower octant
+    const lowerBlocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(lowerBlocks.length).toBe(2);
+    expect(lowerBlocks[0].minPoint.equals(minPoint));
+    expect(lowerBlocks[0].maxPoint.equals(minPoint.add(blockSize)));
+    expect(lowerBlocks[1].minPoint.equals(minPoint));
+    expect(
+      lowerBlocks[1].maxPoint.equals(
+        minPoint.add(blockSize.multiply(new Vector3(2, 2, 2)))
+      )
+    );
+
+    // set lower high resolution octant to be empty and add to the cache
+    lowerBlocks[0].isEmpty = true;
+    lowerBlocks.forEach(blk => {
+      tree.blocks.set(blk.mortonNumber.toString(), blk);
+    });
+
+    // use same ray and we should get octant at lod 2 that is opposite origin
+    const lowerBlocks2 = tree.getContainingBlocksByRay(ray, lod);
+    expect(lowerBlocks2.length).toBe(2);
+    expect(lowerBlocks2[0].minPoint.equals(minPoint.add(blockSize)));
+    expect(
+      lowerBlocks2[0].maxPoint.equals(
+        minPoint.add(blockSize.multiply(new Vector3(2, 2, 2)))
+      )
+    );
+
+    // set lower outer octant to be empty and we should now get the opposite large octant
+    lowerBlocks[1].isEmpty = true;
+    lowerBlocks[0].isEmpty = false;
+    const upperBlocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(upperBlocks.length).toBe(2);
+    expect(
+      upperBlocks[0].minPoint.equals(
+        minPoint.add(blockSize.multiply(new Vector3(2, 2, 2)))
+      )
+    );
+    expect(upperBlocks[0].maxPoint.equals(maxPoint));
+    expect(
+      upperBlocks[1].minPoint.equals(
+        minPoint.add(blockSize.multiply(new Vector3(2, 2, 2)))
+      )
+    );
+    expect(upperBlocks[1].maxPoint.equals(maxPoint.subtract(blockSize)));
   });
 });

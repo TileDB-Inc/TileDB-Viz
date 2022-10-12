@@ -52,6 +52,7 @@ class ArrayModel {
   worker?: Worker;
   particlePool: Array<SolidParticle> = [];
   debug = false;
+  rayHelper?: RayHelper;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -187,8 +188,9 @@ class ArrayModel {
     if (block.mortonNumber !== Moctree.startBlockIndex) {
       this.octree.blocks.set(block.mortonNumber, block);
     }
-
-    this.loadSystem(block.lod, block);
+    if (!block.isEmpty) {
+      this.loadSystem(block.lod, block);
+    }
     // send the next data request
     if (this.renderBlocks.length) {
       this.fetchBlock(this.renderBlocks.pop());
@@ -311,6 +313,7 @@ class ArrayModel {
         );
 
         if (parentBlocks.length > 0) {
+          // highest resolution
           const pickCode = parentBlocks[0].mortonNumber;
 
           if (pickCode !== this.pickedBlockCode) {
