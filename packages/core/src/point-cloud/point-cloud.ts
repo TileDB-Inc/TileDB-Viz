@@ -51,7 +51,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         await getPointCloud(this._options);
 
       const sceneColors = setSceneColors(this._options.colorScheme as string);
-      scene.clearColor = sceneColors.backgroundColor;
+      this._scene.clearColor = sceneColors.backgroundColor;
 
       /**
        * Set up camera
@@ -64,9 +64,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         Math.PI / 4.5,
         this._options.cameraRadius || defaultRadius,
         Vector3.Zero(),
-        scene
+        this._scene
       );
       camera.attachControl();
+      camera.layerMask = 1;
 
       if (this.wheelPrecision > 0) {
         camera.wheelPrecision = this.wheelPrecision;
@@ -74,7 +75,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       camera.setTarget(Vector3.Zero());
 
-      this._cameras.push(camera);
+      const guiCamera = new ArcRotateCamera(
+        'Camera',
+        Math.PI / 3,
+        Math.PI / 4.5,
+        this._options.cameraRadius || defaultRadius,
+        Vector3.Zero(),
+        this._scene
+      );
+      guiCamera.layerMask = 2;
+
+      this._scene.activeCameras = [camera, guiCamera];
+      this._cameras.push(camera, guiCamera);
 
       /**
        * Set up lights
@@ -84,7 +96,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const light1: HemisphericLight = new HemisphericLight(
         'light1',
         camera.position,
-        scene
+        this._scene
       );
       light1.intensity = 0.9;
       light1.specular = Color3.Black();
@@ -93,7 +105,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const light2: DirectionalLight = new DirectionalLight(
         'Point',
         camera.cameraDirection,
-        scene
+        this._scene
       );
       light2.position = camera.position;
       light2.intensity = 0.7;
@@ -122,6 +134,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       this._gui = new PointCloudGUI(this._scene);
       await this._gui.init(this._scene, this._model, this._options);
+      if (this._gui.advancedDynamicTexture.layer !== null) {
+        this._gui.advancedDynamicTexture.layer.layerMask = 2;
+        console.log('setting layerMask');
+      }
 
       /**
        * Shader post processing
@@ -135,7 +151,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         neighbours[2 * c + 1] = Math.sin((2 * c * Math.PI) / neighbourCount);
       }
 
-      const depthRenderer = scene.enableDepthRenderer(camera);
+      const depthRenderer = this._scene.enableDepthRenderer(camera);
       const depthTex = depthRenderer.getDepthMap();
 
       const screenWidth = this.engine?.getRenderWidth();

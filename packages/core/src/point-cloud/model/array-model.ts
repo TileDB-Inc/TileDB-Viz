@@ -38,7 +38,6 @@ class ArrayModel {
   shaderMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
-  //sps!: SolidParticleSystem;
   frame = 0;
   refreshRate: number;
   particleType: string;

@@ -68,7 +68,7 @@ class PointCloudGUI {
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
-    // this expands and collpases the panel menu on click of button
+    // this expands and collapses the panel menu on click of button
     button.onPointerUpObservable.add(() => {
       changeMenu();
     });
@@ -108,17 +108,21 @@ class PointCloudGUI {
     colorGroup.addRadio('blue', setColor);
     customizePanel.addGroup(colorGroup);
 
-    // this add a point size slider
+    // this adds a point size slider
     function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
-      for (let c = 0; c < model.particleSystems.length; c++) {
-        model.particleSystems[0].updateParticle = function (particle: any) {
-          particle.scaling = new Vector3(value / 100, value / 100, value / 100);
-          return particle.scaling;
-        };
-        scene.onBeforeRenderObservable.add(() => {
-          model.particleSystems[0].setParticles();
-        });
-      }
+      scene.onBeforeRenderObservable.addOnce(() => {
+        for (let c = 0; c < model.particleSystems.length; c++) {
+          model.particleSystems[c].updateParticle = function (particle: any) {
+            particle.scaling = new Vector3(
+              value / 100,
+              value / 100,
+              value / 100
+            );
+            return particle.scaling;
+          };
+          model.particleSystems[c].setParticles();
+        }
+      });
     }
 
     const updatePointSize = function (value: number) {
@@ -136,7 +140,7 @@ class PointCloudGUI {
       '%', //unit
       0, //min
       250, //max
-      100.0, //value
+      100, //value
       pointSizeValue //onValueChange
     );
 

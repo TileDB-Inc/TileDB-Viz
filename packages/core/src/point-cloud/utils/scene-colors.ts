@@ -37,7 +37,7 @@ function setSceneColors(colorScheme: string) {
 
 function updateSceneColors(scene: Scene, colorScheme: string) {
   const sceneColors = setSceneColors(colorScheme);
-  scene.onBeforeRenderObservable.add(() => {
+  scene.onBeforeRenderObservable.addOnce(() => {
     scene.clearColor = sceneColors.backgroundColor;
   });
 }
