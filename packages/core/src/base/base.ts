@@ -101,7 +101,6 @@ export class TileDBVisualization {
     this.rootElement.appendChild(this.canvas);
 
     this.engine = new Engine(this.canvas, true);
-
     const engine = this.engine;
 
     SceneLoader.ShowLoadingScreen = false;

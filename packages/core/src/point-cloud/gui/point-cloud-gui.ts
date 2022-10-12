@@ -82,6 +82,7 @@ class PointCloudGUI {
     customizePanel.background = sceneColors.backgroundColor.toHexString();
     customizePanel.fontSizeInPixels = 8;
     customizePanel.color = sceneColors.textColor;
+    customizePanel.shadowColor = sceneColors.backgroundColor.toHexString();
     customizePanel.barColor = sceneColors.accentColor;
     customizePanel.headerColor = sceneColors.textColor;
     customizePanel.buttonColor = sceneColors.accentColor;

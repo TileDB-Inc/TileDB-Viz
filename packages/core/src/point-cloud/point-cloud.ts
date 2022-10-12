@@ -67,7 +67,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this._scene
       );
       camera.attachControl();
-      camera.layerMask = 1;
+      //camera.layerMask = 1;
 
       if (this.wheelPrecision > 0) {
         camera.wheelPrecision = this.wheelPrecision;
@@ -75,18 +75,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       camera.setTarget(Vector3.Zero());
 
-      const guiCamera = new ArcRotateCamera(
-        'Camera',
-        Math.PI / 3,
-        Math.PI / 4.5,
-        this._options.cameraRadius || defaultRadius,
-        Vector3.Zero(),
-        this._scene
-      );
-      guiCamera.layerMask = 2;
+      // const guiCamera = new ArcRotateCamera(
+      //   'Camera',
+      //   Math.PI / 3,
+      //   Math.PI / 4.5,
+      //   this._options.cameraRadius || defaultRadius,
+      //   Vector3.Zero(),
+      //   this._scene
+      // );
+      // guiCamera.layerMask = 2;
 
-      this._scene.activeCameras = [camera, guiCamera];
-      this._cameras.push(camera, guiCamera);
+      this._cameras.push(camera);
 
       /**
        * Set up lights
@@ -129,17 +128,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       );
 
       /**
-       * Interactive GUI
-       */
-
-      this._gui = new PointCloudGUI(this._scene);
-      await this._gui.init(this._scene, this._model, this._options);
-      if (this._gui.advancedDynamicTexture.layer !== null) {
-        this._gui.advancedDynamicTexture.layer.layerMask = 2;
-        console.log('setting layerMask');
-      }
-
-      /**
        * Shader post processing
        */
       const edlStrength = this._options.edlStrength || 4.0;
@@ -174,6 +162,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         effect.setFloat('radius', edlRadius);
         effect.setTexture('uEDLDepth', depthTex);
       };
+
+      /**
+       * Interactive GUI
+       */
+
+      this._gui = new PointCloudGUI(this._scene);
+      await this._gui.init(this._scene, this._model, this._options);
+      //if (this._gui.advancedDynamicTexture.layer !== null) {
+      //  this._gui.advancedDynamicTexture.layer.layerMask = 2;
+      //  console.log('setting layerMask');
+      //}
 
       return scene;
     });
