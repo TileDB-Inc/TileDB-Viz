@@ -66,7 +66,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         Vector3.Zero(),
         this._scene
       );
+      //scene.activeCamera = camera;
+      // Then attach the activeCamera to the canvas.
+      //Parameters: canvas, noPreventDefault
+      //scene.activeCamera.attachControl(this.canvas, true);
       camera.attachControl();
+      this._cameras.push(camera);
+      //if (this._scene.activeCameras.length === 0) {
+      //  this._scene.activeCameras.push(this._scene.activeCamera);
+      //}
+
+      //camera.attachControl(this.canvas, true);
       //camera.layerMask = 1;
 
       if (this.wheelPrecision > 0) {
@@ -75,17 +85,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       camera.setTarget(Vector3.Zero());
 
-      // const guiCamera = new ArcRotateCamera(
-      //   'Camera',
-      //   Math.PI / 3,
-      //   Math.PI / 4.5,
-      //   this._options.cameraRadius || defaultRadius,
-      //   Vector3.Zero(),
-      //   this._scene
-      // );
-      // guiCamera.layerMask = 2;
+      const guiCamera = new ArcRotateCamera(
+        'Camera',
+        Math.PI / 3,
+        Math.PI / 4.5,
+        this._options.cameraRadius || defaultRadius,
+        Vector3.Zero(),
+        this._scene
+      );
+      guiCamera.layerMask = 0x10000000;
 
-      this._cameras.push(camera);
+      this._cameras.push(guiCamera);
+      this._scene.activeCameras = this._cameras;
 
       /**
        * Set up lights
@@ -168,11 +179,12 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
        */
 
       this._gui = new PointCloudGUI(this._scene);
+      if (this._gui.advancedDynamicTexture.layer !== null) {
+        this._gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+        console.log('setting layerMask');
+        console.log(this._gui.advancedDynamicTexture.layer.layerMask);
+      }
       await this._gui.init(this._scene, this._model, this._options);
-      //if (this._gui.advancedDynamicTexture.layer !== null) {
-      //  this._gui.advancedDynamicTexture.layer.layerMask = 2;
-      //  console.log('setting layerMask');
-      //}
 
       return scene;
     });

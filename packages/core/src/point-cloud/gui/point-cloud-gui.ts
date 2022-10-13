@@ -10,7 +10,7 @@ import {
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
 import {
-  setSceneColors,
+  //setSceneColors,
   TileDBPointCloudOptions,
   updateSceneColors
 } from '../utils';
@@ -31,21 +31,11 @@ class PointCloudGUI {
     model: ArrayModel,
     options: TileDBPointCloudOptions
   ) {
-    // TODO - check these values
     this.advancedDynamicTexture.idealWidth = 800;
     this.advancedDynamicTexture.idealHeight = 900;
     this.advancedDynamicTexture.useSmallestIdeal = true;
 
-    console.log('scene');
-    console.log(scene);
-    console.log('model');
-    console.log(model);
-    console.log('options');
-    console.log(options);
-    console.log('gui');
-    console.log(this.advancedDynamicTexture);
-
-    const sceneColors = setSceneColors(options.colorScheme as string);
+    //const sceneColors = setSceneColors(options.colorScheme as string);
 
     // set up GUI grid
     const grid = new Grid();
@@ -58,13 +48,20 @@ class PointCloudGUI {
     grid.addRowDefinition(1);
     grid.addRowDefinition(48, true);
 
+    //grid.fontFamily = 'Inter';
+    //grid.fontStyle = 'Inter';
+    grid.fontSizeInPixels = 2;
+    //grid.color = '#CC0055'; // text color of button
+    //grid.background = '#001F75'; // don't use as will color all of canvas
+
     // add button that expands panel
     const button = Button.CreateSimpleButton('button', 'Customize');
-    button.fontSizeInPixels = 9;
-    button.color = sceneColors.textColor;
-    button.background = sceneColors.secondColor;
+    button.fontFamily = 'Inter';
+    button.fontSizeInPixels = 6;
+    button.color = '#CC0055';
+    button.background = '#E5FBFF';
     //button.highlightColor = sceneColors.accentColor;
-    //button.fontWeight = 'bold';
+    button.fontWeight = 'bold';
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
@@ -79,15 +76,16 @@ class PointCloudGUI {
     customizePanel.height = 1;
     customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    customizePanel.background = sceneColors.backgroundColor.toHexString();
-    customizePanel.fontSizeInPixels = 8;
-    customizePanel.color = sceneColors.textColor;
-    customizePanel.shadowColor = sceneColors.backgroundColor.toHexString();
-    customizePanel.barColor = sceneColors.accentColor;
-    customizePanel.headerColor = sceneColors.textColor;
-    customizePanel.buttonColor = sceneColors.accentColor;
-    customizePanel.buttonBackground = sceneColors.secondColor;
-    customizePanel.labelColor = sceneColors.textColor;
+    customizePanel.background = '#E5FBFF';
+    //customizePanel.fontSizeInPixels = 6;
+    //customizePanel.color = '#E5FBFF';
+    //customizePanel.shadowColor = sceneColors.backgroundColor.toHexString();
+    customizePanel.barColor = '#CC0055';
+    customizePanel.headerColor = '##E5FBFF';
+    customizePanel.buttonColor = '#CC0055';
+    //customizePanel.buttonBackground = sceneColors.secondColor;
+    customizePanel.labelColor = '#E5FBFF';
+    //customizePanel.renderToIntermediateTexture = false;
 
     // this adds color scheme radio buttons
     const setColor = (but: any) => {
@@ -165,10 +163,10 @@ class PointCloudGUI {
     //edlGroup.addRadio('Off', setEDL);
 
     // place holder
-    const transformGroup = new RadioGroup('Point type');
-    transformGroup.addRadio('Box');
-    transformGroup.addRadio('Sphere');
-    customizePanel.addGroup(transformGroup);
+    //const transformGroup = new RadioGroup('Point type');
+    //transformGroup.addRadio('Box');
+    //transformGroup.addRadio('Sphere');
+    //customizePanel.addGroup(transformGroup);
 
     let _menu = 0;
     const changeMenu = function () {
@@ -176,7 +174,6 @@ class PointCloudGUI {
         _menu = 1;
         customizePanel.isVisible = true;
       } else if (_menu === 1) {
-        button.background = 'transparent';
         customizePanel.isVisible = false;
         _menu = 0;
       }
