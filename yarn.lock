@@ -4980,6 +4980,8 @@ __metadata:
   dependenciesMeta:
     "@babylonjs/core@5.21.0":
       unplugged: true
+    "@babylonjs/materials@5.21.0":
+      unplugged: true
   languageName: unknown
   linkType: soft
 

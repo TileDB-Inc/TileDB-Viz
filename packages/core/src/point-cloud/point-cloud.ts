@@ -6,7 +6,10 @@ import {
   Camera,
   DirectionalLight,
   HemisphericLight,
-  PostProcess
+  PostProcess,
+  KeyboardEventTypes,
+  Plane,
+  Matrix
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -45,8 +48,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       /**
        * Load point cloud data extents and data if bounding box not provided
        */
-      const { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } =
-        await getPointCloud(this._options);
+      const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
+        this._options
+      );
 
       const sceneColors = setSceneColors(this._options.colorScheme as string);
       scene.clearColor = sceneColors.backgroundColor;
@@ -110,7 +114,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         ymax,
         zmin,
         zmax,
-        rgbMax,
+        this._options.rgbMax || 1.0,
         data as SparseResult
       );
 
@@ -149,6 +153,68 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         effect.setFloat('edlStrength', edlStrength);
         effect.setFloat('radius', edlRadius);
         effect.setTexture('uEDLDepth', depthTex);
+      };
+
+      // add debug for key press
+      this._scene.onKeyboardObservable.add(kbInfo => {
+        switch (kbInfo.type) {
+          case KeyboardEventTypes.KEYDOWN:
+            if (kbInfo.event.key === 'r') {
+              this._model.debug = true;
+            }
+            break;
+          case KeyboardEventTypes.KEYUP:
+            if (kbInfo.event.key === 'r') {
+              this._model.debug = false;
+            }
+            break;
+        }
+      });
+
+      // add panning control
+      let plane: Plane;
+      let pickOrigin: Vector3;
+
+      let isPanning = false;
+      scene.onPointerDown = evt => {
+        if (evt.ctrlKey) {
+          const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+          if (pickResult?.pickedPoint) {
+            const normal = camera.position
+              .subtract(pickResult.pickedPoint)
+              .normalize();
+            plane = Plane.FromPositionAndNormal(pickResult.pickedPoint, normal);
+            pickOrigin = pickResult.pickedPoint;
+            isPanning = true;
+            camera.detachControl();
+          }
+        }
+      };
+
+      scene.onPointerUp = () => {
+        isPanning = false;
+        camera.attachControl(true, true);
+      };
+
+      const identity = Matrix.Identity();
+      scene.onPointerMove = evt => {
+        if (isPanning) {
+          const ray = scene.createPickingRay(
+            scene.pointerX,
+            scene.pointerY,
+            identity,
+            camera,
+            false
+          );
+          const distance = ray.intersectsPlane(plane);
+
+          if (distance === null) {
+            return;
+          }
+          const pickedPoint = ray.direction.scale(distance).add(ray.origin);
+          const diff = pickedPoint.subtract(pickOrigin);
+          camera.target.subtractInPlace(diff);
+        }
       };
 
       return scene;
