@@ -47,9 +47,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this._scene = scene;
 
-      /**
-       * Load point cloud data extents and data if bounding box not provided
-       */
+      // load point cloud data extents and data if bounding box not provided
       const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
         this._options
       );
@@ -57,10 +55,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const sceneColors = setSceneColors(this._options.colorScheme as string);
       this._scene.clearColor = sceneColors.backgroundColor;
 
-      /**
-       * Set up camera
-       */
-
+      // set up cameras
       const defaultRadius = 25;
       const camera = new ArcRotateCamera(
         'Camera',
@@ -70,18 +65,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         Vector3.Zero(),
         this._scene
       );
-      //scene.activeCamera = camera;
-      // Then attach the activeCamera to the canvas.
-      //Parameters: canvas, noPreventDefault
-      //scene.activeCamera.attachControl(this.canvas, true);
+
       camera.attachControl();
       this._cameras.push(camera);
-      //if (this._scene.activeCameras.length === 0) {
-      //  this._scene.activeCameras.push(this._scene.activeCamera);
-      //}
-
-      //camera.attachControl(this.canvas, true);
-      //camera.layerMask = 1;
 
       if (this.wheelPrecision > 0) {
         camera.wheelPrecision = this.wheelPrecision;
@@ -102,11 +88,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this._cameras.push(guiCamera);
       this._scene.activeCameras = this._cameras;
 
-      /**
-       * Set up lights
-       */
-
-      // general light
+      // add general light
       const light1: HemisphericLight = new HemisphericLight(
         'light1',
         camera.position,
@@ -115,7 +97,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       light1.intensity = 0.9;
       light1.specular = Color3.Black();
 
-      // light for generating shadows
+      // add light for generating shadows
       const light2: DirectionalLight = new DirectionalLight(
         'Point',
         camera.cameraDirection,
@@ -125,10 +107,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       light2.intensity = 0.7;
       light2.specular = Color3.Black();
 
-      /**
-       * Initialize SolidParticleSystem
-       */
-
+      // initialize SolidParticleSystem
       this._model = new ArrayModel(this._options);
       await this._model.init(
         this._scene,
@@ -142,9 +121,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         data as SparseResult
       );
 
-      /**
-       * Shader post processing
-       */
+      // add shader post-processing for EDL
       const edlStrength = this._options.edlStrength || 4.0;
       const edlRadius = this._options.edlRadius || 1.4;
       const neighbourCount = this._options.edlNeighbours || 8;
@@ -178,17 +155,23 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         effect.setTexture('uEDLDepth', depthTex);
       };
 
-      /**
-       * Interactive GUI
-       */
-
+      // add interactive GUI
       this._gui = new PointCloudGUI(this._scene);
       if (this._gui.advancedDynamicTexture.layer !== null) {
         this._gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-        console.log('setting layerMask');
-        console.log(this._gui.advancedDynamicTexture.layer.layerMask);
       }
-      await this._gui.init(this._scene, this._model, this._options);
+      await this._gui.init(
+        this._scene,
+        this._model,
+        postProcess,
+        screenWidth,
+        screenHeight,
+        neighbours,
+        edlStrength,
+        edlRadius,
+        depthTex
+      );
+
       // add debug for key press
       this._scene.onKeyboardObservable.add(kbInfo => {
         switch (kbInfo.type) {

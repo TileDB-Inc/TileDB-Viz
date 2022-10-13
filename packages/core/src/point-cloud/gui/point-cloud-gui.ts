@@ -1,4 +1,9 @@
-import { Scene, Vector3 } from '@babylonjs/core';
+import {
+  PostProcess,
+  RenderTargetTexture,
+  Scene,
+  Vector3
+} from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
   Button,
@@ -9,11 +14,7 @@ import {
   SliderGroup
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
-import {
-  //setSceneColors,
-  TileDBPointCloudOptions,
-  updateSceneColors
-} from '../utils';
+import { updateSceneColors } from '../utils';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -29,65 +30,57 @@ class PointCloudGUI {
   public async init(
     scene: Scene,
     model: ArrayModel,
-    options: TileDBPointCloudOptions
+    postProcess: PostProcess,
+    screenWidth: number | undefined,
+    screenHeight: number | undefined,
+    neighbours: number[],
+    edlStrength: number,
+    edlRadius: number,
+    depthTex: RenderTargetTexture
   ) {
     this.advancedDynamicTexture.idealWidth = 800;
     this.advancedDynamicTexture.idealHeight = 900;
     this.advancedDynamicTexture.useSmallestIdeal = true;
 
-    //const sceneColors = setSceneColors(options.colorScheme as string);
-
     // set up GUI grid
     const grid = new Grid();
     grid.addColumnDefinition(200, true);
-    grid.addColumnDefinition(100, true);
     grid.addColumnDefinition(1);
-    grid.addColumnDefinition(200, true);
-
     grid.addRowDefinition(48, true);
     grid.addRowDefinition(1);
-    grid.addRowDefinition(48, true);
-
-    //grid.fontFamily = 'Inter';
-    //grid.fontStyle = 'Inter';
-    grid.fontSizeInPixels = 2;
-    //grid.color = '#CC0055'; // text color of button
-    //grid.background = '#001F75'; // don't use as will color all of canvas
 
     // add button that expands panel
     const button = Button.CreateSimpleButton('button', 'Customize');
     button.fontFamily = 'Inter';
-    button.fontSizeInPixels = 6;
-    button.color = '#CC0055';
-    button.background = '#E5FBFF';
-    //button.highlightColor = sceneColors.accentColor;
+    button.fontSize = 10;
+    button.color = '#352F4D';
+    button.background = '#F5F7FA';
+    button.highlightColor = '#CC0055';
     button.fontWeight = 'bold';
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
-    // this expands and collapses the panel menu on click of button
+    // expand and collapse the panel menu on click of button
     button.onPointerUpObservable.add(() => {
       changeMenu();
     });
 
-    // this adds the customization panel
+    // add the customization panel
     const customizePanel = new SelectionPanel('customizeBox');
     customizePanel.width = 1;
     customizePanel.height = 1;
     customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    customizePanel.background = '#E5FBFF';
-    //customizePanel.fontSizeInPixels = 6;
-    //customizePanel.color = '#E5FBFF';
-    //customizePanel.shadowColor = sceneColors.backgroundColor.toHexString();
-    customizePanel.barColor = '#CC0055';
-    customizePanel.headerColor = '##E5FBFF';
+    customizePanel.background = '#F5F7FA';
+    customizePanel.fontSize = 0.8;
+    customizePanel.color = '#352F4D';
+    customizePanel.barColor = '#352F4D';
+    customizePanel.headerColor = '#352F4D';
     customizePanel.buttonColor = '#CC0055';
-    //customizePanel.buttonBackground = sceneColors.secondColor;
-    customizePanel.labelColor = '#E5FBFF';
-    //customizePanel.renderToIntermediateTexture = false;
+    customizePanel.buttonBackground = '#C7C7C7';
+    customizePanel.labelColor = '#352F4D';
 
-    // this adds color scheme radio buttons
+    // add color scheme radio buttons
     const setColor = (but: any) => {
       switch (but) {
         case 0:
@@ -107,7 +100,7 @@ class PointCloudGUI {
     colorGroup.addRadio('blue', setColor);
     customizePanel.addGroup(colorGroup);
 
-    // this adds a point size slider
+    // add a point size slider
     function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
       scene.onBeforeRenderObservable.addOnce(() => {
         for (let c = 0; c < model.particleSystems.length; c++) {
@@ -134,39 +127,45 @@ class PointCloudGUI {
 
     const pointSizeGroup = new SliderGroup('Point size');
     pointSizeGroup.addSlider(
-      'Scale factor', //label
-      updatePointSize, //func
-      '%', //unit
-      0, //min
-      250, //max
-      100, //value
-      pointSizeValue //onValueChange
+      'Scale factor',
+      updatePointSize,
+      '%',
+      0,
+      250,
+      100,
+      pointSizeValue
     );
 
     customizePanel.addGroup(pointSizeGroup);
 
-    // turn EDL on/off
-    // const toEDL = function (isChecked: boolean) {
-    //   console.log('isChecked' + isChecked);
-    //   if (isChecked) {
-    //     options.edlStrength = 0;
-    //     scene.render();
-    //   }
-    // };
+    // add an EDL strength slider
+    const updateEdlStrength = function (value: number) {
+      postProcess.onApply = function (effect: any) {
+        effect.setFloat('screenWidth', screenWidth);
+        effect.setFloat('screenHeight', screenHeight);
+        effect.setArray2('neighbours', neighbours);
+        effect.setFloat('edlStrength', value);
+        effect.setFloat('radius', edlRadius);
+        effect.setTexture('uEDLDepth', depthTex);
+      };
+    };
 
-    // const edlGroup = new CheckboxGroup('Eye Dome Lighting');
-    // edlGroup.addCheckbox('Disable', toEDL);
-    // customizePanel.addGroup(edlGroup);
+    const edlStrengthValue = function (value: number) {
+      return +value.toFixed(1);
+    };
 
-    //const edlGroup = new RadioGroup('EDL');
-    //edlGroup.addRadio('On', setEDL, true);
-    //edlGroup.addRadio('Off', setEDL);
+    const edlStrengthGroup = new SliderGroup('Eye Dome Lighting');
+    edlStrengthGroup.addSlider(
+      'Strength',
+      updateEdlStrength,
+      ' ',
+      0,
+      20,
+      edlStrength,
+      edlStrengthValue
+    );
 
-    // place holder
-    //const transformGroup = new RadioGroup('Point type');
-    //transformGroup.addRadio('Box');
-    //transformGroup.addRadio('Sphere');
-    //customizePanel.addGroup(transformGroup);
+    customizePanel.addGroup(edlStrengthGroup);
 
     let _menu = 0;
     const changeMenu = function () {
@@ -180,14 +179,14 @@ class PointCloudGUI {
       return _menu;
     };
 
-    // this makes sure the menu is collapsed at the start
+    // to make sure the menu is collapsed at the start
     const sceneInit = function () {
       customizePanel.isVisible = false;
     };
 
     sceneInit();
 
-    // this adds all components to the grid
+    // add all components to the grid
     grid.addControl(button, 0, 0);
     grid.addControl(customizePanel, 1, 0);
     this.advancedDynamicTexture.addControl(grid);

@@ -252,14 +252,12 @@ class ArrayModel {
       if (i === 0) {
         this.particleSystems.push(
           new SolidParticleSystem('sps_0', scene, {
-            updatable: true,
             expandable: false,
             isPickable: true
           })
         );
       } else {
         const sps = new SolidParticleSystem('sps_' + i, scene, {
-          updatable: true,
           expandable: true,
           isPickable: true
         });
