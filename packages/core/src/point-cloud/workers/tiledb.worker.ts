@@ -9,7 +9,6 @@ import {
   WorkerType
 } from '../model';
 import { MoctreeBlock } from '../octree';
-import stringifyQuery from '../utils/stringifyQuery';
 
 let namespace = '';
 let arrayName = '';
@@ -44,20 +43,13 @@ self.onmessage = async (e: MessageEvent) => {
 };
 
 function returnData(block: MoctreeBlock) {
-  // post block back
-  if (block.entries) {
-    // TODO use transferable objects
-    self.postMessage(block);
-  }
+  // TODO use transferable objects
+  self.postMessage(block);
 }
 
 async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = stringifyQuery(
-    block.mortonNumber,
-    namespace as string,
-    arrayName + '_' + block.lod
-  );
-  const storeName = namespace + ':' + arrayName;
+  const queryCacheKey = block.mortonNumber.toString();
+  const storeName = `${namespace}:${arrayName}`;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
 
@@ -86,6 +78,9 @@ async function fetchData(block: MoctreeBlock) {
       queryData
     )) {
       block.entries = results as SparseResult;
+      if (block.entries?.X.length === 0) {
+        block.isEmpty = true;
+      }
 
       returnData(block);
       await writeToCache(storeName, queryCacheKey, results);

@@ -4,7 +4,6 @@ import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
 import getTileDBClient from '../../utils/getTileDBClient';
 import { reduceDataArrays, sortDataArrays } from './arrays';
-import stringifyQuery from './stringifyQuery';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
@@ -140,6 +139,14 @@ export interface TileDBPointCloudOptions
    * Number of neightbours used in EDL shader
    */
   edlNeighbours?: number;
+  /**
+   * Number of blocks in LRU cache
+   */
+  maxNumCacheBlocks?: number;
+  /**
+   * Grid subdivisions on X/Y plane
+   */
+  numGridSubdivisions?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
@@ -165,7 +172,7 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
     }
 
     // eslint-disable-next-line
-    let { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax } = getPointCloudLimits(
+    let { xmin, xmax, ymin, ymax, zmin, zmax } = getPointCloudLimits(
       options,
       data
     );
@@ -183,7 +190,7 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
       zmin = zmin + z;
       zmax = zmax + z;
     }
-    return { data, xmin, xmax, ymin, ymax, zmin, zmax, rgbMax };
+    return { data, xmin, xmax, ymin, ymax, zmin, zmax };
   } else {
     const dom = await getNonEmptyDomain(options);
     return {
@@ -230,11 +237,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
-  const queryCacheKey = stringifyQuery(
-    query.ranges,
-    options.namespace as string,
-    options.arrayName as string
-  );
+  const queryCacheKey = query.ranges.toString();
 
   const storeName = `${options.namespace}:${options.arrayName}`;
 
@@ -277,7 +280,6 @@ export function getPointCloudLimits(
   let ymax: number;
   let zmin: number;
   let zmax: number;
-  let rgbMax: number;
 
   if (options.bbox) {
     /**
@@ -304,22 +306,7 @@ export function getPointCloudLimits(
     zmax = zBounds[1];
   }
 
-  if (options.rgbMax) {
-    rgbMax = options.rgbMax;
-  } else {
-    const redmax = data.Red.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
-    const greenmax = data.Green.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
-    const bluemax = data.Blue.reduce((accum: number, currentNumber: number) =>
-      Math.max(accum, currentNumber)
-    );
-    rgbMax = Math.max(redmax, greenmax, bluemax);
-  }
-
-  return { xmin, xmax, ymin, ymax, zmin, zmax, rgbMax };
+  return { xmin, xmax, ymin, ymax, zmin, zmax };
 }
 
 export function setPointCloudSwitches(mode?: string) {

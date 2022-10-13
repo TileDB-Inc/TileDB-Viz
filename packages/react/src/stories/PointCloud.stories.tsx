@@ -47,12 +47,16 @@ export const Autzen = () => (
     edlStrength={5}
     edlRadius={1.4}
     edlNeighbours={8}
+    rgbMax={65535}
   />
 );
 
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
-const arrayName = process.env.STORYBOOK_ARRAY_NAME;
+const arrayName = process.env.STORYBOOK_ARRAY_NAME || 'autzen';
+const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 6;
+
+// maxLevel=4, height=100, arrayName='' for cube test
 
 export const Streamer = () => (
   <PointCloudVisualization
@@ -60,7 +64,9 @@ export const Streamer = () => (
     arrayName={arrayName}
     namespace={namespace}
     token={token}
-    height={100}
-    maxLevels={4}
+    particleSize={3}
+    cameraRadius={2000}
+    maxLevels={maxLevel}
+    rgbMax={65535}
   />
 );

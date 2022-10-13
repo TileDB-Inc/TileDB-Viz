@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "module": "commonjs",
+    "module": "es2020",
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": true,
@@ -16,7 +16,7 @@
     "strict": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
-    "target": "es2017"
+    "target": "es2020"
   },
   "include": ["./packages/**/src"]
 }
