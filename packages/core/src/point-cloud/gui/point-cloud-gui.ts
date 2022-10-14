@@ -94,10 +94,23 @@ class PointCloudGUI {
           break;
       }
     };
+
     const colorGroup = new RadioGroup('Color scheme');
-    colorGroup.addRadio('dark', setColor);
-    colorGroup.addRadio('light', setColor);
-    colorGroup.addRadio('blue', setColor);
+    let darkOn = false;
+    let lightOn = false;
+    let blueOn = false;
+    if (model.colorScheme === 'dark') {
+      darkOn = true;
+    }
+    if (model.colorScheme === 'light') {
+      lightOn = true;
+    }
+    if (model.colorScheme === 'blue') {
+      blueOn = true;
+    }
+    colorGroup.addRadio('dark', setColor, darkOn);
+    colorGroup.addRadio('light', setColor, lightOn);
+    colorGroup.addRadio('blue', setColor, blueOn);
     customizePanel.addGroup(colorGroup);
 
     // add a point size slider
