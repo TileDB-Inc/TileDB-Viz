@@ -7,13 +7,13 @@ import pubSub from '../utils/pubSub';
 
 export interface TileDBVisualizationBaseOptions {
   /**
-   * Width of widget canvas
+   * Width of widget canvas in pixels
    */
-  width?: number;
+  width?: string;
   /**
-   * Height of widget canvas
+   * Height of widget canvas in pixels
    */
-  height?: number;
+  height?: string;
   /**
    * Gets or Set the mouse wheel precision or how fast is the camera zooming.
    */
@@ -36,13 +36,12 @@ export interface TileDBVisualizationBaseOptions {
   rootElement: HTMLElement;
 }
 export class TileDBVisualization {
-  width: string | number;
-  height: string | number;
+  width: string;
+  height: string;
   canvas?: HTMLCanvasElement;
   engine?: Engine;
   wheelPrecision: number;
   moveSpeed: number;
-  zScale: number;
   inspector?: boolean;
   rootElement: HTMLElement;
 
@@ -51,8 +50,7 @@ export class TileDBVisualization {
     this.height = options.height || '100%';
     this.wheelPrecision = options.wheelPrecision || -1;
     this.moveSpeed = options.moveSpeed || -1;
-    this.zScale = options.zScale || 1;
-    this.inspector = options.inspector;
+    this.inspector = options.inspector || false;
     this.rootElement = options.rootElement;
 
     pubSub.removeAllListeners(RERENDER_EVT);
@@ -62,13 +60,13 @@ export class TileDBVisualization {
     this.createScene();
   };
 
-  resizeCanvas(dimensions?: { width: number; height: number }): void {
+  resizeCanvas(dimensions?: { width: string; height: string }): void {
     if (dimensions) {
       const { width, height } = dimensions;
       this.width = width;
       this.height = height;
-      this.canvas?.setAttribute('width', width.toString());
-      this.canvas?.setAttribute('height', height.toString());
+      this.canvas?.setAttribute('width', width);
+      this.canvas?.setAttribute('height', height);
     }
     this.engine?.resize();
   }
@@ -93,8 +91,8 @@ export class TileDBVisualization {
 
   render(): void {
     const canvas = document.createElement('canvas');
-    canvas.style.width = this.width.toString();
-    canvas.style.height = this.height.toString();
+    canvas.style.width = this.width;
+    canvas.style.height = this.height;
     this.canvas = canvas;
     pubSub.subscribe(RERENDER_EVT, this.rerenderCanvas);
 

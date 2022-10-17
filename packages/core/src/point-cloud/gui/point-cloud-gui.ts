@@ -52,7 +52,7 @@ class PointCloudGUI {
     // add button that expands panel
     const button = Button.CreateSimpleButton('button', 'Customize');
     button.fontFamily = 'Inter';
-    button.fontSize = 10;
+    button.fontSize = '10px';
     button.color = '#352F4D';
     button.background = '#F5F7FA';
     button.highlightColor = '#CC0055';
@@ -72,7 +72,7 @@ class PointCloudGUI {
     customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     customizePanel.background = '#F5F7FA';
-    customizePanel.fontSize = 0.8;
+    customizePanel.fontSize = '8px';
     customizePanel.color = '#352F4D';
     customizePanel.barColor = '#352F4D';
     customizePanel.headerColor = '#352F4D';

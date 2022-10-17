@@ -24,6 +24,10 @@ export interface TileDBPointCloudOptions
    */
   data?: any;
   /**
+   * Scale the z-coordinate values for all points
+   */
+  zScale?: number;
+  /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
   gltfData?: any;
@@ -39,10 +43,6 @@ export interface TileDBPointCloudOptions
    * Time offset
    */
   timeOffset?: number;
-  /**
-   * Size of the points
-   */
-  pointSize?: number;
   /**
    * Perform clash detection between mesh and point cloud if true
    */
