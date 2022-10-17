@@ -1,7 +1,7 @@
 // Copyright 2022 TileDB Inc.
 // Licensed under the MIT License.
 
-import { Color4 } from '@babylonjs/core';
+import { Color4, Scene } from '@babylonjs/core';
 
 function setSceneColors(colorScheme: string) {
   let backgroundColor: Color4;
@@ -35,4 +35,11 @@ function setSceneColors(colorScheme: string) {
   return { backgroundColor, accentColor, secondColor, textColor };
 }
 
-export default setSceneColors;
+function updateSceneColors(scene: Scene, colorScheme: string) {
+  const sceneColors = setSceneColors(colorScheme);
+  scene.onBeforeRenderObservable.addOnce(() => {
+    scene.clearColor = sceneColors.backgroundColor;
+  });
+}
+
+export { setSceneColors, updateSceneColors };

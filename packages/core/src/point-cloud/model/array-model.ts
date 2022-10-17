@@ -54,6 +54,7 @@ class ArrayModel {
   renderBlocks: MoctreeBlock[] = [];
   particleSystems: SolidParticleSystem[] = [];
   worker?: Worker;
+  colorScheme?: string;
   particlePool: Array<SolidParticle> = [];
   debug = false;
   rayHelper?: RayHelper;
@@ -71,6 +72,7 @@ class ArrayModel {
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
+    this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
     this.numGridSubdivisions = options.numGridSubdivisions || 10;
   }
@@ -129,7 +131,7 @@ class ArrayModel {
         const particle = MeshBuilder.CreateBox(this.particleType, {
           size: this.particleSize
         });
-        particle.material = this?.shaderMaterial?.shaderMaterial as Material;
+        particle.material = this.shaderMaterial?.shaderMaterial as Material;
         // bbox is created by using position function - https://doc.babylonjs.com/divingDeeper/particles/solid_particle_system/sps_visibility
         sps.addShape(particle, numPoints, {
           positionFunction: pointBuilder
@@ -266,6 +268,9 @@ class ArrayModel {
 
     this.rgbMax = rgbMax || 65535;
 
+    /**
+     * EDL shader material
+     */
     this.shaderMaterial = new ParticleShaderMaterial(
       scene,
       this.edlNeighbours,
