@@ -189,19 +189,31 @@ class ArrayModel {
   }
 
   private onData(evt: MessageEvent) {
-    const block = evt.data;
+    const block = evt.data as MoctreeBlock;
     block.isLoading = false;
+
+    // recreate vector functions these are lost in serialization
+    block.minPoint = new Vector3(
+      block.minPoint.x,
+      block.minPoint.y,
+      block.minPoint.z
+    );
+    block.maxPoint = new Vector3(
+      block.maxPoint.x,
+      block.maxPoint.y,
+      block.maxPoint.z
+    );
+
     // no need to save the entries for LOD 0
-    if (block.mortonNumber !== Moctree.startBlockIndex) {
+    if (block.mortonNumber !== Moctree.startBlockIndex.toString()) {
       this.octree.blocks.set(block.mortonNumber, block);
     }
+
     if (!block.isEmpty) {
       this.loadSystem(block.lod, block);
     }
     // send the next data request
-    if (this.renderBlocks.length) {
-      this.fetchBlock(this.renderBlocks.pop());
-    }
+    this.fetchBlock(this.renderBlocks.pop());
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
@@ -214,6 +226,7 @@ class ArrayModel {
       } as DataRequest);
     } else if (block?.entries) {
       this.loadSystem(block.lod, block);
+      this.fetchBlock(this.renderBlocks.pop());
     }
   }
 
@@ -353,12 +366,6 @@ class ArrayModel {
           this.maxLevel - 1
         );
 
-        if (this.debug) {
-          this.showDebug(true, scene, ray, parentBlocks);
-        } else {
-          this.showDebug(false, scene, ray, parentBlocks);
-        }
-
         if (parentBlocks.length > 0) {
           // highest resolution
           const pickCode = parentBlocks[0].mortonNumber;
@@ -368,6 +375,12 @@ class ArrayModel {
             this.pickedBlockCode = pickCode;
             this.renderBlocks = parentBlocks;
             this.fetchBlock(this.renderBlocks.pop());
+          }
+
+          if (this.debug) {
+            this.showDebug(true, scene, ray, parentBlocks);
+          } else {
+            this.showDebug(false, scene, ray, parentBlocks);
           }
         }
       }
