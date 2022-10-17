@@ -191,12 +191,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       // add panning control
       let plane: Plane;
       let pickOrigin: Vector3;
-
       let isPanning = false;
       scene.onPointerDown = evt => {
         if (evt.ctrlKey) {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-          if (pickResult?.pickedPoint) {
+          if (pickResult && pickResult.pickedPoint) {
             const normal = camera.position
               .subtract(pickResult.pickedPoint)
               .normalize();
@@ -233,7 +232,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           camera.target.subtractInPlace(diff);
         }
       };
-
       return scene;
     });
   }
