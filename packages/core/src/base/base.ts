@@ -94,6 +94,8 @@ export class TileDBVisualization {
     canvas.style.width = this.width;
     canvas.style.height = this.height;
     this.canvas = canvas;
+    this.canvas.setAttribute('width', this.width);
+    this.canvas.setAttribute('height', this.height);
     pubSub.subscribe(RERENDER_EVT, this.rerenderCanvas);
 
     this.rootElement.appendChild(this.canvas);
