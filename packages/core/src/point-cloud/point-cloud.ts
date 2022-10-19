@@ -50,7 +50,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           if (kbInfo.event.key === 'r') {
             this._model.debug = true;
           }
-          if (kbInfo.event.code === 'Delete') {
+          if (
+            kbInfo.event.code === 'Delete' ||
+            kbInfo.event.code === 'Backspace'
+          ) {
             this._gui?.createConfirmationDialog(
               this._scene,
               "Are you sure you want to delete the array's cache?",

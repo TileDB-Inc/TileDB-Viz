@@ -40,25 +40,23 @@ class PointCloudGUI {
     edlRadius: number,
     depthTex: RenderTargetTexture
   ) {
-    this.advancedDynamicTexture.idealWidth = 800;
-    this.advancedDynamicTexture.idealHeight = 900;
-    this.advancedDynamicTexture.useSmallestIdeal = true;
-
     // set up GUI grid
     const grid = new Grid();
-    grid.addColumnDefinition(200, true);
-    grid.addColumnDefinition(1);
-    grid.addRowDefinition(48, true);
-    grid.addRowDefinition(1);
+    grid.addColumnDefinition(140, true);
+    grid.addRowDefinition(50, true);
+    grid.addRowDefinition(5, true);
+    grid.addRowDefinition(400, true);
+    grid.setPadding('8px', '8px', '8px', '8px');
 
     // add button that expands panel
     const button = Button.CreateSimpleButton('button', 'Customize');
-    button.fontFamily = 'Inter';
-    button.fontSize = '10px';
+    button.fontSize = 18;
     button.color = '#352F4D';
     button.background = '#F5F7FA';
     button.highlightColor = '#CC0055';
     button.fontWeight = 'bold';
+    button.cornerRadius = 4;
+    button.zIndex = 2;
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
@@ -71,10 +69,12 @@ class PointCloudGUI {
     const customizePanel = new SelectionPanel('customizeBox');
     customizePanel.width = 1;
     customizePanel.height = 1;
+    customizePanel.cornerRadius = 4;
+    customizePanel.zIndex = 2;
     customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     customizePanel.background = '#F5F7FA';
-    customizePanel.fontSize = '8px';
+    customizePanel.fontSize = 12;
     customizePanel.color = '#352F4D';
     customizePanel.barColor = '#352F4D';
     customizePanel.headerColor = '#352F4D';
@@ -203,7 +203,7 @@ class PointCloudGUI {
 
     // add all components to the grid
     grid.addControl(button, 0, 0);
-    grid.addControl(customizePanel, 1, 0);
+    grid.addControl(customizePanel, 2, 0);
     this.advancedDynamicTexture.addControl(grid);
   }
 
