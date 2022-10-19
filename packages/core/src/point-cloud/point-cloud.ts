@@ -43,6 +43,37 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     await clearCache(storeName);
   }
 
+  attachKeys() {
+    this._scene.onKeyboardObservable.add(kbInfo => {
+      switch (kbInfo.type) {
+        case KeyboardEventTypes.KEYDOWN:
+          if (kbInfo.event.key === 'r') {
+            this._model.debug = true;
+          }
+          if (kbInfo.event.code === 'Delete') {
+            this._gui?.createConfirmationDialog(
+              this._scene,
+              "Are you sure you want to delete the array's cache?",
+              'Clear cache',
+              () => {
+                if (this._options.namespace && this._options.arrayName) {
+                  const storeName = `${this._options.namespace}:${this._options.arrayName}`;
+
+                  clearCache(storeName);
+                }
+              }
+            );
+          }
+          break;
+        case KeyboardEventTypes.KEYUP:
+          if (kbInfo.event.key === 'r') {
+            this._model.debug = false;
+          }
+          break;
+      }
+    });
+  }
+
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this._scene = scene;
@@ -51,6 +82,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
         this._options
       );
+      this.attachKeys();
 
       const sceneColors = setSceneColors(this._options.colorScheme as string);
       this._scene.clearColor = sceneColors.backgroundColor;
@@ -171,22 +203,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         edlRadius,
         depthTex
       );
-
-      // add debug for key press
-      this._scene.onKeyboardObservable.add(kbInfo => {
-        switch (kbInfo.type) {
-          case KeyboardEventTypes.KEYDOWN:
-            if (kbInfo.event.key === 'r') {
-              this._model.debug = true;
-            }
-            break;
-          case KeyboardEventTypes.KEYUP:
-            if (kbInfo.event.key === 'r') {
-              this._model.debug = false;
-            }
-            break;
-        }
-      });
 
       // add panning control
       let plane: Plane;
