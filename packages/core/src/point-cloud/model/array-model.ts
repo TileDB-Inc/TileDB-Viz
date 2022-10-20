@@ -35,6 +35,7 @@ class ArrayModel {
   minVector!: Vector3;
   maxVector!: Vector3;
   rgbMax!: number;
+  zScale: number;
   edlStrength: number;
   edlRadius: number;
   edlNeighbours: number;
@@ -69,6 +70,7 @@ class ArrayModel {
     this.refreshRate = options.refreshRate || 5;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
+    this.zScale = options.zScale || 1;
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
@@ -92,6 +94,7 @@ class ArrayModel {
       const trans_y = this.translateY;
       const trans_z = this.translateZ;
       const rgbMax = this.rgbMax;
+      const zScale = this.zScale;
       const sps = this.particleSystems[index];
       let numPoints = block.entries.X.length;
       // increase particle point size for higher LODs
@@ -105,7 +108,7 @@ class ArrayModel {
 
           particle.position.set(
             block.entries.X[i] - trans_x,
-            block.entries.Z[i] - trans_y,
+            (block.entries.Z[i] - trans_y) * zScale,
             block.entries.Y[i] - trans_z
           );
 
