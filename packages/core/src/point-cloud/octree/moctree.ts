@@ -1,7 +1,7 @@
 import { BoundingBox, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
-// Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/
+// Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 
 /* prettier-ignore */
 function part1By2(x: bigint) {
@@ -24,6 +24,30 @@ function part1By2(x: bigint) {
   return x;
 }
 
+/* prettier-ignore */
+function compact1By2(x: bigint)
+{
+    //                  x = ---1 --0- -9-- 8--7 --6- -5-- 4--3 --1- -0-- 9--8 --7- -6-- 5--4 --3- -2-- 1--0
+    x &= 0b0001_0010_0100_1001_0010_0100_1001_0010_0100_1001_0010_0100_1001_0010_0100_1001n;
+
+    //                  x = ---0 ---- 98-- --76 ---- 54-- --32 ---- 10-- --98 ---- 76-- --54 ---- 32-- --10
+    x = (x ^ (x >> 2n)) & 0b0001_0000_1100_0011_0000_1100_0011_0000_1100_0011_0000_1100_0011_0000_1100_0011n;
+
+    //                  x = ---0 ---- ---- 9876 ---- ---- 5432 ---- ---- 1098 ---- ---- 7654 ---- ---- 3210
+    x = (x ^ (x >> 4n)) & 0b0001_0000_0000_1111_0000_0000_1111_0000_0000_1111_0000_0000_1111_0000_0000_1111n;
+
+    //                  x = ---- ---0 9876 ---- ---- ---- ---- 5432 1098 ---- ---- ---- ---- 7654 3210
+    x = (x ^ (x >> 8n)) & 0b0000_0001_1111_0000_0000_0000_0000_1111_1111_0000_0000_0000_0000_1111_1111n;
+
+    //                  x = ---- ---0 9876 ---- ---- ---- ---- ---- ---- ---- ---- 5432 1098 7654 3210
+    x = (x ^ (x >> 16n)) & 0b0000_0001_1111_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111n;
+
+    //                  x = ---- ---- ---- ---- ---- ---- ---- ---- ---- ---0 9876 5432 1098 7654 3210
+    x = (x ^ (x >> 32n)) & 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_1111_1111_1111_1111_1111n;
+
+    return x;
+}
+
 function encodeMorton(v: Vector3) {
   return (
     (part1By2(BigInt(v.z)) << 2n) +
@@ -32,10 +56,27 @@ function encodeMorton(v: Vector3) {
   );
 }
 
+function decodeMorton(code: bigint) {
+  const x = compact1By2(code);
+  const y = compact1By2(code >> 1n);
+  const z = compact1By2(code >> 2n);
+  return new Vector3(Number(x), Number(y), Number(z));
+}
+
 class Moctree {
   blocks = new Map<string, MoctreeBlock>();
   bounds: BoundingBox;
   static startBlockIndex = 1n;
+  static indexes: Array<Vector3> = [
+    new Vector3(0, 0, 0),
+    new Vector3(1, 0, 0),
+    new Vector3(0, 1, 0),
+    new Vector3(1, 1, 0),
+    new Vector3(0, 0, 1),
+    new Vector3(1, 0, 1),
+    new Vector3(0, 1, 1),
+    new Vector3(1, 1, 1)
+  ];
 
   constructor(
     private _minPoint: Vector3,
@@ -58,6 +99,7 @@ class Moctree {
   public getContainingBlocksByRay(ray: Ray, lod: number) {
     // this only queries the front octant that the ray is looking at, it will however look past empty octants
     const resultBlocks: MoctreeBlock[] = [];
+
     if (lod > 0) {
       if (ray.intersectsBoxMinMax(this._minPoint, this._maxPoint)) {
         if (lod > this.maxDepth) {
@@ -65,87 +107,154 @@ class Moctree {
         }
         let minVector = this._minPoint;
         let code = Moctree.startBlockIndex;
-        let childBlockSize = Vector3.Zero();
-        const indexes = [
-          new Vector3(0, 0, 0),
-          new Vector3(1, 0, 0),
-          new Vector3(0, 1, 0),
-          new Vector3(1, 1, 0),
-          new Vector3(0, 0, 1),
-          new Vector3(1, 0, 1),
-          new Vector3(0, 1, 1),
-          new Vector3(1, 1, 1)
-        ];
+        const childBlockSize = this._maxPoint
+          .subtract(this._minPoint)
+          .scale(0.5);
 
         for (let l = 1; l <= lod; l++) {
-          childBlockSize = this._maxPoint
-            .subtract(this._minPoint)
-            .scale(1 / Math.pow(2, l));
-
-          for (let i = 0; i < indexes.length; i++) {
-            const st = minVector.add(childBlockSize.multiply(indexes[i]));
+          const candidates: Array<MoctreeBlock> = [];
+          for (let i = 0; i < Moctree.indexes.length; i++) {
+            const st = minVector.add(
+              childBlockSize.multiply(Moctree.indexes[i])
+            );
             const ed = st.add(childBlockSize);
+            const v = (code << 3n) + BigInt(i);
+            const block =
+              this.blocks.get(v.toString()) ||
+              new MoctreeBlock(l, v.toString(), st, ed);
+
             if (ray.intersectsBoxMinMax(st, ed)) {
-              const v = (code << 3n) + BigInt(i);
-              const block = this.blocks.get(v.toString());
+              // skip over empty regions
               if (block?.isEmpty) {
                 continue;
               }
 
-              resultBlocks.push(
-                block || new MoctreeBlock(l, v.toString(), st, ed)
-              );
-              minVector = st;
-              code = v;
-              break;
+              candidates.push(block);
             }
+          }
+
+          // find nearest candidate to ray origin
+          let resultBlock = candidates.pop();
+          if (resultBlock !== undefined) {
+            candidates.forEach(b => {
+              if (
+                ray.origin.subtract(b.minPoint).length() <
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                ray.origin.subtract(resultBlock!.minPoint).length()
+              ) {
+                resultBlock = b;
+              }
+            });
+          }
+
+          if (resultBlock === undefined) {
+            break;
+          } else {
+            resultBlocks.push(resultBlock);
+            minVector = resultBlock.minPoint;
+            code = BigInt(resultBlock.mortonNumber);
+            childBlockSize.scaleInPlace(0.5);
           }
         }
       }
     }
+
     return resultBlocks.reverse();
   }
 
-  public getContainingBlocksByPoint(point: Vector3, lod: number) {
-    const resultBlocks: MoctreeBlock[] = [];
-    if (lod > 0) {
-      if (this.bounds.intersectsPoint(point)) {
-        if (lod > this.maxDepth) {
-          lod = this.maxDepth;
+  public *getNeighbours(): Generator<MoctreeBlock, undefined, string> {
+    let code = Moctree.startBlockIndex.toString();
+    let newCode = code;
+    let parentCode = BigInt(Moctree.startBlockIndex);
+    let parentBlock: MoctreeBlock | undefined;
+    let childBlockSize = Vector3.Zero();
+    let index = 0;
+    let doYield = true;
+
+    let resultBlock = new MoctreeBlock(
+      0,
+      Moctree.startBlockIndex.toString(),
+      this._minPoint,
+      this._maxPoint
+    );
+
+    // keep generating blocks to fill until the caller decides enough
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (doYield) {
+        newCode = yield resultBlock;
+      }
+
+      // reset as new block to work from
+      if (doYield && (newCode || index === 8)) {
+        if (newCode) {
+          code = newCode;
+          parentCode = BigInt(code) >> 3n;
         }
-        let minVector = this._minPoint;
-        let code = Moctree.startBlockIndex;
-        let childBlockSize = Vector3.Zero();
 
-        for (let l = 1; l <= lod; l++) {
-          childBlockSize = this._maxPoint
+        if (index === 8) {
+          if (parentCode === Moctree.startBlockIndex) {
+            console.log('STOP');
+            return;
+          }
+          parentCode = parentCode >> 3n;
+          // now skipped block is always position zero
+          code = (parentCode << 3n).toString();
+        }
+
+        index = 0;
+        parentBlock = this.blocks.get(parentCode.toString());
+
+        if (!parentBlock) {
+          // find parentBlock of this specified code
+          const offsets = decodeMorton(parentCode);
+          const lod = (parentCode.toString(2).length - 1) / 3;
+          const blockSize = this._maxPoint
             .subtract(this._minPoint)
-            .scale(1 / Math.pow(2, l));
+            .scale(1 / Math.pow(lod, 2));
+          const st = this._minPoint.add(blockSize.multiply(offsets));
+          const ed = st.add(blockSize);
+          parentBlock =
+            this.blocks.get(parentCode.toString()) ||
+            new MoctreeBlock(lod, parentCode.toString(), st, ed);
 
-          const indexVector = point.subtract(minVector).divide(childBlockSize);
-          const x = Math.floor(indexVector.x);
-          const y = Math.floor(indexVector.y);
-          const z = Math.floor(indexVector.z);
-          const v = new Vector3(x, y, z);
-
-          code = (code << 3n) + encodeMorton(v);
-
-          minVector = minVector.add(v.multiply(childBlockSize));
-
-          resultBlocks.push(
-            this.blocks.get(code.toString()) ||
-              new MoctreeBlock(
-                l,
-                code.toString(),
-                minVector,
-                minVector.add(childBlockSize)
-              )
-          );
+          childBlockSize = parentBlock.maxPoint
+            .subtract(parentBlock.minPoint)
+            .scale(0.5);
         }
       }
+
+      if (index < 8 && parentBlock) {
+        // get the surrounding blocks
+        const childCode = BigInt(parentCode << 3n) + BigInt(index);
+        if (childCode === BigInt(code)) {
+          index++;
+          // loop over again with next block
+          doYield = false;
+          continue;
+        }
+
+        doYield = true;
+
+        if (!this.blocks.has(childCode.toString())) {
+          const st = parentBlock.minPoint.add(
+            Moctree.indexes[index].multiply(childBlockSize)
+          );
+          const ed = st.add(childBlockSize);
+          resultBlock = new MoctreeBlock(
+            parentBlock.lod + 1,
+            childCode.toString(),
+            st,
+            ed
+          );
+        }
+
+        // this syntax gives us test coverage for the above statement
+        resultBlock = this.blocks.get(childCode.toString()) || resultBlock;
+
+        index++;
+      }
     }
-    // high resolution returned first
-    return resultBlocks.reverse();
   }
 }
 
@@ -167,4 +276,4 @@ class MoctreeBlock {
   }
 }
 
-export { Moctree, MoctreeBlock };
+export { Moctree, MoctreeBlock, encodeMorton, decodeMorton };
