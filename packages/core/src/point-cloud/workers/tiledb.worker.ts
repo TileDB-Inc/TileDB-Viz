@@ -44,6 +44,9 @@ self.onmessage = async (e: MessageEvent) => {
 
 function returnData(block: MoctreeBlock) {
   // TODO use transferable objects
+  if (block.entries?.X.length === 0) {
+    block.isEmpty = true;
+  }
   self.postMessage(block);
 }
 
@@ -78,10 +81,6 @@ async function fetchData(block: MoctreeBlock) {
       queryData
     )) {
       block.entries = results as SparseResult;
-      if (block.entries?.X.length === 0) {
-        block.isEmpty = true;
-      }
-
       returnData(block);
       await writeToCache(storeName, queryCacheKey, results);
     }

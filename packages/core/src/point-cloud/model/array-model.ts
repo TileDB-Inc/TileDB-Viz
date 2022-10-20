@@ -2,6 +2,7 @@ import {
   Color3,
   Color4,
   Material,
+  Mesh,
   MeshBuilder,
   Ray,
   RayHelper,
@@ -52,12 +53,17 @@ class ArrayModel {
   maxNumCacheBlocks: number;
   numGridSubdivisions: number;
   renderBlocks: MoctreeBlock[] = [];
+  isBuffering = false;
+  neighbours?: Generator<MoctreeBlock, undefined, string>;
   particleSystems: SolidParticleSystem[] = [];
   worker?: Worker;
   colorScheme?: string;
   particlePool: Array<SolidParticle> = [];
   debug = false;
+  deBugBox?: Mesh;
   rayHelper?: RayHelper;
+  particleBudget: number;
+  count = 0;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -75,10 +81,11 @@ class ArrayModel {
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
     this.numGridSubdivisions = options.numGridSubdivisions || 10;
+    this.particleBudget = options.numParticles || 2_000_000;
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
-    // for now lets print the debug to show we are loading data, replace with visually showing the boxes and ray trace
+    // for now lets print the debug to show we are loading data
     console.log(
       'Loading: ' +
         index +
@@ -87,6 +94,13 @@ class ArrayModel {
         ' Morton: ' +
         block.mortonNumber
     );
+
+    const buffering = this.isBuffering ? true : false;
+    if (this.isBuffering) {
+      console.log('Loading additional');
+      console.log(block.entries?.X.length);
+    }
+
     if (block.entries !== undefined) {
       const trans_x = this.translateX;
       const trans_y = this.translateY;
@@ -94,9 +108,12 @@ class ArrayModel {
       const rgbMax = this.rgbMax;
       const sps = this.particleSystems[index];
       let numPoints = block.entries.X.length;
+
       // increase particle point size for higher LODs
       const r =
         (this.particleSize + index * this.particleScale) / this.particleSize;
+
+      this.count += numPoints;
 
       const pointBuilder = function (particle: SolidParticle, i: number) {
         if (block.entries !== undefined) {
@@ -109,19 +126,27 @@ class ArrayModel {
             block.entries.Y[i] - trans_z
           );
 
-          if (particle.color) {
-            particle.color.set(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax,
-              1
-            );
+          if (buffering) {
+            if (particle.color) {
+              particle.color.set(1, 0, 0, 1);
+            } else {
+              particle.color = new Color4(1, 0, 0);
+            }
           } else {
-            particle.color = new Color4(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax
-            );
+            if (particle.color) {
+              particle.color.set(
+                block.entries.Red[i] / rgbMax,
+                block.entries.Green[i] / rgbMax,
+                block.entries.Blue[i] / rgbMax,
+                1
+              );
+            } else {
+              particle.color = new Color4(
+                block.entries.Red[i] / rgbMax,
+                block.entries.Green[i] / rgbMax,
+                block.entries.Blue[i] / rgbMax
+              );
+            }
           }
         }
       };
@@ -139,42 +164,42 @@ class ArrayModel {
         particle.dispose();
         sps.buildMesh();
       } else {
-        if (block.mortonNumber !== sps.vars.mortonNumber) {
-          if (numPoints > sps.nbParticles) {
-            numPoints = numPoints - sps.nbParticles;
-            // use cache first
-            if (this.particlePool.length > 0) {
-              const particles = this.particlePool.splice(numPoints);
-              numPoints = numPoints - particles.length;
-              sps.insertParticlesFromArray(particles);
-            }
+        const offset = this.isBuffering ? sps.nbParticles : 0;
+        if (numPoints > sps.nbParticles) {
+          numPoints = numPoints - sps.nbParticles;
+          // use cache first
+          if (this.particlePool.length > 0) {
+            const particles = this.particlePool.splice(numPoints);
+            numPoints = numPoints - particles.length;
+            sps.insertParticlesFromArray(particles);
+          }
 
-            if (numPoints > 0) {
-              const particle = MeshBuilder.CreateBox(this.particleType, {
-                size: this.particleSize
-              });
+          if (numPoints > 0) {
+            const particle = MeshBuilder.CreateBox(this.particleType, {
+              size: this.particleSize
+            });
 
-              particle.material = this?.shaderMaterial
-                ?.shaderMaterial as Material;
-              sps.addShape(particle, numPoints);
-              particle.dispose();
-            }
-          } else {
+            particle.material = this?.shaderMaterial
+              ?.shaderMaterial as Material;
+            sps.addShape(particle, numPoints);
+            particle.dispose();
+          }
+        } else {
+          if (!this.isBuffering) {
             this.particlePool.concat(
               sps.removeParticles(numPoints, sps.nbParticles)
             );
           }
-          sps.buildMesh();
-
-          // set particle properties
-          for (let i = 0; i < sps.nbParticles; i++) {
-            pointBuilder(sps.particles[i], i);
-          }
-          sps.setParticles();
-          // we didn't use a position function when creating particles so refresh bbox so we can pick
-          sps.refreshVisibleSize();
-          sps.vars.mortonNumber = block.mortonNumber;
         }
+        sps.buildMesh();
+
+        // set particle properties
+        for (let i = offset; i < sps.nbParticles; i++) {
+          pointBuilder(sps.particles[i], i - offset);
+        }
+        sps.setParticles();
+        // we didn't use a position function when creating particles so refresh bbox so we can pick
+        sps.refreshVisibleSize();
       }
     }
 
@@ -186,6 +211,7 @@ class ArrayModel {
       this.octree.blocks.delete(k);
     }
     this.octree.blocks.set(block.mortonNumber, block);
+    console.log('Displaying ' + this.count + ' particles');
   }
 
   private onData(evt: MessageEvent) {
@@ -212,21 +238,39 @@ class ArrayModel {
     if (!block.isEmpty) {
       this.loadSystem(block.lod, block);
     }
-    // send the next data request
-    this.fetchBlock(this.renderBlocks.pop());
+    // send the next data request, either core or neighbours
+    if (this.isBuffering) {
+      this.fetchBlock(this.neighbours?.next().value);
+    } else {
+      this.fetchBlock(this.renderBlocks.pop());
+    }
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
-    // fetch if not cached
-    if (block && !block.isLoading && !block.entries) {
-      block.isLoading = true;
-      this.worker?.postMessage({
-        type: WorkerType.data,
-        block: block
-      } as DataRequest);
-    } else if (block?.entries) {
-      this.loadSystem(block.lod, block);
-      this.fetchBlock(this.renderBlocks.pop());
+    // fetch if not cached, TODO check block is in camera frustum
+    if (block) {
+      if (!block.isLoading && !block.isEmpty && !block.entries) {
+        block.isLoading = true;
+        this.worker?.postMessage({
+          type: WorkerType.data,
+          block: block
+        } as DataRequest);
+      } else {
+        // already have data
+        this.loadSystem(block.lod, block);
+      }
+
+      if (
+        !this.isBuffering &&
+        this.renderBlocks.length === 0 &&
+        this.pickedBlockCode !== ''
+      ) {
+        // we are now appending
+        this.isBuffering = true;
+        this.fetchBlock(this.neighbours?.next(this.pickedBlockCode).value);
+      } else {
+        this.fetchBlock(this.renderBlocks.pop());
+      }
     }
   }
 
@@ -300,6 +344,9 @@ class ArrayModel {
     this.translateY = zmin;
     this.translateZ = ymin + spanY;
     this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
+    this.neighbours = this.octree.getNeighbours();
+    // skip over default lod zero
+    this.neighbours?.next();
 
     // maintain compatibility with directly loading data
     if (data) {
@@ -374,7 +421,12 @@ class ArrayModel {
             // start loading lowest resolution from the lowest block, find parent blocks and load next resolution and so on up
             this.pickedBlockCode = pickCode;
             this.renderBlocks = parentBlocks;
+            this.isBuffering = false;
+            // restart count to base level as we are going to redraw
+            this.count = this.particleSystems[0].nbParticles;
             this.fetchBlock(this.renderBlocks.pop());
+          } else if (this.isBuffering) {
+            this.fetchBlock(this.neighbours?.next().value);
           }
 
           if (this.debug) {

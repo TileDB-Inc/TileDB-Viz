@@ -147,6 +147,10 @@ export interface TileDBPointCloudOptions
    * Grid subdivisions on X/Y plane
    */
   numGridSubdivisions?: number;
+  /**
+   * Particle budget
+   */
+  numParticles?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
