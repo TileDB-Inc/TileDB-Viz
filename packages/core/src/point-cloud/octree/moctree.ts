@@ -1,4 +1,4 @@
-import { BoundingBox, Ray, Vector3 } from '@babylonjs/core';
+import { BoundingBox, CopyTools, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/
@@ -164,6 +164,216 @@ class MoctreeBlock {
   ) {
     this.minPoint = minPoint.clone();
     this.maxPoint = maxPoint.clone();
+  }
+}
+
+class HeapTree {
+  order: number;
+  size: number;
+  data: number[];
+  constructor(
+    order: number,
+    entrySize: number,
+    levels: number,
+    data: number[]
+  ) {
+    this.order = order;
+    this.size = (entrySize * (Math.pow(order, levels) - 1)) / (order - 1);
+    if (data.length !== this.size) {
+      throw Error('wrong size buffer');
+    }
+    this.data = data;
+  }
+  public get(st: number, ed: number, data: number[], offset: number) {
+    for (let i = st; i < ed; ++i) {
+      data[offset + (i - st)] = this.data[i];
+    }
+  }
+}
+
+class Box3DSplitter {
+  x_idx = 0;
+  y_idx = 0;
+  z_idx = 0;
+  partsPerSide: number;
+  xyz_sizes: Vector3;
+  min: Vector3;
+  box!: BoundingBox;
+  private set_box() {
+    this.box.minimum.set(
+      this.min._x + this.x_idx * this.xyz_sizes._x,
+      this.min._y + this.y_idx * this.xyz_sizes._y,
+      this.min._z + this.z_idx * this.xyz_sizes._z
+    );
+    this.box.maximum.set(
+      this.box.minimum._x + this.xyz_sizes._x,
+      this.box.minimum._y + this.xyz_sizes._y,
+      this.box.minimum._z + this.xyz_sizes._z
+    );
+  }
+  constructor(_box: BoundingBox, partsPerSide: number) {
+    this.partsPerSide = partsPerSide;
+    this.xyz_sizes = _box.maximum.subtract(_box.minimum);
+    this.min = _box.minimum.clone();
+    this.set_box();
+  }
+  public next() {
+    if (this.x_idx < this.partsPerSide - 1) {
+      ++this.x_idx;
+    } else if (this.y_idx < this.partsPerSide - 1) {
+      this.x_idx = 0;
+      ++this.y_idx;
+    } else if (this.z_idx < this.partsPerSide - 1) {
+      this.x_idx = 0;
+      this.y_idx = 0;
+      ++this.z_idx;
+    } else {
+      this.x_idx = 0;
+      this.y_idx = 0;
+      this.z_idx = 0;
+    }
+    this.set_box();
+    return this.box;
+  }
+  public get_box() {
+    return this.box;
+  }
+}
+
+class HTCache {
+  cache: number[];
+  readOrder: number[][];
+  front = 0;
+  size = 0;
+  HeapIdcsToRdOrder = new Map<number, number>();
+  ht: HeapTree;
+  partsPerSide: number;
+  order: number;
+  entrySize: number;
+  levels: number;
+  capacity: number;
+  box: BoundingBox;
+  heapSize: number;
+  constructor(
+    ht: HeapTree,
+    partsPerSide: number,
+    entrySize: number,
+    levels: number,
+    capacity: number,
+    box: BoundingBox
+  ) {
+    this.ht = ht;
+    this.partsPerSide = partsPerSide;
+    this.order = Math.pow(partsPerSide, 3);
+    this.entrySize = entrySize;
+    this.levels = levels;
+    this.capacity = capacity;
+    this.box = box;
+    this.heapSize =
+      (entrySize * (Math.pow(this.order, levels) - 1)) / (this.order - 1);
+    this.cache = new Array(entrySize * capacity);
+    this.readOrder = new Array(capacity);
+    for (let i = 0; i < capacity; ++i) {
+      this.readOrder[i] = new Array(2);
+    }
+  }
+  private swapRdOrder(i: number, j: number) {
+    const tmp0 = this.readOrder[i][0];
+    const tmp1 = this.readOrder[i][1];
+    this.readOrder[i][0] = this.readOrder[j][0];
+    this.readOrder[i][1] = this.readOrder[j][1];
+    this.readOrder[j][0] = tmp0;
+    this.readOrder[j][1] = tmp1;
+  }
+  private fetch(heapIdx: number, data: number[], offset: number) {
+    this.ht.get(heapIdx, heapIdx + this.entrySize, data, offset);
+  }
+  private write_front(data: number[], offset: number) {
+    for (let i = 0; i < this.entrySize; ++i) {
+      data[offset + i] = this.cache[this.readOrder[this.front][1] + i];
+    }
+  }
+  private get(heapIndex: number) {
+    const rdOrderIdx = this.HeapIdcsToRdOrder.get(heapIndex);
+    if (this.size < this.capacity) {
+      if (rdOrderIdx) {
+        this.front = rdOrderIdx;
+        return;
+      }
+      this.fetch(heapIndex, this.cache, this.entrySize * this.size);
+      this.readOrder[this.size][0] = heapIndex;
+      this.readOrder[this.size][1] = this.entrySize * this.size;
+      this.HeapIdcsToRdOrder.set(heapIndex, this.size);
+      this.front = this.size;
+      ++this.size;
+      return;
+    }
+    this.front = (this.front + 1) % this.capacity;
+    if (rdOrderIdx) {
+      this.HeapIdcsToRdOrder.set(this.readOrder[this.front][0], rdOrderIdx);
+      this.swapRdOrder(rdOrderIdx, this.front);
+      this.HeapIdcsToRdOrder.set(heapIndex, this.front);
+      return;
+    }
+    this.fetch(heapIndex, this.cache, this.readOrder[this.front][1]);
+    this.HeapIdcsToRdOrder.delete(this.readOrder[this.front][0]);
+    this.readOrder[this.front][0] = heapIndex;
+    this.HeapIdcsToRdOrder.set(heapIndex, this.front);
+  }
+  public getBlocksForRay(ray: Ray) {
+    const result: number[] = [];
+    let level = 0;
+    let heapIdx = 0;
+    let resultSize = 0;
+
+    this.get(heapIdx);
+    this.write_front(result, resultSize);
+    resultSize += this.entrySize;
+    ++level;
+
+    let bbox: BoundingBox;
+    let splitter = new Box3DSplitter(this.box, 2);
+    let nextHeapIdx = this.entrySize;
+    let nextSplitter = splitter;
+    const neighbors: number[] = [];
+    const max_level_idx =
+      (this.entrySize * (Math.pow(this.order, this.levels - 1) - 1)) /
+      (this.order - 1);
+    while (level < this.levels) {
+      heapIdx = nextHeapIdx;
+      splitter = nextSplitter;
+      for (let i = 0; i < this.order; ++i) {
+        bbox = splitter.get_box();
+        if (ray.intersectsBox(bbox)) {
+          this.get(heapIdx);
+          this.write_front(result, resultSize);
+          resultSize += this.entrySize;
+          nextSplitter = new Box3DSplitter(bbox, 2);
+          nextHeapIdx = this.entrySize + heapIdx * this.order;
+          ++level;
+          heapIdx += this.entrySize;
+          splitter.next();
+          continue;
+        }
+        neighbors.push(heapIdx);
+        heapIdx += this.entrySize;
+        splitter.next();
+      }
+    }
+    while (neighbors.length > 0) {
+      const top = neighbors.pop() as number;
+      this.get(top);
+      this.write_front(result, resultSize);
+      resultSize += this.entrySize;
+      if (top < max_level_idx) {
+        let childIdx = this.entrySize + top * this.order;
+        for (let i = 0; i < this.order; ++i) {
+          neighbors.push(childIdx);
+          childIdx += this.entrySize;
+        }
+      }
+    }
+    return result;
   }
 }
 
