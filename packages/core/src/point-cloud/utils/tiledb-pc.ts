@@ -151,6 +151,10 @@ export interface TileDBPointCloudOptions
    * Particle budget
    */
   numParticles?: number;
+  /**
+   * Number of blocks to fan out when buffering
+   */
+  fanOut?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
@@ -241,7 +245,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
-  const queryCacheKey = query.ranges.toString();
+  const queryCacheKey = 0; // TODO need to include partial ranges
 
   const storeName = `${options.namespace}:${options.arrayName}`;
 
@@ -340,7 +344,7 @@ export async function getNonEmptyDomain(
 ): Promise<number[]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.arrayName!);
-  const key = `${options.namespace}/${options.arrayName}/nonEmptyDomain`;
+  const key = 0;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
 

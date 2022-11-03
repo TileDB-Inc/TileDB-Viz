@@ -51,7 +51,7 @@ function returnData(block: MoctreeBlock) {
 }
 
 async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = block.mortonNumber.toString();
+  const queryCacheKey = block.mortonNumber;
   const storeName = `${namespace}:${arrayName}`;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
