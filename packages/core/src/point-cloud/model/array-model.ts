@@ -2,7 +2,6 @@ import {
   Color3,
   Color4,
   Material,
-  Mesh,
   MeshBuilder,
   Ray,
   RayHelper,
@@ -49,21 +48,22 @@ class ArrayModel {
   translateX = 0;
   translateY = 0;
   translateZ = 0;
-  pickedBlockCode = '';
+  pickedBlockCode = -1;
   maxNumCacheBlocks: number;
   numGridSubdivisions: number;
   renderBlocks: MoctreeBlock[] = [];
+  renderedBlocks: MoctreeBlock[] = [];
   isBuffering = false;
-  neighbours?: Generator<MoctreeBlock, undefined, string>;
+  neighbours?: Generator<MoctreeBlock, undefined, undefined>;
   particleSystems: SolidParticleSystem[] = [];
   worker?: Worker;
   colorScheme?: string;
   particlePool: Array<SolidParticle> = [];
   debug = false;
-  deBugBox?: Mesh;
   rayHelper?: RayHelper;
   particleBudget: number;
   count = 0;
+  fanOut = 3;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -82,6 +82,7 @@ class ArrayModel {
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
     this.numGridSubdivisions = options.numGridSubdivisions || 10;
     this.particleBudget = options.numParticles || 2_000_000;
+    this.fanOut = options.fanOut || 3;
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
@@ -211,6 +212,7 @@ class ArrayModel {
       this.octree.blocks.delete(k);
     }
     this.octree.blocks.set(block.mortonNumber, block);
+    this.renderedBlocks.push(block);
     console.log('Displaying ' + this.count + ' particles');
   }
 
@@ -230,14 +232,8 @@ class ArrayModel {
       block.maxPoint.z
     );
 
-    // no need to save the entries for LOD 0
-    if (block.mortonNumber !== Moctree.startBlockIndex.toString()) {
-      this.octree.blocks.set(block.mortonNumber, block);
-    }
+    this.loadSystem(block.lod, block);
 
-    if (!block.isEmpty) {
-      this.loadSystem(block.lod, block);
-    }
     // send the next data request, either core or neighbours
     if (this.isBuffering) {
       this.fetchBlock(this.neighbours?.next().value);
@@ -263,11 +259,12 @@ class ArrayModel {
       if (
         !this.isBuffering &&
         this.renderBlocks.length === 0 &&
-        this.pickedBlockCode !== ''
+        this.pickedBlockCode > 0
       ) {
         // we are now appending
         this.isBuffering = true;
-        this.fetchBlock(this.neighbours?.next(this.pickedBlockCode).value);
+        this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+        this.fetchBlock(this.neighbours?.next().value);
       } else {
         this.fetchBlock(this.renderBlocks.pop());
       }
@@ -343,8 +340,13 @@ class ArrayModel {
     this.translateX = xmin + spanX;
     this.translateY = zmin;
     this.translateZ = ymin + spanY;
-    this.octree = new Moctree(this.minVector, this.maxVector, this.maxLevel);
-    this.neighbours = this.octree.getNeighbours();
+    this.octree = new Moctree(
+      this.minVector,
+      this.maxVector,
+      this.maxLevel,
+      this.fanOut
+    );
+    this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
     // skip over default lod zero
     this.neighbours?.next();
 
@@ -353,7 +355,7 @@ class ArrayModel {
       // load into first SPS
       const block = new MoctreeBlock(
         0,
-        Moctree.startBlockIndex.toString(),
+        Moctree.startBlockIndex,
         Vector3.Zero(),
         Vector3.Zero()
       );
@@ -421,6 +423,7 @@ class ArrayModel {
             // start loading lowest resolution from the lowest block, find parent blocks and load next resolution and so on up
             this.pickedBlockCode = pickCode;
             this.renderBlocks = parentBlocks;
+            this.renderedBlocks = [];
             this.isBuffering = false;
             // restart count to base level as we are going to redraw
             this.count = this.particleSystems[0].nbParticles;
@@ -438,9 +441,7 @@ class ArrayModel {
       }
     } else {
       // load immutable layer immediately
-      this.fetchBlock(
-        this.octree.blocks.get(Moctree.startBlockIndex.toString())
-      );
+      this.fetchBlock(this.octree.blocks.get(Moctree.startBlockIndex));
     }
   }
 
