@@ -13,7 +13,7 @@ import {
 
 import { GridMaterial } from '@babylonjs/materials';
 
-import { Moctree, MoctreeBlock } from '../octree';
+import { Moctree, MoctreeBlock, HTree8, HTBlock } from '../octree';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 import {
   DataRequest,
@@ -30,6 +30,7 @@ class ArrayModel {
   arrayName?: string;
   namespace?: string;
   octree!: Moctree;
+  htree!: HTree8;
   bufferSize: number;
   particleScale: number;
   minVector!: Vector3;
@@ -51,10 +52,13 @@ class ArrayModel {
   pickedBlockCode = -1;
   maxNumCacheBlocks: number;
   numGridSubdivisions: number;
-  renderBlocks: MoctreeBlock[] = [];
-  renderedBlocks: MoctreeBlock[] = [];
+  // renderBlocks: MoctreeBlock[] = [];
+  renderBlocks: HTBlock[] = [];
+  // renderedBlocks: MoctreeBlock[] = [];
+  renderedBlocks: HTBlock[] = [];
   isBuffering = false;
-  neighbours?: Generator<MoctreeBlock, undefined, undefined>;
+  // neighbours?: Generator<MoctreeBlock, undefined, undefined>;
+  neighbours?: Generator<HTBlock, undefined, undefined>;
   particleSystems: SolidParticleSystem[] = [];
   worker?: Worker;
   colorScheme?: string;
@@ -85,15 +89,14 @@ class ArrayModel {
     this.fanOut = options.fanOut || 3;
   }
 
-  private loadSystem(index: number, block: MoctreeBlock) {
+  private loadSystem(index: number, block: HTBlock) {
     // for now lets print the debug to show we are loading data
     console.log(
-      'Loading: ' +
-        index +
-        ' LOD: ' +
-        block.lod +
-        ' Morton: ' +
-        block.mortonNumber
+      'Loading: ' + index
+      // ' LOD: ' +
+      // block.lod +
+      // ' Morton: ' +
+      // block.mortonNumber
     );
 
     const buffering = this.isBuffering ? true : false;
@@ -205,19 +208,27 @@ class ArrayModel {
     }
 
     // lru cache - reinsert this block
-    this.octree.blocks.delete(block.mortonNumber);
-    if (this.octree.blocks.size > this.maxNumCacheBlocks) {
+    // this.octree.blocks.delete(block.mortonNumber);
+    // if (this.octree.blocks.size > this.maxNumCacheBlocks) {
+    //   // simple lru cache, evict first key, this is fine as we are backed by local storage
+    //   const k = this.octree.blocks.keys().next().value;
+    //   this.octree.blocks.delete(k);
+    // }
+    // this.octree.blocks.set(block.mortonNumber, block);
+    this.htree.blocks.delete(block.heapIdx);
+    if (this.htree.blocks.size > this.maxNumCacheBlocks) {
       // simple lru cache, evict first key, this is fine as we are backed by local storage
-      const k = this.octree.blocks.keys().next().value;
-      this.octree.blocks.delete(k);
+      const k = this.htree.blocks.keys().next().value;
+      this.htree.blocks.delete(k);
     }
-    this.octree.blocks.set(block.mortonNumber, block);
+    this.htree.blocks.set(block.heapIdx, block);
     this.renderedBlocks.push(block);
     console.log('Displaying ' + this.count + ' particles');
   }
 
   private onData(evt: MessageEvent) {
-    const block = evt.data as MoctreeBlock;
+    // const block = evt.data as MoctreeBlock;
+    const block = evt.data as HTBlock;
     block.isLoading = false;
 
     // recreate vector functions these are lost in serialization
@@ -232,17 +243,20 @@ class ArrayModel {
       block.maxPoint.z
     );
 
-    this.loadSystem(block.lod, block);
+    // this.loadSystem(block.lod, block);
+    this.loadSystem(block.heapIdx, block);
 
     // send the next data request, either core or neighbours
     if (this.isBuffering) {
+      console.log('going to neighbours');
       this.fetchBlock(this.neighbours?.next().value);
     } else {
       this.fetchBlock(this.renderBlocks.pop());
     }
   }
 
-  private async fetchBlock(block: MoctreeBlock | undefined) {
+  // private async fetchBlock(block: MoctreeBlock | undefined) {
+  private async fetchBlock(block: HTBlock | undefined) {
     // fetch if not cached, TODO check block is in camera frustum
     if (block) {
       if (!block.isLoading && !block.isEmpty && !block.entries) {
@@ -253,7 +267,8 @@ class ArrayModel {
         } as DataRequest);
       } else {
         // already have data
-        this.loadSystem(block.lod, block);
+        // this.loadSystem(block.lod, block);
+        this.loadSystem(block.heapIdx, block);
       }
 
       if (
@@ -263,7 +278,9 @@ class ArrayModel {
       ) {
         // we are now appending
         this.isBuffering = true;
-        this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+        // this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+        console.log('going to nehgbours');
+        this.neighbours = this.htree.getNeighbours(this.pickedBlockCode);
         this.fetchBlock(this.neighbours?.next().value);
       } else {
         this.fetchBlock(this.renderBlocks.pop());
@@ -275,7 +292,8 @@ class ArrayModel {
     debugOn: boolean,
     scene: Scene,
     ray: Ray,
-    blocks: MoctreeBlock[]
+    // blocks: MoctreeBlock[]
+    blocks: HTBlock[]
   ) {
     if (debugOn) {
       // TODO make debug colors configurable
@@ -346,16 +364,31 @@ class ArrayModel {
       this.maxLevel,
       this.fanOut
     );
-    this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
+    // this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
+
+    this.htree = new HTree8(
+      this.minVector,
+      this.maxVector,
+      this.maxLevel,
+      this.fanOut
+    );
+    this.neighbours = this.htree.getNeighbours(HTree8.startHeapIdx);
+
     // skip over default lod zero
     this.neighbours?.next();
 
     // maintain compatibility with directly loading data
     if (data) {
       // load into first SPS
-      const block = new MoctreeBlock(
-        0,
-        Moctree.startBlockIndex,
+      // const block = new MoctreeBlock(
+      //   0,
+      //   Moctree.startBlockIndex,
+      //   Vector3.Zero(),
+      //   Vector3.Zero()
+      // );
+
+      const block = new HTBlock(
+        HTree8.startHeapIdx,
         Vector3.Zero(),
         Vector3.Zero()
       );
@@ -410,14 +443,19 @@ class ArrayModel {
       if (scene.activeCamera) {
         const ray = scene.activeCamera.getForwardRay();
 
-        const parentBlocks = this.octree.getContainingBlocksByRay(
+        // const parentBlocks = this.octree.getContainingBlocksByRay(
+        //   ray,
+        //   this.maxLevel - 1
+        // );
+        const parentBlocks = this.htree.getContainingBlocksByRay(
           ray,
           this.maxLevel - 1
         );
 
         if (parentBlocks.length > 0) {
           // highest resolution
-          const pickCode = parentBlocks[0].mortonNumber;
+          // const pickCode = parentBlocks[0].mortonNumber;
+          const pickCode = parentBlocks[0].heapIdx;
 
           if (pickCode !== this.pickedBlockCode) {
             // start loading lowest resolution from the lowest block, find parent blocks and load next resolution and so on up
@@ -429,6 +467,7 @@ class ArrayModel {
             this.count = this.particleSystems[0].nbParticles;
             this.fetchBlock(this.renderBlocks.pop());
           } else if (this.isBuffering) {
+            console.log('going to nehgbours');
             this.fetchBlock(this.neighbours?.next().value);
           }
 
@@ -441,7 +480,8 @@ class ArrayModel {
       }
     } else {
       // load immutable layer immediately
-      this.fetchBlock(this.octree.blocks.get(Moctree.startBlockIndex));
+      // this.fetchBlock(this.octree.blocks.get(Moctree.startBlockIndex));
+      this.fetchBlock(this.htree.blocks.get(HTree8.startHeapIdx));
     }
   }
 

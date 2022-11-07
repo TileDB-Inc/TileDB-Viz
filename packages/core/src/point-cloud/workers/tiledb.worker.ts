@@ -8,7 +8,7 @@ import {
   WorkerRequest,
   WorkerType
 } from '../model';
-import { MoctreeBlock } from '../octree';
+import { MoctreeBlock, HTBlock } from '../octree';
 
 let namespace = '';
 let arrayName = '';
@@ -18,6 +18,19 @@ let translateZ = 0;
 let bufferSize = 200000000;
 
 let tiledbQuery: TileDBQuery;
+function levelFromHeapIdx(heapIdx: number) {
+  let level = 0;
+  let maxLevelIdx = 1;
+  const maxLevel = 7;
+  while (level < maxLevel) {
+    if (heapIdx < maxLevelIdx) {
+      return level;
+    }
+    ++level;
+    maxLevelIdx = maxLevelIdx * 8 + 1;
+  }
+  return level;
+}
 
 self.onmessage = async (e: MessageEvent) => {
   const m = e.data as WorkerRequest;
@@ -42,7 +55,8 @@ self.onmessage = async (e: MessageEvent) => {
   }
 };
 
-function returnData(block: MoctreeBlock) {
+// function returnData(block: MoctreeBlock) {
+function returnData(block: HTBlock) {
   // TODO use transferable objects
   if (block.entries?.X.length === 0) {
     block.isEmpty = true;
@@ -50,8 +64,10 @@ function returnData(block: MoctreeBlock) {
   self.postMessage(block);
 }
 
-async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = block.mortonNumber;
+// async function fetchData(block: MoctreeBlock) {
+async function fetchData(block: HTBlock) {
+  // const queryCacheKey = block.mortonNumber;
+  const queryCacheKey = block.heapIdx;
   const storeName = `${namespace}:${arrayName}`;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
@@ -77,7 +93,7 @@ async function fetchData(block: MoctreeBlock) {
     for await (const results of tiledbQuery.ReadQuery(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       namespace,
-      arrayName + '_' + block.lod,
+      arrayName + '_' + levelFromHeapIdx(block.heapIdx),
       queryData
     )) {
       block.entries = results as SparseResult;

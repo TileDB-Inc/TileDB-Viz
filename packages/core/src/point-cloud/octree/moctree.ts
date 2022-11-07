@@ -109,38 +109,31 @@ class Moctree {
           .subtract(this._minPoint)
           .scale(0.5);
 
+
+        let minDistanceFromOrigin = ray.length;
+        let resultBlock: MoctreeBlock | undefined = undefined;
         for (let l = 1; l <= lod; l++) {
-          const candidates: Array<MoctreeBlock> = [];
+          // const candidates: Array<MoctreeBlock> = [];
           for (let i = 0; i < Moctree.indexes.length; i++) {
             const st = minVector.add(
               childBlockSize.multiply(Moctree.indexes[i])
             );
             const ed = st.add(childBlockSize);
-            const v = (code << 3) + i;
-            const block = this.blocks.get(v) || new MoctreeBlock(l, v, st, ed);
-
-            if (ray.intersectsBoxMinMax(st, ed)) {
-              // skip over empty regions
-              if (block?.isEmpty) {
+            const v = (code << 3n) + BigInt(i);
+            const currDistance = ray.origin.subtract(st).length();
+            if (
+              ray.intersectsBoxMinMax(st, ed) &&
+              currDistance < minDistanceFromOrigin
+            ) {
+              const block =
+                this.blocks.get(v.toString()) ||
+                new MoctreeBlock(l, v.toString(), st, ed);
+              if (block.isEmpty) {
                 continue;
               }
-
-              candidates.push(block);
+              resultBlock = block;
+              minDistanceFromOrigin = currDistance;
             }
-          }
-
-          // find nearest candidate to ray origin
-          let resultBlock = candidates.pop();
-          if (resultBlock !== undefined) {
-            candidates.forEach(b => {
-              if (
-                ray.origin.subtract(b.minPoint).length() <
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                ray.origin.subtract(resultBlock!.minPoint).length()
-              ) {
-                resultBlock = b;
-              }
-            });
           }
 
           if (resultBlock === undefined) {
@@ -239,4 +232,120 @@ class MoctreeBlock {
   }
 }
 
-export { Moctree, MoctreeBlock, encodeMorton, decodeMorton, getMortonRange };
+class HTBlock {
+  isLoading = false;
+  minPoint: Vector3;
+  maxPoint: Vector3;
+  isEmpty = false;
+  entries?: SparseResult;
+
+  constructor(public heapIdx: number, minPoint: Vector3, maxPoint: Vector3) {
+    this.minPoint = minPoint.clone();
+    this.maxPoint = maxPoint.clone();
+  }
+}
+
+class HTree8 {
+  blocks = new Map<number, HTBlock>();
+  bounds: BoundingBox;
+  static startHeapIdx = 0;
+  static indexes: Array<Vector3> = [
+    new Vector3(0, 0, 0),
+    new Vector3(1, 0, 0),
+    new Vector3(0, 1, 0),
+    new Vector3(1, 1, 0),
+    new Vector3(0, 0, 1),
+    new Vector3(1, 0, 1),
+    new Vector3(0, 1, 1),
+    new Vector3(1, 1, 1)
+  ];
+
+  constructor(
+    private _minPoint: Vector3,
+    private _maxPoint: Vector3,
+    public maxDepth: number,
+    public fanOut: number
+  ) {
+    this.blocks.set(
+      HTree8.startHeapIdx,
+      new HTBlock(0, this._minPoint, this._maxPoint)
+    );
+    this.bounds = new BoundingBox(this._minPoint, this._maxPoint);
+  }
+
+  public getContainingBlocksByRay(ray: Ray, lod: number) {
+    const resultBlocks: HTBlock[] = [];
+    if (lod > 0) {
+      if (ray.intersectsBoxMinMax(this._minPoint, this._maxPoint)) {
+        if (lod > this.maxDepth) {
+          lod = this.maxDepth;
+        }
+        let minVector = this._minPoint;
+        let hIdx = HTree8.startHeapIdx;
+        const childBlockSize = this._maxPoint
+          .subtract(this._minPoint)
+          .scale(0.5);
+        let minDistanceFromOrigin = ray.length;
+        let resultBlock: HTBlock | undefined = undefined;
+        for (let l = 1; l <= lod; l++) {
+          for (let i = 0; i < HTree8.indexes.length; ++i) {
+            const st = minVector.add(
+              childBlockSize.multiply(HTree8.indexes[i])
+            );
+            const ed = st.add(childBlockSize);
+            const v = hIdx * 8 + 1;
+            const currDistance = ray.origin.subtract(st).length();
+            if (
+              ray.intersectsBoxMinMax(st, ed) &&
+              currDistance < minDistanceFromOrigin
+            ) {
+              const block = this.blocks.get(v) || new HTBlock(v, st, ed);
+              if (block.isEmpty) {
+                continue;
+              }
+              resultBlock = block;
+              minDistanceFromOrigin = currDistance;
+            }
+          }
+
+          if (resultBlock === undefined) {
+            break;
+          } else {
+            resultBlocks.push(resultBlock);
+            minVector = resultBlock.minPoint;
+            hIdx = resultBlock.heapIdx;
+            childBlockSize.scaleInPlace(0.5);
+          }
+        }
+      }
+    }
+    return resultBlocks.reverse();
+  }
+
+  public *getNeighbours(
+    heapIdx: number
+  ): Generator<HTBlock, undefined, undefined> {
+    let count = 0;
+    // const lod = getLevelForIdx(heapIdx);
+    //   const
+    while (true) {
+      const currHeapIdx = heapIdx;
+      yield this.blocks.get(currHeapIdx) ||
+        new HTBlock(heapIdx, this._minPoint, this._maxPoint);
+      if (++count === 10) {
+        break;
+      }
+    }
+    return;
+  }
+}
+
+export {
+  Moctree,
+  MoctreeBlock,
+  HTree8,
+  HTBlock,
+  encodeMorton,
+  decodeMorton,
+  getMortonRange
+};

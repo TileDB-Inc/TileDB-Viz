@@ -1,4 +1,4 @@
-import { MoctreeBlock } from '../octree';
+import { MoctreeBlock, HTBlock } from '../octree';
 
 interface SparsePoint {
   x: number;
@@ -39,8 +39,12 @@ interface InitialRequest extends WorkerRequest {
   bufferSize: number;
 }
 
+// interface DataRequest extends WorkerRequest {
+//   block: MoctreeBlock;
+// }
+
 interface DataRequest extends WorkerRequest {
-  block: MoctreeBlock;
+  block: HTBlock;
 }
 
 export {
