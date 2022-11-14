@@ -1,15 +1,16 @@
 import {
   ArcRotateCamera,
-  Color3,
-  Scene,
-  Vector3,
   Camera,
+  Color3,
   DirectionalLight,
+  Effect,
   HemisphericLight,
-  PostProcess,
   KeyboardEventTypes,
+  Matrix,
   Plane,
-  Matrix
+  PostProcess,
+  Scene,
+  Vector3
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -120,6 +121,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       );
       guiCamera.layerMask = 0x10000000;
 
+      guiCamera.setTarget(Vector3.Zero());
+
       this._cameras.push(guiCamera);
       this._scene.activeCameras = this._cameras;
 
@@ -181,9 +184,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         camera
       );
 
-      postProcess.onApply = function (effect: any) {
-        effect.setFloat('screenWidth', screenWidth);
-        effect.setFloat('screenHeight', screenHeight);
+      postProcess.onApply = function (effect: Effect) {
+        effect.setFloat('screenWidth', screenWidth as number);
+        effect.setFloat('screenHeight', screenHeight as number);
         effect.setArray2('neighbours', neighbours);
         effect.setFloat('edlStrength', edlStrength);
         effect.setFloat('radius', edlRadius);

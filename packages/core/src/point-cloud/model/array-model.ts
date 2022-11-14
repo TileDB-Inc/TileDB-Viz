@@ -46,6 +46,7 @@ class ArrayModel {
   refreshRate: number;
   particleType: string;
   particleSize: number;
+  sliderParticleScale: number;
   translateX = 0;
   translateY = 0;
   translateZ = 0;
@@ -65,6 +66,7 @@ class ArrayModel {
   particleBudget: number;
   count = 0;
   fanOut = 3;
+  updateParticleSize = false;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -85,6 +87,7 @@ class ArrayModel {
     this.numGridSubdivisions = options.numGridSubdivisions || 10;
     this.particleBudget = options.numParticles || 2_000_000;
     this.fanOut = options.fanOut || 3;
+    this.sliderParticleScale = 100;
   }
 
   private loadSystem(index: number, block: MoctreeBlock) {
@@ -456,6 +459,25 @@ class ArrayModel {
       this.fetchPoints(scene);
     }
     this.frame++;
+
+    // update particle size through GUI slider
+    if (this.updateParticleSize) {
+      const value = this.sliderParticleScale;
+      for (let c = 0; c < this.particleSystems.length; c++) {
+        const r =
+          (this.particleSize + c * this.particleScale) / this.particleSize;
+        this.particleSystems[c].updateParticle = function (particle: any) {
+          particle.scaling = new Vector3(
+            (value / 100) * r,
+            (value / 100) * r,
+            (value / 100) * r
+          );
+          return particle.scaling;
+        };
+        this.particleSystems[c].setParticles();
+      }
+      this.updateParticleSize = false;
+    }
   }
 }
 

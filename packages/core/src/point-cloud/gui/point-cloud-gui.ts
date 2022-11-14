@@ -1,8 +1,8 @@
 import {
+  Effect,
   PostProcess,
   RenderTargetTexture,
-  Scene,
-  Vector3
+  Scene
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -61,6 +61,18 @@ class PointCloudGUI {
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
     // expand and collapse the panel menu on click of button
+    let _menu = 0;
+    const changeMenu = function () {
+      if (_menu === 0) {
+        _menu = 1;
+        customizePanel.isVisible = true;
+      } else if (_menu === 1) {
+        customizePanel.isVisible = false;
+        _menu = 0;
+      }
+      return _menu;
+    };
+
     button.onPointerUpObservable.add(() => {
       changeMenu();
     });
@@ -83,7 +95,7 @@ class PointCloudGUI {
     customizePanel.labelColor = '#352F4D';
 
     // add color scheme radio buttons
-    const setColor = (but: any) => {
+    const setColor = (but: number) => {
       switch (but) {
         case 0:
           updateSceneColors(scene, 'dark');
@@ -117,19 +129,9 @@ class PointCloudGUI {
 
     // add a point size slider
     function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
-      scene.onBeforeRenderObservable.addOnce(() => {
-        for (let c = 0; c < model.particleSystems.length; c++) {
-          model.particleSystems[c].updateParticle = function (particle: any) {
-            particle.scaling = new Vector3(
-              value / 100,
-              value / 100,
-              value / 100
-            );
-            return particle.scaling;
-          };
-          model.particleSystems[c].setParticles();
-        }
-      });
+      model.updateParticleSize = true;
+      model.sliderParticleScale = value;
+      model.afterRender(scene);
     }
 
     const updatePointSize = function (value: number) {
@@ -155,9 +157,9 @@ class PointCloudGUI {
 
     // add an EDL strength slider
     const updateEdlStrength = function (value: number) {
-      postProcess.onApply = function (effect: any) {
-        effect.setFloat('screenWidth', screenWidth);
-        effect.setFloat('screenHeight', screenHeight);
+      postProcess.onApply = function (effect: Effect) {
+        effect.setFloat('screenWidth', screenWidth as number);
+        effect.setFloat('screenHeight', screenHeight as number);
         effect.setArray2('neighbours', neighbours);
         effect.setFloat('edlStrength', value);
         effect.setFloat('radius', edlRadius);
@@ -182,19 +184,7 @@ class PointCloudGUI {
 
     customizePanel.addGroup(edlStrengthGroup);
 
-    let _menu = 0;
-    const changeMenu = function () {
-      if (_menu === 0) {
-        _menu = 1;
-        customizePanel.isVisible = true;
-      } else if (_menu === 1) {
-        customizePanel.isVisible = false;
-        _menu = 0;
-      }
-      return _menu;
-    };
-
-    // to make sure the menu is collapsed at the start
+    // make sure the menu is collapsed at the start
     const sceneInit = function () {
       customizePanel.isVisible = false;
     };
