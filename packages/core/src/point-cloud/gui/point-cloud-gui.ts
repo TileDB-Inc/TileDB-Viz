@@ -182,16 +182,16 @@ class PointCloudGUI {
 
     customizePanel.addGroup(edlStrengthGroup);
 
-    let _menu = 0;
+    let menu = 0;
     const changeMenu = function () {
-      if (_menu === 0) {
-        _menu = 1;
+      if (menu === 0) {
+        menu = 1;
         customizePanel.isVisible = true;
-      } else if (_menu === 1) {
+      } else if (menu === 1) {
         customizePanel.isVisible = false;
-        _menu = 0;
+        menu = 0;
       }
-      return _menu;
+      return menu;
     };
 
     // to make sure the menu is collapsed at the start

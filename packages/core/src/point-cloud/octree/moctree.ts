@@ -2,7 +2,7 @@ import { BoundingBox, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
-// If we need more octants that supported by 32 bit then we can combine octrees
+// If we need more octants than supported by 32 bit then we can combine octrees
 
 // "Insert" two 0 bits after each of the 10 low bits of x
 /* prettier-ignore */
@@ -27,15 +27,10 @@ function compact1By2(x: number)
   return x;
 }
 
-function encodeMorton(v: Vector3) {
-  // add first bit on the left to represent offset after using well known methods above
-  const code = (part1By2(v.z) << 2) + (part1By2(v.y) << 1) + part1By2(v.x);
-  const l = code.toString(2).length;
-  if (l % 3 > 0) {
-    return (1 << (l + (3 - (l % 3)))) | code;
-  } else {
-    return (1 << l) | code;
-  }
+function encodeMorton(v: Vector3, depth: number) {
+  // add first bit on the left to represent depth after using well known methods above
+  const marker = 1 << (3 * depth);
+  return marker | ((part1By2(v.z) << 2) + (part1By2(v.y) << 1) + part1By2(v.x));
 }
 
 function decodeMorton(code: number) {
@@ -63,6 +58,7 @@ function getMortonRange(lod: number) {
 class Moctree {
   blocks = new Map<number, MoctreeBlock>();
   bounds: BoundingBox;
+  knownBlocks: Map<number, number>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [
     new Vector3(0, 0, 0),
@@ -76,8 +72,9 @@ class Moctree {
   ];
 
   constructor(
-    private _minPoint: Vector3,
-    private _maxPoint: Vector3,
+    private minPoint: Vector3,
+    private maxPoint: Vector3,
+    private translationVector: Vector3,
     public maxDepth: number,
     public fanOut: number
   ) {
@@ -87,11 +84,13 @@ class Moctree {
       new MoctreeBlock(
         0,
         Moctree.startBlockIndex,
-        this._minPoint,
-        this._maxPoint
+        this.minPoint,
+        this.maxPoint,
+        this.translationVector
       )
     );
-    this.bounds = new BoundingBox(this._minPoint, this._maxPoint);
+    this.bounds = new BoundingBox(this.minPoint, this.maxPoint);
+    this.knownBlocks = new Map<number, number>();
   }
 
   public getContainingBlocksByRay(ray: Ray, lod: number) {
@@ -99,15 +98,13 @@ class Moctree {
     const resultBlocks: MoctreeBlock[] = [];
 
     if (lod > 0) {
-      if (ray.intersectsBoxMinMax(this._minPoint, this._maxPoint)) {
+      if (ray.intersectsBoxMinMax(this.minPoint, this.maxPoint)) {
         if (lod > this.maxDepth) {
           lod = this.maxDepth;
         }
-        let minVector = this._minPoint;
+        let minVector = this.minPoint;
         let code = Moctree.startBlockIndex;
-        const childBlockSize = this._maxPoint
-          .subtract(this._minPoint)
-          .scale(0.5);
+        const childBlockSize = this.maxPoint.subtract(this.minPoint).scale(0.5);
 
         for (let l = 1; l <= lod; l++) {
           const candidates: Array<MoctreeBlock> = [];
@@ -117,7 +114,9 @@ class Moctree {
             );
             const ed = st.add(childBlockSize);
             const v = (code << 3) + i;
-            const block = this.blocks.get(v) || new MoctreeBlock(l, v, st, ed);
+            const block =
+              this.blocks.get(v) ||
+              new MoctreeBlock(l, v, st, ed, this.translationVector);
 
             if (ray.intersectsBoxMinMax(st, ed)) {
               // skip over empty regions
@@ -154,7 +153,6 @@ class Moctree {
         }
       }
     }
-
     return resultBlocks.reverse();
   }
 
@@ -164,47 +162,69 @@ class Moctree {
     let left = -1;
     let right = 1;
     const lod = (code.toString(2).length - 1) / 3;
-    const bottomRange = getMortonRange(lod);
+
+    let totalBlocks = -1 * lod;
+    for (let l = 1; l <= lod; l++) {
+      const rng = getMortonRange(l);
+      totalBlocks += rng.maxMorton - rng.minMorton + 1;
+    }
+
+    let blockCount = 0;
 
     // keep generating blocks to fill until the caller decides enough
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    while (blockCount < totalBlocks) {
       let currentCode = code;
 
       // loop the lods
       for (let l = lod; l > 0; l--) {
-        const blockSize = this._maxPoint
-          .subtract(this._minPoint)
+        const blockSize = this.maxPoint
+          .subtract(this.minPoint)
           .scale(1 / Math.pow(2, l));
 
         const ranges = getMortonRange(l);
-        // the caller will filter which blocks to render
-        for (let i = 0; i < this.fanOut; i++) {
-          const leftBlockCode = currentCode + left - i;
 
+        // display more blocks from higher resolution data and tail off
+        const fanOut = Math.ceil(this.fanOut / (this.maxDepth - l + 1));
+
+        for (let i = 0; i < fanOut; i++) {
+          const leftBlockCode = currentCode + left - i;
           if (leftBlockCode >= ranges.minMorton) {
             const relativeV1 = decodeMorton(leftBlockCode);
-            const actualV1 = this._minPoint.add(relativeV1.multiply(blockSize));
-            yield this.blocks.get(leftBlockCode) ||
-              new MoctreeBlock(
-                l,
-                leftBlockCode,
-                actualV1,
-                actualV1.add(blockSize)
-              );
+            const actualV1 = this.minPoint.add(relativeV1.multiply(blockSize));
+            blockCount++;
+            if (
+              this.knownBlocks.has(leftBlockCode) ||
+              this.knownBlocks.size === 0
+            ) {
+              yield this.blocks.get(leftBlockCode) ||
+                new MoctreeBlock(
+                  l,
+                  leftBlockCode,
+                  actualV1,
+                  actualV1.add(blockSize),
+                  this.translationVector
+                );
+            }
           }
 
           const rightBlockCode = currentCode + right + i;
           if (rightBlockCode <= ranges.maxMorton) {
             const relativeV2 = decodeMorton(rightBlockCode);
-            const actualV2 = this._minPoint.add(relativeV2.multiply(blockSize));
-            yield this.blocks.get(rightBlockCode) ||
-              new MoctreeBlock(
-                l,
-                rightBlockCode,
-                actualV2,
-                actualV2.add(blockSize)
-              );
+            const actualV2 = this.minPoint.add(relativeV2.multiply(blockSize));
+            blockCount++;
+            if (
+              this.knownBlocks.has(rightBlockCode) ||
+              this.knownBlocks.size === 0
+            ) {
+              yield this.blocks.get(rightBlockCode) ||
+                new MoctreeBlock(
+                  l,
+                  rightBlockCode,
+                  actualV2,
+                  actualV2.add(blockSize),
+                  this.translationVector
+                );
+            }
           }
         }
         // up a block level
@@ -213,29 +233,49 @@ class Moctree {
 
       left -= this.fanOut;
       right += this.fanOut;
-      if (left <= bottomRange.minMorton && right >= bottomRange.maxMorton) {
-        break;
-      }
     }
     return;
   }
 }
 
 class MoctreeBlock {
-  isLoading = false;
   minPoint: Vector3;
   maxPoint: Vector3;
-  isEmpty = false;
+  translationVector: Vector3;
+  bbox: BoundingBox;
+  pointCount = 0;
+
+  get isEmpty() {
+    if (this.entries) {
+      if (this.entries?.X?.length > 0) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      // false because entries is not defined so either cache or server has not been checked
+      return false;
+    }
+  }
   entries?: SparseResult;
 
   constructor(
     public lod: number,
     public mortonNumber: number,
     minPoint: Vector3,
-    maxPoint: Vector3
+    maxPoint: Vector3,
+    translationVector: Vector3,
+    entries?: SparseResult
   ) {
     this.minPoint = minPoint.clone();
     this.maxPoint = maxPoint.clone();
+    this.translationVector = translationVector.clone();
+    if (entries) {
+      this.entries = entries;
+    }
+
+    this.bbox = new BoundingBox(this.minPoint, this.maxPoint);
+    this.bbox.getWorldMatrix().setTranslation(this.translationVector);
   }
 }
 

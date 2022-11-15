@@ -144,10 +144,6 @@ export interface TileDBPointCloudOptions
    */
   maxNumCacheBlocks?: number;
   /**
-   * Grid subdivisions on X/Y plane
-   */
-  numGridSubdivisions?: number;
-  /**
    * Particle budget
    */
   numParticles?: number;
@@ -155,6 +151,14 @@ export interface TileDBPointCloudOptions
    * Number of blocks to fan out when buffering
    */
   fanOut?: number;
+  /**
+   * Use shaders, on low end system might now want to use shaders
+   */
+  useShader?: boolean;
+  /**
+   * debug, draw octant boxes that are being rendered
+   */
+  debug?: boolean;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
@@ -365,10 +369,46 @@ export async function getNonEmptyDomain(
       'application/json'
     );
 
-    writeToCache(storeName, key, resp.data.nonEmptyDomain.float64);
+    writeToCache(storeName, key, resp.data.nonEmptyDomain.float32);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return resp.data.nonEmptyDomain.float64!;
+    return resp.data.nonEmptyDomain.float32!;
   } else {
     return dataFromCache;
+  }
+}
+
+export async function getArrayMetadata(
+  options: TileDBPointCloudOptions
+): Promise<Map<string, number>> {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const storeName = getStoreName(options.namespace!, options.arrayName!);
+  const key = -1;
+  // we might have the data cached
+  const dataFromCache = await getQueryDataFromCache(storeName, key);
+
+  if (!dataFromCache) {
+    const config: Record<string, any> = {};
+
+    config.apiKey = options.token;
+
+    if (options.tiledbEnv) {
+      config.basePath = options.tiledbEnv;
+    }
+    const tiledbClient = getTileDBClient(config);
+    const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace!,
+      options.arrayName + '_0' // naming convention for groups of multi-resolution arrays
+    );
+
+    interface OctantData {
+      'octant-data': string;
+    }
+    const o = resp.data as OctantData;
+    const obj = JSON.parse(o['octant-data']);
+    writeToCache(storeName, key, obj);
+    return new Map<string, number>(Object.entries(obj));
+  } else {
+    return new Map<string, number>(Object.entries(dataFromCache));
   }
 }
