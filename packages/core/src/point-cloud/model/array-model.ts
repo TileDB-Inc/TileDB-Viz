@@ -374,6 +374,7 @@ class ArrayModel {
 
         // check block is in frustrum and not empty
         if (!block) {
+          console.log('Is buffering!');
           // we are buffering
           this.isBuffering = true;
           block = this.neighbours?.next().value;
@@ -384,6 +385,7 @@ class ArrayModel {
               block.isEmpty &&
               !scene.activeCamera.isInFrustum(block.bbox)
             ) {
+              console.log('get neighbour');
               block = this.neighbours?.next().value;
             }
           }

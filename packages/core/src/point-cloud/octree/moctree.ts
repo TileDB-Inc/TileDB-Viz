@@ -159,14 +159,14 @@ class Moctree {
   public *getNeighbours(
     code: number
   ): Generator<MoctreeBlock, undefined, undefined> {
-    let left = -1;
-    let right = 1;
     const lod = (code.toString(2).length - 1) / 3;
+    const positions = [];
 
     let totalBlocks = -1 * lod;
     for (let l = 1; l <= lod; l++) {
       const rng = getMortonRange(l);
       totalBlocks += rng.maxMorton - rng.minMorton + 1;
+      positions.push({ left: -1, right: 1 });
     }
 
     let blockCount = 0;
@@ -189,7 +189,7 @@ class Moctree {
         );
 
         for (let i = 0; i < fanOut; i++) {
-          const leftBlockCode = currentCode + left - i;
+          const leftBlockCode = currentCode + positions[l - 1].left;
           if (leftBlockCode >= ranges.minMorton) {
             blockCount++;
             if (
@@ -200,6 +200,7 @@ class Moctree {
               const actualV1 = this.minPoint.add(
                 relativeV1.multiply(blockSize)
               );
+              positions[l - 1].left--;
               yield this.blocks.get(leftBlockCode) ||
                 new MoctreeBlock(
                   l,
@@ -211,7 +212,7 @@ class Moctree {
             }
           }
 
-          const rightBlockCode = currentCode + right + i;
+          const rightBlockCode = currentCode + positions[l - 1].right;
           if (rightBlockCode <= ranges.maxMorton) {
             blockCount++;
             if (
@@ -222,6 +223,7 @@ class Moctree {
               const actualV2 = this.minPoint.add(
                 relativeV2.multiply(blockSize)
               );
+              positions[l - 1].right++;
               yield this.blocks.get(rightBlockCode) ||
                 new MoctreeBlock(
                   l,
@@ -233,12 +235,10 @@ class Moctree {
             }
           }
         }
-        // up a zoom level
+
+        // up a block level
         currentCode = currentCode >> 3;
       }
-
-      left -= this.fanOut;
-      right += this.fanOut;
     }
     return;
   }

@@ -336,13 +336,14 @@ describe('moctree tests', () => {
 
   test('get neighbours with fan out larger than one', () => {
     const maxDepth = 3;
+    const fanOut = 5;
     // operate on a unit cube
     const tree = new Moctree(
       Vector3.Zero(),
       new Vector3(1, 1, 1),
       Vector3.Zero(),
       maxDepth,
-      5
+      fanOut
     );
     // relative position of the centre at lod 3 is 4 blocks away from the origin
     const centre = new Vector3(4, 4, 4);
@@ -360,6 +361,28 @@ describe('moctree tests', () => {
     }
     expect(c).toBe(581);
     expect(nItr.next().value).toBeUndefined();
+
+    // shift a level up and we will get less blocks
+    // expect 8 + 64 - 2 = 70 results (-2 because of the centre for each of the levels)
+    const nItr2 = tree.getNeighbours(centreCode >> 3);
+    c = 0;
+    while ((block = nItr2.next().value)) {
+      expect(block).toBeDefined();
+      c++;
+    }
+    expect(c).toBe(70);
+    expect(nItr2.next().value).toBeUndefined();
+
+    // shift a level up and we will get less blocks
+    // expect 8 - 1 results (-1 because of the centre for each of the levels)
+    const nItr3 = tree.getNeighbours(centreCode >> 6);
+    c = 0;
+    while ((block = nItr3.next().value)) {
+      expect(block).toBeDefined();
+      c++;
+    }
+    expect(c).toBe(7);
+    expect(nItr3.next().value).toBeUndefined();
   });
 
   test('load block metadata', () => {
