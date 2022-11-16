@@ -174,7 +174,6 @@ class Moctree {
     // keep generating blocks to fill until the caller decides enough
     while (blockCount < totalBlocks) {
       let currentCode = code;
-
       // loop the lods
       for (let l = lod; l > 0; l--) {
         const blockSize = this.maxPoint
@@ -184,18 +183,23 @@ class Moctree {
         const ranges = getMortonRange(l);
 
         // display more blocks from higher resolution data and tail off
-        const fanOut = Math.ceil(this.fanOut / (this.maxDepth - l + 1));
+        const fanOut = Math.max(
+          Math.ceil(this.fanOut / (this.maxDepth - l + 1)),
+          1
+        );
 
         for (let i = 0; i < fanOut; i++) {
           const leftBlockCode = currentCode + left - i;
           if (leftBlockCode >= ranges.minMorton) {
-            const relativeV1 = decodeMorton(leftBlockCode);
-            const actualV1 = this.minPoint.add(relativeV1.multiply(blockSize));
             blockCount++;
             if (
               this.knownBlocks.has(leftBlockCode) ||
               this.knownBlocks.size === 0
             ) {
+              const relativeV1 = decodeMorton(leftBlockCode);
+              const actualV1 = this.minPoint.add(
+                relativeV1.multiply(blockSize)
+              );
               yield this.blocks.get(leftBlockCode) ||
                 new MoctreeBlock(
                   l,
@@ -209,13 +213,15 @@ class Moctree {
 
           const rightBlockCode = currentCode + right + i;
           if (rightBlockCode <= ranges.maxMorton) {
-            const relativeV2 = decodeMorton(rightBlockCode);
-            const actualV2 = this.minPoint.add(relativeV2.multiply(blockSize));
             blockCount++;
             if (
               this.knownBlocks.has(rightBlockCode) ||
               this.knownBlocks.size === 0
             ) {
+              const relativeV2 = decodeMorton(rightBlockCode);
+              const actualV2 = this.minPoint.add(
+                relativeV2.multiply(blockSize)
+              );
               yield this.blocks.get(rightBlockCode) ||
                 new MoctreeBlock(
                   l,
@@ -227,7 +233,7 @@ class Moctree {
             }
           }
         }
-        // up a block level
+        // up a zoom level
         currentCode = currentCode >> 3;
       }
 

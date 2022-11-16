@@ -334,6 +334,34 @@ describe('moctree tests', () => {
     expect(nItr3.next().value).toBeUndefined();
   });
 
+  test('get neighbours with fan out larger than one', () => {
+    const maxDepth = 3;
+    // operate on a unit cube
+    const tree = new Moctree(
+      Vector3.Zero(),
+      new Vector3(1, 1, 1),
+      Vector3.Zero(),
+      maxDepth,
+      5
+    );
+    // relative position of the centre at lod 3 is 4 blocks away from the origin
+    const centre = new Vector3(4, 4, 4);
+    const centreCode = encodeMorton(centre, 3);
+
+    // run generator and retrieve count of returned blocks
+    const nItr = tree.getNeighbours(centreCode);
+
+    // expect 8 + 64 + 512 - 3 = 581 results (-3 because of the centre for each of the levels)
+    let c = 0;
+    let block: MoctreeBlock | undefined;
+    while ((block = nItr.next().value)) {
+      expect(block).toBeDefined();
+      c++;
+    }
+    expect(c).toBe(581);
+    expect(nItr.next().value).toBeUndefined();
+  });
+
   test('load block metadata', () => {
     // known data, block 1-1-1-1 (D-X-Y-Z) is missing
     // map has a depth of one

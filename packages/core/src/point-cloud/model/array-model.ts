@@ -2,12 +2,11 @@ import {
   Color3,
   Color4,
   DynamicTexture,
-  Material,
   Mesh,
   MeshBuilder,
+  PointsCloudSystem,
   Scene,
   SolidParticle,
-  SolidParticleSystem,
   StandardMaterial,
   Vector3
 } from '@babylonjs/core';
@@ -47,7 +46,7 @@ class ArrayModel {
   renderBlocks: MoctreeBlock[] = [];
   isBuffering = false;
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
-  particleSystems: SolidParticleSystem[] = [];
+  particleSystems: Map<number, PointsCloudSystem>;
   worker?: Worker;
   colorScheme?: string;
   particlePool: Array<SolidParticle> = [];
@@ -59,7 +58,7 @@ class ArrayModel {
   debugOctant: Mesh;
   debugOrigin: Mesh;
   isActive = false;
-  frame = 0;
+  scene?: Scene;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -107,175 +106,123 @@ class ArrayModel {
     matOrigin.diffuseColor = Color3.Purple();
     matOrigin.alpha = 0.8;
     this.debugOrigin.material = matOrigin;
+    this.particleSystems = new Map<number, PointsCloudSystem>();
   }
 
-  private loadSystem(index: number, block: MoctreeBlock) {
-    // const st = Date.now();
-    if (block.entries !== undefined) {
-      const transVector = block.bbox.getWorldMatrix().getTranslation();
-      const transX = transVector.x;
-      const transY = transVector.y;
-      const transZ = transVector.z;
-      const rgbMax = this.rgbMax;
-      const sps = this.particleSystems[index];
-      let numPoints = block.entries.X.length;
+  private loadSystem(block: MoctreeBlock) {
+    const st = Date.now();
+    if (block.entries !== undefined && this.scene) {
+      if (!this.particleSystems.has(block.mortonNumber)) {
+        console.log('LOAD SYSTEM: ' + block.mortonNumber);
+        const transVector = block.bbox.getWorldMatrix().getTranslation();
+        const transX = transVector.x;
+        const transY = transVector.y;
+        const transZ = transVector.z;
+        const rgbMax = this.rgbMax;
 
-      // increase particle point size for higher LODs
-      const r =
-        (this.particleSize + index * this.particleScale) / this.particleSize;
+        const numPoints = block.entries.X.length;
+        console.log(
+          'NUM POINTS: ' +
+            numPoints +
+            ' : total - ' +
+            (this.particleCount + numPoints)
+        );
 
-      this.particleCount += numPoints;
-      if (this.particleCount < this.particleBudget) {
-        const pointBuilder = function (particle: SolidParticle, i: number) {
-          if (block.entries !== undefined) {
-            // set properties of particle
-            particle.scaling = new Vector3(r, r, r);
-
-            particle.position.set(
-              block.entries.X[i] - transX,
-              block.entries.Z[i] - transY,
-              block.entries.Y[i] - transZ
-            );
-
-            if (particle.color) {
-              particle.color.set(
-                block.entries.Red[i] / rgbMax,
-                block.entries.Green[i] / rgbMax,
-                block.entries.Blue[i] / rgbMax,
-                1
-              );
-            } else {
-              particle.color = new Color4(
-                block.entries.Red[i] / rgbMax,
-                block.entries.Green[i] / rgbMax,
-                block.entries.Blue[i] / rgbMax
-              );
+        this.particleCount += numPoints;
+        if (this.particleCount < this.particleBudget) {
+          const pcs = new PointsCloudSystem(
+            block.mortonNumber.toString(),
+            this.particleSize,
+            this.scene,
+            {
+              updatable: false
             }
-          }
-        };
+          );
 
-        if (index === 0) {
-          // immutable SPS for LoD 0
-          const particle = MeshBuilder.CreateBox(this.particleType, {
-            size: this.particleSize
+          const pointBuilder = function (particle: any, i: number) {
+            if (block.entries !== undefined) {
+              // set properties of particle
+              particle.position.set(
+                block.entries.X[i] - transX,
+                block.entries.Z[i] - transY,
+                block.entries.Y[i] - transZ
+              );
+
+              if (particle.color) {
+                particle.color.set(
+                  block.entries.Red[i] / rgbMax,
+                  block.entries.Green[i] / rgbMax,
+                  block.entries.Blue[i] / rgbMax,
+                  1
+                );
+              } else {
+                particle.color = new Color4(
+                  block.entries.Red[i] / rgbMax,
+                  block.entries.Green[i] / rgbMax,
+                  block.entries.Blue[i] / rgbMax
+                );
+              }
+            }
+          };
+          pcs.addPoints(numPoints, pointBuilder);
+          pcs.buildMeshAsync().then(() => {
+            pcs.setParticles();
+            this.particleSystems.set(block.mortonNumber, pcs);
+            this.isActive = false;
           });
-          if (this.useShader) {
-            particle.material = this.particleMaterial
-              ?.shaderMaterial as Material;
-          }
-          sps.addShape(particle, numPoints, {
-            positionFunction: pointBuilder
-          });
-          particle.dispose();
-          sps.buildMesh();
         } else {
-          const offset = this.isBuffering ? sps.nbParticles : 0;
-          if (this.isBuffering) {
-            // we are always adding more points to the SPS
-            // use cache first
-            if (this.particlePool.length > 0) {
-              const particles = this.particlePool.splice(numPoints);
-              numPoints = numPoints - particles.length;
-              sps.insertParticlesFromArray(particles);
-            }
-
-            if (numPoints > 0) {
-              const particle = MeshBuilder.CreateBox(this.particleType, {
-                size: this.particleSize
-              });
-
-              if (this.useShader) {
-                particle.material = this.particleMaterial
-                  ?.shaderMaterial as Material;
-              }
-              sps.addShape(particle, numPoints);
-              particle.dispose();
-            }
-          } else {
-            if (numPoints > sps.nbParticles) {
-              numPoints = numPoints - sps.nbParticles;
-              // use cache first
-              if (this.particlePool.length > 0) {
-                const particles = this.particlePool.splice(numPoints);
-                numPoints = numPoints - particles.length;
-                sps.insertParticlesFromArray(particles);
-              }
-
-              if (numPoints > 0) {
-                const particle = MeshBuilder.CreateBox(this.particleType, {
-                  size: this.particleSize
-                });
-
-                if (this.useShader) {
-                  particle.material = this.particleMaterial
-                    ?.shaderMaterial as Material;
-                }
-                sps.addShape(particle, numPoints);
-                particle.dispose();
-              }
-            } else {
-              this.particlePool.concat(
-                sps.removeParticles(numPoints, sps.nbParticles)
-              );
-            }
-          }
-
-          sps.buildMesh();
-
-          // set particle properties
-          for (let i = offset; i < offset + numPoints; i++) {
-            pointBuilder(sps.particles[i], i - offset);
-          }
-
-          sps.setParticles();
-          // we didn't use a position function when creating particles so refresh bbox so we can pick
-          sps.refreshVisibleSize();
+          console.log('particle budget reached: ' + this.particleCount);
         }
-      } else {
-        console.log('particle budget reached: ' + this.particleCount);
-      }
 
-      if (this.debug) {
-        // TODO make box colors configurable
-        this.debugOctant.scaling = block.maxPoint.subtract(block.minPoint);
-        this.debugOctant.position = block.minPoint.add(
-          this.debugOctant.scaling.scale(0.5)
-        );
-        const label =
-          this.debugOctant.material?.getActiveTextures()[0] as DynamicTexture;
-        const font = 'bold 44px monospace';
-        label.drawText(
-          block.entries.X.length.toString(),
-          72,
-          135,
-          font,
-          'red',
-          'white',
-          true,
-          true
-        );
-        this.debugOctant.visibility = 1;
-        this.debugOrigin.visibility = 1;
-      } else {
-        this.debugOctant.visibility = 0;
-        this.debugOrigin.visibility = 0;
-      }
+        if (this.debug) {
+          // TODO make box colors configurable
+          this.debugOctant.scaling = block.maxPoint.subtract(block.minPoint);
+          this.debugOctant.position = block.minPoint.add(
+            this.debugOctant.scaling.scale(0.5)
+          );
+          const label =
+            this.debugOctant.material?.getActiveTextures()[0] as DynamicTexture;
+          const font = 'bold 44px monospace';
+          label.drawText(
+            block.entries.X.length.toString(),
+            72,
+            135,
+            font,
+            'red',
+            'white',
+            true,
+            true
+          );
+          this.debugOctant.visibility = 1;
+          this.debugOrigin.visibility = 1;
+        } else {
+          this.debugOctant.visibility = 0;
+          this.debugOrigin.visibility = 0;
+        }
 
-      // lru cache - reinsert this block
-      this.octree.blocks.delete(block.mortonNumber);
-      if (this.octree.blocks.size > this.maxNumCacheBlocks) {
-        // simple lru cache, evict first key, this is fine as we are backed by local storage
-        const k = this.octree.blocks.keys().next().value;
-        this.octree.blocks.delete(k);
+        // lru cache - reinsert this block
+        this.octree.blocks.delete(block.mortonNumber);
+        if (this.octree.blocks.size > this.maxNumCacheBlocks) {
+          // simple lru cache, evict first key, this is fine as we are backed by local storage
+          const k = this.octree.blocks.keys().next().value;
+          this.octree.blocks.delete(k);
+
+          // delete pcs corresponding to this key
+          this.particleSystems.get(k)?.dispose();
+          this.particleSystems.delete(k);
+        }
+        this.octree.blocks.set(block.mortonNumber, block);
       }
-      this.octree.blocks.set(block.mortonNumber, block);
     }
 
-    console.log(this.particleCount);
+    console.log('Time taken to load: ' + (Date.now() - st));
   }
 
   private onData(evt: MessageEvent) {
     let block = evt.data as MoctreeBlock;
+
+    console.log('on data Block');
+    console.log(block);
 
     // refresh block as it was serialized,
     block = new MoctreeBlock(
@@ -287,15 +234,21 @@ class ArrayModel {
       block.entries
     );
 
+    console.log('Empty:');
+    console.log(block.isEmpty);
+
     if (!block.isEmpty) {
-      this.loadSystem(block.lod, block);
+      this.loadSystem(block);
+    } else {
+      // block along the ray can be empty
+      this.isActive = false;
     }
-    this.isActive = false;
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
     // fetch if not cached
     if (block) {
+      console.log('Fetch Block');
       if (!block.isEmpty && !block.entries) {
         this.worker?.postMessage({
           type: WorkerType.data,
@@ -303,7 +256,9 @@ class ArrayModel {
         } as DataRequest);
       } else {
         // already have data
-        this.loadSystem(block.lod, block);
+        console.log('Fetch cached Block');
+        console.log(block);
+        this.loadSystem(block);
       }
     }
   }
@@ -319,23 +274,7 @@ class ArrayModel {
     rgbMax?: number,
     data?: SparseResult
   ) {
-    for (let i = 0; i < this.maxLevel; i++) {
-      if (i === 0) {
-        this.particleSystems.push(
-          new SolidParticleSystem('sps_0', scene, {
-            expandable: true,
-            isPickable: true
-          })
-        );
-      } else {
-        const sps = new SolidParticleSystem('sps_' + i, scene, {
-          expandable: true,
-          isPickable: true
-        });
-        this.particleSystems.push(sps);
-      }
-    }
-
+    this.scene = scene;
     this.rgbMax = rgbMax || 65535;
 
     /**
@@ -364,7 +303,7 @@ class ArrayModel {
 
     // maintain compatibility with directly loading data
     if (data) {
-      // load into first SPS
+      // load into first PCS
       const block = new MoctreeBlock(
         0,
         Moctree.startBlockIndex,
@@ -373,7 +312,7 @@ class ArrayModel {
         translationVector
       );
       block.entries = data;
-      this.loadSystem(0, block);
+      this.loadSystem(block);
       // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
@@ -402,11 +341,11 @@ class ArrayModel {
 
   public async fetchPoints(scene: Scene) {
     // fully load immutable layer
-    if (this.particleSystems[0].nbParticles > 0) {
+    const base = this.particleSystems.get(Moctree.startBlockIndex);
+    if (base && base.nbParticles > 0) {
       // find centre point and load higher resolution around it
-      this.frame++;
       // wait approximiately 60 seconds or move on
-      if (scene.activeCamera && (!this.isActive || this.frame % 60 === 0)) {
+      if (scene.activeCamera && !this.isActive) {
         this.isActive = true;
         const ray = scene.activeCamera.getForwardRay();
         const epsilon = Math.pow(10, -12);
@@ -426,7 +365,7 @@ class ArrayModel {
             this.renderBlocks = parentBlocks;
             this.isBuffering = false;
             // restart count to base level as we are going to redraw
-            this.particleCount = this.particleSystems[0].nbParticles;
+            this.particleCount = base.nbParticles;
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
         }
@@ -451,7 +390,6 @@ class ArrayModel {
         }
 
         if (block) {
-          console.log(block.lod);
           this.fetchBlock(block);
         }
       }
