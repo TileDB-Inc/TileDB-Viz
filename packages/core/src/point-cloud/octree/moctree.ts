@@ -162,11 +162,11 @@ class Moctree {
     const lod = (code.toString(2).length - 1) / 3;
     const positions = [];
 
-    let totalBlocks = -1 * lod;
+    let totalBlocks = -lod; // remove the containing blocks from the result
     for (let l = 1; l <= lod; l++) {
       const rng = getMortonRange(l);
       totalBlocks += rng.maxMorton - rng.minMorton + 1;
-      positions.push({ left: -1, right: 1 });
+      positions.push({ left: 1, right: 1 });
     }
 
     let blockCount = 0;
@@ -183,59 +183,64 @@ class Moctree {
         const ranges = getMortonRange(l);
 
         // display more blocks from higher resolution data and tail off
-        const fanOut = Math.max(
+        const fanOut = Math.min(
           Math.ceil(this.fanOut / (this.maxDepth - l + 1)),
-          1
+          ranges.maxMorton - ranges.minMorton // 1 missing block for centre
         );
 
-        for (let i = 0; i < fanOut; i++) {
-          const leftBlockCode = currentCode + positions[l - 1].left;
-          if (leftBlockCode >= ranges.minMorton) {
-            blockCount++;
-            if (
-              this.knownBlocks.has(leftBlockCode) ||
-              this.knownBlocks.size === 0
-            ) {
-              const relativeV1 = decodeMorton(leftBlockCode);
-              const actualV1 = this.minPoint.add(
-                relativeV1.multiply(blockSize)
-              );
-              positions[l - 1].left--;
-              yield this.blocks.get(leftBlockCode) ||
-                new MoctreeBlock(
-                  l,
-                  leftBlockCode,
-                  actualV1,
-                  actualV1.add(blockSize),
-                  this.translationVector
-                );
-            }
-          }
+        let leftBlockCode = currentCode - positions[l - 1].left;
+        let rightBlockCode = currentCode + positions[l - 1].right;
 
-          const rightBlockCode = currentCode + positions[l - 1].right;
-          if (rightBlockCode <= ranges.maxMorton) {
-            blockCount++;
-            if (
-              this.knownBlocks.has(rightBlockCode) ||
-              this.knownBlocks.size === 0
-            ) {
-              const relativeV2 = decodeMorton(rightBlockCode);
-              const actualV2 = this.minPoint.add(
-                relativeV2.multiply(blockSize)
-              );
-              positions[l - 1].right++;
-              yield this.blocks.get(rightBlockCode) ||
-                new MoctreeBlock(
-                  l,
-                  rightBlockCode,
-                  actualV2,
-                  actualV2.add(blockSize),
-                  this.translationVector
+        if (
+          leftBlockCode >= ranges.minMorton ||
+          rightBlockCode <= ranges.maxMorton
+        ) {
+          for (let i = 0; i < fanOut; i++) {
+            if (leftBlockCode >= ranges.minMorton) {
+              if (
+                this.knownBlocks.has(leftBlockCode) ||
+                this.knownBlocks.size === 0
+              ) {
+                const relativeV1 = decodeMorton(leftBlockCode);
+                const actualV1 = this.minPoint.add(
+                  relativeV1.multiply(blockSize)
                 );
+                yield this.blocks.get(leftBlockCode) ||
+                  new MoctreeBlock(
+                    l,
+                    leftBlockCode,
+                    actualV1,
+                    actualV1.add(blockSize),
+                    this.translationVector
+                  );
+              }
+              blockCount++;
+              leftBlockCode = currentCode - ++positions[l - 1].left;
+            }
+
+            if (rightBlockCode <= ranges.maxMorton) {
+              if (
+                this.knownBlocks.has(rightBlockCode) ||
+                this.knownBlocks.size === 0
+              ) {
+                const relativeV2 = decodeMorton(rightBlockCode);
+                const actualV2 = this.minPoint.add(
+                  relativeV2.multiply(blockSize)
+                );
+                yield this.blocks.get(rightBlockCode) ||
+                  new MoctreeBlock(
+                    l,
+                    rightBlockCode,
+                    actualV2,
+                    actualV2.add(blockSize),
+                    this.translationVector
+                  );
+              }
+              blockCount++;
+              rightBlockCode = currentCode + ++positions[l - 1].right;
             }
           }
         }
-
         // up a block level
         currentCode = currentCode >> 3;
       }

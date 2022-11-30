@@ -304,33 +304,33 @@ describe('moctree tests', () => {
     // expect 8 + 64 + 512 - 3 = 581 results (-3 because of the centre for each of the levels)
     let c = 0;
     let block: MoctreeBlock | undefined;
-    while ((block = nItr.next().value)) {
+    while (c < 581) {
+      block = nItr.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    expect(c).toBe(581);
     expect(nItr.next().value).toBeUndefined();
 
     // shift a level up and we will get less blocks
     // expect 8 + 64 - 2 = 70 results (-2 because of the centre for each of the levels)
     const nItr2 = tree.getNeighbours(centreCode >> 3);
     c = 0;
-    while ((block = nItr2.next().value)) {
+    while (c < 70) {
+      block = nItr2.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    expect(c).toBe(70);
     expect(nItr2.next().value).toBeUndefined();
 
     // shift a level up and we will get less blocks
     // expect 8 - 1 results (-1 because of the centre for each of the levels)
     const nItr3 = tree.getNeighbours(centreCode >> 6);
     c = 0;
-    while ((block = nItr3.next().value)) {
+    while (c < 7) {
+      block = nItr3.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    expect(c).toBe(7);
     expect(nItr3.next().value).toBeUndefined();
   });
 
@@ -355,62 +355,73 @@ describe('moctree tests', () => {
     // expect 8 + 64 + 512 - 3 = 581 results (-3 because of the centre for each of the levels)
     let c = 0;
     let block: MoctreeBlock | undefined;
-    while ((block = nItr.next().value)) {
+    while (c < 581) {
+      block = nItr.next().value;
       expect(block).toBeDefined();
+      // console.log(block?.mortonNumber.toString(2));
+      expect(block?.mortonNumber).toBeLessThanOrEqual(
+        parseInt('1111111111', 2)
+      );
       c++;
     }
-    expect(c).toBe(581);
-    expect(nItr.next().value).toBeUndefined();
+    const v = nItr.next().value;
+    expect(v).toBeUndefined();
 
     // shift a level up and we will get less blocks
     // expect 8 + 64 - 2 = 70 results (-2 because of the centre for each of the levels)
     const nItr2 = tree.getNeighbours(centreCode >> 3);
     c = 0;
-    while ((block = nItr2.next().value)) {
+    while (c < 70) {
+      block = nItr2.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    expect(c).toBe(70);
     expect(nItr2.next().value).toBeUndefined();
 
     // shift a level up and we will get less blocks
     // expect 8 - 1 results (-1 because of the centre for each of the levels)
     const nItr3 = tree.getNeighbours(centreCode >> 6);
     c = 0;
-    while ((block = nItr3.next().value)) {
+    while (c < 7) {
+      block = nItr3.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    expect(c).toBe(7);
     expect(nItr3.next().value).toBeUndefined();
   });
 
   test('load block metadata', () => {
-    // known data, block 1-1-1-1 (D-X-Y-Z) is missing
-    // map has a depth of one
-    const blockData = {
-      '0-0-0-0': 1,
-      '1-0-0-0': 2,
-      '1-1-0-0': 3,
-      '1-0-1-0': 4,
-      '1-1-1-0': 5,
-      '1-0-0-1': 6,
-      '1-1-0-1': 7,
-      '1-0-1-1': 8
-      // '1-1-1-1': 0
-    };
+    // known data, block 1-1-1-1 (15) (D-X-Y-Z) is missing
+    const blockData = new Map<string, number>();
+
+    // set lod 0
+    blockData.set('0-0-0-0', 1);
+
+    for (let l = 1; l <= 2; l++) {
+      const range = getMortonRange(l);
+      for (let m = range.minMorton; m < range.maxMorton; m++) {
+        // furthest octant is empty
+        if (m === 15 || m >> 3 === 15) {
+          continue;
+        }
+        const v = decodeMorton(m);
+        blockData.set(`${l}-${v.x}-${v.z}-${v.y}`, m);
+      }
+    }
+
+    // (level 0) + (level 1) - (one lod1 octant) + (level 2) - (8 lod2 octants)
+    expect(blockData.size).toBe(1 + 8 - 1 + 64 - 8);
 
     // unit cube
     const octree = new Moctree(
       Vector3.Zero(),
       new Vector3(1, 1, 1),
       Vector3.Zero(),
-      1,
-      1
+      2,
+      10
     );
-    const blockMap = new Map<string, number>(Object.entries(blockData));
 
-    blockMap.forEach((v, k) => {
+    blockData.forEach((v, k) => {
       const parts = k.split('-').map(Number);
       // swap z and y
       const morton = encodeMorton(
@@ -420,17 +431,39 @@ describe('moctree tests', () => {
       octree.knownBlocks.set(morton, v);
     });
 
+    expect(octree.knownBlocks.has(14)).toBe(true);
     expect(octree.knownBlocks.has(15)).toBe(false);
 
-    // test get neighbours block count
+    // test get neighbours block count at lod 1
     const nItr = octree.getNeighbours(1 << 3);
     let block: MoctreeBlock | undefined;
     let c = 0;
-    while ((block = nItr.next().value)) {
+
+    // miss requested block and furthest octant
+    while (c < 6) {
+      block = nItr.next().value;
+      expect(block).toBeDefined();
+      if (block) {
+        expect(block.mortonNumber).toBeGreaterThan(8);
+        expect(block.mortonNumber).toBeLessThan(15);
+      }
+      c++;
+    }
+    // minus one empty block at lod 1 and the known block
+    expect(nItr.next().value).toBeUndefined();
+
+    // test get neighbours at lod 2
+    const nItr2 = octree.getNeighbours(1 << 6);
+    c = 0;
+
+    // (level 1) - (one lod-1 octant) + (level 2) - (8 lod-2 octants) - (start octant at lod 2 and its parent)
+    const totalBlocks = 8 - 1 + 64 - 8 - 2;
+    while (c < totalBlocks) {
+      const block = nItr2.next().value;
       expect(block).toBeDefined();
       c++;
     }
-    // minus one empty block and the origin block used (1 << 3)
-    expect(c).toBe(6);
+
+    expect(nItr2.next().value).toBeUndefined();
   });
 });

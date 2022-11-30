@@ -221,9 +221,6 @@ class ArrayModel {
   private onData(evt: MessageEvent) {
     let block = evt.data as MoctreeBlock;
 
-    console.log('on data Block');
-    console.log(block);
-
     // refresh block as it was serialized,
     block = new MoctreeBlock(
       block.lod,
@@ -233,9 +230,6 @@ class ArrayModel {
       this.octree.bounds.getWorldMatrix().getTranslation().clone(),
       block.entries
     );
-
-    console.log('Empty:');
-    console.log(block.isEmpty);
 
     if (!block.isEmpty) {
       this.loadSystem(block);
@@ -248,7 +242,6 @@ class ArrayModel {
   private async fetchBlock(block: MoctreeBlock | undefined) {
     // fetch if not cached
     if (block) {
-      console.log('Fetch Block');
       if (!block.isEmpty && !block.entries) {
         this.worker?.postMessage({
           type: WorkerType.data,
@@ -256,8 +249,6 @@ class ArrayModel {
         } as DataRequest);
       } else {
         // already have data
-        console.log('Fetch cached Block');
-        console.log(block);
         this.loadSystem(block);
       }
     }
@@ -352,7 +343,6 @@ class ArrayModel {
 
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
-          console.log('Origin changed');
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
@@ -374,24 +364,20 @@ class ArrayModel {
 
         // check block is in frustrum and not empty
         if (!block) {
-          console.log('Is buffering!');
           // we are buffering
           this.isBuffering = true;
           block = this.neighbours?.next().value;
 
-          if (block && !scene.activeCamera.isInFrustum(block.bbox)) {
-            while (
-              block &&
-              block.isEmpty &&
-              !scene.activeCamera.isInFrustum(block.bbox)
-            ) {
-              console.log('get neighbour');
-              block = this.neighbours?.next().value;
+          while (!block || !scene.activeCamera.isInFrustum(block.bbox)) {
+            block = this.neighbours?.next().value;
+            if (block) {
+              console.log(scene.activeCamera.isInFrustum(block.bbox));
             }
           }
         }
 
         if (block) {
+          console.log('fetch block');
           this.fetchBlock(block);
         }
       }
