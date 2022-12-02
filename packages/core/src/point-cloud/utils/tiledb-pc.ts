@@ -108,10 +108,6 @@ export interface TileDBPointCloudOptions
    */
   maxLevels?: number;
   /**
-   * Refresh rate for the particle system, measured as the interval in frames per second
-   */
-  refreshRate?: number;
-  /**
    * Select particle rendering type, 'box' is supported for now
    */
   particleType?: string;
@@ -379,7 +375,7 @@ export async function getNonEmptyDomain(
 
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
-): Promise<Map<string, number>> {
+): Promise<[Map<string, number>, Array<number>]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.arrayName!);
   const key = -1;
@@ -402,13 +398,22 @@ export async function getArrayMetadata(
     );
 
     interface OctantData {
+      'octree-bounds': string;
       'octant-data': string;
     }
     const o = resp.data as OctantData;
     const obj = JSON.parse(o['octant-data']);
-    writeToCache(storeName, key, obj);
-    return new Map<string, number>(Object.entries(obj));
+    const bounds = JSON.parse(o['octree-bounds']);
+
+    writeToCache(storeName, key, {
+      'octant-data': obj,
+      'octree-bounds': bounds
+    });
+    return [new Map<string, number>(Object.entries(obj)), bounds];
   } else {
-    return new Map<string, number>(Object.entries(dataFromCache));
+    return [
+      new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
+      dataFromCache['octree-bounds']
+    ];
   }
 }

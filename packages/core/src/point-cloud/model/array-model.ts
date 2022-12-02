@@ -6,7 +6,6 @@ import {
   MeshBuilder,
   PointsCloudSystem,
   Scene,
-  SolidParticle,
   StandardMaterial,
   Vector3
 } from '@babylonjs/core';
@@ -31,13 +30,13 @@ class ArrayModel {
   bufferSize: number;
   particleScale: number;
   rgbMax!: number;
+  translationVector!: Vector3;
   edlStrength: number;
   edlRadius: number;
   edlNeighbours: number;
   particleMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
-  refreshRate: number;
   particleType: string;
   particleSize: number;
   pickedBlockCode = -1;
@@ -46,10 +45,10 @@ class ArrayModel {
   renderBlocks: MoctreeBlock[] = [];
   isBuffering = false;
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
+  basePcs?: PointsCloudSystem;
   particleSystems: Map<number, PointsCloudSystem>;
   worker?: Worker;
   colorScheme?: string;
-  particlePool: Array<SolidParticle> = [];
   debug = false;
   particleBudget: number;
   particleCount = 0;
@@ -67,7 +66,6 @@ class ArrayModel {
     this.bufferSize = options.bufferSize || 200000000;
     this.particleScale = options.particleScale || 0.001;
     this.maxLevel = options.maxLevels || 1;
-    this.refreshRate = options.refreshRate || 5;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
     this.edlStrength = options.edlStrength || 4.0;
@@ -110,25 +108,17 @@ class ArrayModel {
   }
 
   private loadSystem(block: MoctreeBlock) {
-    const st = Date.now();
     if (block.entries !== undefined && this.scene) {
-      if (!this.particleSystems.has(block.mortonNumber)) {
-        console.log('LOAD SYSTEM: ' + block.mortonNumber);
-        const transVector = block.bbox.getWorldMatrix().getTranslation();
-        const transX = transVector.x;
-        const transY = transVector.y;
-        const transZ = transVector.z;
+      if (!this.particleSystems.has(block.mortonNumber) || !this.basePcs) {
+        const transX = this.translationVector.x;
+        const transY = this.translationVector.y;
+        const transZ = this.translationVector.z;
         const rgbMax = this.rgbMax;
 
         const numPoints = block.entries.X.length;
-        console.log(
-          'NUM POINTS: ' +
-            numPoints +
-            ' : total - ' +
-            (this.particleCount + numPoints)
-        );
 
         this.particleCount += numPoints;
+
         if (this.particleCount < this.particleBudget) {
           const pcs = new PointsCloudSystem(
             block.mortonNumber.toString(),
@@ -167,7 +157,11 @@ class ArrayModel {
           pcs.addPoints(numPoints, pointBuilder);
           pcs.buildMeshAsync().then(() => {
             pcs.setParticles();
-            this.particleSystems.set(block.mortonNumber, pcs);
+            if (block.mortonNumber !== Moctree.startBlockIndex) {
+              this.particleSystems.set(block.mortonNumber, pcs);
+            } else {
+              this.basePcs = pcs;
+            }
             this.isActive = false;
           });
         } else {
@@ -199,27 +193,41 @@ class ArrayModel {
           this.debugOctant.visibility = 0;
           this.debugOrigin.visibility = 0;
         }
+      } else {
+        // lru cache - reinsert this pcs
+        if (block.mortonNumber !== Moctree.startBlockIndex) {
+          const pcs = this.particleSystems.get(block.mortonNumber);
+          if (pcs) {
+            this.particleSystems.delete(block.mortonNumber);
+            this.particleSystems.set(block.mortonNumber, pcs);
 
-        // lru cache - reinsert this block
-        this.octree.blocks.delete(block.mortonNumber);
-        if (this.octree.blocks.size > this.maxNumCacheBlocks) {
-          // simple lru cache, evict first key, this is fine as we are backed by local storage
-          const k = this.octree.blocks.keys().next().value;
-          this.octree.blocks.delete(k);
-
-          // delete pcs corresponding to this key
-          this.particleSystems.get(k)?.dispose();
-          this.particleSystems.delete(k);
+            if (this.particleSystems.size > this.maxNumCacheBlocks) {
+              // simple lru cache, evict first key, this is fine as we are backed by local storage
+              const k = this.particleSystems.keys().next().value;
+              // delete pcs corresponding to this key
+              const p = this.particleSystems.get(k);
+              if (p) {
+                this.particleCount -= p.nbParticles;
+                p.dispose();
+                this.particleSystems.delete(k);
+              }
+            }
+            this.particleSystems.set(block.mortonNumber, pcs);
+          }
         }
-        this.octree.blocks.set(block.mortonNumber, block);
       }
     }
-
-    console.log('Time taken to load: ' + (Date.now() - st));
   }
 
   private onData(evt: MessageEvent) {
     let block = evt.data as MoctreeBlock;
+
+    console.log(
+      'received: ' +
+        block.entries?.X.length +
+        ' of approximately: ' +
+        this.octree.knownBlocks.get(block.mortonNumber)
+    );
 
     // refresh block as it was serialized,
     block = new MoctreeBlock(
@@ -227,22 +235,16 @@ class ArrayModel {
       block.mortonNumber,
       new Vector3(block.minPoint._x, block.minPoint._y, block.minPoint._z),
       new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
-      this.octree.bounds.getWorldMatrix().getTranslation().clone(),
       block.entries
     );
 
-    if (!block.isEmpty) {
-      this.loadSystem(block);
-    } else {
-      // block along the ray can be empty
-      this.isActive = false;
-    }
+    this.loadSystem(block);
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
-    // fetch if not cached
+    // fetch if not populated
     if (block) {
-      if (!block.isEmpty && !block.entries) {
+      if (!block.entries) {
         this.worker?.postMessage({
           type: WorkerType.data,
           block: block
@@ -281,12 +283,10 @@ class ArrayModel {
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;
-
-    const translationVector = new Vector3(xmin + spanX, zmin, ymin + spanY);
+    this.translationVector = new Vector3(xmin + spanX, zmin, ymin + spanY);
     this.octree = new Moctree(
       new Vector3(-spanX, 0, -spanY),
       new Vector3(spanX, zmax - zmin, spanY),
-      translationVector,
       this.maxLevel,
       this.fanOut
     );
@@ -299,14 +299,30 @@ class ArrayModel {
         0,
         Moctree.startBlockIndex,
         Vector3.Zero(),
-        Vector3.Zero(),
-        translationVector
+        Vector3.Zero()
       );
       block.entries = data;
       this.loadSystem(block);
       // no need to save entries for LOD 0
       block.entries = undefined;
     } else {
+      // create a ground so we always having picking for panning the scene
+      const ground = MeshBuilder.CreateGround(
+        'ground',
+        {
+          width: 2 * spanX,
+          height: 2 * spanY
+        },
+        scene
+      );
+
+      ground.isVisible = true;
+      // make the ground transparent and pickable
+      const mat = new StandardMaterial('groundMaterial', scene);
+      mat.alpha = 0;
+      ground.material = mat;
+      ground.isPickable = true;
+
       this.worker = new Worker(
         new URL('../workers/tiledb.worker', import.meta.url),
         { type: 'module' }
@@ -317,9 +333,9 @@ class ArrayModel {
         namespace: this.namespace,
         token: this.token,
         arrayName: this.arrayName,
-        translateX: translationVector.x,
-        translateY: translationVector.y,
-        translateZ: translationVector.z,
+        translateX: this.translationVector.x,
+        translateY: this.translationVector.y,
+        translateZ: this.translationVector.z,
         bufferSize: this.bufferSize
       } as InitialRequest);
 
@@ -332,17 +348,15 @@ class ArrayModel {
 
   public async fetchPoints(scene: Scene) {
     // fully load immutable layer
-    const base = this.particleSystems.get(Moctree.startBlockIndex);
-    if (base && base.nbParticles > 0) {
+    if (this.basePcs && this.basePcs.nbParticles > 0) {
       // find centre point and load higher resolution around it
-      // wait approximiately 60 seconds or move on
       if (scene.activeCamera && !this.isActive) {
-        this.isActive = true;
         const ray = scene.activeCamera.getForwardRay();
         const epsilon = Math.pow(10, -12);
 
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
+          console.log('PANNED DATASET');
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
@@ -355,7 +369,8 @@ class ArrayModel {
             this.renderBlocks = parentBlocks;
             this.isBuffering = false;
             // restart count to base level as we are going to redraw
-            this.particleCount = base.nbParticles;
+            // particle systems are based on a lru cache, this is just a way of preventing too many points being loaded
+            this.particleCount = this.basePcs.nbParticles;
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
         }
@@ -367,25 +382,34 @@ class ArrayModel {
           // we are buffering
           this.isBuffering = true;
           block = this.neighbours?.next().value;
-
-          while (!block || !scene.activeCamera.isInFrustum(block.bbox)) {
-            block = this.neighbours?.next().value;
-            if (block) {
-              console.log(scene.activeCamera.isInFrustum(block.bbox));
+          while (block && !scene.activeCamera.isInFrustum(block.boundingInfo)) {
+            const g = this.neighbours?.next();
+            if (g?.done) {
+              break;
             }
+            block = this.neighbours?.next().value;
           }
         }
 
         if (block) {
-          console.log('fetch block');
+          this.isActive = true;
           this.fetchBlock(block);
+        } else {
+          this.isActive = false;
         }
       }
     } else {
       // load immutable layer immediately
       if (!this.isActive) {
         this.isActive = true;
-        this.fetchBlock(this.octree.blocks.get(Moctree.startBlockIndex));
+        this.fetchBlock(
+          new MoctreeBlock(
+            0,
+            Moctree.startBlockIndex,
+            this.octree.minPoint,
+            this.octree.maxPoint
+          )
+        );
       }
     }
   }
@@ -393,13 +417,15 @@ class ArrayModel {
   set metadata(m: Map<string, number>) {
     // TODO change this format to send morton codes in the node metadata from the server
     m.forEach((v, k) => {
-      const parts = k.split('-').map(Number);
-      // swap z and y
-      const morton = encodeMorton(
-        new Vector3(parts[1], parts[3], parts[2]),
-        parts[0]
-      );
-      this.octree.knownBlocks.set(morton, v);
+      if (!k.startsWith('_')) {
+        const parts = k.split('-').map(Number);
+        // swap z and y
+        const morton = encodeMorton(
+          new Vector3(parts[1], parts[3], parts[2]),
+          parts[0]
+        );
+        this.octree.knownBlocks.set(morton, v);
+      }
     });
   }
 

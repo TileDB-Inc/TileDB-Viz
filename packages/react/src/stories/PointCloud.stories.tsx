@@ -70,6 +70,6 @@ export const Streamer = () => (
     rgbMax={255}
     useShader={false}
     fanOut={50}
-    numParticles={2000000}
+    numParticles={8000000}
   />
 );

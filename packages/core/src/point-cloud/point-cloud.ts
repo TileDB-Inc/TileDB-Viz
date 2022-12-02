@@ -141,23 +141,33 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       // initialize SolidParticleSystem
       this.model = new ArrayModel(this.options);
-      await this.model.init(
-        this.scene,
-        xmin,
-        xmax,
-        ymin,
-        ymax,
-        zmin,
-        zmax,
-        this.options.rgbMax || 1.0,
-        data as SparseResult
-      );
 
       if (this.options.streaming) {
-        const metadata = await getArrayMetadata(this.options);
-        this.model.metadata = metadata;
+        const [octantMetadata, bounds] = await getArrayMetadata(this.options);
+        await this.model.init(
+          this.scene,
+          bounds[0],
+          bounds[3],
+          bounds[1],
+          bounds[4],
+          bounds[2],
+          bounds[5],
+          this.options.rgbMax || 1.0
+        );
+        this.model.metadata = octantMetadata;
+      } else {
+        await this.model.init(
+          this.scene,
+          xmin,
+          xmax,
+          ymin,
+          ymax,
+          zmin,
+          zmax,
+          this.options.rgbMax || 1.0,
+          data as SparseResult
+        );
       }
-
       // add shader post-processing for EDL
       const edlStrength = this.options.edlStrength || 4.0;
       const edlRadius = this.options.edlRadius || 1.4;

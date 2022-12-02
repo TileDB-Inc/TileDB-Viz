@@ -1,4 +1,4 @@
-import { BoundingBox, Ray, Vector3 } from '@babylonjs/core';
+import { BoundingInfo, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
@@ -56,8 +56,6 @@ function getMortonRange(lod: number) {
 }
 
 class Moctree {
-  blocks = new Map<number, MoctreeBlock>();
-  bounds: BoundingBox;
   knownBlocks: Map<number, number>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [
@@ -72,24 +70,11 @@ class Moctree {
   ];
 
   constructor(
-    private minPoint: Vector3,
-    private maxPoint: Vector3,
-    private translationVector: Vector3,
+    public minPoint: Vector3,
+    public maxPoint: Vector3,
     public maxDepth: number,
     public fanOut: number
   ) {
-    // lod zero is stored with a code of 1
-    this.blocks.set(
-      Moctree.startBlockIndex,
-      new MoctreeBlock(
-        0,
-        Moctree.startBlockIndex,
-        this.minPoint,
-        this.maxPoint,
-        this.translationVector
-      )
-    );
-    this.bounds = new BoundingBox(this.minPoint, this.maxPoint);
     this.knownBlocks = new Map<number, number>();
   }
 
@@ -114,16 +99,9 @@ class Moctree {
             );
             const ed = st.add(childBlockSize);
             const v = (code << 3) + i;
-            const block =
-              this.blocks.get(v) ||
-              new MoctreeBlock(l, v, st, ed, this.translationVector);
+            const block = new MoctreeBlock(l, v, st, ed);
 
             if (ray.intersectsBoxMinMax(st, ed)) {
-              // skip over empty regions
-              if (block?.isEmpty) {
-                continue;
-              }
-
               candidates.push(block);
             }
           }
@@ -140,11 +118,7 @@ class Moctree {
                 resultBlock = b;
               }
             });
-          }
 
-          if (resultBlock === undefined) {
-            break;
-          } else {
             resultBlocks.push(resultBlock);
             minVector = resultBlock.minPoint;
             code = resultBlock.mortonNumber;
@@ -205,16 +179,15 @@ class Moctree {
                 const actualV1 = this.minPoint.add(
                   relativeV1.multiply(blockSize)
                 );
-                yield this.blocks.get(leftBlockCode) ||
-                  new MoctreeBlock(
-                    l,
-                    leftBlockCode,
-                    actualV1,
-                    actualV1.add(blockSize),
-                    this.translationVector
-                  );
+                yield new MoctreeBlock(
+                  l,
+                  leftBlockCode,
+                  actualV1,
+                  actualV1.add(blockSize)
+                );
               }
               blockCount++;
+              // console.log(blockCount + ' of ' + totalBlocks);
               leftBlockCode = currentCode - ++positions[l - 1].left;
             }
 
@@ -227,16 +200,15 @@ class Moctree {
                 const actualV2 = this.minPoint.add(
                   relativeV2.multiply(blockSize)
                 );
-                yield this.blocks.get(rightBlockCode) ||
-                  new MoctreeBlock(
-                    l,
-                    rightBlockCode,
-                    actualV2,
-                    actualV2.add(blockSize),
-                    this.translationVector
-                  );
+                yield new MoctreeBlock(
+                  l,
+                  rightBlockCode,
+                  actualV2,
+                  actualV2.add(blockSize)
+                );
               }
               blockCount++;
+              // console.log(blockCount + ' of ' + totalBlocks + ' total blocks');
               rightBlockCode = currentCode + ++positions[l - 1].right;
             }
           }
@@ -252,22 +224,8 @@ class Moctree {
 class MoctreeBlock {
   minPoint: Vector3;
   maxPoint: Vector3;
-  translationVector: Vector3;
-  bbox: BoundingBox;
+  boundingInfo: BoundingInfo;
   pointCount = 0;
-
-  get isEmpty() {
-    if (this.entries) {
-      if (this.entries?.X?.length > 0) {
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      // false because entries is not defined so either cache or server has not been checked
-      return false;
-    }
-  }
   entries?: SparseResult;
 
   constructor(
@@ -275,18 +233,15 @@ class MoctreeBlock {
     public mortonNumber: number,
     minPoint: Vector3,
     maxPoint: Vector3,
-    translationVector: Vector3,
     entries?: SparseResult
   ) {
     this.minPoint = minPoint.clone();
     this.maxPoint = maxPoint.clone();
-    this.translationVector = translationVector.clone();
     if (entries) {
       this.entries = entries;
     }
 
-    this.bbox = new BoundingBox(this.minPoint, this.maxPoint);
-    this.bbox.getWorldMatrix().setTranslation(this.translationVector);
+    this.boundingInfo = new BoundingInfo(this.minPoint, this.maxPoint);
   }
 }
 
