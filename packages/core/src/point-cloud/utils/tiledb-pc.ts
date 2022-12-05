@@ -155,6 +155,10 @@ export interface TileDBPointCloudOptions
    * debug, draw octant boxes that are being rendered
    */
   debug?: boolean;
+  /**
+   * Web worker request pool size
+   */
+  workerPoolSize?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {

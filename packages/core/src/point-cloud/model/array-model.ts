@@ -19,6 +19,7 @@ import {
   WorkerType
 } from './sparse-result';
 import ParticleShaderMaterial from './particle-shader';
+import { TileDBWorkerPool } from '../workers';
 
 /**
  * The ArrayModel manages the client octree
@@ -47,7 +48,7 @@ class ArrayModel {
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
   basePcs?: PointsCloudSystem;
   particleSystems: Map<number, PointsCloudSystem>;
-  worker?: Worker;
+  workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
   particleBudget: number;
@@ -56,8 +57,8 @@ class ArrayModel {
   useShader = true;
   debugOctant: Mesh;
   debugOrigin: Mesh;
-  isActive = false;
   scene?: Scene;
+  poolSize: number;
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -78,6 +79,7 @@ class ArrayModel {
     if (options.useShader === false) {
       this.useShader = false;
     }
+    this.poolSize = options.workerPoolSize || 5;
 
     this.debug = options.debug || false;
 
@@ -110,6 +112,13 @@ class ArrayModel {
   private loadSystem(block: MoctreeBlock) {
     if (block.entries !== undefined && this.scene) {
       if (!this.particleSystems.has(block.mortonNumber) || !this.basePcs) {
+        console.log(
+          'received: ' +
+            block.entries?.X.length +
+            ' of approximately: ' +
+            this.octree.knownBlocks.get(block.mortonNumber)
+        );
+
         const transX = this.translationVector.x;
         const transY = this.translationVector.y;
         const transZ = this.translationVector.z;
@@ -162,7 +171,6 @@ class ArrayModel {
             } else {
               this.basePcs = pcs;
             }
-            this.isActive = false;
           });
         } else {
           console.log('particle budget reached: ' + this.particleCount);
@@ -219,33 +227,11 @@ class ArrayModel {
     }
   }
 
-  private onData(evt: MessageEvent) {
-    let block = evt.data as MoctreeBlock;
-
-    console.log(
-      'received: ' +
-        block.entries?.X.length +
-        ' of approximately: ' +
-        this.octree.knownBlocks.get(block.mortonNumber)
-    );
-
-    // refresh block as it was serialized,
-    block = new MoctreeBlock(
-      block.lod,
-      block.mortonNumber,
-      new Vector3(block.minPoint._x, block.minPoint._y, block.minPoint._z),
-      new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
-      block.entries
-    );
-
-    this.loadSystem(block);
-  }
-
   private async fetchBlock(block: MoctreeBlock | undefined) {
     // fetch if not populated
     if (block) {
       if (!block.entries) {
-        this.worker?.postMessage({
+        this.workerPool?.postMessage({
           type: WorkerType.data,
           block: block
         } as DataRequest);
@@ -323,21 +309,20 @@ class ArrayModel {
       ground.material = mat;
       ground.isPickable = true;
 
-      this.worker = new Worker(
-        new URL('../workers/tiledb.worker', import.meta.url),
-        { type: 'module' }
+      this.workerPool = new TileDBWorkerPool(
+        {
+          type: WorkerType.init,
+          namespace: this.namespace,
+          token: this.token,
+          arrayName: this.arrayName,
+          translateX: this.translationVector.x,
+          translateY: this.translationVector.y,
+          translateZ: this.translationVector.z,
+          bufferSize: this.bufferSize
+        } as InitialRequest,
+        this.loadSystem.bind(this),
+        this.poolSize
       );
-      this.worker.onmessage = this.onData.bind(this);
-      this.worker.postMessage({
-        type: WorkerType.init,
-        namespace: this.namespace,
-        token: this.token,
-        arrayName: this.arrayName,
-        translateX: this.translationVector.x,
-        translateY: this.translationVector.y,
-        translateZ: this.translationVector.z,
-        bufferSize: this.bufferSize
-      } as InitialRequest);
 
       scene.onAfterRenderObservable.add((scene: Scene) => {
         this.afterRender(scene);
@@ -350,13 +335,12 @@ class ArrayModel {
     // fully load immutable layer
     if (this.basePcs && this.basePcs.nbParticles > 0) {
       // find centre point and load higher resolution around it
-      if (scene.activeCamera && !this.isActive) {
+      if (scene.activeCamera && this.workerPool?.isReady()) {
         const ray = scene.activeCamera.getForwardRay();
         const epsilon = Math.pow(10, -12);
 
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
-          console.log('PANNED DATASET');
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
@@ -392,16 +376,12 @@ class ArrayModel {
         }
 
         if (block) {
-          this.isActive = true;
           this.fetchBlock(block);
-        } else {
-          this.isActive = false;
         }
       }
     } else {
-      // load immutable layer immediately
-      if (!this.isActive) {
-        this.isActive = true;
+      // load immutable layer immediately, we don't want to fire this off to multiple workers
+      if (this.workerPool?.numActive() === 0) {
         this.fetchBlock(
           new MoctreeBlock(
             0,

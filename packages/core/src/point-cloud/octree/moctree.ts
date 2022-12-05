@@ -187,7 +187,6 @@ class Moctree {
                 );
               }
               blockCount++;
-              // console.log(blockCount + ' of ' + totalBlocks);
               leftBlockCode = currentCode - ++positions[l - 1].left;
             }
 
@@ -208,7 +207,6 @@ class Moctree {
                 );
               }
               blockCount++;
-              // console.log(blockCount + ' of ' + totalBlocks + ' total blocks');
               rightBlockCode = currentCode + ++positions[l - 1].right;
             }
           }
