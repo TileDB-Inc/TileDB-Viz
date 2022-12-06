@@ -9,7 +9,8 @@ import {
   PostProcess,
   Plane,
   Matrix,
-  Nullable
+  Nullable,
+  KeyboardEventTypes
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -44,20 +45,20 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   }
 
   attachKeys() {
-    this._scene.onKeyboardObservable.add(kbInfo => {
+    this.scene.onKeyboardObservable.add(kbInfo => {
       switch (kbInfo.type) {
         case KeyboardEventTypes.KEYDOWN:
           if (kbInfo.event.key === 'r') {
-            this._model.debug = true;
+            this.model.debug = true;
           }
           if (kbInfo.event.code === 'Delete') {
-            this._gui?.createConfirmationDialog(
-              this._scene,
+            this.gui?.createConfirmationDialog(
+              this.scene,
               "Are you sure you want to delete the array's cache?",
               'Clear cache',
               () => {
-                if (this._options.namespace && this._options.arrayName) {
-                  const storeName = `${this._options.namespace}:${this._options.arrayName}`;
+                if (this.options.namespace && this.options.arrayName) {
+                  const storeName = `${this.options.namespace}:${this.options.arrayName}`;
 
                   clearCache(storeName);
                 }
@@ -67,7 +68,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           break;
         case KeyboardEventTypes.KEYUP:
           if (kbInfo.event.key === 'r') {
-            this._model.debug = false;
+            this.model.debug = false;
           }
           break;
       }
