@@ -129,9 +129,19 @@ class PointCloudGUI {
 
     // add a point size slider
     function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
-      model.updateParticleSize = true;
-      model.sliderParticleScale = value;
-      model.afterRender(scene);
+      scene.onBeforeRenderObservable.addOnce(() => {
+        // for (let c = 0; c < model.particleSystems.length; c++) {
+        //   model.particleSystems[c].updateParticle = function (particle: any) {
+        //     particle.scaling = new Vector3(
+        //       value / 100,
+        //       value / 100,
+        //       value / 100
+        //     );
+        //     return particle.scaling;
+        //   };
+        //   model.particleSystems[c].setParticles();
+        // }
+      });
     }
 
     const updatePointSize = function (value: number) {
@@ -184,7 +194,19 @@ class PointCloudGUI {
 
     customizePanel.addGroup(edlStrengthGroup);
 
-    // make sure the menu is collapsed at the start
+    let menu = 0;
+    const changeMenu = function () {
+      if (menu === 0) {
+        menu = 1;
+        customizePanel.isVisible = true;
+      } else if (menu === 1) {
+        customizePanel.isVisible = false;
+        menu = 0;
+      }
+      return menu;
+    };
+
+    // to make sure the menu is collapsed at the start
     const sceneInit = function () {
       customizePanel.isVisible = false;
     };

@@ -1,5 +1,6 @@
 import {
   setPointCloudSwitches,
+  getArrayMetadata,
   getNonEmptyDomain,
   getPointCloud,
   getPointCloudLimits,
@@ -18,6 +19,7 @@ export type { TileDBPointCloudOptions };
 
 export {
   getNonEmptyDomain,
+  getArrayMetadata,
   getPointCloud,
   getPointCloudLimits,
   loadPointCloud,

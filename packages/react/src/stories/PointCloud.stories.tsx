@@ -67,6 +67,9 @@ export const Streamer = () => (
     particleSize={3}
     cameraRadius={2000}
     maxLevels={maxLevel}
-    rgbMax={65535}
+    rgbMax={255}
+    useShader={false}
+    fanOut={50}
+    numParticles={8000000}
   />
 );

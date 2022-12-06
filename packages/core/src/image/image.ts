@@ -22,19 +22,19 @@ export interface TileDBImageVisualizationOptions
   xyBbox: number[];
 }
 export class TileDBImageVisualization extends TileDBVisualization {
-  private _data: any;
-  private _xyBbox: number[];
+  private data: any;
+  private xyBbox: number[];
 
   constructor(options: TileDBImageVisualizationOptions) {
     super(options);
-    this._data = options.data;
-    this._xyBbox = options.xyBbox;
+    this.data = options.data;
+    this.xyBbox = options.xyBbox;
   }
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
-      const data = this._data;
-      const bbox = this._xyBbox;
+      const data = this.data;
+      const bbox = this.xyBbox;
 
       scene.createDefaultCameraOrLight(true, true, true);
       scene.clearColor = new Color4(0.95, 0.94, 0.92, 1);
