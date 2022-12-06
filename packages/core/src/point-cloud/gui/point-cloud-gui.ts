@@ -1,9 +1,4 @@
-import {
-  PostProcess,
-  RenderTargetTexture,
-  Scene,
-  Vector3
-} from '@babylonjs/core';
+import { PostProcess, RenderTargetTexture, Scene } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
   Button,
@@ -118,17 +113,17 @@ class PointCloudGUI {
     // add a point size slider
     function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
       scene.onBeforeRenderObservable.addOnce(() => {
-        for (let c = 0; c < model.particleSystems.length; c++) {
-          model.particleSystems[c].updateParticle = function (particle: any) {
-            particle.scaling = new Vector3(
-              value / 100,
-              value / 100,
-              value / 100
-            );
-            return particle.scaling;
-          };
-          model.particleSystems[c].setParticles();
-        }
+        // for (let c = 0; c < model.particleSystems.length; c++) {
+        //   model.particleSystems[c].updateParticle = function (particle: any) {
+        //     particle.scaling = new Vector3(
+        //       value / 100,
+        //       value / 100,
+        //       value / 100
+        //     );
+        //     return particle.scaling;
+        //   };
+        //   model.particleSystems[c].setParticles();
+        // }
       });
     }
 
@@ -182,16 +177,16 @@ class PointCloudGUI {
 
     customizePanel.addGroup(edlStrengthGroup);
 
-    let _menu = 0;
+    let menu = 0;
     const changeMenu = function () {
-      if (_menu === 0) {
-        _menu = 1;
+      if (menu === 0) {
+        menu = 1;
         customizePanel.isVisible = true;
-      } else if (_menu === 1) {
+      } else if (menu === 1) {
         customizePanel.isVisible = false;
-        _menu = 0;
+        menu = 0;
       }
-      return _menu;
+      return menu;
     };
 
     // to make sure the menu is collapsed at the start

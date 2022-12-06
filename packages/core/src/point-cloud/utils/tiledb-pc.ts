@@ -108,10 +108,6 @@ export interface TileDBPointCloudOptions
    */
   maxLevels?: number;
   /**
-   * Refresh rate for the particle system, measured as the interval in frames per second
-   */
-  refreshRate?: number;
-  /**
    * Select particle rendering type, 'box' is supported for now
    */
   particleType?: string;
@@ -144,9 +140,25 @@ export interface TileDBPointCloudOptions
    */
   maxNumCacheBlocks?: number;
   /**
-   * Grid subdivisions on X/Y plane
+   * Particle budget
    */
-  numGridSubdivisions?: number;
+  numParticles?: number;
+  /**
+   * Number of blocks to fan out when buffering
+   */
+  fanOut?: number;
+  /**
+   * Use shaders, on low end system might now want to use shaders
+   */
+  useShader?: boolean;
+  /**
+   * debug, draw octant boxes that are being rendered
+   */
+  debug?: boolean;
+  /**
+   * Web worker request pool size
+   */
+  workerPoolSize?: number;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
@@ -237,7 +249,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   // Concatenate all results in case of incomplete queries
   const concatenatedResults: Record<string, any> = {};
 
-  const queryCacheKey = query.ranges.toString();
+  const queryCacheKey = 0; // TODO need to include partial ranges
 
   const storeName = `${options.namespace}:${options.arrayName}`;
 
@@ -336,7 +348,7 @@ export async function getNonEmptyDomain(
 ): Promise<number[]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.arrayName!);
-  const key = `${options.namespace}/${options.arrayName}/nonEmptyDomain`;
+  const key = 0;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
 
@@ -357,10 +369,55 @@ export async function getNonEmptyDomain(
       'application/json'
     );
 
-    writeToCache(storeName, key, resp.data.nonEmptyDomain.float64);
+    writeToCache(storeName, key, resp.data.nonEmptyDomain.float32);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return resp.data.nonEmptyDomain.float64!;
+    return resp.data.nonEmptyDomain.float32!;
   } else {
     return dataFromCache;
+  }
+}
+
+export async function getArrayMetadata(
+  options: TileDBPointCloudOptions
+): Promise<[Map<string, number>, Array<number>]> {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const storeName = getStoreName(options.namespace!, options.arrayName!);
+  const key = -1;
+  // we might have the data cached
+  const dataFromCache = await getQueryDataFromCache(storeName, key);
+
+  if (!dataFromCache) {
+    const config: Record<string, any> = {};
+
+    config.apiKey = options.token;
+
+    if (options.tiledbEnv) {
+      config.basePath = options.tiledbEnv;
+    }
+    const tiledbClient = getTileDBClient(config);
+    const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace!,
+      options.arrayName + '_0' // naming convention for groups of multi-resolution arrays
+    );
+
+    interface OctantData {
+      'octree-bounds': string;
+      'octant-data': string;
+    }
+    const o = resp.data as OctantData;
+    const obj = JSON.parse(o['octant-data']);
+    const bounds = JSON.parse(o['octree-bounds']);
+
+    writeToCache(storeName, key, {
+      'octant-data': obj,
+      'octree-bounds': bounds
+    });
+    return [new Map<string, number>(Object.entries(obj)), bounds];
+  } else {
+    return [
+      new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
+      dataFromCache['octree-bounds']
+    ];
   }
 }

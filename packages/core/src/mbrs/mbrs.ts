@@ -23,19 +23,19 @@ export interface TileDBMBRSVisualizationOptions
 }
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
-  private _data: any;
-  private _extents: number[];
+  private data: any;
+  private extents: number[];
 
   constructor(options: TileDBMBRSVisualizationOptions) {
     super(options);
-    this._data = options.data;
-    this._extents = options.extents;
+    this.data = options.data;
+    this.extents = options.extents;
   }
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
-      const data = this._data;
-      const extents = this._extents;
+      const data = this.data;
+      const extents = this.extents;
       const minx = extents[0];
       const maxx = extents[1];
       const miny = extents[2];

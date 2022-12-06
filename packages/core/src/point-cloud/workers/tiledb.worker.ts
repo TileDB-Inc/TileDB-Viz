@@ -44,11 +44,15 @@ self.onmessage = async (e: MessageEvent) => {
 
 function returnData(block: MoctreeBlock) {
   // TODO use transferable objects
-  self.postMessage(block);
+  self.postMessage({
+    type: WorkerType.data,
+    block: block,
+    name: self.name
+  });
 }
 
 async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = block.mortonNumber.toString();
+  const queryCacheKey = block.mortonNumber;
   const storeName = `${namespace}:${arrayName}`;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
@@ -56,8 +60,13 @@ async function fetchData(block: MoctreeBlock) {
   if (dataFromCache) {
     block.entries = dataFromCache as SparseResult;
     returnData(block);
+    self.postMessage({
+      type: WorkerType.idle,
+      name: self.name,
+      idle: true
+    });
   } else {
-    // load points into block
+    // load points into block, block is now just a serialized json object, no methods so use private accessors
     const ranges = [
       [block.minPoint._x + translateX, block.maxPoint._x + translateX],
       [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
@@ -78,12 +87,13 @@ async function fetchData(block: MoctreeBlock) {
       queryData
     )) {
       block.entries = results as SparseResult;
-      if (block.entries?.X.length === 0) {
-        block.isEmpty = true;
-      }
-
       returnData(block);
       await writeToCache(storeName, queryCacheKey, results);
+      self.postMessage({
+        type: WorkerType.idle,
+        name: self.name,
+        idle: true
+      });
     }
   }
 }
