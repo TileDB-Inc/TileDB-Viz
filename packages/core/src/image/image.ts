@@ -1,13 +1,12 @@
 import {
   ArcRotateCamera,
-  Color3,
+  DynamicTexture,
   Scene,
   StandardMaterial,
   Color4,
   MeshBuilder,
   Vector3,
   Texture
-  //Texture
 } from '@babylonjs/core';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
 import getTileDBClient from '../utils/getTileDBClient';
@@ -45,8 +44,10 @@ export interface TileDBImageVisualizationOptions
    * TileDB query buffer size
    */
   bufferSize?: number;
+  chartType?: string;
 }
 export class TileDBImageVisualization extends TileDBVisualization {
+  options: TileDBImageVisualizationOptions;
   //private data: any;
   //private options: TileDBImageVisualizationOptions;
   //private bbox = { X: [9500, 14000], Y: [9500, 14000] };
@@ -55,7 +56,7 @@ export class TileDBImageVisualization extends TileDBVisualization {
 
   constructor(options: TileDBImageVisualizationOptions) {
     super(options);
-    //this.options = options;
+    this.options = options;
 
     // initialize the TileDB client
     if (options.token) {
@@ -67,40 +68,53 @@ export class TileDBImageVisualization extends TileDBVisualization {
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(scene => {
-      //const data = this.data;
-      //const bbox = this.bbox;
+      // 'interactive', 'bar' or 'mapbox'
+      const chartType = this.options.chartType;
+      console.log(chartType);
 
-      // load data from array
-      // if mapbox
+      //const dataType = 'sar';
 
-      // if sar
+      //const data = fetchImageData(this.options, dataType);
+      //console.log(data);
 
-      // if weather
-      //const data2 = fetchImageData(this.options);
-      //console.log('data2 :' + data2);
-
-      // process data with D3 into a svg and convert to objectURL
-      const svg = createBarChart();
-      const svgElement = svg.node();
-      const clonedSvgElement = svgElement?.outerHTML as BlobPart;
-      const blob = new Blob([clonedSvgElement], {
-        type: 'image/svg+xml;charset=utf-8'
-      });
-      const url = URL.createObjectURL(blob);
-
-      // set up camera and light
-      scene.createDefaultCameraOrLight(true, true, true);
-      scene.clearColor = new Color4(0.95, 0.94, 0.92, 1);
+      let url: string;
+      let svg: any;
 
       const groundMaterial = new StandardMaterial('ground', scene);
-      groundMaterial.diffuseTexture = new Texture(url, scene);
-      //groundMaterial.diffuseTexture = texture;
-      //groundMaterial.diffuseTexture = new Texture(blobURL, scene);
+
+      let textureContext: any;
+      let myCanvas: HTMLCanvasElement;
+      let canvasTexture: DynamicTexture;
+
+      function svgToURL(svg: any) {
+        const svgElement = svg.node();
+        const clonedSvgElement = svgElement?.outerHTML as BlobPart;
+        const blob = new Blob([clonedSvgElement], {
+          type: 'image/svg+xml;charset=utf-8'
+        });
+        url = URL.createObjectURL(blob);
+        return url;
+      }
+
+      if (chartType === 'bar') {
+        svg = createBarChart();
+        url = svgToURL(svg);
+        groundMaterial.diffuseTexture = new Texture(url, scene);
+      } else if (chartType === 'interactive') {
+        myCanvas = document.createElement('canvas');
+        myCanvas.width = 512;
+        myCanvas.height = 512;
+        textureContext = myCanvas.getContext('2d');
+        canvasTexture = new DynamicTexture('dt', myCanvas, scene);
+        groundMaterial.diffuseTexture = canvasTexture;
+      }
+
+      //
       //groundMaterial.ambientTexture = new Texture(svg, scene);
-      groundMaterial.ambientColor = new Color3(0.5, 0.5, 0.5);
-      groundMaterial.diffuseColor = new Color3(0.8, 0.8, 0.8);
-      groundMaterial.specularColor = new Color3(0.5, 0.5, 0.5);
-      groundMaterial.specularPower = 32;
+      //groundMaterial.ambientColor = new Color3(0.5, 0.5, 0.5);
+      //groundMaterial.diffuseColor = new Color3(0.8, 0.8, 0.8);
+      //groundMaterial.specularColor = new Color3(0.5, 0.5, 0.5);
+      //groundMaterial.specularPower = 32;
 
       // const xmin = this.bbox.X[0];
       // const xmax = this.bbox.X[1];
@@ -116,16 +130,21 @@ export class TileDBImageVisualization extends TileDBVisualization {
       //   },
       //   scene
       // );
+
       const ground = MeshBuilder.CreateGround(
         'ground',
         {
-          height: 1,
-          width: 1,
-          subdivisions: 400
+          height: 6,
+          width: 6
+          //subdivisions: 400
         },
         scene
       );
       ground.material = groundMaterial;
+
+      // set up camera and light
+      scene.createDefaultCameraOrLight(true, true, true);
+      scene.clearColor = new Color4(0.95, 0.94, 0.92, 1);
 
       const camera = scene.activeCamera as ArcRotateCamera;
       camera.panningAxis = new Vector3(1, 1, 0);
@@ -140,6 +159,27 @@ export class TileDBImageVisualization extends TileDBVisualization {
 
       camera.alpha += Math.PI;
       camera.attachControl(this.canvas, false);
+
+      if (chartType === 'interactive') {
+        const getRandomArbitrary = (min: number, max: number) => {
+          return Math.random() * (max - min) + min;
+        };
+
+        scene.onBeforeRenderObservable.add(scene => {
+          if (textureContext !== null) {
+            textureContext.fillStyle =
+              '#' +
+              (0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6);
+            textureContext.beginPath();
+            const x = getRandomArbitrary(0, 512);
+            const y = getRandomArbitrary(0, 512);
+            const radius = getRandomArbitrary(50, 256);
+            textureContext.arc(x, y, radius, 0, Math.PI * 2);
+            textureContext.fill();
+            canvasTexture.update();
+          }
+        });
+      }
 
       return scene;
     });

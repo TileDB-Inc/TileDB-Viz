@@ -4,7 +4,10 @@ import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import getTileDBClient from '../utils/getTileDBClient';
 import { TileDBImageVisualizationOptions } from './image';
 
-export async function fetchImageData(options: TileDBImageVisualizationOptions) {
+export async function fetchImageData(
+  options: TileDBImageVisualizationOptions,
+  dataType: string
+) {
   const data = await loadImage(options);
 
   return data;
@@ -21,13 +24,6 @@ export async function loadImage(options: TileDBImageVisualizationOptions) {
 
   const tiledbClient = getTileDBClient(config);
 
-  console.log(
-    tiledbClient.ArrayApi.getArrayNonEmptyDomain(
-      options.namespace as string,
-      options.arrayName as string,
-      'content'
-    )
-  );
   const nonEmptyDomain = tiledbClient.ArrayApi.getArrayNonEmptyDomain(
     options.namespace as string,
     options.arrayName as string,
