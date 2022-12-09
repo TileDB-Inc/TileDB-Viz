@@ -23,10 +23,6 @@ export interface TileDBVisualizationBaseOptions {
    */
   moveSpeed?: number;
   /**
-   * Scale the z values of each point
-   */
-  zScale?: number;
-  /**
    * Show BabylonJS inspector
    */
   inspector?: boolean;

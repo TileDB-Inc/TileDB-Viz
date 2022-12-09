@@ -55,7 +55,8 @@ class ArrayModel {
   particleBudget: number;
   particleCount = 0;
   fanOut = 3;
-  useShader = true;
+  useShader = false;
+  useGUI = false;
   debugOctant: Mesh;
   debugOrigin: Mesh;
   scene?: Scene;
@@ -67,7 +68,7 @@ class ArrayModel {
     this.token = options.token;
     this.bufferSize = options.bufferSize || 200000000;
     this.particleScale = options.particleScale || 0.001;
-    this.maxLevel = options.maxLevels || 1;
+    this.maxLevel = options.maxLevel || 1;
     this.particleType = options.particleType || 'box';
     this.particleSize = options.particleSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -76,10 +77,13 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
-    this.particleBudget = options.numParticles || 500_000;
+    this.particleBudget = options.particleBudget || 500_000;
     this.fanOut = options.fanOut || 100;
-    if (options.useShader === false) {
-      this.useShader = false;
+    if (options.useShader === true) {
+      this.useShader = true;
+    }
+    if (options.useGUI === true) {
+      this.useGUI = true;
     }
     this.poolSize = options.workerPoolSize || 5;
 
@@ -125,6 +129,7 @@ class ArrayModel {
         const transY = this.translationVector.y;
         const transZ = this.translationVector.z;
         const rgbMax = this.rgbMax;
+        const zScale = this.zScale;
 
         const numPoints = block.entries.X.length;
 
@@ -258,16 +263,6 @@ class ArrayModel {
     this.scene = scene;
     this.rgbMax = rgbMax || 65535;
 
-    /**
-     * EDL shader material
-     */
-    if (this.useShader) {
-      this.particleMaterial = new ParticleShaderMaterial(
-        scene,
-        this.edlNeighbours,
-        this.particleSize
-      );
-    }
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
     const spanY = (ymax - ymin) / 2.0;

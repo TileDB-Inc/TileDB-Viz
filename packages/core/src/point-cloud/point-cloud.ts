@@ -21,6 +21,7 @@ import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import PointCloudGUI from './gui/point-cloud-gui';
+import ParticleShaderMaterial from './model/particle-shader';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -56,8 +57,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             kbInfo.event.code === 'Delete' ||
             kbInfo.event.code === 'Backspace'
           ) {
-            this._gui?.createConfirmationDialog(
-              this._scene,
+            this.gui?.createConfirmationDialog(
+              this.scene,
               "Are you sure you want to delete the array's cache?",
               'Clear cache',
               () => {
@@ -175,6 +176,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           data as SparseResult
         );
       }
+
       // add shader post-processing for EDL
       const edlStrength = this.options.edlStrength || 4.0;
       const edlRadius = this.options.edlRadius || 1.4;
@@ -191,6 +193,12 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const screenWidth = this.engine?.getRenderWidth();
       const screenHeight = this.engine?.getRenderHeight();
 
+      this.model.particleMaterial = new ParticleShaderMaterial(
+        scene,
+        this.model.edlNeighbours,
+        this.model.particleSize
+      );
+
       const postProcess = new PostProcess(
         'My custom post process',
         'custom',
@@ -200,38 +208,42 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         camera
       );
 
-      postProcess.onApply = function (effect: Effect) {
-        effect.setFloat('screenWidth', screenWidth as number);
-        effect.setFloat('screenHeight', screenHeight as number);
-        effect.setArray2('neighbours', neighbours);
-        effect.setFloat('edlStrength', edlStrength);
-        effect.setFloat('radius', edlRadius);
-        effect.setTexture('uEDLDepth', depthTex);
-      };
+      if (this.model.useShader) {
+        postProcess.onApply = function (effect: Effect) {
+          effect.setFloat('screenWidth', screenWidth as number);
+          effect.setFloat('screenHeight', screenHeight as number);
+          effect.setArray2('neighbours', neighbours);
+          effect.setFloat('edlStrength', edlStrength);
+          effect.setFloat('radius', edlRadius);
+          effect.setTexture('uEDLDepth', depthTex);
+        };
+      }
 
       // add interactive GUI
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+      if (this.model.useGUI) {
+        this.gui = new PointCloudGUI(this.scene);
+        if (this.gui.advancedDynamicTexture.layer !== null) {
+          this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+        }
+        await this.gui.init(
+          this.scene,
+          this.model,
+          postProcess,
+          screenWidth,
+          screenHeight,
+          neighbours,
+          edlStrength,
+          edlRadius,
+          depthTex
+        );
       }
-      await this.gui.init(
-        this.scene,
-        this.model,
-        postProcess,
-        screenWidth,
-        screenHeight,
-        neighbours,
-        edlStrength,
-        edlRadius,
-        depthTex
-      );
 
       // add panning control
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;
       let isPanning = false;
       scene.onPointerDown = evt => {
-        if (evt.ctrlKey) {
+        if (evt.ctrlKey || evt.shiftKey) {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
           if (pickResult) {
             pickOrigin = pickResult.pickedPoint;

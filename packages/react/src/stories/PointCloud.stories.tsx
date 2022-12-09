@@ -21,33 +21,35 @@ export default {
 
 const Template = () => (
   <PointCloudVisualization
-    gltfData={gltfData}
     data={data}
-    mode="gltf"
-    pointSize={5}
+    particleSize={25}
+    cameraRadius={250}
+    width={'100vw'}
+    height={'100vh'}
   />
 );
 
 export const PointCloud = Template.bind({});
 
-export const TimeMode = () => (
-  <PointCloudVisualization data={timeData} mode="time" />
-);
-
 export const Boulder = () => (
-  <PointCloudVisualization data={boulderData} colorScheme="light" />
+  <PointCloudVisualization
+    data={boulderData}
+    colorScheme="dark"
+    particleSize={2.5}
+    width={'100vw'}
+    height={'100vh'}
+  />
 );
 
 export const Autzen = () => (
   <PointCloudVisualization
     data={autzenData}
     particleSize={3}
-    cameraRadius={2000}
+    cameraRadius={600}
     colorScheme="light"
-    edlStrength={5}
-    edlRadius={1.4}
-    edlNeighbours={8}
     rgbMax={65535}
+    width={'100vw'}
+    height={'100vh'}
   />
 );
 
@@ -61,15 +63,17 @@ const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 6;
 export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}
-    arrayName={arrayName}
-    namespace={namespace}
     token={token}
+    namespace={namespace}
+    arrayName={arrayName}
+    maxLevel={maxLevel}
+    fanOut={50}
+    particleBudget={8000000}
     particleSize={3}
     cameraRadius={2000}
-    maxLevels={maxLevel}
+    colorScheme="dark"
     rgbMax={255}
-    useShader={false}
-    fanOut={50}
-    numParticles={8000000}
+    width={'100vw'}
+    height={'100vh'}
   />
 );

@@ -127,46 +127,57 @@ class PointCloudGUI {
     colorGroup.addRadio('blue', setColor, blueOn);
     customizePanel.addGroup(colorGroup);
 
-    // add a point size slider
-    function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
-      scene.onBeforeRenderObservable.addOnce(() => {
-        // for (let c = 0; c < model.particleSystems.length; c++) {
-        //   model.particleSystems[c].updateParticle = function (particle: any) {
-        //     particle.scaling = new Vector3(
-        //       value / 100,
-        //       value / 100,
-        //       value / 100
-        //     );
-        //     return particle.scaling;
-        //   };
-        //   model.particleSystems[c].setParticles();
-        // }
-      });
-    }
+    // // add a point size slider
+    // function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
+    //   scene.onBeforeRenderObservable.addOnce(() => {
+    //     // for (let c = 0; c < model.particleSystems.length; c++) {
+    //     //   model.particleSystems[c].updateParticle = function (particle: any) {
+    //     //     particle.scaling = new Vector3(
+    //     //       value / 100,
+    //     //       value / 100,
+    //     //       value / 100
+    //     //     );
+    //     //     return particle.scaling;
+    //     //   };
+    //     //   model.particleSystems[c].setParticles();
+    //     // }
+    //   });
+    // }
 
-    const updatePointSize = function (value: number) {
-      updatePointSizes(scene, model, value);
-    };
+    // const updatePointSize = function (value: number) {
+    //   updatePointSizes(scene, model, value);
+    // };
 
-    const pointSizeValue = function (value: number) {
-      return +value.toFixed(0);
-    };
+    // const pointSizeValue = function (value: number) {
+    //   return +value.toFixed(0);
+    // };
 
-    const pointSizeGroup = new SliderGroup('Point size');
-    pointSizeGroup.addSlider(
-      'Scale factor',
-      updatePointSize,
-      '%',
-      0,
-      250,
-      100,
-      pointSizeValue
-    );
+    // const pointSizeGroup = new SliderGroup('Point size');
+    // pointSizeGroup.addSlider(
+    //   'Scale factor',
+    //   updatePointSize,
+    //   '%',
+    //   0,
+    //   250,
+    //   100,
+    //   pointSizeValue
+    // );
 
-    customizePanel.addGroup(pointSizeGroup);
+    // customizePanel.addGroup(pointSizeGroup);
 
     // add an EDL strength slider
     const updateEdlStrength = function (value: number) {
+      postProcess.onApply = function (effect: Effect) {
+        effect.setFloat('screenWidth', screenWidth as number);
+        effect.setFloat('screenHeight', screenHeight as number);
+        effect.setArray2('neighbours', neighbours);
+        effect.setFloat('edlStrength', value);
+        effect.setFloat('radius', edlRadius);
+        effect.setTexture('uEDLDepth', depthTex);
+      };
+    };
+
+    const updateEdlRadius = function (value: number) {
       postProcess.onApply = function (effect: Effect) {
         effect.setFloat('screenWidth', screenWidth as number);
         effect.setFloat('screenHeight', screenHeight as number);
@@ -181,6 +192,10 @@ class PointCloudGUI {
       return +value.toFixed(1);
     };
 
+    const edlRadiusValue = function (value: number) {
+      return +value.toFixed(1);
+    };
+
     const edlStrengthGroup = new SliderGroup('Eye Dome Lighting');
     edlStrengthGroup.addSlider(
       'Strength',
@@ -192,19 +207,17 @@ class PointCloudGUI {
       edlStrengthValue
     );
 
-    customizePanel.addGroup(edlStrengthGroup);
+    edlStrengthGroup.addSlider(
+      'Radius',
+      updateEdlRadius,
+      ' ',
+      0,
+      5,
+      edlRadius,
+      edlRadiusValue
+    );
 
-    let menu = 0;
-    const changeMenu = function () {
-      if (menu === 0) {
-        menu = 1;
-        customizePanel.isVisible = true;
-      } else if (menu === 1) {
-        customizePanel.isVisible = false;
-        menu = 0;
-      }
-      return menu;
-    };
+    customizePanel.addGroup(edlStrengthGroup);
 
     // to make sure the menu is collapsed at the start
     const sceneInit = function () {
