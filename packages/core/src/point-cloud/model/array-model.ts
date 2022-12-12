@@ -6,6 +6,7 @@ import {
   MeshBuilder,
   PointsCloudSystem,
   Scene,
+  SolidParticleSystem,
   StandardMaterial,
   Vector3
 } from '@babylonjs/core';
@@ -47,8 +48,8 @@ class ArrayModel {
   renderBlocks: MoctreeBlock[] = [];
   isBuffering = false;
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
-  basePcs?: PointsCloudSystem;
-  particleSystems: Map<number, PointsCloudSystem>;
+  basePcs?: SolidParticleSystem | PointsCloudSystem;
+  particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -57,6 +58,7 @@ class ArrayModel {
   fanOut = 3;
   useShader = false;
   useGUI = false;
+  useStreaming = false;
   debugOctant: Mesh;
   debugOrigin: Mesh;
   scene?: Scene;
@@ -85,6 +87,9 @@ class ArrayModel {
     if (options.useGUI === true) {
       this.useGUI = true;
     }
+    if (options.streaming === true) {
+      this.useStreaming = true;
+    }
     this.poolSize = options.workerPoolSize || 5;
 
     this.debug = options.debug || false;
@@ -112,7 +117,7 @@ class ArrayModel {
     matOrigin.diffuseColor = Color3.Purple();
     matOrigin.alpha = 0.8;
     this.debugOrigin.material = matOrigin;
-    this.particleSystems = new Map<number, PointsCloudSystem>();
+    this.particleSystems = new Map<number, SolidParticleSystem>();
   }
 
   private loadSystem(block: MoctreeBlock) {
@@ -136,49 +141,86 @@ class ArrayModel {
         this.particleCount += numPoints;
 
         if (this.particleCount < this.particleBudget) {
-          const pcs = new PointsCloudSystem(
-            block.mortonNumber.toString(),
-            this.particleSize,
-            this.scene,
-            {
-              updatable: false
-            }
-          );
+          if (!this.useStreaming) {
+            const pcs = new SolidParticleSystem(
+              block.mortonNumber.toString(),
+              this.scene
+            );
+            const box = MeshBuilder.CreateBox('s', { size: this.particleSize });
+            pcs.addShape(box, this.particleCount);
+            box.dispose();
 
-          const pointBuilder = function (particle: any, i: number) {
-            if (block.entries !== undefined) {
-              // set properties of particle
-              particle.position.set(
-                block.entries.X[i] - transX,
-                (block.entries.Z[i] - transY) * zScale,
-                block.entries.Y[i] - transZ
-              );
+            pcs.buildMesh();
 
-              if (particle.color) {
-                particle.color.set(
-                  block.entries.Red[i] / rgbMax,
-                  block.entries.Green[i] / rgbMax,
-                  block.entries.Blue[i] / rgbMax,
-                  1
-                );
-              } else {
-                particle.color = new Color4(
-                  block.entries.Red[i] / rgbMax,
-                  block.entries.Green[i] / rgbMax,
-                  block.entries.Blue[i] / rgbMax
-                );
+            pcs.initParticles = () => {
+              for (let p = 0; p < pcs.nbParticles; p++) {
+                if (block.entries !== undefined) {
+                  const particle = pcs.particles[p];
+                  particle.position.x = block.entries.X[p] - transX;
+                  particle.position.y = (block.entries.Z[p] - transY) * zScale;
+                  particle.position.z = block.entries.Y[p] - transZ;
+                  particle.color = new Color4(
+                    block.entries.Red[p] / rgbMax,
+                    block.entries.Green[p] / rgbMax,
+                    block.entries.Blue[p] / rgbMax
+                  );
+                }
               }
-            }
-          };
-          pcs.addPoints(numPoints, pointBuilder);
-          pcs.buildMeshAsync().then(() => {
+            };
+
+            pcs.initParticles();
             pcs.setParticles();
+
             if (block.mortonNumber !== Moctree.startBlockIndex) {
               this.particleSystems.set(block.mortonNumber, pcs);
             } else {
               this.basePcs = pcs;
             }
-          });
+          } else {
+            const pcs = new PointsCloudSystem(
+              block.mortonNumber.toString(),
+              this.particleSize,
+              this.scene,
+              {
+                updatable: false
+              }
+            );
+
+            const pointBuilder = function (particle: any, i: number) {
+              if (block.entries !== undefined) {
+                particle.position.set(
+                  block.entries.X[i] - transX,
+                  (block.entries.Z[i] - transY) * zScale,
+                  block.entries.Y[i] - transZ
+                );
+
+                if (particle.color) {
+                  particle.color.set(
+                    block.entries.Red[i] / rgbMax,
+                    block.entries.Green[i] / rgbMax,
+                    block.entries.Blue[i] / rgbMax,
+                    1
+                  );
+                } else {
+                  particle.color = new Color4(
+                    block.entries.Red[i] / rgbMax,
+                    block.entries.Green[i] / rgbMax,
+                    block.entries.Blue[i] / rgbMax
+                  );
+                }
+              }
+            };
+            pcs.addPoints(numPoints, pointBuilder);
+
+            pcs.buildMeshAsync().then(() => {
+              pcs.setParticles();
+              if (block.mortonNumber !== Moctree.startBlockIndex) {
+                this.particleSystems.set(block.mortonNumber, pcs);
+              } else {
+                this.basePcs = pcs;
+              }
+            });
+          }
         } else {
           console.log('particle budget reached: ' + this.particleCount);
         }
