@@ -100,17 +100,17 @@ export interface TileDBPointCloudOptions
    */
   maxLevel?: number;
   /**
-   * Select particle rendering type, 'box' is supported for now
+   * Select point rendering type, 'box' is supported for now
    */
-  particleType?: string;
+  pointType?: string;
   /**
-   * Particle size
+   * Point size
    */
-  particleSize?: number;
+  pointSize?: number;
   /**
-   * Particle scale, the increase in particle size between resolution levels
+   * Point scale, the increase in point size between resolution levels
    */
-  particleScale?: number;
+  pointScale?: number;
   /**
    * Camera radius
    */
@@ -132,9 +132,9 @@ export interface TileDBPointCloudOptions
    */
   maxNumCacheBlocks?: number;
   /**
-   * Particle budget
+   * Point budget
    */
-  particleBudget?: number;
+  pointBudget?: number;
   /**
    * Number of blocks to fan out when buffering
    */
