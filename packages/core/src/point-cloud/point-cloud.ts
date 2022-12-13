@@ -20,6 +20,7 @@ import { TileDBPointCloudOptions } from './utils/tiledb-pc';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import PointCloudGUI from './gui/point-cloud-gui';
+import { DataBlock } from './octree';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -89,7 +90,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.scene.clearColor = sceneColors.backgroundColor;
 
       // set up cameras
-      const defaultRadius = 25;
+      const defaultRadius = 5000;
       const camera = new ArcRotateCamera(
         'Camera',
         Math.PI / 3,
@@ -155,7 +156,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           bounds[5],
           this.options.rgbMax || 1.0
         );
-        this.model.metadata = octantMetadata;
+        // this.model.metadata = octantMetadata;
       } else {
         await this.model.init(
           this.scene,
@@ -230,13 +231,14 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           if (pickResult) {
             pickOrigin = pickResult.pickedPoint;
           } else {
-            const ray = camera.getForwardRay();
-            const block = this.model.octree.getContainingBlocksByRay(
-              ray,
-              this.model.maxLevel
-            )[0];
-            pickOrigin = block.minPoint.add(
-              block.maxPoint.subtract(block.minPoint).scale(0.5)
+            // const ray = camera.getForwardRay();
+            // const block = this.model.octree.getContainingBlocksByRay(
+            //   ray,
+            //   this.model.maxLevel
+            // )[0];
+            const minMax = this.model.htree.bounds[0];
+            pickOrigin = minMax[0].add(
+              minMax[1].subtract(minMax[0]).scale(0.5)
             );
           }
 

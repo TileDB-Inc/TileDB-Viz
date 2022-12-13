@@ -1,4 +1,4 @@
-import { MoctreeBlock } from '../octree';
+import { BoundsRequest, DataBlock, MoctreeBlock } from '../octree';
 
 interface SparsePoint {
   x: number;
@@ -23,6 +23,9 @@ interface SparseResult {
 enum WorkerType {
   init,
   data,
+  boundsData,
+  boundsSetData,
+  dataBlock,
   idle
 }
 
@@ -50,8 +53,24 @@ interface DataRequest extends WorkerRequest {
   block: MoctreeBlock;
 }
 
+interface BoundsDataRequest extends WorkerRequest {
+  bounds: BoundsRequest;
+}
+
+interface BoundsSetDataRequest extends WorkerRequest {
+  boundsSet: BoundsRequest[]; 
+}
+
 interface DataResponse extends WorkerResponse {
   block: MoctreeBlock;
+}
+
+interface BlockDataResponse extends WorkerResponse {
+  block: DataBlock;
+}
+
+interface BlockSetDataResponse extends WorkerResponse {
+  blocks: DataBlock[];
 }
 
 interface IdleResponse extends WorkerResponse {
@@ -60,6 +79,10 @@ interface IdleResponse extends WorkerResponse {
 
 export {
   DataRequest,
+  BoundsDataRequest,
+  BoundsSetDataRequest,
+  BlockDataResponse,
+  BlockSetDataResponse,
   DataResponse,
   IdleResponse,
   InitialRequest,

@@ -54,7 +54,7 @@ export const Autzen = () => (
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 const arrayName = process.env.STORYBOOK_ARRAY_NAME || 'autzen';
-const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 6;
+const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 3;
 
 // maxLevel=4, height=100, arrayName='' for cube test
 
@@ -64,12 +64,12 @@ export const Streamer = () => (
     arrayName={arrayName}
     namespace={namespace}
     token={token}
-    particleSize={3}
-    cameraRadius={2000}
+    particleSize={0.05}
+    cameraRadius={5000}
     maxLevels={maxLevel}
     rgbMax={255}
-    useShader={false}
-    fanOut={50}
-    numParticles={8000000}
+    useShader={true}
+    fanOut={100}
+    numParticles={100_000_000}
   />
 );

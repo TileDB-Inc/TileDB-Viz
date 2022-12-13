@@ -1,27 +1,34 @@
 import { Vector3 } from '@babylonjs/core';
 import {
+  BoundsDataRequest,
   DataRequest,
   DataResponse,
+  BlockDataResponse,
   IdleResponse,
   InitialRequest,
   WorkerResponse,
-  WorkerType
+  WorkerType,
+  WorkerRequest,
+  BlockSetDataResponse
 } from '../model';
-import { MoctreeBlock } from '../octree';
+import { MoctreeBlock, DataBlock } from '../octree';
 
 class TileDBWorkerPool {
   private poolSize: number;
   private workers: Worker[] = [];
-  private callbackFn: (block: MoctreeBlock) => void;
+  private callbackFn: (block: DataBlock) => void;
+  private blockSetLoader: (blocks: DataBlock[]) => void;
   private mapStatus: Map<string, boolean>;
 
   constructor(
     initRequest: InitialRequest,
-    callbackFn: (block: MoctreeBlock) => void,
+    callbackFn: (block: DataBlock) => void,
+    blockSetLoader: (blocks: DataBlock[]) => void,
     poolSize: number
   ) {
-    this.poolSize = poolSize || 5;
+    this.poolSize = poolSize || 40;
     this.callbackFn = callbackFn;
+    this.blockSetLoader = blockSetLoader;
     this.mapStatus = new Map<string, boolean>();
 
     for (let w = 0; w < this.poolSize; w++) {
@@ -38,35 +45,61 @@ class TileDBWorkerPool {
 
   private onData(e: MessageEvent) {
     const m = e.data as WorkerResponse;
-    if (m.type === WorkerType.data) {
-      const resp = m as DataResponse;
-      let block = resp.block;
-
-      // refresh block as it was serialized,
-      block = new MoctreeBlock(
-        block.lod,
-        block.mortonNumber,
-        new Vector3(block.minPoint._x, block.minPoint._y, block.minPoint._z),
-        new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
-        block.entries
-      );
+    if (m.type == WorkerType.init) {
+      for (let w = 0; w < this.poolSize; ++w) {
+        const worker = this.workers[w];
+        worker.postMessage(m);
+        this.mapStatus.set(w.toString(), false);
+      }
+      return;
+    }
+    // console.log('worker recv resp: data: ', m);
+    if (m.type === WorkerType.boundsData) {
+      const resp = m as BlockDataResponse;
+      let oldBlock = resp.block;
+      let block = new DataBlock();
+      block.entries = oldBlock.entries;
+      block.heapIdx = oldBlock.heapIdx;
       this.callbackFn(block);
+    } else if (m.type === WorkerType.boundsSetData) {
+      const resp = m as BlockSetDataResponse;
+      this.blockSetLoader(resp.blocks);
     } else if (m.type === WorkerType.idle) {
       const idleMessage = m as IdleResponse;
+      console.log('idle response from: ', idleMessage.name);
       this.mapStatus.set(idleMessage.name, false);
     }
   }
 
-  public postMessage(request: DataRequest) {
-    // loop over available workers
+  public postMessage(request: WorkerRequest) {
+    if (request.type === WorkerType.init) {
+      for (let w = 0; w < this.poolSize; ++w) {
+        const worker = this.workers[w];
+        worker.postMessage(request);
+        this.mapStatus.set(w.toString(), false);
+      }
+      return;
+    }
     for (const [k, v] of this.mapStatus) {
       if (!v) {
         this.workers[parseInt(k)].postMessage(request);
         this.mapStatus.set(k, true);
-        break;
-      }
+        return;
+      } 
     }
+    // this.postMessage(request);
   }
+
+  // public postMessage(request: DataRequest) {
+  //   // loop over available workers
+  //   for (const [k, v] of this.mapStatus) {
+  //     if (!v) {
+  //       this.workers[parseInt(k)].postMessage(request);
+  //       this.mapStatus.set(k, true);
+  //       break;
+  //     }
+  //   }
+  // }
 
   public numActive() {
     let c = 0;
@@ -86,6 +119,21 @@ class TileDBWorkerPool {
       }
     }
     return false;
+  }
+
+  public full() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const minActive = this.poolSize/4;
+    let count = 0;
+    for (const [_, value] of this.mapStatus) {
+      if (value === false) {
+        ++count;
+      }
+      if (count === minActive) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 

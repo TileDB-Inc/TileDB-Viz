@@ -383,9 +383,11 @@ export async function getArrayMetadata(
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.arrayName!);
   const key = -1;
+  console.log('in getArrayMetadata: storeName: ', storeName, ' key: ', key);
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
 
+  console.log('in getArrayMetadata: dataFromCache: ', dataFromCache);
   if (!dataFromCache) {
     const config: Record<string, any> = {};
 

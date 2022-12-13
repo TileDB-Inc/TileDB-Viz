@@ -243,4 +243,249 @@ class MoctreeBlock {
   }
 }
 
-export { Moctree, MoctreeBlock, encodeMorton, decodeMorton, getMortonRange };
+class HeapTree
+{
+  public bounds: Array<Array<Vector3>>;
+  static startBlockIndex = 0;
+  static indexes: Array<Vector3> = [
+    new Vector3(0, 0, 0),
+    new Vector3(1, 0, 0),
+    new Vector3(0, 1, 0),
+    new Vector3(1, 1, 0),
+    new Vector3(0, 0, 1),
+    new Vector3(1, 0, 1),
+    new Vector3(0, 1, 1),
+    new Vector3(1, 1, 1)
+  ];
+  maxIdx: number;
+
+  constructor(
+    private minPoint: Vector3,
+    private maxPoint: Vector3,
+    public maxLevel: number
+  ) {
+    this.minPoint = minPoint.clone();
+    this.maxPoint = maxPoint.clone();
+    this.maxLevel = maxLevel;
+    this.maxIdx = (Math.pow(8, maxLevel + 1) - 1) / 7 - 1;
+    // console.log('htree cstr maxIdx: ', this.maxIdx);
+    this.bounds = [];
+    this.bounds.push([minPoint.clone(), maxPoint.clone()]);
+    const queue = [0];
+    while (queue.length) {
+      const parent = queue.shift() as number;
+      const [min, max] = this.bounds[parent];
+      const childSize = max.subtract(min).scale(0.5);
+      const child = parent * 8 + 1;
+      if (child > this.maxIdx) {
+        continue;
+      }
+      for (let i = 0; i < 8; ++i) {
+        queue.push(child + i);
+        const currMin = min.add(childSize.multiply(HeapTree.indexes[i]));
+        const currMax = currMin.add(childSize);
+        this.bounds.push([currMin, currMax]);
+      }
+    }
+  }
+
+//   public *getContainingBlocksByRay(ray: Ray, lod: number): Generator<number> {
+//     // if (lod > 0) {
+//       if (ray.intersectsBoxMinMax(...this.bounds[HeapTree.startBlockIndex])) {
+//         if (lod > this.maxLevel) {
+//           lod = this.maxLevel;
+//         }
+//         let curr = 0;
+//         yield curr;
+//         let level = 1;
+//         const toTraverse: number[] = [];
+//         while (level < lod) {
+//           const child = curr * 8 + 1;
+//           let resultChildIdx = -1;
+//           let minDist = Infinity;
+//           for (let i = 0; i < 8; ++i) {
+//             const [childMin, childMax] = this.bounds[child + i];
+//             if (ray.intersectsBoxMinMax(childMin, childMax)) {
+//               const currDist = ray.origin.subtract(childMin).length();
+//               if (currDist < minDist) {
+//                 resultChildIdx = i;
+//                 minDist = currDist;
+//               }
+//             }
+//           }
+//           curr = child + resultChildIdx;
+//           yield curr;
+//           for (let i = 0; i < 8; ++i) {
+//             if (i !== resultChildIdx) {
+//               toTraverse.push(child + i);
+//             }
+//           }
+//           ++level;
+//         }
+//         while (toTraverse.length) {
+//           curr = toTraverse.pop() as number;
+//           yield curr;
+//           const child = curr * 8 + 1;
+//           if (child > this.maxIdx) {
+//             continue;
+//           }
+//           for (let i = 7; i >= 0; --i) {
+//             toTraverse.push(child + i);
+//           }
+//         }
+//       }
+//     }
+//   // }
+// }
+
+// public getContainingBlocksByRay(ray: Ray, lod: number) {
+//   // if (lod > 0) {
+//       if (lod > this.maxLevel) {
+//         lod = this.maxLevel;
+//       }
+//       const result: number[] = [];
+//       let curr = 0;
+//       result.push(curr);
+//       let level = 0;
+//       const toTraverse: number[] = [];
+//       while (level < lod) {
+//         const child = curr * 8 + 1;
+//         let resultChildIdx = -1;
+//         let minDist = Infinity;
+//         for (let i = 0; i < 8; ++i) {
+//           const [childMin, childMax] = this.bounds[child + i];
+//           if (ray.intersectsBoxMinMax(childMin, childMax)) {
+//             const currDist = ray.origin.subtract(childMin).length();
+//             if (currDist < minDist) {
+//               resultChildIdx = i;
+//               minDist = currDist;
+//             }
+//           }
+//         }
+//         curr = child + resultChildIdx;
+//         result.push(curr);
+//         for (let i = 0; i < 8; ++i) {
+//           if (i !== resultChildIdx) {
+//             toTraverse.push(child + i);
+//           }
+//         }
+//         ++level;
+//       }
+//       while (toTraverse.length) {
+//         curr = toTraverse.pop() as number;
+//         result.push(curr);
+//         const child = curr * 8 + 1;
+//         if (child > this.maxIdx) {
+//           continue;
+//         }
+//         for (let i = 7; i >= 0; --i) {
+//           toTraverse.push(child + i);
+//         }
+//       }
+//       return result;
+//     }
+// // }
+// }
+
+public *getContainingBlocksByRay(ray: Ray, lod: number): Generator<number[]> {
+  // if (lod > 0) {
+    if (ray.intersectsBoxMinMax(...this.bounds[HeapTree.startBlockIndex])) {
+      if (lod > this.maxLevel) {
+        lod = this.maxLevel;
+      }
+      const intersectingIdcs = [];
+      let curr = 0;
+      intersectingIdcs.push(curr);
+      let level = 1;
+      const toTraverse: number[] = [];
+      while (level <= lod) {
+        const child = curr * 8 + 1;
+        let resultChildIdx = -1;
+        let minDist = Infinity;
+        for (let i = 0; i < 8; ++i) {
+          const [childMin, childMax] = this.bounds[child + i];
+          if (ray.intersectsBoxMinMax(childMin, childMax)) {
+            const currDist = ray.origin.subtract(childMin).length();
+            if (currDist < minDist) {
+              resultChildIdx = i;
+              minDist = currDist;
+            }
+          }
+        }
+        curr = child + resultChildIdx;
+        intersectingIdcs.push(curr);
+        for (let i = 0; i < 8; ++i) {
+          if (i !== resultChildIdx) {
+            toTraverse.push(child + i);
+          }
+        }
+        ++level;
+      }
+      yield intersectingIdcs;
+      let lastIdx = toTraverse.length - 1;
+      let lastChildSet: number[] = [];
+      while (toTraverse[lastIdx] * 8 + 1 > this.maxIdx && lastIdx >= 0) {
+        lastChildSet.push(toTraverse[lastIdx--])
+      }
+      yield lastChildSet;
+      for (let i = lastIdx; i >= 0; --i) {
+        let currTraversal: number[] = [];
+        let neighbors: number[] = [];
+        currTraversal.push(toTraverse[i]);
+        while (currTraversal.length) {
+          curr = currTraversal.pop() as number;
+          neighbors.push(curr);
+          const child = curr * 8 + 1;
+          if (child <= this.maxIdx) {
+            for (let i = 7; i >= 0; --i) {
+              currTraversal.push(child + i);
+            }
+          }
+        }
+        yield neighbors;
+      }
+    }
+  }
+// }
+}
+
+
+const lods = [1, 9, 73, 585, 4681, 37449, 299593, 2396745];
+function lodFromIdx(heapIdx: number) {
+  for (let i = 0; i < lods.length; ++i) {
+    if (heapIdx < lods[i]) {
+      return i;
+    }
+  }
+  return lods.length;
+}
+
+
+class BoundsRequest {
+  lod: number;
+  heapIdx: number;
+  minPoint: Vector3;
+  maxPoint: Vector3;
+  constructor(heapIdx: number, minPoint: Vector3, maxPoint: Vector3) {
+    this.lod = lodFromIdx(heapIdx);
+    this.heapIdx = heapIdx;
+    this.minPoint = minPoint.clone();
+    this.maxPoint = maxPoint.clone();
+  }
+}
+
+class DataBlock {
+  heapIdx!: number;
+  entries!: SparseResult;
+}
+
+export {
+  Moctree,
+  MoctreeBlock,
+  HeapTree,
+  BoundsRequest,
+  DataBlock,
+  encodeMorton,
+  decodeMorton,
+  getMortonRange
+};

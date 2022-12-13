@@ -30,6 +30,7 @@ const getCacheDB = async (storeName: string) => {
 };
 
 export const getQueryDataFromCache = async (storeName: string, key: number) => {
+  // console.log('in getQueryDataFromCache: storeName: ', storeName, ' key: ', key);
   const db = await getCacheDB(storeName);
   const value = await db.get(storeName, key);
   return value;
@@ -40,6 +41,8 @@ export const writeToCache = async (
   key: number,
   data: any
 ) => {
+  // console.log('in write to cache: storeName: ', storeName, ' key: ', key, ' data: ', data);
+  // console.log('prev result for key 0: ', getQueryDataFromCache(storeName, 0));
   const db = await getCacheDB(storeName);
   const now = Date.now();
   await db.put(storeName, Object.assign(data, { __timestamp: now }), key);
