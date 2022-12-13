@@ -24,11 +24,15 @@ export interface TileDBPointCloudOptions
    */
   data?: any;
   /**
+   * Scale the z-coordinate values for all points
+   */
+  zScale?: number;
+  /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
   gltfData?: any;
   /**
-   * Move the point cloud along the z-axis to better align with the mapbox base layer [mode='topo']
+   * Move the gltf datas along the z-axis to better align with the mapbox base layer [mode='topo']
    */
   topoOffset?: number;
   /**
@@ -40,17 +44,9 @@ export interface TileDBPointCloudOptions
    */
   timeOffset?: number;
   /**
-   * Size of the points
-   */
-  pointSize?: number;
-  /**
    * Perform clash detection between mesh and point cloud if true
    */
   distanceColors?: boolean;
-  /**
-   * Blob mpabox image png image as blob
-   */
-  mapboxImg?: BlobPart;
   /**
    * Rotate the mesh with [alpha,beta,gamma]
    */
@@ -92,10 +88,6 @@ export interface TileDBPointCloudOptions
    */
   tiledbEnv?: string;
   /**
-   * Maximum depth of the octree
-   */
-  depth?: number;
-  /**
    * TileDB query buffer size
    */
   bufferSize?: number;
@@ -106,19 +98,19 @@ export interface TileDBPointCloudOptions
   /**
    * Maximum number of resolution levels
    */
-  maxLevels?: number;
+  maxLevel?: number;
   /**
-   * Select particle rendering type, 'box' is supported for now
+   * Select point rendering type, 'box' is supported for now
    */
-  particleType?: string;
+  pointType?: string;
   /**
-   * Particle size
+   * Point size
    */
-  particleSize?: number;
+  pointSize?: number;
   /**
-   * Particle scale, the increase in particle size between resolution levels
+   * Point scale, the increase in point size between resolution levels
    */
-  particleScale?: number;
+  pointScale?: number;
   /**
    * Camera radius
    */
@@ -140,17 +132,21 @@ export interface TileDBPointCloudOptions
    */
   maxNumCacheBlocks?: number;
   /**
-   * Particle budget
+   * Point budget
    */
-  numParticles?: number;
+  pointBudget?: number;
   /**
    * Number of blocks to fan out when buffering
    */
   fanOut?: number;
   /**
-   * Use shaders, on low end system might now want to use shaders
+   * Use shaders, on low end system might not want to use shaders
    */
   useShader?: boolean;
+  /**
+   * Add an interactive GUI
+   */
+  useGUI?: boolean;
   /**
    * debug, draw octant boxes that are being rendered
    */

@@ -1,4 +1,9 @@
-import { PostProcess, RenderTargetTexture, Scene } from '@babylonjs/core';
+import {
+  Effect,
+  PostProcess,
+  RenderTargetTexture,
+  Scene
+} from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
   Button,
@@ -35,29 +40,39 @@ class PointCloudGUI {
     edlRadius: number,
     depthTex: RenderTargetTexture
   ) {
-    this.advancedDynamicTexture.idealWidth = 800;
-    this.advancedDynamicTexture.idealHeight = 900;
-    this.advancedDynamicTexture.useSmallestIdeal = true;
-
     // set up GUI grid
     const grid = new Grid();
-    grid.addColumnDefinition(200, true);
-    grid.addColumnDefinition(1);
-    grid.addRowDefinition(48, true);
-    grid.addRowDefinition(1);
+    grid.addColumnDefinition(140, true);
+    grid.addRowDefinition(50, true);
+    grid.addRowDefinition(5, true);
+    grid.addRowDefinition(400, true);
+    grid.setPadding('8px', '8px', '8px', '8px');
 
     // add button that expands panel
     const button = Button.CreateSimpleButton('button', 'Customize');
-    button.fontFamily = 'Inter';
-    button.fontSize = 10;
+    button.fontSize = 18;
     button.color = '#352F4D';
     button.background = '#F5F7FA';
     button.highlightColor = '#CC0055';
     button.fontWeight = 'bold';
+    button.cornerRadius = 4;
+    button.zIndex = 2;
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
     // expand and collapse the panel menu on click of button
+    let _menu = 0;
+    const changeMenu = function () {
+      if (_menu === 0) {
+        _menu = 1;
+        customizePanel.isVisible = true;
+      } else if (_menu === 1) {
+        customizePanel.isVisible = false;
+        _menu = 0;
+      }
+      return _menu;
+    };
+
     button.onPointerUpObservable.add(() => {
       changeMenu();
     });
@@ -66,10 +81,12 @@ class PointCloudGUI {
     const customizePanel = new SelectionPanel('customizeBox');
     customizePanel.width = 1;
     customizePanel.height = 1;
+    customizePanel.cornerRadius = 4;
+    customizePanel.zIndex = 2;
     customizePanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     customizePanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     customizePanel.background = '#F5F7FA';
-    customizePanel.fontSize = 0.8;
+    customizePanel.fontSize = 12;
     customizePanel.color = '#352F4D';
     customizePanel.barColor = '#352F4D';
     customizePanel.headerColor = '#352F4D';
@@ -78,7 +95,7 @@ class PointCloudGUI {
     customizePanel.labelColor = '#352F4D';
 
     // add color scheme radio buttons
-    const setColor = (but: any) => {
+    const setColor = (but: number) => {
       switch (but) {
         case 0:
           updateSceneColors(scene, 'dark');
@@ -110,49 +127,60 @@ class PointCloudGUI {
     colorGroup.addRadio('blue', setColor, blueOn);
     customizePanel.addGroup(colorGroup);
 
-    // add a point size slider
-    function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
-      scene.onBeforeRenderObservable.addOnce(() => {
-        // for (let c = 0; c < model.particleSystems.length; c++) {
-        //   model.particleSystems[c].updateParticle = function (particle: any) {
-        //     particle.scaling = new Vector3(
-        //       value / 100,
-        //       value / 100,
-        //       value / 100
-        //     );
-        //     return particle.scaling;
-        //   };
-        //   model.particleSystems[c].setParticles();
-        // }
-      });
-    }
+    // // add a point size slider
+    // function updatePointSizes(scene: Scene, model: ArrayModel, value: number) {
+    //   scene.onBeforeRenderObservable.addOnce(() => {
+    //     // for (let c = 0; c < model.particleSystems.length; c++) {
+    //     //   model.particleSystems[c].updateParticle = function (particle: any) {
+    //     //     particle.scaling = new Vector3(
+    //     //       value / 100,
+    //     //       value / 100,
+    //     //       value / 100
+    //     //     );
+    //     //     return particle.scaling;
+    //     //   };
+    //     //   model.particleSystems[c].setParticles();
+    //     // }
+    //   });
+    // }
 
-    const updatePointSize = function (value: number) {
-      updatePointSizes(scene, model, value);
-    };
+    // const updatePointSize = function (value: number) {
+    //   updatePointSizes(scene, model, value);
+    // };
 
-    const pointSizeValue = function (value: number) {
-      return +value.toFixed(0);
-    };
+    // const pointSizeValue = function (value: number) {
+    //   return +value.toFixed(0);
+    // };
 
-    const pointSizeGroup = new SliderGroup('Point size');
-    pointSizeGroup.addSlider(
-      'Scale factor',
-      updatePointSize,
-      '%',
-      0,
-      250,
-      100,
-      pointSizeValue
-    );
+    // const pointSizeGroup = new SliderGroup('Point size');
+    // pointSizeGroup.addSlider(
+    //   'Scale factor',
+    //   updatePointSize,
+    //   '%',
+    //   0,
+    //   250,
+    //   100,
+    //   pointSizeValue
+    // );
 
-    customizePanel.addGroup(pointSizeGroup);
+    // customizePanel.addGroup(pointSizeGroup);
 
     // add an EDL strength slider
     const updateEdlStrength = function (value: number) {
-      postProcess.onApply = function (effect: any) {
-        effect.setFloat('screenWidth', screenWidth);
-        effect.setFloat('screenHeight', screenHeight);
+      postProcess.onApply = function (effect: Effect) {
+        effect.setFloat('screenWidth', screenWidth as number);
+        effect.setFloat('screenHeight', screenHeight as number);
+        effect.setArray2('neighbours', neighbours);
+        effect.setFloat('edlStrength', value);
+        effect.setFloat('radius', edlRadius);
+        effect.setTexture('uEDLDepth', depthTex);
+      };
+    };
+
+    const updateEdlRadius = function (value: number) {
+      postProcess.onApply = function (effect: Effect) {
+        effect.setFloat('screenWidth', screenWidth as number);
+        effect.setFloat('screenHeight', screenHeight as number);
         effect.setArray2('neighbours', neighbours);
         effect.setFloat('edlStrength', value);
         effect.setFloat('radius', edlRadius);
@@ -161,6 +189,10 @@ class PointCloudGUI {
     };
 
     const edlStrengthValue = function (value: number) {
+      return +value.toFixed(1);
+    };
+
+    const edlRadiusValue = function (value: number) {
       return +value.toFixed(1);
     };
 
@@ -175,19 +207,17 @@ class PointCloudGUI {
       edlStrengthValue
     );
 
-    customizePanel.addGroup(edlStrengthGroup);
+    edlStrengthGroup.addSlider(
+      'Radius',
+      updateEdlRadius,
+      ' ',
+      0,
+      5,
+      edlRadius,
+      edlRadiusValue
+    );
 
-    let menu = 0;
-    const changeMenu = function () {
-      if (menu === 0) {
-        menu = 1;
-        customizePanel.isVisible = true;
-      } else if (menu === 1) {
-        customizePanel.isVisible = false;
-        menu = 0;
-      }
-      return menu;
-    };
+    customizePanel.addGroup(edlStrengthGroup);
 
     // to make sure the menu is collapsed at the start
     const sceneInit = function () {
@@ -198,7 +228,7 @@ class PointCloudGUI {
 
     // add all components to the grid
     grid.addControl(button, 0, 0);
-    grid.addControl(customizePanel, 1, 0);
+    grid.addControl(customizePanel, 2, 0);
     this.advancedDynamicTexture.addControl(grid);
   }
 
