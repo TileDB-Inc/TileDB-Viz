@@ -39,6 +39,7 @@ class ArrayModel {
   particleMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
+  tiledbEnv?: string;
   pointType: string;
   pointSize: number;
   pickedBlockCode = -1;
@@ -66,6 +67,7 @@ class ArrayModel {
     this.arrayName = options.arrayName;
     this.namespace = options.namespace;
     this.token = options.token;
+    this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
     this.pointScale = options.pointScale || 0.001;
     this.maxLevel = options.maxLevel || 1;
@@ -311,6 +313,7 @@ class ArrayModel {
           type: WorkerType.init,
           namespace: this.namespace,
           token: this.token,
+          tiledbEnv: this.tiledbEnv,
           arrayName: this.arrayName,
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,

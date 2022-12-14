@@ -22,7 +22,7 @@ export default {
 const Template = () => (
   <PointCloudVisualization
     data={data}
-    particleSize={25}
+    pointSize={25}
     cameraRadius={250}
     width={'100vw'}
     height={'100vh'}
@@ -35,7 +35,7 @@ export const Boulder = () => (
   <PointCloudVisualization
     data={boulderData}
     colorScheme="dark"
-    particleSize={2.5}
+    pointSize={2.5}
     width={'100vw'}
     height={'100vh'}
   />
@@ -44,7 +44,7 @@ export const Boulder = () => (
 export const Autzen = () => (
   <PointCloudVisualization
     data={autzenData}
-    particleSize={3}
+    pointSize={3}
     cameraRadius={600}
     colorScheme="light"
     rgbMax={65535}
@@ -68,11 +68,34 @@ export const Streamer = () => (
     arrayName={arrayName}
     maxLevel={maxLevel}
     fanOut={50}
-    particleBudget={8000000}
-    particleSize={3}
+    pointBudget={8000000}
+    pointSize={3}
     cameraRadius={2000}
     colorScheme="dark"
     rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+const bbox = {
+  X: [636800, 637200],
+  Y: [852800, 853100],
+  Z: [406.14, 615.26]
+};
+
+export const AutzenBbox = () => (
+  <PointCloudVisualization
+    streaming={false}
+    source="cloud"
+    token={token}
+    namespace="TileDB-Inc"
+    arrayName="autzen_classified_tiledb"
+    bbox={bbox}
+    pointSize={6}
+    cameraRadius={1000}
+    colorScheme="light"
+    rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
   />

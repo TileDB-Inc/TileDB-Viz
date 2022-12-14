@@ -34,10 +34,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this.options = options;
 
-    // initialize the TileDB client
     if (options.token) {
       getTileDBClient({
-        apiKey: options.token
+        apiKey: options.token,
+        ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
     }
   }

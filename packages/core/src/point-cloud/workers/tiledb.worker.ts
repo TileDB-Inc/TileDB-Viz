@@ -31,7 +31,8 @@ self.onmessage = async (e: MessageEvent) => {
     bufferSize = o.bufferSize;
 
     const tiledbClient = new TileDBClient({
-      apiKey: o.token
+      apiKey: o.token,
+      ...(o.tiledbEnv ? { basePath: o.tiledbEnv } : {})
     });
     tiledbQuery = tiledbClient.query;
   }
