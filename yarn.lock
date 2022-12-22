@@ -4898,15 +4898,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.3":
-  version: 1.0.10-alpha.3
-  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.3"
+"@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.5":
+  version: 1.0.10-alpha.5
+  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.5"
   dependencies:
     axios: ^0.21.1
-    capnp-ts: ^0.7.0
+    capnp-ts: ^0.4.0
     paralleljs: "github:SarantopoulosKon/parallel.js#node-mode-in-web-worker"
     save-file: ^2.3.1
-  checksum: 7036187bc589058c5884b128c5adbf17d28863577b57b2f54bd4f84c7fc9a3996c056f07f0ad49a6c0f55f137f809c3587b116daf3d211b81df92c57115c6f2a
+  checksum: 77d37aadf886851d19b7bfccd8e97260396094c6f5111974cbea79fb877fd9076ff70f47c7ae6b96b1bfe0b3a3e27f93cda1c65b9babf60de8bec40b798e9c6c
   languageName: node
   linkType: hard
 
@@ -4924,7 +4924,7 @@ __metadata:
     "@babylonjs/loaders": ^5.21.0
     "@babylonjs/materials": ^5.21.0
     "@babylonjs/serializers": ^5.21.0
-    "@tiledb-inc/tiledb-cloud": 1.0.10-alpha.3
+    "@tiledb-inc/tiledb-cloud": 1.0.10-alpha.5
     babylonjs-gui: ^4.2.2
     babylonjs-materials: ^5.21.0
     idb: ^7.0.2
@@ -7376,13 +7376,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"capnp-ts@npm:^0.7.0":
-  version: 0.7.0
-  resolution: "capnp-ts@npm:0.7.0"
+"capnp-ts@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "capnp-ts@npm:0.4.0"
   dependencies:
-    debug: ^4.3.1
-    tslib: ^2.2.0
-  checksum: 9ab495a887c5d5fd56afa3cc930733cd8c6c0743c52c2e79c46675eb5c7753e5578f71348628a4b3d9f03e5269bc71f811e58af18d0b0557607c4ee56189cfbb
+    debug: ^2.6.3
+    format: ^0.2.2
+    tslib: ^1.7.1
+    utf8-encoding: ^0.1.2
+  checksum: 3a3c474fc7e29dcdc059bed2916fda6831104487df4b8595d4e55a57ec32bea124ebccd7edb48d53f4b79853632ae5fba874712e35e368a04a145f352668d441
   languageName: node
   linkType: hard
 
@@ -8255,7 +8257,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0":
+"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0, debug@npm:^2.6.3":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
   dependencies:
@@ -8264,7 +8266,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
+"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
   version: 4.3.4
   resolution: "debug@npm:4.3.4"
   dependencies:
@@ -9825,6 +9827,13 @@ __metadata:
     combined-stream: ^1.0.8
     mime-types: ^2.1.12
   checksum: 01135bf8675f9d5c61ff18e2e2932f719ca4de964e3be90ef4c36aacfc7b9cb2fceb5eca0b7e0190e3383fe51c5b37f4cb80b62ca06a99aaabfcfd6ac7c9328c
+  languageName: node
+  linkType: hard
+
+"format@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "format@npm:0.2.2"
+  checksum: 646a60e1336250d802509cf24fb801e43bd4a70a07510c816fa133aa42cdbc9c21e66e9cc0801bb183c5b031c9d68be62e7fbb6877756e52357850f92aa28799
   languageName: node
   linkType: hard
 
@@ -13931,6 +13940,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"obtain-unicode@npm:~0.0.5":
+  version: 0.0.5
+  resolution: "obtain-unicode@npm:0.0.5"
+  checksum: 5a6eb8d4415847d64d8a71a969f19ca544b2719df765b07e64dd0560577f9383edc6bc2ade04b07f719e4c3c1969bc6558e3d8cea9b42ea589f2777226db1805
+  languageName: node
+  linkType: hard
+
 "on-finished@npm:2.4.1":
   version: 2.4.1
   resolution: "on-finished@npm:2.4.1"
@@ -17167,7 +17183,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.8.1, tslib@npm:^1.9.3":
+"tslib@npm:*":
+  version: 2.4.1
+  resolution: "tslib@npm:2.4.1"
+  checksum: 19480d6e0313292bd6505d4efe096a6b31c70e21cf08b5febf4da62e95c265c8f571f7b36fcc3d1a17e068032f59c269fab3459d6cd3ed6949eafecf64315fca
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^1.7.1, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
@@ -17178,13 +17201,6 @@ __metadata:
   version: 2.4.0
   resolution: "tslib@npm:2.4.0"
   checksum: 8c4aa6a3c5a754bf76aefc38026134180c053b7bd2f81338cb5e5ebf96fefa0f417bff221592bf801077f5bf990562f6264fecbc42cd3309b33872cb6fc3b113
-  languageName: node
-  linkType: hard
-
-"tslib@npm:^2.2.0":
-  version: 2.4.1
-  resolution: "tslib@npm:2.4.1"
-  checksum: 19480d6e0313292bd6505d4efe096a6b31c70e21cf08b5febf4da62e95c265c8f571f7b36fcc3d1a17e068032f59c269fab3459d6cd3ed6949eafecf64315fca
   languageName: node
   linkType: hard
 
@@ -17640,6 +17656,15 @@ __metadata:
   version: 3.1.1
   resolution: "use@npm:3.1.1"
   checksum: 08a130289f5238fcbf8f59a18951286a6e660d17acccc9d58d9b69dfa0ee19aa038e8f95721b00b432c36d1629a9e32a464bf2e7e0ae6a244c42ddb30bdd8b33
+  languageName: node
+  linkType: hard
+
+"utf8-encoding@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "utf8-encoding@npm:0.1.2"
+  dependencies:
+    obtain-unicode: ~0.0.5
+  checksum: 280bab885fbb2a76bd7f7dcab3869385415716934a7d5ae4eb30b49531d791c20f38f36a440576944260eccd42f240a771b3dabb183def3cd6f64779c7076e9e
   languageName: node
   linkType: hard
 
