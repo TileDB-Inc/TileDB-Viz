@@ -4898,16 +4898,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.2":
-  version: 1.0.10-alpha.2
-  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.2"
+"@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.3":
+  version: 1.0.10-alpha.3
+  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.10-alpha.3"
   dependencies:
     axios: ^0.21.1
-    capnp-ts: ^0.4.0
-    capnpc-ts: ^0.4.0
+    capnp-ts: ^0.7.0
     paralleljs: "github:SarantopoulosKon/parallel.js#node-mode-in-web-worker"
     save-file: ^2.3.1
-  checksum: ae579e8cd5d7d4b1f5a53aaa4549b4d9adef4c987ca5bb56155537d9853bd2f387044701ddbae8099760c026a8415027211d289bf0d466ece11415680ef05267
+  checksum: 7036187bc589058c5884b128c5adbf17d28863577b57b2f54bd4f84c7fc9a3996c056f07f0ad49a6c0f55f137f809c3587b116daf3d211b81df92c57115c6f2a
   languageName: node
   linkType: hard
 
@@ -4925,7 +4924,7 @@ __metadata:
     "@babylonjs/loaders": ^5.21.0
     "@babylonjs/materials": ^5.21.0
     "@babylonjs/serializers": ^5.21.0
-    "@tiledb-inc/tiledb-cloud": 1.0.10-alpha.2
+    "@tiledb-inc/tiledb-cloud": 1.0.10-alpha.3
     babylonjs-gui: ^4.2.2
     babylonjs-materials: ^5.21.0
     idb: ^7.0.2
@@ -6864,7 +6863,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.5.0, bluebird@npm:^3.5.5":
+"bluebird@npm:^3.5.5":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 869417503c722e7dc54ca46715f70e15f4d9c602a423a02c825570862d12935be59ed9c7ba34a9b31f186c017c23cac6b54e35446f8353059c101da73eac22ef
@@ -7377,33 +7376,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"capnp-ts@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "capnp-ts@npm:0.4.0"
+"capnp-ts@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "capnp-ts@npm:0.7.0"
   dependencies:
-    debug: ^2.6.3
-    format: ^0.2.2
-    tslib: ^1.7.1
-    utf8-encoding: ^0.1.2
-  checksum: 3a3c474fc7e29dcdc059bed2916fda6831104487df4b8595d4e55a57ec32bea124ebccd7edb48d53f4b79853632ae5fba874712e35e368a04a145f352668d441
-  languageName: node
-  linkType: hard
-
-"capnpc-ts@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "capnpc-ts@npm:0.4.0"
-  dependencies:
-    bluebird: ^3.5.0
-    capnp-ts: ^0.4.0
-    debug: ^3.1.0
-    hex2dec: ^1.0.1
-    mkdirp: ^0.5.1
-    ramda: ^0.24.1
-    tslib: ^1.7.1
-    typescript: ^2.4.1
-  bin:
-    capnpc-ts: ./bin/capnpc-ts.js
-  checksum: 264a3508dda59b2e897e38bd1ef199a465d9ea3ba4b8c4aa9027e5309537d476fa98fc4c57e217cbb06f5db01794c8df17b65c65ad2a52d6ffdc2d247619fe0f
+    debug: ^4.3.1
+    tslib: ^2.2.0
+  checksum: 9ab495a887c5d5fd56afa3cc930733cd8c6c0743c52c2e79c46675eb5c7753e5578f71348628a4b3d9f03e5269bc71f811e58af18d0b0557607c4ee56189cfbb
   languageName: node
   linkType: hard
 
@@ -8276,7 +8255,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0, debug@npm:^2.6.3":
+"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
   dependencies:
@@ -8285,7 +8264,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
+"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
   version: 4.3.4
   resolution: "debug@npm:4.3.4"
   dependencies:
@@ -8297,7 +8276,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:^3.0.0, debug@npm:^3.1.0":
+"debug@npm:^3.0.0":
   version: 3.2.7
   resolution: "debug@npm:3.2.7"
   dependencies:
@@ -9849,13 +9828,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"format@npm:^0.2.2":
-  version: 0.2.2
-  resolution: "format@npm:0.2.2"
-  checksum: 646a60e1336250d802509cf24fb801e43bd4a70a07510c816fa133aa42cdbc9c21e66e9cc0801bb183c5b031c9d68be62e7fbb6877756e52357850f92aa28799
-  languageName: node
-  linkType: hard
-
 "forwarded@npm:0.2.0":
   version: 0.2.0
   resolution: "forwarded@npm:0.2.0"
@@ -10544,13 +10516,6 @@ __metadata:
   bin:
     he: bin/he
   checksum: 3d4d6babccccd79c5c5a3f929a68af33360d6445587d628087f39a965079d84f18ce9c3d3f917ee1e3978916fc833bb8b29377c3b403f919426f91bc6965e7a7
-  languageName: node
-  linkType: hard
-
-"hex2dec@npm:^1.0.1":
-  version: 1.1.2
-  resolution: "hex2dec@npm:1.1.2"
-  checksum: 885d5035105ce20efa5b47f5b7e6f5cf714fcfa262f9cc2575009f3b662465ff07037c96cbdd26ec97794101d8c208488356fee3e3a56e02569e079060c9562a
   languageName: node
   linkType: hard
 
@@ -13966,13 +13931,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"obtain-unicode@npm:~0.0.5":
-  version: 0.0.5
-  resolution: "obtain-unicode@npm:0.0.5"
-  checksum: 5a6eb8d4415847d64d8a71a969f19ca544b2719df765b07e64dd0560577f9383edc6bc2ade04b07f719e4c3c1969bc6558e3d8cea9b42ea589f2777226db1805
-  languageName: node
-  linkType: hard
-
 "on-finished@npm:2.4.1":
   version: 2.4.1
   resolution: "on-finished@npm:2.4.1"
@@ -15102,13 +15060,6 @@ __metadata:
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
   checksum: b676f8c040cdc5b12723ad2f91414d267605b26419d5c821ff03befa817ddd10e238d22b25d604920340fd73efd8ba795465a0377c4adf45a4a41e4234e42dc4
-  languageName: node
-  linkType: hard
-
-"ramda@npm:^0.24.1":
-  version: 0.24.1
-  resolution: "ramda@npm:0.24.1"
-  checksum: c2dc048f5a0f61872eec7925f76cdf8e7b7cf7a4f457e274d915d8bf86bd108938795d92061d56eae315a4818ea65276a87c9db336356191aaf879647afd8c82
   languageName: node
   linkType: hard
 
@@ -17216,7 +17167,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.7.1, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
+"tslib@npm:^1.8.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
@@ -17227,6 +17178,13 @@ __metadata:
   version: 2.4.0
   resolution: "tslib@npm:2.4.0"
   checksum: 8c4aa6a3c5a754bf76aefc38026134180c053b7bd2f81338cb5e5ebf96fefa0f417bff221592bf801077f5bf990562f6264fecbc42cd3309b33872cb6fc3b113
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^2.2.0":
+  version: 2.4.1
+  resolution: "tslib@npm:2.4.1"
+  checksum: 19480d6e0313292bd6505d4efe096a6b31c70e21cf08b5febf4da62e95c265c8f571f7b36fcc3d1a17e068032f59c269fab3459d6cd3ed6949eafecf64315fca
   languageName: node
   linkType: hard
 
@@ -17351,16 +17309,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^2.4.1":
-  version: 2.9.2
-  resolution: "typescript@npm:2.9.2"
-  bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 88be998ac339b6e45f1cd15e22e4a0fedcdb5320d8d1d736e3996a0b9dff03728ebb2580a0658f0c52152b139ea9a405443f42a4ff8a2c4a1a6f4d58e0320132
-  languageName: node
-  linkType: hard
-
 "typescript@patch:typescript@4.7.4#~builtin<compat/typescript>":
   version: 4.7.4
   resolution: "typescript@patch:typescript@npm%3A4.7.4#~builtin<compat/typescript>::version=4.7.4&hash=a1c5e5"
@@ -17368,16 +17316,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 9096d8f6c16cb80ef3bf96fcbbd055bf1c4a43bd14f3b7be45a9fbe7ada46ec977f604d5feed3263b4f2aa7d4c7477ce5f9cd87de0d6feedec69a983f3a4f93e
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@^2.4.1#~builtin<compat/typescript>":
-  version: 2.9.2
-  resolution: "typescript@patch:typescript@npm%3A2.9.2#~builtin<compat/typescript>::version=2.9.2&hash=a1c5e5"
-  bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 8e4b4eceecd9c4c0d45a74e49d715eb7b12e0d4a12768b70681c9a81a7c2a335f15fe14c78dddda73c90f9ebb5ddac0b2e33c12df606c7d46f7e7829326cc653
   languageName: node
   linkType: hard
 
@@ -17702,15 +17640,6 @@ __metadata:
   version: 3.1.1
   resolution: "use@npm:3.1.1"
   checksum: 08a130289f5238fcbf8f59a18951286a6e660d17acccc9d58d9b69dfa0ee19aa038e8f95721b00b432c36d1629a9e32a464bf2e7e0ae6a244c42ddb30bdd8b33
-  languageName: node
-  linkType: hard
-
-"utf8-encoding@npm:^0.1.2":
-  version: 0.1.2
-  resolution: "utf8-encoding@npm:0.1.2"
-  dependencies:
-    obtain-unicode: ~0.0.5
-  checksum: 280bab885fbb2a76bd7f7dcab3869385415716934a7d5ae4eb30b49531d791c20f38f36a440576944260eccd42f240a771b3dabb183def3cd6f64779c7076e9e
   languageName: node
   linkType: hard
 
