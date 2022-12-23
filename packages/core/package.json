@@ -38,7 +38,7 @@
     "@babylonjs/loaders": "^5.21.0",
     "@babylonjs/materials": "^5.21.0",
     "@babylonjs/serializers": "^5.21.0",
-    "@tiledb-inc/tiledb-cloud": "1.0.10-alpha.5",
+    "@tiledb-inc/tiledb-cloud": "1.0.10-alpha.6",
     "babylonjs-gui": "^4.2.2",
     "babylonjs-materials": "^5.21.0",
     "idb": "^7.0.2"
