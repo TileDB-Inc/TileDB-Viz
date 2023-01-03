@@ -34,10 +34,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this.options = options;
 
-    // initialize the TileDB client
-    if (options.token) {
+    if (options.token || options.tiledbEnv) {
       getTileDBClient({
-        apiKey: options.token
+        ...(options.token ? { apiKey: options.token } : {}),
+        ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
     }
   }
@@ -147,7 +147,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       light2.intensity = 0.7;
       light2.specular = Color3.Black();
 
-      // initialize SolidParticleSystem
+      // initialize ParticleSystem
       this.model = new ArrayModel(this.options);
 
       if (this.options.streaming) {
@@ -196,7 +196,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.model.particleMaterial = new ParticleShaderMaterial(
         scene,
         this.model.edlNeighbours,
-        this.model.particleSize
+        this.model.pointSize
       );
 
       const postProcess = new PostProcess(

@@ -30,7 +30,7 @@ class ArrayModel {
   namespace?: string;
   octree!: Moctree;
   bufferSize: number;
-  particleScale: number;
+  pointScale: number;
   rgbMax!: number;
   translationVector!: Vector3;
   zScale: number;
@@ -40,8 +40,9 @@ class ArrayModel {
   particleMaterial?: ParticleShaderMaterial;
   maxLevel: number;
   token?: string;
-  particleType: string;
-  particleSize: number;
+  tiledbEnv?: string;
+  pointType: string;
+  pointSize: number;
   pickedBlockCode = -1;
   rayOrigin = Vector3.Zero();
   maxNumCacheBlocks: number;
@@ -53,8 +54,8 @@ class ArrayModel {
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
-  particleBudget: number;
-  particleCount = 0;
+  pointBudget: number;
+  pointCount = 0;
   fanOut = 3;
   useShader = false;
   useGUI = false;
@@ -68,18 +69,19 @@ class ArrayModel {
     this.arrayName = options.arrayName;
     this.namespace = options.namespace;
     this.token = options.token;
+    this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.particleScale = options.particleScale || 0.001;
+    this.pointScale = options.pointScale || 0.001;
     this.maxLevel = options.maxLevel || 1;
-    this.particleType = options.particleType || 'box';
-    this.particleSize = options.particleSize || 0.05;
+    this.pointType = options.pointType || 'box';
+    this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
-    this.particleBudget = options.particleBudget || 500_000;
+    this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
       this.useShader = true;
@@ -138,9 +140,9 @@ class ArrayModel {
 
         const numPoints = block.entries.X.length;
 
-        this.particleCount += numPoints;
+        this.pointCount += numPoints;
 
-        if (this.particleCount < this.particleBudget) {
+        if (this.pointCount < this.pointBudget) {
           if (!this.useStreaming) {
             const pcs = new SolidParticleSystem(
               block.mortonNumber.toString(),
@@ -179,7 +181,7 @@ class ArrayModel {
           } else {
             const pcs = new PointsCloudSystem(
               block.mortonNumber.toString(),
-              this.particleSize,
+              this.pointSize,
               this.scene,
               {
                 updatable: false
@@ -222,7 +224,7 @@ class ArrayModel {
             });
           }
         } else {
-          console.log('particle budget reached: ' + this.particleCount);
+          console.log('particle budget reached: ' + this.pointCount);
         }
 
         if (this.debug) {
@@ -264,7 +266,7 @@ class ArrayModel {
               // delete pcs corresponding to this key
               const p = this.particleSystems.get(k);
               if (p) {
-                this.particleCount -= p.nbParticles;
+                this.pointCount -= p.nbParticles;
                 p.dispose();
                 this.particleSystems.delete(k);
               }
@@ -353,6 +355,7 @@ class ArrayModel {
           type: WorkerType.init,
           namespace: this.namespace,
           token: this.token,
+          tiledbEnv: this.tiledbEnv,
           arrayName: this.arrayName,
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
@@ -393,7 +396,7 @@ class ArrayModel {
             this.isBuffering = false;
             // restart count to base level as we are going to redraw
             // particle systems are based on a lru cache, this is just a way of preventing too many points being loaded
-            this.particleCount = this.basePcs.nbParticles;
+            this.pointCount = this.basePcs.nbParticles;
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
         }
