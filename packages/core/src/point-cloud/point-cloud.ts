@@ -220,11 +220,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       // add interactive GUI
+      this.gui = new PointCloudGUI(this.scene);
+      if (this.gui.advancedDynamicTexture.layer !== null) {
+        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+      }
       if (this.model.useGUI) {
-        this.gui = new PointCloudGUI(this.scene);
-        if (this.gui.advancedDynamicTexture.layer !== null) {
-          this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-        }
         await this.gui.init(
           this.scene,
           this.model,
