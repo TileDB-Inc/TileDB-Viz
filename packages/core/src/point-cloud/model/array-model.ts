@@ -73,10 +73,7 @@ class ArrayModel {
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
     this.pointScale = options.pointScale || 0.001;
-    this.pointScale = options.pointScale || 0.001;
     this.maxLevel = options.maxLevel || 1;
-    this.pointType = options.pointType || 'box';
-    this.pointSize = options.pointSize || 0.05;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -85,7 +82,6 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
-    this.pointBudget = options.pointBudget || 500_000;
     this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
@@ -147,7 +143,6 @@ class ArrayModel {
 
         const numPoints = block.entries.X.length;
 
-        this.pointCount += numPoints;
         this.pointCount += numPoints;
 
         if (this.pointCount < this.pointBudget) {
