@@ -148,6 +148,10 @@ export interface TileDBPointCloudOptions
    */
   useGUI?: boolean;
   /**
+   * Use a Solid Particle System for the point cloud
+   */
+  useSPS?: boolean;
+  /**
    * debug, draw octant boxes that are being rendered
    */
   debug?: boolean;

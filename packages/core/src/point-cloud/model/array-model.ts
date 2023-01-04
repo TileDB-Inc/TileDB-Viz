@@ -60,6 +60,7 @@ class ArrayModel {
   useShader = false;
   useGUI = false;
   useStreaming = false;
+  useSPS = false;
   debugOctant: Mesh;
   debugOrigin: Mesh;
   scene?: Scene;
@@ -72,7 +73,10 @@ class ArrayModel {
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
     this.pointScale = options.pointScale || 0.001;
+    this.pointScale = options.pointScale || 0.001;
     this.maxLevel = options.maxLevel || 1;
+    this.pointType = options.pointType || 'box';
+    this.pointSize = options.pointSize || 0.05;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -82,6 +86,7 @@ class ArrayModel {
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
     this.pointBudget = options.pointBudget || 500_000;
+    this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
       this.useShader = true;
@@ -89,11 +94,13 @@ class ArrayModel {
     if (options.useGUI === true) {
       this.useGUI = true;
     }
+    if (options.useSPS === true) {
+      this.useSPS = true;
+    }
     if (options.streaming === true) {
       this.useStreaming = true;
     }
     this.poolSize = options.workerPoolSize || 5;
-
     this.debug = options.debug || false;
 
     this.debugOctant = MeshBuilder.CreateBox('debugOctant');
@@ -141,15 +148,16 @@ class ArrayModel {
         const numPoints = block.entries.X.length;
 
         this.pointCount += numPoints;
+        this.pointCount += numPoints;
 
         if (this.pointCount < this.pointBudget) {
-          if (!this.useStreaming) {
+          if (this.useSPS) {
             const pcs = new SolidParticleSystem(
               block.mortonNumber.toString(),
               this.scene
             );
-            const box = MeshBuilder.CreateBox('s', { size: this.particleSize });
-            pcs.addShape(box, this.particleCount);
+            const box = MeshBuilder.CreateBox('s', { size: this.pointSize });
+            pcs.addShape(box, this.pointCount);
             box.dispose();
 
             pcs.buildMesh();

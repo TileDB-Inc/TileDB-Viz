@@ -31,6 +31,19 @@ const Template = () => (
 
 export const PointCloud = Template.bind({});
 
+export const PointCloudSPS = () => (
+  <PointCloudVisualization
+    data={data}
+    pointSize={6}
+    useShader={true}
+    useSPS={true}
+    cameraRadius={250}
+    colorScheme="light"
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
 export const Boulder = () => (
   <PointCloudVisualization
     data={boulderData}
@@ -41,13 +54,39 @@ export const Boulder = () => (
   />
 );
 
+export const BoulderSPS = () => (
+  <PointCloudVisualization
+    data={boulderData}
+    colorScheme="light"
+    pointSize={0.05}
+    useShader={true}
+    useSPS={true}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
 export const Autzen = () => (
+  <PointCloudVisualization
+    data={autzenData}
+    pointSize={5}
+    cameraRadius={600}
+    colorScheme="blue"
+    rgbMax={65535}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+export const AutzenSPS = () => (
   <PointCloudVisualization
     data={autzenData}
     pointSize={3}
     cameraRadius={600}
     colorScheme="light"
     rgbMax={65535}
+    useShader={true}
+    useSPS={true}
     width={'100vw'}
     height={'100vh'}
   />
@@ -57,26 +96,6 @@ const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 const arrayName = process.env.STORYBOOK_ARRAY_NAME || 'autzen';
 const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 6;
-
-// maxLevel=4, height=100, arrayName='' for cube test
-
-export const Streamer = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="dark"
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
 
 const bbox = {
   X: [636800, 637200],
@@ -96,6 +115,27 @@ export const AutzenBbox = () => (
     cameraRadius={1000}
     colorScheme="light"
     rgbMax={65535}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+// maxLevel=4, height=100, arrayName='' for cube test
+
+export const AutzenStreamer = () => (
+  <PointCloudVisualization
+    streaming={true}
+    useShader={true}
+    token={token}
+    namespace={namespace}
+    arrayName={arrayName}
+    maxLevel={maxLevel}
+    fanOut={50}
+    pointBudget={8000000}
+    pointSize={3}
+    cameraRadius={2000}
+    colorScheme="dark"
+    rgbMax={255}
     width={'100vw'}
     height={'100vh'}
   />
