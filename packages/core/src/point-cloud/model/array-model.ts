@@ -122,7 +122,10 @@ class ArrayModel {
     matOrigin.diffuseColor = Color3.Purple();
     matOrigin.alpha = 0.8;
     this.debugOrigin.material = matOrigin;
-    this.particleSystems = new Map<number, SolidParticleSystem>();
+    this.particleSystems = new Map<
+      number,
+      SolidParticleSystem | PointsCloudSystem
+    >();
   }
 
   private loadSystem(block: MoctreeBlock) {
