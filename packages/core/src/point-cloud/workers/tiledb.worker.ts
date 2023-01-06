@@ -53,7 +53,10 @@ function returnData(block: MoctreeBlock) {
 }
 
 async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = block.mortonNumber;
+  let queryCacheKey = block.mortonNumber;
+  if (queryCacheKey === 0) { // 0 is reserved for array metadata
+    queryCacheKey = 2396747; // max idx for lod 8 + 2;
+  }
   const storeName = `${namespace}:${arrayName}`;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
@@ -68,11 +71,12 @@ async function fetchData(block: MoctreeBlock) {
     });
   } else {
     // load points into block, block is now just a serialized json object, no methods so use private accessors
-    const ranges = [
-      [block.minPoint._x + translateX, block.maxPoint._x + translateX],
-      [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
-      [block.minPoint._y + translateY, block.maxPoint._y + translateY]
-    ];
+    // const ranges = [
+    //   [block.minPoint._x + translateX, block.maxPoint._x + translateX],
+    //   [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
+    //   [block.minPoint._y + translateY, block.maxPoint._y + translateY]
+    // ];
+    const ranges = block.getRanges();
 
     const queryData = {
       layout: 'row-major',
@@ -83,8 +87,10 @@ async function fetchData(block: MoctreeBlock) {
 
     for await (const results of tiledbQuery.ReadQuery(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      namespace,
-      arrayName + '_' + block.lod,
+      // namespace,
+      // arrayName + '_' + block.lod,
+      'chloe',
+      'ht_array5',
       queryData
     )) {
       block.entries = results as SparseResult;

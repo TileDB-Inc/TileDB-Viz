@@ -249,7 +249,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             pickOrigin = pickResult.pickedPoint;
           } else {
             const ray = camera.getForwardRay();
-            const block = this.model.octree.getContainingBlocksByRay(
+            // const block = this.model.octree.getContainingBlocksByRay(
+            //   ray,
+            //   this.model.maxLevel
+            // )[0];
+            const block = this.model.htree.getContainingBlocksByRay(
               ray,
               this.model.maxLevel
             )[0];

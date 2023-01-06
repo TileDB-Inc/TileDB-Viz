@@ -10,7 +10,7 @@ import {
   Vector3
 } from '@babylonjs/core';
 
-import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
+import { encodeMorton, Moctree, MoctreeBlock, HeapTree } from '../octree';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 import {
   DataRequest,
@@ -28,6 +28,7 @@ class ArrayModel {
   arrayName?: string;
   namespace?: string;
   octree!: Moctree;
+  htree!: HeapTree;
   bufferSize: number;
   pointScale: number;
   rgbMax!: number;
@@ -70,7 +71,7 @@ class ArrayModel {
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
     this.pointScale = options.pointScale || 0.001;
-    this.maxLevel = options.maxLevel || 1;
+    this.maxLevel = options.maxLevel || 2;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -124,7 +125,8 @@ class ArrayModel {
           'received: ' +
             block.entries?.X.length +
             ' of approximately: ' +
-            this.octree.knownBlocks.get(block.mortonNumber)
+            // this.octree.knownBlocks.get(block.mortonNumber)
+            this.htree.knownBlocks.get(block.mortonNumber)
         );
 
         const transX = this.translationVector.x;
@@ -175,7 +177,8 @@ class ArrayModel {
           pcs.addPoints(numPoints, pointBuilder);
           pcs.buildMeshAsync().then(() => {
             pcs.setParticles();
-            if (block.mortonNumber !== Moctree.startBlockIndex) {
+            // if (block.mortonNumber !== Moctree.startBlockIndex) {
+            if (block.mortonNumber !== HeapTree.startBlockIndex) {
               this.particleSystems.set(block.mortonNumber, pcs);
             } else {
               this.basePcs = pcs;
@@ -212,7 +215,8 @@ class ArrayModel {
         }
       } else {
         // lru cache - reinsert this pcs
-        if (block.mortonNumber !== Moctree.startBlockIndex) {
+        // if (block.mortonNumber !== Moctree.startBlockIndex) {
+        if (block.mortonNumber !== HeapTree.startBlockIndex) {
           const pcs = this.particleSystems.get(block.mortonNumber);
           if (pcs) {
             this.particleSystems.delete(block.mortonNumber);
@@ -275,14 +279,29 @@ class ArrayModel {
       this.maxLevel,
       this.fanOut
     );
+
+    this.htree = new HeapTree(
+      new Vector3(-spanX, 0, -spanY),
+      new Vector3(spanX, zmax - zmin, spanY),
+      this.maxLevel,
+      this.fanOut
+    );
+
     this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
+    // ------------------ : get ray for dfs calc of nbrs? : ---------- //
 
     // maintain compatibility with directly loading data
     if (data) {
       // load into first PCS
+      // const block = new MoctreeBlock(
+      //   0,
+      //   Moctree.startBlockIndex,
+      //   Vector3.Zero(),
+      //   Vector3.Zero()
+      // );
       const block = new MoctreeBlock(
         0,
-        Moctree.startBlockIndex,
+        HeapTree.startBlockIndex,
         Vector3.Zero(),
         Vector3.Zero()
       );
@@ -342,7 +361,12 @@ class ArrayModel {
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
           this.rayOrigin = ray.origin.clone();
-          const parentBlocks = this.octree.getContainingBlocksByRay(
+          // const parentBlocks = this.octree.getContainingBlocksByRay(
+          //   ray,
+          //   this.maxLevel - 1
+          // );
+
+          const parentBlocks = this.htree.getContainingBlocksByRay(
             ray,
             this.maxLevel - 1
           );
@@ -355,7 +379,8 @@ class ArrayModel {
             // restart count to base level as we are going to redraw
             // particle systems are based on a lru cache, this is just a way of preventing too many points being loaded
             this.pointCount = this.basePcs.nbParticles;
-            this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+            // this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+            this.neighbours = this.htree.getNeighbours(this.pickedBlockCode);
           }
         }
 
@@ -383,11 +408,17 @@ class ArrayModel {
       // load immutable layer immediately, we don't want to fire this off to multiple workers
       if (this.workerPool?.numActive() === 0) {
         this.fetchBlock(
+          // new MoctreeBlock(
+          //   0,
+          //   Moctree.startBlockIndex,
+          //   this.octree.minPoint,
+          //   this.octree.maxPoint
+          // )
           new MoctreeBlock(
             0,
-            Moctree.startBlockIndex,
-            this.octree.minPoint,
-            this.octree.maxPoint
+            HeapTree.startBlockIndex,
+            this.htree.minPoint,
+            this.htree.maxPoint
           )
         );
       }
@@ -404,7 +435,8 @@ class ArrayModel {
           new Vector3(parts[1], parts[3], parts[2]),
           parts[0]
         );
-        this.octree.knownBlocks.set(morton, v);
+        // this.octree.knownBlocks.set(morton, v);
+        this.htree.knownBlocks.set(morton, v);
       }
     });
   }
