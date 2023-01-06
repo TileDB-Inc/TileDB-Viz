@@ -72,13 +72,17 @@ export interface TileDBPointCloudOptions
    */
   bbox?: { X: number[]; Y: number[]; Z: number[] };
   /**
-   * Namespace of the array registered in TileDB Cloud (if mode === "cloud")
+   * Namespace of the array/group registered in TileDB Cloud (if mode === "cloud")
    */
   namespace?: string;
   /**
    * Name of the array registered in TileDB Cloud (if mode === "cloud")
    */
   arrayName?: string;
+  /**
+   * Name of the group registered in TileDB Cloud (if mode === "cloud")
+   */
+  groupName?: string;
   /**
    * TileDB Cloud api token (if mode === "cloud")
    */
@@ -95,10 +99,6 @@ export interface TileDBPointCloudOptions
    * Stream from TileDB Cloud
    */
   streaming?: boolean;
-  /**
-   * Maximum number of resolution levels
-   */
-  maxLevel?: number;
   /**
    * Select point rendering type, 'box' is supported for now
    */
@@ -343,7 +343,7 @@ export async function getNonEmptyDomain(
   options: TileDBPointCloudOptions
 ): Promise<number[]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const storeName = getStoreName(options.namespace!, options.arrayName!);
+  const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = 0;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
@@ -361,7 +361,7 @@ export async function getNonEmptyDomain(
     const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.namespace!,
-      options.arrayName + '_0', // naming convention for groups of multi-resolution arrays
+      options.groupName + '_0', // naming convention for groups of multi-resolution arrays
       'application/json'
     );
 
@@ -375,9 +375,9 @@ export async function getNonEmptyDomain(
 
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
-): Promise<[Map<string, number>, Array<number>]> {
+): Promise<[Map<string, number>, Array<number>, number]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const storeName = getStoreName(options.namespace!, options.arrayName!);
+  const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = -1;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
@@ -394,8 +394,11 @@ export async function getArrayMetadata(
     const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.namespace!,
-      options.arrayName + '_0' // naming convention for groups of multi-resolution arrays
+      options.groupName + '_0' // naming convention for groups of multi-resolution arrays
     );
+
+    const contents = await tiledbClient.groups.getGroupContents(options.namespace!, options.groupName!);
+    const nLevels = contents.entries.length;
 
     interface OctantData {
       'octree-bounds': string;
@@ -407,13 +410,15 @@ export async function getArrayMetadata(
 
     writeToCache(storeName, key, {
       'octant-data': obj,
-      'octree-bounds': bounds
+      'octree-bounds': bounds,
+      'octree-levels': nLevels
     });
-    return [new Map<string, number>(Object.entries(obj)), bounds];
+    return [new Map<string, number>(Object.entries(obj)), bounds, nLevels];
   } else {
     return [
       new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
-      dataFromCache['octree-bounds']
+      dataFromCache['octree-bounds'],
+      dataFromCache['octree-levels']
     ];
   }
 }
