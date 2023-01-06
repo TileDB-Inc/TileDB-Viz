@@ -144,10 +144,6 @@ export interface TileDBPointCloudOptions
    */
   useShader?: boolean;
   /**
-   * Add an interactive GUI
-   */
-  useGUI?: boolean;
-  /**
    * debug, draw octant boxes that are being rendered
    */
   debug?: boolean;

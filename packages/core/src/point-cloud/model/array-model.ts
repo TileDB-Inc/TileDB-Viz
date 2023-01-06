@@ -57,7 +57,6 @@ class ArrayModel {
   pointCount = 0;
   fanOut = 3;
   useShader = false;
-  useGUI = false;
   debugOctant: Mesh;
   debugOrigin: Mesh;
   scene?: Scene;
@@ -83,9 +82,6 @@ class ArrayModel {
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
       this.useShader = true;
-    }
-    if (options.useGUI === true) {
-      this.useGUI = true;
     }
     this.poolSize = options.workerPoolSize || 5;
 

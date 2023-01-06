@@ -84,6 +84,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
 
+      this.gui = new PointCloudGUI(this.scene);
+      if (this.gui.advancedDynamicTexture.layer !== null) {
+        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+      }
+
       // load point cloud data extents and data if bounding box not provided
       const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
         this.options
@@ -217,25 +222,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           effect.setFloat('radius', edlRadius);
           effect.setTexture('uEDLDepth', depthTex);
         };
-      }
-
-      // add interactive GUI
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-      if (this.model.useGUI) {
-        await this.gui.init(
-          this.scene,
-          this.model,
-          postProcess,
-          screenWidth,
-          screenHeight,
-          neighbours,
-          edlStrength,
-          edlRadius,
-          depthTex
-        );
       }
 
       // add panning control
