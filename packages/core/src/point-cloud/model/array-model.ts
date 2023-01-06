@@ -30,7 +30,6 @@ class ArrayModel {
   namespace?: string;
   octree!: Moctree;
   bufferSize: number;
-  pointScale: number;
   rgbMax!: number;
   translationVector!: Vector3;
   zScale: number;
@@ -72,7 +71,6 @@ class ArrayModel {
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointScale = options.pointScale || 0.001;
     this.maxLevel = options.maxLevel || 1;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
@@ -149,35 +147,49 @@ class ArrayModel {
         this.pointCount += numPoints;
 
         if (this.pointCount < this.pointBudget) {
+          const pointBuilder = function (particle: any, i: number) {
+            if (block.entries !== undefined) {
+              particle.position.set(
+                block.entries.X[i] - transX,
+                (block.entries.Z[i] - transY) * zScale,
+                block.entries.Y[i] - transZ
+              );
+
+              if (particle.color) {
+                particle.color.set(
+                  block.entries.Red[i] / rgbMax,
+                  block.entries.Green[i] / rgbMax,
+                  block.entries.Blue[i] / rgbMax,
+                  1
+                );
+              } else {
+                particle.color = new Color4(
+                  block.entries.Red[i] / rgbMax,
+                  block.entries.Green[i] / rgbMax,
+                  block.entries.Blue[i] / rgbMax
+                );
+              }
+            }
+          };
+
           if (this.useSPS) {
             const pcs = new SolidParticleSystem(
               block.mortonNumber.toString(),
+              this.scene,
+              { updatable: false }
+            );
+            const model = MeshBuilder.CreateBox(
+              'm',
+              { size: this.pointSize },
               this.scene
             );
-            const box = MeshBuilder.CreateBox('s', { size: this.pointSize });
-            pcs.addShape(box, this.pointCount);
-            box.dispose();
+
+            pcs.addShape(model, numPoints, {
+              positionFunction: pointBuilder
+            });
 
             pcs.buildMesh();
-
-            pcs.initParticles = () => {
-              for (let p = 0; p < pcs.nbParticles; p++) {
-                if (block.entries !== undefined) {
-                  const particle = pcs.particles[p];
-                  particle.position.x = block.entries.X[p] - transX;
-                  particle.position.y = (block.entries.Z[p] - transY) * zScale;
-                  particle.position.z = block.entries.Y[p] - transZ;
-                  particle.color = new Color4(
-                    block.entries.Red[p] / rgbMax,
-                    block.entries.Green[p] / rgbMax,
-                    block.entries.Blue[p] / rgbMax
-                  );
-                }
-              }
-            };
-
-            pcs.initParticles();
-            pcs.setParticles();
+            model.dispose();
 
             if (block.mortonNumber !== Moctree.startBlockIndex) {
               this.particleSystems.set(block.mortonNumber, pcs);
@@ -189,35 +201,9 @@ class ArrayModel {
               block.mortonNumber.toString(),
               this.pointSize,
               this.scene,
-              {
-                updatable: false
-              }
+              { updatable: false }
             );
 
-            const pointBuilder = function (particle: any, i: number) {
-              if (block.entries !== undefined) {
-                particle.position.set(
-                  block.entries.X[i] - transX,
-                  (block.entries.Z[i] - transY) * zScale,
-                  block.entries.Y[i] - transZ
-                );
-
-                if (particle.color) {
-                  particle.color.set(
-                    block.entries.Red[i] / rgbMax,
-                    block.entries.Green[i] / rgbMax,
-                    block.entries.Blue[i] / rgbMax,
-                    1
-                  );
-                } else {
-                  particle.color = new Color4(
-                    block.entries.Red[i] / rgbMax,
-                    block.entries.Green[i] / rgbMax,
-                    block.entries.Blue[i] / rgbMax
-                  );
-                }
-              }
-            };
             pcs.addPoints(numPoints, pointBuilder);
 
             pcs.buildMeshAsync().then(() => {

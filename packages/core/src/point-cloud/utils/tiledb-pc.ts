@@ -108,10 +108,6 @@ export interface TileDBPointCloudOptions
    */
   pointSize?: number;
   /**
-   * Point scale, the increase in point size between resolution levels
-   */
-  pointScale?: number;
-  /**
    * Camera radius
    */
   cameraRadius?: number;

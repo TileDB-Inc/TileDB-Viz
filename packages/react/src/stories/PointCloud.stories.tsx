@@ -85,7 +85,7 @@ export const AutzenSPS = () => (
     cameraRadius={600}
     colorScheme="light"
     rgbMax={65535}
-    useShader={true}
+    //useShader={true}
     useSPS={true}
     width={'100vw'}
     height={'100vh'}
@@ -125,7 +125,6 @@ export const AutzenBbox = () => (
 export const AutzenStreamer = () => (
   <PointCloudVisualization
     streaming={true}
-    useShader={true}
     token={token}
     namespace={namespace}
     arrayName={arrayName}
@@ -136,6 +135,46 @@ export const AutzenStreamer = () => (
     cameraRadius={2000}
     colorScheme="dark"
     rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+export const AutzenStreamerSPS = () => (
+  <PointCloudVisualization
+    streaming={true}
+    useSPS={true}
+    token={token}
+    namespace={namespace}
+    arrayName={arrayName}
+    maxLevel={maxLevel}
+    fanOut={50}
+    pointBudget={8000000}
+    pointSize={3}
+    cameraRadius={2000}
+    colorScheme="dark"
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+export const AutzenStreamerShaderSPS = () => (
+  <PointCloudVisualization
+    streaming={true}
+    useSPS={true}
+    useShader={true}
+    token={token}
+    namespace={namespace}
+    arrayName={arrayName}
+    maxLevel={maxLevel}
+    fanOut={50}
+    pointBudget={800000}
+    pointSize={3}
+    cameraRadius={2000}
+    colorScheme="light"
+    rgbMax={255}
+    edlStrength={2}
     width={'100vw'}
     height={'100vh'}
   />
