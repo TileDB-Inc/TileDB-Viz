@@ -76,7 +76,9 @@ async function fetchData(block: MoctreeBlock) {
     //   [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
     //   [block.minPoint._y + translateY, block.maxPoint._y + translateY]
     // ];
-    const ranges = block.getRanges();
+    const ranges = [
+      [block.mortonNumber, block.mortonNumber]
+    ];
 
     const queryData = {
       layout: 'row-major',

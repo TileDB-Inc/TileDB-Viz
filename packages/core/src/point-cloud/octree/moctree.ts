@@ -241,8 +241,8 @@ class MoctreeBlock {
 
     this.boundingInfo = new BoundingInfo(this.minPoint, this.maxPoint);
   }
-  public getRanges(): Array<number[]> {
-    return new Array(1).fill([this.mortonNumber, this.mortonNumber]);
+  public getRanges() {
+    return [[this.mortonNumber, this.mortonNumber]];
   }
 }
 
