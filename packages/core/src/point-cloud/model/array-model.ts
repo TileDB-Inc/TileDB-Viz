@@ -345,7 +345,7 @@ class ArrayModel {
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
-            this.maxLevel - 1
+            this.maxLevel! - 1
           );
 
           if (parentBlocks.length > 0) {

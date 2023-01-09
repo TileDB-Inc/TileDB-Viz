@@ -398,7 +398,10 @@ export async function getArrayMetadata(
     );
 
     const contents = await tiledbClient.groups.getGroupContents(options.namespace!, options.groupName!);
-    const nLevels = contents.entries.length;
+    if (!contents.entries) {
+      console.log('TileDB Group does not contain any array data');
+    }
+    const nLevels = contents.entries!.length;
 
     interface OctantData {
       'octree-bounds': string;

@@ -253,7 +253,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const ray = camera.getForwardRay();
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
-              this.model.maxLevel
+              this.model.maxLevel!
             )[0];
             pickOrigin = block.minPoint.add(
               block.maxPoint.subtract(block.minPoint).scale(0.5)
