@@ -264,7 +264,7 @@ class ArrayModel {
   ) {
     this.scene = scene;
     this.rgbMax = rgbMax || 65535;
-    this.maxLevel =  nLevels  || 1;
+    this.maxLevel = nLevels || 1;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
