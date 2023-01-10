@@ -5,7 +5,8 @@ import {
   encodeMorton,
   getMortonRange,
   Moctree,
-  MoctreeBlock
+  MoctreeBlock,
+  HeapTree
 } from './moctree';
 
 describe('moctree tests', () => {
@@ -400,5 +401,68 @@ describe('moctree tests', () => {
     );
 
     expect(block.entries).toBeDefined();
+  });
+});
+
+describe('heaptree tests', () => {
+
+  const minPoint = new Vector3(-1, -1, -1);
+  const maxPoint = new Vector3(1, 1, 1);
+  
+  test('multi-level moctree by ray', () => {
+    const maxDepth = 2;
+    const tree = new HeapTree(minPoint, maxPoint, maxDepth, 1);
+
+    // test at lod 1, a diagonal ray
+    let lod = 1;
+    let blockSize = maxPoint.subtract(minPoint).scale(1 / Math.pow(2, lod));
+    const ray = new Ray(minPoint, maxPoint.subtract(minPoint));
+
+    let blocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(blocks.length).toBe(1);
+    // get block opposite as we pick the closest block
+    expect(blocks[0].minPoint).toEqual(minPoint);
+    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
+    expect(blocks[0].lod).toBe(1);
+
+    // opposite block, reverse direction
+    ray.origin = maxPoint;
+    ray.direction = minPoint.subtract(maxPoint);
+    blocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(blocks[0].minPoint).toEqual(minPoint.add(blockSize));
+    expect(blocks[0].maxPoint).toEqual(maxPoint);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].lod === 1);
+
+    // test at lod 2, a diagonal ray
+    lod = 2;
+    blockSize = maxPoint.subtract(minPoint).scale(1 / Math.pow(2, lod));
+    ray.origin = minPoint;
+    ray.direction = maxPoint.subtract(minPoint);
+    blocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(blocks.length).toBe(2);
+    expect(blocks[0].minPoint).toEqual(minPoint);
+    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
+    expect(blocks[1].minPoint).toEqual(minPoint);
+    expect(blocks[1].maxPoint).toEqual(minPoint.add(blockSize.scale(2)));
+
+    ray.origin = maxPoint;
+    ray.direction = minPoint.subtract(maxPoint);
+    blocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(blocks.length).toBe(2);
+    expect(blocks[0].minPoint).toEqual(maxPoint.subtract(blockSize));
+    expect(blocks[0].maxPoint).toEqual(maxPoint);
+    expect(blocks[1].minPoint).toEqual(maxPoint.subtract(blockSize.scale(2)));
+    expect(blocks[1].maxPoint).toEqual(maxPoint);
+
+    // test at lod 3 - we should get lod 2 results as maxDepth is 2
+    lod = 3;
+    ray.origin = minPoint;
+    ray.direction = maxPoint.subtract(minPoint);
+    blocks = tree.getContainingBlocksByRay(ray, lod);
+    expect(blocks[0].minPoint).toEqual(minPoint);
+    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
+    expect(blocks[1].minPoint).toEqual(minPoint);
+    expect(blocks[1].maxPoint).toEqual(minPoint.add(blockSize.scale(2)));
   });
 });
