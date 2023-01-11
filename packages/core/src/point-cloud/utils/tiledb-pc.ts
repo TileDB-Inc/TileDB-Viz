@@ -397,10 +397,16 @@ export async function getArrayMetadata(
       options.groupName + '_0' // naming convention for groups of multi-resolution arrays
     );
 
-    const contents = await tiledbClient.groups.getGroupContents(options.namespace!, options.groupName!);
+    const contents = await tiledbClient.groups.getGroupContents(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace!,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.groupName!
+    );
     if (!contents.entries) {
       console.log('TileDB Group does not contain any array data');
     }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const nLevels = contents.entries!.length;
 
     interface OctantData {

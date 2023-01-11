@@ -151,7 +151,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.model = new ArrayModel(this.options);
 
       if (this.options.streaming) {
-        const [octantMetadata, bounds, levels] = await getArrayMetadata(this.options);
+        const [octantMetadata, bounds, levels] = await getArrayMetadata(
+          this.options
+        );
         await this.model.init(
           this.scene,
           bounds[0],

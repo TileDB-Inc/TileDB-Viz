@@ -345,6 +345,7 @@ class ArrayModel {
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.maxLevel! - 1
           );
 
