@@ -7,6 +7,7 @@ import {
   PointsCloudSystem,
   Scene,
   SolidParticleSystem,
+  SolidParticle,
   StandardMaterial,
   Vector3
 } from '@babylonjs/core';
@@ -64,6 +65,7 @@ class ArrayModel {
   debugOrigin: Mesh;
   scene?: Scene;
   poolSize: number;
+  particleBuffer: SolidParticle[] = [];
 
   constructor(options: TileDBPointCloudOptions) {
     this.arrayName = options.arrayName;
@@ -173,28 +175,25 @@ class ArrayModel {
           };
 
           if (this.useSPS) {
-            const pcs = new SolidParticleSystem(
+            const sps = new SolidParticleSystem(
               block.mortonNumber.toString(),
               this.scene,
               { updatable: false }
             );
-            const model = MeshBuilder.CreateBox(
-              'm',
+
+            const box = MeshBuilder.CreateBox(
+              'b',
               { size: this.pointSize },
               this.scene
             );
-
-            pcs.addShape(model, numPoints, {
-              positionFunction: pointBuilder
-            });
-
-            pcs.buildMesh();
-            model.dispose();
+            sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+            box.dispose();
+            sps.buildMesh();
 
             if (block.mortonNumber !== Moctree.startBlockIndex) {
-              this.particleSystems.set(block.mortonNumber, pcs);
+              this.particleSystems.set(block.mortonNumber, sps);
             } else {
-              this.basePcs = pcs;
+              this.basePcs = sps;
             }
           } else {
             const pcs = new PointsCloudSystem(
@@ -251,20 +250,20 @@ class ArrayModel {
           if (pcs) {
             this.particleSystems.delete(block.mortonNumber);
             this.particleSystems.set(block.mortonNumber, pcs);
-
-            if (this.particleSystems.size > this.maxNumCacheBlocks) {
-              // simple lru cache, evict first key, this is fine as we are backed by local storage
-              const k = this.particleSystems.keys().next().value;
-              // delete pcs corresponding to this key
-              const p = this.particleSystems.get(k);
-              if (p) {
-                this.pointCount -= p.nbParticles;
-                p.dispose();
-                this.particleSystems.delete(k);
-              }
-            }
-            this.particleSystems.set(block.mortonNumber, pcs);
           }
+        }
+      }
+
+      // check cache size
+      if (this.particleSystems.size > this.maxNumCacheBlocks) {
+        // simple lru cache, evict first key, this is fine as we are backed by local storage
+        const k = this.particleSystems.keys().next().value;
+        // delete pcs corresponding to this key
+        const p = this.particleSystems.get(k);
+        if (p) {
+          this.pointCount -= p.nbParticles;
+          p.dispose();
+          this.particleSystems.delete(k);
         }
       }
     }

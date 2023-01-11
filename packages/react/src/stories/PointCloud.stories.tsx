@@ -169,7 +169,7 @@ export const AutzenStreamerShaderSPS = () => (
     arrayName={arrayName}
     maxLevel={maxLevel}
     fanOut={50}
-    pointBudget={800000}
+    pointBudget={8000000}
     pointSize={3}
     cameraRadius={2000}
     colorScheme="light"
