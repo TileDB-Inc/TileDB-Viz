@@ -2,7 +2,6 @@ import { Vector3 } from '@babylonjs/core';
 import {
   DataRequest,
   DataResponse,
-  IdleResponse,
   InitialRequest,
   WorkerResponse,
   WorkerType
@@ -13,7 +12,7 @@ class TileDBWorkerPool {
   private poolSize: number;
   private workers: Worker[] = [];
   private callbackFn: (block: MoctreeBlock) => void;
-  private mapStatus: Map<string, boolean>;
+  private mapStatus: Map<Worker, boolean>;
 
   constructor(
     initRequest: InitialRequest,
@@ -22,21 +21,20 @@ class TileDBWorkerPool {
   ) {
     this.poolSize = poolSize || 5;
     this.callbackFn = callbackFn;
-    this.mapStatus = new Map<string, boolean>();
+    this.mapStatus = new Map<Worker, boolean>();
 
     for (let w = 0; w < this.poolSize; w++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
-        type: 'module',
-        name: w.toString()
+        type: 'module'
       });
-      worker.onmessage = this.onData.bind(this);
+      worker.onmessage = this.onData(worker);
       worker.postMessage(initRequest);
       this.workers.push(worker);
-      this.mapStatus.set(w.toString(), false);
+      this.mapStatus.set(worker, false);
     }
   }
 
-  private onData(e: MessageEvent) {
+  private onData = (workerInstance: Worker) => (e: MessageEvent) => {
     const m = e.data as WorkerResponse;
     if (m.type === WorkerType.data) {
       const resp = m as DataResponse;
@@ -52,17 +50,16 @@ class TileDBWorkerPool {
       );
       this.callbackFn(block);
     } else if (m.type === WorkerType.idle) {
-      const idleMessage = m as IdleResponse;
-      this.mapStatus.set(idleMessage.name, false);
+      this.mapStatus.set(workerInstance, false);
     }
-  }
+  };
 
   public postMessage(request: DataRequest) {
     // loop over available workers
-    for (const [k, v] of this.mapStatus) {
+    for (const [worker, v] of this.mapStatus) {
       if (!v) {
-        this.workers[parseInt(k)].postMessage(request);
-        this.mapStatus.set(k, true);
+        worker.postMessage(request);
+        this.mapStatus.set(worker, true);
         break;
       }
     }
