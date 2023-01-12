@@ -73,7 +73,6 @@ class ArrayModel {
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointScale = options.pointScale || 0.001;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;

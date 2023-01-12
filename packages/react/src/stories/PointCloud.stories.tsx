@@ -85,7 +85,7 @@ export const AutzenSPS = () => (
     cameraRadius={600}
     colorScheme="light"
     rgbMax={65535}
-    //useShader={true}
+    useShader={true}
     useSPS={true}
     width={'100vw'}
     height={'100vh'}
@@ -94,9 +94,7 @@ export const AutzenSPS = () => (
 
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
-const groupName = process.env.STORYBOOK_GROUP_NAME || 'autzen';
-const arrayName = process.env.STORYBOOK_ARRAY_NAME || 'autzen';
-const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 6;
+const groupName = process.env.STORYBOOK_GROUP_NAME;
 
 const bbox = {
   X: [636800, 637200],
@@ -121,9 +119,7 @@ export const AutzenBbox = () => (
   />
 );
 
-// maxLevel=4, height=100, arrayName='' for cube test
-
-export const AutzenStreamer = () => (
+export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}
     token={token}
@@ -140,14 +136,13 @@ export const AutzenStreamer = () => (
   />
 );
 
-export const AutzenStreamerSPS = () => (
+export const StreamerSPS = () => (
   <PointCloudVisualization
     streaming={true}
     useSPS={true}
     token={token}
     namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
+    groupName={groupName}
     fanOut={50}
     pointBudget={8000000}
     pointSize={3}
@@ -159,75 +154,14 @@ export const AutzenStreamerSPS = () => (
   />
 );
 
-export const AutzenStreamerShaderSPS = () => (
+export const StreamerShaderSPS = () => (
   <PointCloudVisualization
     streaming={true}
     useSPS={true}
     useShader={true}
     token={token}
     namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="light"
-    rgbMax={255}
-    edlStrength={2}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-// maxLevel=4, height=100, arrayName='' for cube test
-
-export const AutzenStreamer = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="dark"
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-export const AutzenStreamerSPS = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
-    token={token}
-    namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="dark"
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-export const AutzenStreamerShaderSPS = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
-    useShader={true}
-    token={token}
-    namespace={namespace}
-    arrayName={arrayName}
-    maxLevel={maxLevel}
+    groupName={groupName}
     fanOut={50}
     pointBudget={8000000}
     pointSize={3}
