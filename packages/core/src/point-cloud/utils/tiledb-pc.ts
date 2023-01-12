@@ -108,10 +108,6 @@ export interface TileDBPointCloudOptions
    */
   pointSize?: number;
   /**
-   * Point scale, the increase in point size between resolution levels
-   */
-  pointScale?: number;
-  /**
    * Camera radius
    */
   cameraRadius?: number;
@@ -147,6 +143,10 @@ export interface TileDBPointCloudOptions
    * Add an interactive GUI
    */
   useGUI?: boolean;
+  /**
+   * Use a Solid Particle System for the point cloud
+   */
+  useSPS?: boolean;
   /**
    * debug, draw octant boxes that are being rendered
    */
