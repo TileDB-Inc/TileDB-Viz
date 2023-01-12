@@ -1,5 +1,4 @@
 import { Ray, Vector3 } from '@babylonjs/core';
-import { SparseResult } from '../model';
 import {
   decodeMorton,
   encodeMorton,

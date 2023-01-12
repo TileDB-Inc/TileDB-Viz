@@ -37,7 +37,7 @@ interface WorkerResponse {
 
 interface InitialRequest extends WorkerRequest {
   namespace: string;
-  arrayName: string;
+  groupName: string;
   tiledbEnv: string;
   token: string;
   translateX: number;

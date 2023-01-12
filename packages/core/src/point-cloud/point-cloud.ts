@@ -151,7 +151,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.model = new ArrayModel(this.options);
 
       if (this.options.streaming) {
-        const [octantMetadata, bounds] = await getArrayMetadata(this.options);
+        const [octantMetadata, bounds, levels] = await getArrayMetadata(
+          this.options
+        );
         await this.model.init(
           this.scene,
           bounds[0],
@@ -160,6 +162,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           bounds[4],
           bounds[2],
           bounds[5],
+          levels,
           this.options.rgbMax || 1.0
         );
         this.model.metadata = octantMetadata;
@@ -172,6 +175,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           ymax,
           zmin,
           zmax,
+          1,
           this.options.rgbMax || 1.0,
           data as SparseResult
         );
@@ -251,7 +255,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const ray = camera.getForwardRay();
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
-              this.model.maxLevel
+              this.model.maxLevel!
             )[0];
             pickOrigin = block.minPoint.add(
               block.maxPoint.subtract(block.minPoint).scale(0.5)
