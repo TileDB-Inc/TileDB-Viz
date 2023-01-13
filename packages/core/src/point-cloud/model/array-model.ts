@@ -6,6 +6,8 @@ import {
   MeshBuilder,
   PointsCloudSystem,
   Scene,
+  SolidParticleSystem,
+  SolidParticle,
   StandardMaterial,
   Vector3
 } from '@babylonjs/core';
@@ -25,11 +27,10 @@ import { TileDBWorkerPool } from '../workers';
  * The ArrayModel manages the client octree
  */
 class ArrayModel {
-  arrayName?: string;
+  groupName?: string;
   namespace?: string;
   octree!: Moctree;
   bufferSize: number;
-  pointScale: number;
   rgbMax!: number;
   translationVector!: Vector3;
   zScale: number;
@@ -37,7 +38,7 @@ class ArrayModel {
   edlRadius: number;
   edlNeighbours: number;
   particleMaterial?: ParticleShaderMaterial;
-  maxLevel: number;
+  maxLevel?: number;
   token?: string;
   tiledbEnv?: string;
   pointType: string;
@@ -48,8 +49,8 @@ class ArrayModel {
   renderBlocks: MoctreeBlock[] = [];
   isBuffering = false;
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
-  basePcs?: PointsCloudSystem;
-  particleSystems: Map<number, PointsCloudSystem>;
+  basePcs?: SolidParticleSystem | PointsCloudSystem;
+  particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -57,19 +58,21 @@ class ArrayModel {
   pointCount = 0;
   fanOut = 3;
   useShader = false;
+  useGUI = false;
+  useStreaming = false;
+  useSPS = false;
   debugOctant: Mesh;
   debugOrigin: Mesh;
   scene?: Scene;
   poolSize: number;
+  particleBuffer: SolidParticle[] = [];
 
   constructor(options: TileDBPointCloudOptions) {
-    this.arrayName = options.arrayName;
+    this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointScale = options.pointScale || 0.001;
-    this.maxLevel = options.maxLevel || 1;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -83,8 +86,16 @@ class ArrayModel {
     if (options.useShader === true) {
       this.useShader = true;
     }
+    if (options.useGUI === true) {
+      this.useGUI = true;
+    }
+    if (options.useSPS === true) {
+      this.useSPS = true;
+    }
+    if (options.streaming === true) {
+      this.useStreaming = true;
+    }
     this.poolSize = options.workerPoolSize || 5;
-
     this.debug = options.debug || false;
 
     this.debugOctant = MeshBuilder.CreateBox('debugOctant');
@@ -110,7 +121,10 @@ class ArrayModel {
     matOrigin.diffuseColor = Color3.Purple();
     matOrigin.alpha = 0.8;
     this.debugOrigin.material = matOrigin;
-    this.particleSystems = new Map<number, PointsCloudSystem>();
+    this.particleSystems = new Map<
+      number,
+      SolidParticleSystem | PointsCloudSystem
+    >();
   }
 
   private loadSystem(block: MoctreeBlock) {
@@ -134,18 +148,8 @@ class ArrayModel {
         this.pointCount += numPoints;
 
         if (this.pointCount < this.pointBudget) {
-          const pcs = new PointsCloudSystem(
-            block.mortonNumber.toString(),
-            this.pointSize,
-            this.scene,
-            {
-              updatable: false
-            }
-          );
-
           const pointBuilder = function (particle: any, i: number) {
             if (block.entries !== undefined) {
-              // set properties of particle
               particle.position.set(
                 block.entries.X[i] - transX,
                 (block.entries.Z[i] - transY) * zScale,
@@ -168,15 +172,47 @@ class ArrayModel {
               }
             }
           };
-          pcs.addPoints(numPoints, pointBuilder);
-          pcs.buildMeshAsync().then(() => {
-            pcs.setParticles();
+
+          if (this.useSPS) {
+            const sps = new SolidParticleSystem(
+              block.mortonNumber.toString(),
+              this.scene,
+              { updatable: false }
+            );
+
+            const box = MeshBuilder.CreateBox(
+              'b',
+              { size: this.pointSize },
+              this.scene
+            );
+            sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+            box.dispose();
+            sps.buildMesh();
+
             if (block.mortonNumber !== Moctree.startBlockIndex) {
-              this.particleSystems.set(block.mortonNumber, pcs);
+              this.particleSystems.set(block.mortonNumber, sps);
             } else {
-              this.basePcs = pcs;
+              this.basePcs = sps;
             }
-          });
+          } else {
+            const pcs = new PointsCloudSystem(
+              block.mortonNumber.toString(),
+              this.pointSize,
+              this.scene,
+              { updatable: false }
+            );
+
+            pcs.addPoints(numPoints, pointBuilder);
+
+            pcs.buildMeshAsync().then(() => {
+              pcs.setParticles();
+              if (block.mortonNumber !== Moctree.startBlockIndex) {
+                this.particleSystems.set(block.mortonNumber, pcs);
+              } else {
+                this.basePcs = pcs;
+              }
+            });
+          }
         } else {
           console.log('particle budget reached: ' + this.pointCount);
         }
@@ -213,20 +249,20 @@ class ArrayModel {
           if (pcs) {
             this.particleSystems.delete(block.mortonNumber);
             this.particleSystems.set(block.mortonNumber, pcs);
-
-            if (this.particleSystems.size > this.maxNumCacheBlocks) {
-              // simple lru cache, evict first key, this is fine as we are backed by local storage
-              const k = this.particleSystems.keys().next().value;
-              // delete pcs corresponding to this key
-              const p = this.particleSystems.get(k);
-              if (p) {
-                this.pointCount -= p.nbParticles;
-                p.dispose();
-                this.particleSystems.delete(k);
-              }
-            }
-            this.particleSystems.set(block.mortonNumber, pcs);
           }
+        }
+      }
+
+      // check cache size
+      if (this.particleSystems.size > this.maxNumCacheBlocks) {
+        // simple lru cache, evict first key, this is fine as we are backed by local storage
+        const k = this.particleSystems.keys().next().value;
+        // delete pcs corresponding to this key
+        const p = this.particleSystems.get(k);
+        if (p) {
+          this.pointCount -= p.nbParticles;
+          p.dispose();
+          this.particleSystems.delete(k);
         }
       }
     }
@@ -255,11 +291,13 @@ class ArrayModel {
     ymax: number,
     zmin: number,
     zmax: number,
+    nLevels?: number,
     rgbMax?: number,
     data?: SparseResult
   ) {
     this.scene = scene;
     this.rgbMax = rgbMax || 65535;
+    this.maxLevel = nLevels || 1;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
@@ -310,7 +348,7 @@ class ArrayModel {
           namespace: this.namespace,
           token: this.token,
           tiledbEnv: this.tiledbEnv,
-          arrayName: this.arrayName,
+          groupName: this.groupName,
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
           translateZ: this.translationVector.z,
@@ -340,7 +378,8 @@ class ArrayModel {
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
-            this.maxLevel - 1
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            this.maxLevel! - 1
           );
 
           if (parentBlocks.length > 0) {

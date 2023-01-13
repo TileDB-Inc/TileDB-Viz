@@ -11,7 +11,7 @@ import {
 import { MoctreeBlock } from '../octree';
 
 let namespace = '';
-let arrayName = '';
+let groupName = '';
 let translateX = 0;
 let translateY = 0;
 let translateZ = 0;
@@ -24,7 +24,7 @@ self.onmessage = async (e: MessageEvent) => {
   if (m.type === WorkerType.init) {
     const o = m as InitialRequest;
     namespace = o.namespace;
-    arrayName = o.arrayName;
+    groupName = o.groupName;
     translateX = o.translateX;
     translateY = o.translateY;
     translateZ = o.translateZ;
@@ -54,7 +54,8 @@ function returnData(block: MoctreeBlock) {
 
 async function fetchData(block: MoctreeBlock) {
   const queryCacheKey = block.mortonNumber;
-  const storeName = `${namespace}:${arrayName}`;
+  const storeName = `${namespace}:${groupName}`;
+
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
 
@@ -84,7 +85,7 @@ async function fetchData(block: MoctreeBlock) {
     for await (const results of tiledbQuery.ReadQuery(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       namespace,
-      arrayName + '_' + block.lod,
+      groupName + '_' + block.lod,
       queryData
     )) {
       block.entries = results as SparseResult;
