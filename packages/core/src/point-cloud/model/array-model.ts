@@ -58,7 +58,6 @@ class ArrayModel {
   pointCount = 0;
   fanOut = 3;
   useShader = false;
-  useGUI = false;
   useStreaming = false;
   useSPS = false;
   debugOctant: Mesh;
@@ -85,9 +84,6 @@ class ArrayModel {
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
       this.useShader = true;
-    }
-    if (options.useGUI === true) {
-      this.useGUI = true;
     }
     if (options.useSPS === true) {
       this.useSPS = true;
