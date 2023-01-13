@@ -24,9 +24,12 @@ class TileDBWorkerPool {
     this.mapStatus = new Map<Worker, boolean>();
 
     for (let w = 0; w < this.poolSize; w++) {
-      const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
-        type: 'module'
-      });
+      const worker = new Worker(
+        new URL('./tiledb.worker.ts', import.meta.url),
+        {
+          type: 'module'
+        }
+      );
       worker.onmessage = this.onData(worker);
       worker.postMessage(initRequest);
       this.workers.push(worker);
