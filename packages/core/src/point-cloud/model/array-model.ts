@@ -80,7 +80,7 @@ class ArrayModel {
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
-    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
+    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 200;
     this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
