@@ -17,6 +17,14 @@ let translateY = 0;
 let translateZ = 0;
 let bufferSize = 200000000;
 
+// function getArrayName(name: string, lod: number) {
+//   return name + '_' + lod;
+// }
+
+// function getArrayName(name: string, lod: number) {
+//   return name;
+// }
+
 let tiledbQuery: TileDBQuery;
 
 self.onmessage = async (e: MessageEvent) => {
@@ -89,10 +97,9 @@ async function fetchData(block: MoctreeBlock) {
 
     for await (const results of tiledbQuery.ReadQuery(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      // namespace,
+      namespace,
       // arrayName + '_' + block.lod,
-      'chloe',
-      'ht_array5',
+      arrayName,
       queryData
     )) {
       block.entries = results as SparseResult;

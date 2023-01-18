@@ -56,7 +56,8 @@ export const Autzen = () => (
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 const arrayName = process.env.STORYBOOK_ARRAY_NAME || 'autzen';
-const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 2;
+const maxLevel = process.env.STORYBOOK_ARRAY_LEVELS || 4;
+const tiledbEnv = process.env.TILEDB_ENV;
 
 // maxLevel=4, height=100, arrayName='' for cube test
 
@@ -64,12 +65,13 @@ export const Streamer = () => (
   <PointCloudVisualization
     streaming={true}
     token={token}
+    tiledbEnv={tiledbEnv}
     namespace={namespace}
     arrayName={arrayName}
     maxLevel={maxLevel}
-    fanOut={50}
+    fanOut={256}
     pointBudget={8000000}
-    pointSize={3}
+    pointSize={0.05}
     cameraRadius={2000}
     colorScheme="dark"
     rgbMax={255}

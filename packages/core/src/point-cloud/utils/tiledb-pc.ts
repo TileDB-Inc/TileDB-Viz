@@ -200,14 +200,22 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
     }
     return { data, xmin, xmax, ymin, ymax, zmin, zmax };
   } else {
-    const dom = await getNonEmptyDomain(options);
+    // const dom = await getNonEmptyDomain(options);
+    // return {
+    //   xmin: dom[0],
+    //   xmax: dom[1],
+    //   ymin: dom[2],
+    //   ymax: dom[3],
+    //   zmin: dom[4],
+    //   zmax: dom[5]
+    // };
     return {
-      xmin: dom[0],
-      xmax: dom[1],
-      ymin: dom[2],
-      ymax: dom[3],
-      zmin: dom[4],
-      zmax: dom[5]
+      xmin: [0],
+      xmax: [0],
+      ymin: [0],
+      ymax: [1],
+      zmin: [1],
+      zmax: [1]
     };
   }
 }
@@ -344,6 +352,7 @@ export async function getNonEmptyDomain(
 ): Promise<number[]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.arrayName!);
+
   const key = 0;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache(storeName, key);
@@ -361,7 +370,8 @@ export async function getNonEmptyDomain(
     const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.namespace!,
-      options.arrayName + '_0', // naming convention for groups of multi-resolution arrays
+      // options.arrayName + '_0', // naming convention for groups of multi-resolution arrays
+      options.arrayName as string,
       'application/json'
     );
 
@@ -394,7 +404,8 @@ export async function getArrayMetadata(
     const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.namespace!,
-      options.arrayName + '_0' // naming convention for groups of multi-resolution arrays
+      // options.arrayName + '_0' // naming convention for groups of multi-resolution arrays
+      options.arrayName as string
     );
 
     interface OctantData {
@@ -405,12 +416,15 @@ export async function getArrayMetadata(
     const obj = JSON.parse(o['octant-data']);
     const bounds = JSON.parse(o['octree-bounds']);
 
+    console.log('getArrayMetadata: options.tiledbEnv: result: \n', o, 'octant-data:\n', obj, 'octree-bounds:\n', bounds);
+
     writeToCache(storeName, key, {
       'octant-data': obj,
       'octree-bounds': bounds
     });
     return [new Map<string, number>(Object.entries(obj)), bounds];
   } else {
+    console.log('getArrayMetadata: else(options.tiledbEnv): dataFromCache[octant-data]:\n', dataFromCache['octant-data'], 'dataFromCache[octree-bounds]:\n', dataFromCache['octree-bounds']);
     return [
       new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
       dataFromCache['octree-bounds']

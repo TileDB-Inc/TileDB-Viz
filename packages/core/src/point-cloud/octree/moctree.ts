@@ -246,7 +246,6 @@ class MoctreeBlock {
   }
 }
 
-
 class HeapTree {
   knownBlocks: Map<number, number>;
   public bounds: Array<Array<Vector3>>;
@@ -268,13 +267,21 @@ class HeapTree {
   constructor(
     public minPoint: Vector3,
     public maxPoint: Vector3,
-    public maxLevel: number,
-    private fanOut: number // --- not used here
+    public maxDepth: number,
+    private fanOut: number,
+    private fanOutPerLevel: number[],
+    private nbrCountPerLevel: number[]
   ) {
     this.minPoint = minPoint.clone();
     this.maxPoint = maxPoint.clone();
-    this.maxLevel = maxLevel;
-    this.maxIdx = (Math.pow(8, maxLevel + 1) - 1) / 7 - 1;
+    this.maxDepth = maxDepth;
+    this.maxIdx = (Math.pow(8, maxDepth + 1) - 1) / 7 - 1;
+    this.fanOut = fanOut;
+    this.fanOutPerLevel = new Array(this.maxDepth + 1);
+    for (let i = maxDepth; i > -1; --i) {
+      this.fanOutPerLevel[i] = Math.ceil(this.fanOut / (this.maxDepth - i + 1));
+    }
+    this.nbrCountPerLevel = new Array(this.maxDepth + 1).fill(0);
     // console.log('htree cstr maxIdx: ', this.maxIdx);
     this.bounds = [];
     this.bounds.push([minPoint.clone(), maxPoint.clone()]);
@@ -297,7 +304,7 @@ class HeapTree {
     this.knownBlocks = new Map<number, number>();
   }
 
-  private lodFromIdx(heapIdx: number) {
+  public lodFromIdx(heapIdx: number) {
     for (let i = 0; i < HeapTree.lods.length; ++i) {
       if (heapIdx < HeapTree.lods[i]) {
         return i;
@@ -310,11 +317,11 @@ class HeapTree {
     let intersectingIdcs: MoctreeBlock[] = [];
     if (lod > 0) {
       if (ray.intersectsBoxMinMax(...this.bounds[HeapTree.startBlockIndex])) {
-        if (lod > this.maxLevel) {
-          lod = this.maxLevel;
+        if (lod > this.maxDepth) {
+          lod = this.maxDepth;
         }
         intersectingIdcs = new Array(lod);
-        let idcsIdx = 0;
+        let idcsIdx = lod - 1;
         let curr = HeapTree.startBlockIndex;
         let level = 1;
         this.toTraverse = [];
@@ -334,12 +341,37 @@ class HeapTree {
           }
           curr = child + resultChildIdx;
           const [minP, maxP] = this.bounds[curr];
-          intersectingIdcs[idcsIdx++] = new MoctreeBlock(level, curr, minP, maxP);
-          for (let i = 0; i < 8; ++i) {
-            if (i !== resultChildIdx) {
-              this.toTraverse.push(child + i);
-            }
+          intersectingIdcs[idcsIdx--] = new MoctreeBlock(level, curr, minP, maxP);
+          // incorporate fanOut - exponential method: method A:
+          // const currLevelFanOut = Math.min(7, Math.floor(this.fanOut / (Math.pow(8, this.maxDepth + 1 - level) * 2)));
+          // console.log('maxLevel: ', this.maxDepth);
+          // console.log('level: ', level, 'exponential: ', (Math.pow(8, this.maxDepth + 1 - level) * 2), 'currentLevelFanOut: ', currLevelFanOut);
+          // let nbrRight = (resultChildIdx + 1) % 8;
+          // let nbrLeft = (resultChildIdx + 7) % 8;
+          // let count = 0;
+          // for (; count < (currLevelFanOut & Number(0xfffffffe)); nbrRight = (nbrRight + 1) % 8, nbrLeft = (nbrLeft + 7) % 8) {
+          //   this.toTraverse.push(child + nbrRight);
+          //   this.toTraverse.push(child + nbrLeft);
+          //   count += 2;
+          // }
+          // if (currLevelFanOut & 1) {
+          //   this.toTraverse.push(child + nbrRight); // arbitrary choose rightNbr for odd number fanOut at level, but is same as leftNbr for fanOut = 7;
+          // }
+          // leave fanOut for getNeighbours: load nbrs in order of neighborliness to resultChild so getNeighbours fanOut cutting gives closest to intersecting idcs
+          // : method B
+          let nbrRight = (resultChildIdx + 1) % 8;
+          let nbrLeft = (resultChildIdx + 7) % 8;
+          let count = 0;
+          for (; count++ < 3; nbrRight = (nbrRight + 1) % 8, nbrLeft = (nbrLeft + 7) % 8) {
+            this.toTraverse.push(child + nbrLeft); // push left first, so right first on unpacking - can choose either order
+            this.toTraverse.push(child + nbrRight);
           }
+          this.toTraverse.push(child + nbrRight); // same as leftNbr;
+          // for (let i = 0; i < 8; ++i) {
+          //   if (i !== resultChildIdx) {
+          //     this.toTraverse.push(child + i);
+          //   }
+          // }
           ++level;
         }
       }
@@ -347,30 +379,98 @@ class HeapTree {
     return intersectingIdcs;
   }
 
-  public *getNeighbours(code: number): Generator<MoctreeBlock> {
-    // if (code === 0) {
-    //   this.getContainingBlocksByRay()
-    // }
+  public *getNeighbours(code: number): Generator<MoctreeBlock, undefined, undefined> {
+    if (this.toTraverse.length === 0) {
+      return;
+      // this.getContainingBlocksByRay() maybe change here
+    }
+    this.nbrCountPerLevel.fill(0);
     let lastIdx = this.toTraverse.length - 1;
     while (this.toTraverse[lastIdx] * 8 + 1 > this.maxIdx && lastIdx >= 0) {
-      // if (
-      //   this.knownBlocks.has(leftBlockCode) ||
-      //   this.knownBlocks.size === 0
-      // ) {}
-      const [minP, maxP] = this.bounds[this.toTraverse[lastIdx]];
-      yield new MoctreeBlock(this.lodFromIdx(lastIdx), lastIdx--, minP, maxP);
+      const currLastIdx = lastIdx--;
+      if (this.nbrCountPerLevel[this.maxDepth] < this.fanOutPerLevel[this.maxDepth]) { // no more loading at this lod if already filled fanOut
+        if (this.knownBlocks.has(currLastIdx) || this.knownBlocks.size === 0) {
+          ++this.nbrCountPerLevel[this.maxDepth];
+          const [minP, maxP] = this.bounds[this.toTraverse[currLastIdx]];
+          yield new MoctreeBlock(this.maxDepth, currLastIdx, minP, maxP);
+        }
+      }
     }
-    for (let i = lastIdx; i >= 0; --i) {
+    // uneven traversal: right side can steal fanOut capacity from left : method A
+    // for (let i = lastIdx; i > -1; --i) {
+    //   const currTraversal: number[] = [];
+    //   currTraversal.push(this.toTraverse[i]);
+    //   while (currTraversal.length) {
+    //     const curr = currTraversal.pop() as number;
+    //     const currLevel = this.lodFromIdx(curr);
+    //     if (this.nbrCountPerLevel[currLevel] < this.fanOutPerLevel[currLevel]) {
+    //       if (this.knownBlocks.has(curr) || this.knownBlocks.size === 0) {
+    //         ++this.nbrCountPerLevel[currLevel];
+    //         const [minP, maxP] = this.bounds[curr];
+    //         yield new MoctreeBlock(currLevel, curr, minP, maxP);
+    //       }
+    //     }
+    //     const child = curr * 8 + 1;
+    //     if (child <= this.maxIdx) {
+    //       for (let i = 7; i >= 0; --i) {
+    //         currTraversal.push(child + i);
+    //       }
+    //     }
+    //   }
+    // }
+
+    // even traversal : method B
+    while (lastIdx > -1) { // traverse 7 at a time: 3 x 2 and 1;
+      for (let i = 0; i < 3; ++i) {
+        const currTraversalRight: number[] = [];
+        const currTraversalLeft: number[] = [];
+        currTraversalRight.push(this.toTraverse[lastIdx--]);
+        currTraversalLeft.push(this.toTraverse[lastIdx--]);
+        while (currTraversalRight.length) { // left and right should be same length
+          const currRight = currTraversalRight.pop() as number;
+          const currLeft = currTraversalLeft.pop() as number;
+          const currLevel = this.lodFromIdx(currRight); // left and right should be same
+          if (this.nbrCountPerLevel[currLevel] < this.fanOutPerLevel[currLevel]) {
+            if (this.knownBlocks.has(currRight) || this.knownBlocks.size === 0) {
+              ++this.nbrCountPerLevel[currLevel];
+              const [minP, maxP] = this.bounds[currRight];
+              yield new MoctreeBlock(currLevel, currRight, minP, maxP);
+            }
+          }
+          const childRight = currRight * 8 + 1;
+          const lessThenMaxIdx = childRight <= this.maxIdx; // if childRight <= maxIdx, then childLeft <= maxIdx;
+          if (lessThenMaxIdx) {
+            for (let i = 7; i >= 0; --i) {
+              currTraversalRight.push(childRight + i);
+            }
+          }
+          if (this.nbrCountPerLevel[currLevel] < this.fanOutPerLevel[currLevel]) {
+            if (this.knownBlocks.has(currLeft) || this.knownBlocks.size === 0) {
+              ++this.nbrCountPerLevel[currLevel];
+              const [minP, maxP] = this.bounds[currLeft];
+              yield new MoctreeBlock(currLevel, currLeft, minP, maxP);
+            }
+          }
+          if (lessThenMaxIdx) {
+            const childLeft = currLeft * 8 + 1;
+            for (let i = 7; i >= 0; --i) {
+              currTraversalLeft.push(childLeft + i);
+            }
+          }
+        }
+      }
       const currTraversal: number[] = [];
-      currTraversal.push(this.toTraverse[i]);
-      while (currTraversal.length) {
+      currTraversal.push(this.toTraverse[lastIdx--]);
+      while (currTraversal.length) { // left and right should be same length
         const curr = currTraversal.pop() as number;
-        // if (
-      //   this.knownBlocks.has(leftBlockCode) ||
-      //   this.knownBlocks.size === 0
-      // ) {}
-        const [minP, maxP] = this.bounds[curr];
-        yield new MoctreeBlock(this.lodFromIdx(curr), curr, minP, maxP);
+        const currLevel = this.lodFromIdx(curr); // left and right should be same
+        if (this.nbrCountPerLevel[currLevel] < this.fanOutPerLevel[currLevel]) {
+          if (this.knownBlocks.has(curr) || this.knownBlocks.size === 0) {
+            ++this.nbrCountPerLevel[currLevel];
+            const [minP, maxP] = this.bounds[curr];
+            yield new MoctreeBlock(currLevel, curr, minP, maxP);
+          }
+        }
         const child = curr * 8 + 1;
         if (child <= this.maxIdx) {
           for (let i = 7; i >= 0; --i) {
@@ -379,8 +479,8 @@ class HeapTree {
         }
       }
     }
+    return;
   }
 }
-
 
 export { Moctree, MoctreeBlock, HeapTree, encodeMorton, decodeMorton, getMortonRange };

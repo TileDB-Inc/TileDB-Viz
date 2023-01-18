@@ -71,7 +71,7 @@ class ArrayModel {
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
     this.pointScale = options.pointScale || 0.001;
-    this.maxLevel = options.maxLevel || 2;
+    this.maxLevel = options.maxLevel || 4;
     this.pointType = options.pointType || 'box';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
@@ -80,8 +80,8 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
-    this.pointBudget = options.pointBudget || 500_000;
-    this.fanOut = options.fanOut || 100;
+    this.pointBudget = options.pointBudget || 8_000_000;
+    this.fanOut = options.fanOut || 256;
     if (options.useShader === true) {
       this.useShader = true;
     }
@@ -392,7 +392,7 @@ class ArrayModel {
           this.isBuffering = true;
           block = this.neighbours?.next().value;
           while (block && !scene.activeCamera.isInFrustum(block.boundingInfo)) {
-            const g = this.neighbours?.next();
+            const g = this.neighbours?.next(); // are we throwing this away?
             if (g?.done) {
               break;
             }
@@ -429,14 +429,18 @@ class ArrayModel {
     // TODO change this format to send morton codes in the node metadata from the server
     m.forEach((v, k) => {
       if (!k.startsWith('_')) {
-        const parts = k.split('-').map(Number);
-        // swap z and y
-        const morton = encodeMorton(
-          new Vector3(parts[1], parts[3], parts[2]),
-          parts[0]
-        );
+        // const parts = k.split('-').map(Number);
+        // // swap z and y
+        // const morton = encodeMorton(
+        //   new Vector3(parts[1], parts[3], parts[2]),
+        //   parts[0]
+        // );
         // this.octree.knownBlocks.set(morton, v);
-        this.htree.knownBlocks.set(morton, v);
+        let heapIdx = parseInt(k);
+        if (heapIdx === 0) {
+          heapIdx = 2396747;
+        }
+        this.htree.knownBlocks.set(heapIdx, v);
       }
     });
   }
