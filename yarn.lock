@@ -4898,16 +4898,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tiledb-inc/tiledb-cloud@npm:1.0.11":
-  version: 1.0.11
-  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.11"
+"@tiledb-inc/tiledb-cloud@npm:1.0.12-alpha.1":
+  version: 1.0.12-alpha.1
+  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.12-alpha.1"
   dependencies:
+    "@types/debug": ^4.1.7
     axios: ^0.21.1
-    capnp-ts: ^0.4.0
-    capnpc-ts: ^0.4.0
+    capnp-ts: ^0.5.1
+    capnpc-ts: ^0.5.1
     paralleljs: "github:SarantopoulosKon/parallel.js#node-mode-in-web-worker"
     save-file: ^2.3.1
-  checksum: f2e5bd6ebd4832779ee6eba94ee3f44cff40f059889126668ba083eec707e8c654275e3b5f9b9f106c9b2d4f1a72ec0b20c99fa6a18ff3a02e900c16b52d340b
+  checksum: d2a7afeb4d372c70b8c006b2ed995ff305033cfd6bfb094b33f00d736227012b88052dc49a147c51e24720c8dfc1a7981c77f27fc1a1f62172eaa4e89e8a2c33
   languageName: node
   linkType: hard
 
@@ -4925,7 +4926,7 @@ __metadata:
     "@babylonjs/loaders": ^5.21.0
     "@babylonjs/materials": ^5.21.0
     "@babylonjs/serializers": ^5.21.0
-    "@tiledb-inc/tiledb-cloud": 1.0.11
+    "@tiledb-inc/tiledb-cloud": 1.0.12-alpha.1
     babylonjs-gui: ^4.2.2
     babylonjs-materials: ^5.21.0
     idb: ^7.0.2
@@ -4965,6 +4966,7 @@ __metadata:
     "@parcel/packager-ts": 2.7.0
     "@parcel/transformer-inline-string": 2.7.0
     "@parcel/transformer-typescript-types": 2.7.0
+    "@types/debug": ^4.1.7
     "@types/jest": ^29.0.0
     "@typescript-eslint/eslint-plugin": ^5.33.1
     "@typescript-eslint/parser": ^5.33.1
@@ -5072,6 +5074,15 @@ __metadata:
   dependencies:
     "@babel/types": ^7.3.0
   checksum: 5fd7f4ea0963f9669b1bd6bd928b2d81452b98e4acfcfeb26ca4476162b87f9c1d8f66ff13567fd9f760a31ad04c36d767fa874f569aded6fb46890e379327c1
+  languageName: node
+  linkType: hard
+
+"@types/debug@npm:^4.1.7":
+  version: 4.1.7
+  resolution: "@types/debug@npm:4.1.7"
+  dependencies:
+    "@types/ms": "*"
+  checksum: 0a7b89d8ed72526858f0b61c6fd81f477853e8c4415bb97f48b1b5545248d2ae389931680b94b393b993a7cfe893537a200647d93defe6d87159b96812305adc
   languageName: node
   linkType: hard
 
@@ -5231,6 +5242,13 @@ __metadata:
   version: 5.1.0
   resolution: "@types/minimatch@npm:5.1.0"
   checksum: 041c1bf29a9c3d29ac401380cf94fa79613c8fccaa5b9e763996159e504bda4cb11e80a638f7842a987590f232864ba84a19f9b803d433cd92bac2759696dd24
+  languageName: node
+  linkType: hard
+
+"@types/ms@npm:*":
+  version: 0.7.31
+  resolution: "@types/ms@npm:0.7.31"
+  checksum: daadd354aedde024cce6f5aa873fefe7b71b22cd0e28632a69e8b677aeb48ae8caa1c60e5919bb781df040d116b01cb4316335167a3fc0ef6a63fa3614c0f6da
   languageName: node
   linkType: hard
 
@@ -6864,7 +6882,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.5.0, bluebird@npm:^3.5.5":
+"bluebird@npm:^3.5.5":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 869417503c722e7dc54ca46715f70e15f4d9c602a423a02c825570862d12935be59ed9c7ba34a9b31f186c017c23cac6b54e35446f8353059c101da73eac22ef
@@ -7377,33 +7395,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"capnp-ts@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "capnp-ts@npm:0.4.0"
+"capnp-ts@npm:^0.5.0, capnp-ts@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "capnp-ts@npm:0.5.1"
   dependencies:
-    debug: ^2.6.3
+    debug: ^4.3.1
     format: ^0.2.2
-    tslib: ^1.7.1
+    tslib: ^2.2.0
     utf8-encoding: ^0.1.2
-  checksum: 3a3c474fc7e29dcdc059bed2916fda6831104487df4b8595d4e55a57ec32bea124ebccd7edb48d53f4b79853632ae5fba874712e35e368a04a145f352668d441
+  checksum: 092121be99ccf3ecf6f8f866c7afec0379253ac7d8d7d3f02fc786ed87af03e1f120cd2c980779bd0325c1b6f7b98b948343b70d958d154be7ec6609ad45741c
   languageName: node
   linkType: hard
 
-"capnpc-ts@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "capnpc-ts@npm:0.4.0"
+"capnpc-ts@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "capnpc-ts@npm:0.5.1"
   dependencies:
-    bluebird: ^3.5.0
-    capnp-ts: ^0.4.0
-    debug: ^3.1.0
-    hex2dec: ^1.0.1
-    mkdirp: ^0.5.1
-    ramda: ^0.24.1
-    tslib: ^1.7.1
-    typescript: ^2.4.1
+    capnp-ts: ^0.5.0
+    debug: ^4.3.1
+    hex2dec: ^1.1.2
+    mkdirp: ^1.0.4
+    tslib: ^2.2.0
+    typescript: ^4.2.4
   bin:
-    capnpc-ts: ./bin/capnpc-ts.js
-  checksum: 264a3508dda59b2e897e38bd1ef199a465d9ea3ba4b8c4aa9027e5309537d476fa98fc4c57e217cbb06f5db01794c8df17b65c65ad2a52d6ffdc2d247619fe0f
+    capnpc-ts: bin/capnpc-ts.js
+  checksum: aa19e365e3d9a94d891866622b01fdcd4cd6f6a8384aeb18a39213cd544b6db08ad02854084d8b9b29979f0d8cf70e97272a11acbe13a0046b9e1b519469ffac
   languageName: node
   linkType: hard
 
@@ -8276,7 +8292,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0, debug@npm:^2.6.3":
+"debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.3.3, debug@npm:^2.6.0":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
   dependencies:
@@ -8285,7 +8301,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
+"debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
   version: 4.3.4
   resolution: "debug@npm:4.3.4"
   dependencies:
@@ -8297,7 +8313,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:^3.0.0, debug@npm:^3.1.0":
+"debug@npm:^3.0.0":
   version: 3.2.7
   resolution: "debug@npm:3.2.7"
   dependencies:
@@ -10547,7 +10563,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hex2dec@npm:^1.0.1":
+"hex2dec@npm:^1.1.2":
   version: 1.1.2
   resolution: "hex2dec@npm:1.1.2"
   checksum: 885d5035105ce20efa5b47f5b7e6f5cf714fcfa262f9cc2575009f3b662465ff07037c96cbdd26ec97794101d8c208488356fee3e3a56e02569e079060c9562a
@@ -15105,13 +15121,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ramda@npm:^0.24.1":
-  version: 0.24.1
-  resolution: "ramda@npm:0.24.1"
-  checksum: c2dc048f5a0f61872eec7925f76cdf8e7b7cf7a4f457e274d915d8bf86bd108938795d92061d56eae315a4818ea65276a87c9db336356191aaf879647afd8c82
-  languageName: node
-  linkType: hard
-
 "ramda@npm:^0.28.0":
   version: 0.28.0
   resolution: "ramda@npm:0.28.0"
@@ -17216,14 +17225,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:*":
+"tslib@npm:*, tslib@npm:^2.2.0":
   version: 2.4.1
   resolution: "tslib@npm:2.4.1"
   checksum: 19480d6e0313292bd6505d4efe096a6b31c70e21cf08b5febf4da62e95c265c8f571f7b36fcc3d1a17e068032f59c269fab3459d6cd3ed6949eafecf64315fca
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.7.1, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
+"tslib@npm:^1.8.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
@@ -17358,13 +17367,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^2.4.1":
-  version: 2.9.2
-  resolution: "typescript@npm:2.9.2"
+"typescript@npm:^4.2.4":
+  version: 4.9.4
+  resolution: "typescript@npm:4.9.4"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 88be998ac339b6e45f1cd15e22e4a0fedcdb5320d8d1d736e3996a0b9dff03728ebb2580a0658f0c52152b139ea9a405443f42a4ff8a2c4a1a6f4d58e0320132
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: e782fb9e0031cb258a80000f6c13530288c6d63f1177ed43f770533fdc15740d271554cdae86701c1dd2c83b082cea808b07e97fd68b38a172a83dbf9e0d0ef9
   languageName: node
   linkType: hard
 
@@ -17378,13 +17387,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^2.4.1#~builtin<compat/typescript>":
-  version: 2.9.2
-  resolution: "typescript@patch:typescript@npm%3A2.9.2#~builtin<compat/typescript>::version=2.9.2&hash=a1c5e5"
+"typescript@patch:typescript@^4.2.4#~builtin<compat/typescript>":
+  version: 4.9.4
+  resolution: "typescript@patch:typescript@npm%3A4.9.4#~builtin<compat/typescript>::version=4.9.4&hash=a1c5e5"
   bin:
-    tsc: ./bin/tsc
-    tsserver: ./bin/tsserver
-  checksum: 8e4b4eceecd9c4c0d45a74e49d715eb7b12e0d4a12768b70681c9a81a7c2a335f15fe14c78dddda73c90f9ebb5ddac0b2e33c12df606c7d46f7e7829326cc653
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 37f6e2c3c5e2aa5934b85b0fddbf32eeac8b1bacf3a5b51d01946936d03f5377fe86255d4e5a4ae628fd0cd553386355ad362c57f13b4635064400f3e8e05b9d
   languageName: node
   linkType: hard
 
