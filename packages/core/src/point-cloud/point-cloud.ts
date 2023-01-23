@@ -89,10 +89,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
       }
 
-      // load point cloud data extents and data if bounding box not provided
-      const { data, xmin, xmax, ymin, ymax, zmin, zmax } = await getPointCloud(
-        this.options
-      );
       this.attachKeys();
 
       const sceneColors = setSceneColors(this.options.colorScheme as string);
