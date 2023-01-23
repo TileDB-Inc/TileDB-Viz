@@ -45,10 +45,10 @@
     "typescript": "4.7.4"
   },
   "dependenciesMeta": {
-    "@babylonjs/core@5.21.0": {
+    "@babylonjs/core@5.42.0": {
       "unplugged": true
     },
-    "@babylonjs/materials@5.21.0": {
+    "@babylonjs/materials@5.42.0": {
       "unplugged": true
     }
   }

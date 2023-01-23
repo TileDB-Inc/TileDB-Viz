@@ -140,10 +140,6 @@ export interface TileDBPointCloudOptions
    */
   useShader?: boolean;
   /**
-   * Add an interactive GUI
-   */
-  useGUI?: boolean;
-  /**
    * Use a Solid Particle System for the point cloud
    */
   useSPS?: boolean;
