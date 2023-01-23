@@ -79,7 +79,7 @@ class ArrayModel {
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'blue';
-    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 100;
+    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 200;
     this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
     if (options.useShader === true) {
@@ -143,74 +143,70 @@ class ArrayModel {
 
         this.pointCount += numPoints;
 
-        if (this.pointCount < this.pointBudget) {
-          const pointBuilder = function (particle: any, i: number) {
-            if (block.entries !== undefined) {
-              particle.position.set(
-                block.entries.X[i] - transX,
-                (block.entries.Z[i] - transY) * zScale,
-                block.entries.Y[i] - transZ
+        const pointBuilder = function (particle: any, i: number) {
+          if (block.entries !== undefined) {
+            particle.position.set(
+              block.entries.X[i] - transX,
+              (block.entries.Z[i] - transY) * zScale,
+              block.entries.Y[i] - transZ
+            );
+
+            if (particle.color) {
+              particle.color.set(
+                block.entries.Red[i] / rgbMax,
+                block.entries.Green[i] / rgbMax,
+                block.entries.Blue[i] / rgbMax,
+                1
               );
-
-              if (particle.color) {
-                particle.color.set(
-                  block.entries.Red[i] / rgbMax,
-                  block.entries.Green[i] / rgbMax,
-                  block.entries.Blue[i] / rgbMax,
-                  1
-                );
-              } else {
-                particle.color = new Color4(
-                  block.entries.Red[i] / rgbMax,
-                  block.entries.Green[i] / rgbMax,
-                  block.entries.Blue[i] / rgbMax
-                );
-              }
-            }
-          };
-
-          if (this.useSPS) {
-            const sps = new SolidParticleSystem(
-              block.mortonNumber.toString(),
-              this.scene,
-              { updatable: false }
-            );
-
-            const box = MeshBuilder.CreateBox(
-              'b',
-              { size: this.pointSize },
-              this.scene
-            );
-            sps.addShape(box, numPoints, { positionFunction: pointBuilder });
-            box.dispose();
-            sps.buildMesh();
-
-            if (block.mortonNumber !== Moctree.startBlockIndex) {
-              this.particleSystems.set(block.mortonNumber, sps);
             } else {
-              this.basePcs = sps;
+              particle.color = new Color4(
+                block.entries.Red[i] / rgbMax,
+                block.entries.Green[i] / rgbMax,
+                block.entries.Blue[i] / rgbMax
+              );
             }
+          }
+        };
+
+        if (this.useSPS) {
+          const sps = new SolidParticleSystem(
+            block.mortonNumber.toString(),
+            this.scene,
+            { updatable: false }
+          );
+
+          const box = MeshBuilder.CreateBox(
+            'b',
+            { size: this.pointSize },
+            this.scene
+          );
+          sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+          box.dispose();
+          sps.buildMesh();
+
+          if (block.mortonNumber !== Moctree.startBlockIndex) {
+            this.particleSystems.set(block.mortonNumber, sps);
           } else {
-            const pcs = new PointsCloudSystem(
-              block.mortonNumber.toString(),
-              this.pointSize,
-              this.scene,
-              { updatable: false }
-            );
-
-            pcs.addPoints(numPoints, pointBuilder);
-
-            pcs.buildMeshAsync().then(() => {
-              pcs.setParticles();
-              if (block.mortonNumber !== Moctree.startBlockIndex) {
-                this.particleSystems.set(block.mortonNumber, pcs);
-              } else {
-                this.basePcs = pcs;
-              }
-            });
+            this.basePcs = sps;
           }
         } else {
-          console.log('particle budget reached: ' + this.pointCount);
+          const pcs = new PointsCloudSystem(
+            block.mortonNumber.toString(),
+            this.pointSize,
+            this.scene,
+            { updatable: false }
+          );
+
+          pcs.addPoints(numPoints, pointBuilder);
+
+          pcs.buildMeshAsync().then(() => {
+            pcs.setParticles();
+            if (block.mortonNumber !== Moctree.startBlockIndex) {
+              this.particleSystems.set(block.mortonNumber, pcs);
+            } else {
+              this.basePcs = pcs;
+            }
+          });
         }
 
         if (this.debug) {
@@ -248,19 +244,18 @@ class ArrayModel {
           }
         }
       }
+    }
+  }
 
-      // check cache size
-      if (this.particleSystems.size > this.maxNumCacheBlocks) {
-        // simple lru cache, evict first key, this is fine as we are backed by local storage
-        const k = this.particleSystems.keys().next().value;
-        // delete pcs corresponding to this key
-        const p = this.particleSystems.get(k);
-        if (p) {
-          this.pointCount -= p.nbParticles;
-          p.dispose();
-          this.particleSystems.delete(k);
-        }
-      }
+  private dropLRUParticleSystem() {
+    // simple lru cache, evict first key, this is fine as we are backed by local storage
+    const k = this.particleSystems.keys().next().value;
+    // delete pcs corresponding to this key
+    const p = this.particleSystems.get(k);
+    if (p) {
+      this.pointCount -= p.nbParticles;
+      p.dispose();
+      this.particleSystems.delete(k);
     }
   }
 
@@ -369,6 +364,11 @@ class ArrayModel {
         const ray = scene.activeCamera.getForwardRay();
         const epsilon = Math.pow(10, -12);
 
+        // check cache size, this is different the point budget and refers the number of particle systems
+        if (this.particleSystems.size > this.maxNumCacheBlocks) {
+          this.dropLRUParticleSystem();
+        }
+
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
           this.rayOrigin = ray.origin.clone();
@@ -388,26 +388,48 @@ class ArrayModel {
             this.pointCount = this.basePcs.nbParticles;
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
-        }
 
-        let block = this.renderBlocks.pop();
-
-        // check block is in frustrum and not empty
-        if (!block) {
-          // we are buffering
-          this.isBuffering = true;
-          block = this.neighbours?.next().value;
-          while (block && !scene.activeCamera.isInFrustum(block.boundingInfo)) {
-            const g = this.neighbours?.next();
-            if (g?.done) {
-              break;
+          // drop cache blocks if we are at the point budget
+          if (this.pointCount >= this.pointBudget) {
+            const n = this.pointBudget / 2;
+            while (this.pointCount > n) {
+              this.dropLRUParticleSystem();
             }
-            block = this.neighbours?.next().value;
           }
         }
 
-        if (block) {
-          this.fetchBlock(block);
+        if (this.pointCount < this.pointBudget) {
+          let block = this.renderBlocks.pop();
+
+          // check block is in frustrum and not empty
+          if (!block) {
+            // we are buffering
+            this.isBuffering = true;
+            block = this.neighbours?.next().value;
+            while (
+              block &&
+              !scene.activeCamera.isInFrustum(block.boundingInfo)
+            ) {
+              const g = this.neighbours?.next();
+              if (g?.done) {
+                break;
+              }
+              block = this.neighbours?.next().value;
+            }
+          }
+
+          if (block) {
+            const nextPointCount =
+              this.octree.knownBlocks.get(block.mortonNumber) ||
+              this.pointCount;
+
+            if (nextPointCount <= this.pointBudget) {
+              this.fetchBlock(block);
+            }
+          }
+        } else {
+          // point budget reached
+          console.log('particle budget reached: ' + this.pointCount);
         }
       }
     } else {

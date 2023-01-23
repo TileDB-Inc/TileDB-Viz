@@ -172,18 +172,21 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         );
         this.model.metadata = octantMetadata;
       } else {
-        await this.model.init(
-          this.scene,
-          xmin,
-          xmax,
-          ymin,
-          ymax,
-          zmin,
-          zmax,
-          1,
-          this.options.rgbMax || 1.0,
-          data as SparseResult
-        );
+        const pcData = await getPointCloud(this.options);
+        if (pcData) {
+          await this.model.init(
+            this.scene,
+            pcData.xmin,
+            pcData.xmax,
+            pcData.ymin,
+            pcData.ymax,
+            pcData.zmin,
+            pcData.zmax,
+            1,
+            this.options.rgbMax || 1.0,
+            pcData.data as SparseResult
+          );
+        }
       }
 
       // add shader post-processing for EDL
@@ -241,6 +244,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const ray = camera.getForwardRay();
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               this.model.maxLevel!
             )[0];
             pickOrigin = block.minPoint.add(

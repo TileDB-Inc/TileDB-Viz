@@ -195,16 +195,6 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
       zmax = zmax + z;
     }
     return { data, xmin, xmax, ymin, ymax, zmin, zmax };
-  } else {
-    const dom = await getNonEmptyDomain(options);
-    return {
-      xmin: dom[0],
-      xmax: dom[1],
-      ymin: dom[2],
-      ymax: dom[3],
-      zmin: dom[4],
-      zmax: dom[5]
-    };
   }
 }
 
