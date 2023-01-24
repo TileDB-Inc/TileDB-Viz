@@ -5,7 +5,7 @@ import {
 } from '@tiledb-inc/viz-core';
 import classNames from 'classnames';
 
-interface TileDBMBRSVisualizationProps
+export interface TileDBMBRSVisualizationProps
   extends Omit<TileDBMBRSVisualizationOptions, 'rootElement'> {
   className?: string;
 }

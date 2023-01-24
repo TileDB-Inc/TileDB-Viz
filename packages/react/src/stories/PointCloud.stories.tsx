@@ -67,7 +67,6 @@ export const BoulderSPS = () => (
     cameraLocation={6}
     pointSize={0.05}
     useShader={true}
-    useSPS={true}
     width={'100vw'}
     height={'100vh'}
   />
@@ -96,7 +95,6 @@ export const AutzenSPS = () => (
     colorScheme="light"
     rgbMax={65535}
     useShader={true}
-    useSPS={true}
     width={'100vw'}
     height={'100vh'}
   />

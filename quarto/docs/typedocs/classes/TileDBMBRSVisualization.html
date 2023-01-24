@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.393">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>tiledbmbrsvisualization</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<link href="../../typedocs/classes/TileDBPointCloudVisualization.html" rel="next">
+<link href="../../typedocs/classes/TileDBImageVisualization.html" rel="prev">
+<link href="../../images/favicon.ico" rel="icon">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../../quarto-materials/tiledb.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <a class="navbar-brand" href="../../index.html">
+    <img src="../../quarto-materials/tiledb-logo.png" alt="">
+  </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://tiledb.com">Home page</a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://cloud.tiledb.com/auth/login">Login</a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://tiledb.com/contact">Contact us</a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/TileDB-Inc/TileDB-Viz">Repo</a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title">(Untitled)</h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../index.html" class="sidebar-item-text sidebar-link">TileDB-Viz</a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+    <div class="sidebar-item-container"> 
+        <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Core (classes)</a>
+      <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+        <i class="bi bi-chevron-right ms-2"></i>
+      </a>
+    </div>
+    <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/classes/TileDBImageVisualization.html" class="sidebar-item-text sidebar-link">Class: TileDBImageVisualization</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/classes/TileDBMBRSVisualization.html" class="sidebar-item-text sidebar-link active">Class: TileDBMBRSVisualization</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/classes/TileDBPointCloudVisualization.html" class="sidebar-item-text sidebar-link">Class: TileDBPointCloudVisualization</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/classes/TileDBVisualization.html" class="sidebar-item-text sidebar-link">Class: TileDBVisualization</a>
+  </div>
+</li>
+    </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+    <div class="sidebar-item-container"> 
+        <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">Core (interfaces)</a>
+      <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+        <i class="bi bi-chevron-right ms-2"></i>
+      </a>
+    </div>
+    <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/interfaces/TileDBImageVisualizationOptions.html" class="sidebar-item-text sidebar-link">Interface: TileDBImageVisualizationOptions</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/interfaces/TileDBMBRSVisualizationOptions.html" class="sidebar-item-text sidebar-link">Interface: TileDBMBRSVisualizationOptions</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/interfaces/TileDBPointCloudOptions.html" class="sidebar-item-text sidebar-link">Interface: TileDBPointCloudOptions</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../typedocs/interfaces/TileDBVisualizationBaseOptions.html" class="sidebar-item-text sidebar-link">Interface: TileDBVisualizationBaseOptions</a>
+  </div>
+</li>
+    </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#class-tiledbmbrsvisualization" id="toc-class-tiledbmbrsvisualization" class="nav-link active" data-scroll-target="#class-tiledbmbrsvisualization">Class: TileDBMBRSVisualization</a>
+  <ul class="collapse">
+  <li><a href="#hierarchy" id="toc-hierarchy" class="nav-link" data-scroll-target="#hierarchy">Hierarchy</a></li>
+  <li><a href="#table-of-contents" id="toc-table-of-contents" class="nav-link" data-scroll-target="#table-of-contents">Table of contents</a>
+  <ul class="collapse">
+  <li><a href="#constructors" id="toc-constructors" class="nav-link" data-scroll-target="#constructors">Constructors</a></li>
+  <li><a href="#properties" id="toc-properties" class="nav-link" data-scroll-target="#properties">Properties</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a></li>
+  </ul></li>
+  <li><a href="#constructors-1" id="toc-constructors-1" class="nav-link" data-scroll-target="#constructors-1">Constructors</a>
+  <ul class="collapse">
+  <li><a href="#constructor" id="toc-constructor" class="nav-link" data-scroll-target="#constructor">constructor</a></li>
+  </ul></li>
+  <li><a href="#properties-1" id="toc-properties-1" class="nav-link" data-scroll-target="#properties-1">Properties</a>
+  <ul class="collapse">
+  <li><a href="#zscale" id="toc-zscale" class="nav-link" data-scroll-target="#zscale">_zScale</a></li>
+  <li><a href="#canvas" id="toc-canvas" class="nav-link" data-scroll-target="#canvas">canvas</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">data</a></li>
+  <li><a href="#engine" id="toc-engine" class="nav-link" data-scroll-target="#engine">engine</a></li>
+  <li><a href="#extents" id="toc-extents" class="nav-link" data-scroll-target="#extents">extents</a></li>
+  <li><a href="#height" id="toc-height" class="nav-link" data-scroll-target="#height">height</a></li>
+  <li><a href="#inspector" id="toc-inspector" class="nav-link" data-scroll-target="#inspector">inspector</a></li>
+  <li><a href="#movespeed" id="toc-movespeed" class="nav-link" data-scroll-target="#movespeed">moveSpeed</a></li>
+  <li><a href="#rootelement" id="toc-rootelement" class="nav-link" data-scroll-target="#rootelement">rootElement</a></li>
+  <li><a href="#wheelprecision" id="toc-wheelprecision" class="nav-link" data-scroll-target="#wheelprecision">wheelPrecision</a></li>
+  <li><a href="#width" id="toc-width" class="nav-link" data-scroll-target="#width">width</a></li>
+  </ul></li>
+  <li><a href="#methods-1" id="toc-methods-1" class="nav-link" data-scroll-target="#methods-1">Methods</a>
+  <ul class="collapse">
+  <li><a href="#createscene" id="toc-createscene" class="nav-link" data-scroll-target="#createscene">createScene</a></li>
+  <li><a href="#destroy" id="toc-destroy" class="nav-link" data-scroll-target="#destroy">destroy</a></li>
+  <li><a href="#render" id="toc-render" class="nav-link" data-scroll-target="#render">render</a></li>
+  <li><a href="#rerendercanvas" id="toc-rerendercanvas" class="nav-link" data-scroll-target="#rerendercanvas">rerenderCanvas</a></li>
+  <li><a href="#resizecanvas" id="toc-resizecanvas" class="nav-link" data-scroll-target="#resizecanvas">resizeCanvas</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/TileDB-Inc/TileDB-Viz/edit/main/typedocs/classes/TileDBMBRSVisualization.md" class="toc-action">Edit this page</a></p><p><a href="https://github.com/TileDB-Inc/TileDB-Viz/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+<p><a href="../README.md"><span class="citation" data-cites="tiledb-inc/viz-core">@tiledb-inc/viz-core</span></a> / <a href="../../typedocs/modules.html">Exports</a> / TileDBMBRSVisualization</p>
+<section id="class-tiledbmbrsvisualization" class="level1">
+<h1>Class: TileDBMBRSVisualization</h1>
+<section id="hierarchy" class="level2">
+<h2 class="anchored" data-anchor-id="hierarchy">Hierarchy</h2>
+<ul>
+<li><p><a href="../../typedocs/classes/TileDBVisualization.html"><code>TileDBVisualization</code></a></p>
+<p>↳ <strong><code>TileDBMBRSVisualization</code></strong></p></li>
+</ul>
+</section>
+<section id="table-of-contents" class="level2">
+<h2 class="anchored" data-anchor-id="table-of-contents">Table of contents</h2>
+<section id="constructors" class="level3">
+<h3 class="anchored" data-anchor-id="constructors">Constructors</h3>
+<ul>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#constructor">constructor</a></li>
+</ul>
+</section>
+<section id="properties" class="level3">
+<h3 class="anchored" data-anchor-id="properties">Properties</h3>
+<ul>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#_zscale">_zScale</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#canvas">canvas</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#data">data</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#engine">engine</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#extents">extents</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#height">height</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#inspector">inspector</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#movespeed">moveSpeed</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#rootelement">rootElement</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#wheelprecision">wheelPrecision</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#width">width</a></li>
+</ul>
+</section>
+<section id="methods" class="level3">
+<h3 class="anchored" data-anchor-id="methods">Methods</h3>
+<ul>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#createscene">createScene</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#destroy">destroy</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#render">render</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#rerendercanvas">rerenderCanvas</a></li>
+<li><a href="../../typedocs/classes/TileDBMBRSVisualization.html#resizecanvas">resizeCanvas</a></li>
+</ul>
+</section>
+</section>
+<section id="constructors-1" class="level2">
+<h2 class="anchored" data-anchor-id="constructors-1">Constructors</h2>
+<section id="constructor" class="level3">
+<h3 class="anchored" data-anchor-id="constructor">constructor</h3>
+<p>• <strong>new TileDBMBRSVisualization</strong>(<code>options</code>)</p>
+<section id="parameters" class="level4">
+<h4 class="anchored" data-anchor-id="parameters">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>options</code></td>
+<td style="text-align: left;"><a href="../../typedocs/interfaces/TileDBMBRSVisualizationOptions.html"><code>TileDBMBRSVisualizationOptions</code></a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="overrides" class="level4">
+<h4 class="anchored" data-anchor-id="overrides">Overrides</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#constructor">constructor</a></p>
+</section>
+<section id="defined-in" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L31">mbrs/mbrs.ts:31</a></p>
+</section>
+</section>
+</section>
+<section id="properties-1" class="level2">
+<h2 class="anchored" data-anchor-id="properties-1">Properties</h2>
+<section id="zscale" class="level3">
+<h3 class="anchored" data-anchor-id="zscale">_zScale</h3>
+<p>• <code>Private</code> <strong>_zScale</strong>: <code>number</code></p>
+<section id="defined-in-1" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-1">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L28">mbrs/mbrs.ts:28</a></p>
+<hr>
+</section>
+</section>
+<section id="canvas" class="level3">
+<h3 class="anchored" data-anchor-id="canvas">canvas</h3>
+<p>• <code>Optional</code> <strong>canvas</strong>: <code>HTMLCanvasElement</code></p>
+<section id="inherited-from" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#canvas">canvas</a></p>
+</section>
+<section id="defined-in-2" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-2">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L37">base/base.ts:37</a></p>
+<hr>
+</section>
+</section>
+<section id="data" class="level3">
+<h3 class="anchored" data-anchor-id="data">data</h3>
+<p>• <code>Private</code> <strong>data</strong>: <code>any</code></p>
+<section id="defined-in-3" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-3">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L27">mbrs/mbrs.ts:27</a></p>
+<hr>
+</section>
+</section>
+<section id="engine" class="level3">
+<h3 class="anchored" data-anchor-id="engine">engine</h3>
+<p>• <code>Optional</code> <strong>engine</strong>: <code>Engine</code></p>
+<section id="inherited-from-1" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-1">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#engine">engine</a></p>
+</section>
+<section id="defined-in-4" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-4">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L38">base/base.ts:38</a></p>
+<hr>
+</section>
+</section>
+<section id="extents" class="level3">
+<h3 class="anchored" data-anchor-id="extents">extents</h3>
+<p>• <code>Private</code> <strong>extents</strong>: <code>number</code>[]</p>
+<section id="defined-in-5" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-5">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L29">mbrs/mbrs.ts:29</a></p>
+<hr>
+</section>
+</section>
+<section id="height" class="level3">
+<h3 class="anchored" data-anchor-id="height">height</h3>
+<p>• <strong>height</strong>: <code>string</code></p>
+<section id="inherited-from-2" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-2">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#height">height</a></p>
+</section>
+<section id="defined-in-6" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-6">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L36">base/base.ts:36</a></p>
+<hr>
+</section>
+</section>
+<section id="inspector" class="level3">
+<h3 class="anchored" data-anchor-id="inspector">inspector</h3>
+<p>• <code>Optional</code> <strong>inspector</strong>: <code>boolean</code></p>
+<section id="inherited-from-3" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-3">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#inspector">inspector</a></p>
+</section>
+<section id="defined-in-7" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-7">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L41">base/base.ts:41</a></p>
+<hr>
+</section>
+</section>
+<section id="movespeed" class="level3">
+<h3 class="anchored" data-anchor-id="movespeed">moveSpeed</h3>
+<p>• <strong>moveSpeed</strong>: <code>number</code></p>
+<section id="inherited-from-4" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-4">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#movespeed">moveSpeed</a></p>
+</section>
+<section id="defined-in-8" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-8">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L40">base/base.ts:40</a></p>
+<hr>
+</section>
+</section>
+<section id="rootelement" class="level3">
+<h3 class="anchored" data-anchor-id="rootelement">rootElement</h3>
+<p>• <strong>rootElement</strong>: <code>HTMLElement</code></p>
+<section id="inherited-from-5" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-5">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#rootelement">rootElement</a></p>
+</section>
+<section id="defined-in-9" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-9">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L42">base/base.ts:42</a></p>
+<hr>
+</section>
+</section>
+<section id="wheelprecision" class="level3">
+<h3 class="anchored" data-anchor-id="wheelprecision">wheelPrecision</h3>
+<p>• <strong>wheelPrecision</strong>: <code>number</code></p>
+<section id="inherited-from-6" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-6">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#wheelprecision">wheelPrecision</a></p>
+</section>
+<section id="defined-in-10" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-10">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L39">base/base.ts:39</a></p>
+<hr>
+</section>
+</section>
+<section id="width" class="level3">
+<h3 class="anchored" data-anchor-id="width">width</h3>
+<p>• <strong>width</strong>: <code>string</code></p>
+<section id="inherited-from-7" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-7">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#width">width</a></p>
+</section>
+<section id="defined-in-11" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-11">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L35">base/base.ts:35</a></p>
+</section>
+</section>
+</section>
+<section id="methods-1" class="level2">
+<h2 class="anchored" data-anchor-id="methods-1">Methods</h2>
+<section id="createscene" class="level3">
+<h3 class="anchored" data-anchor-id="createscene">createScene</h3>
+<p>▸ <code>Protected</code> <strong>createScene</strong>(): <code>Promise</code>&lt;<code>Scene</code>&gt;</p>
+<section id="returns" class="level4">
+<h4 class="anchored" data-anchor-id="returns">Returns</h4>
+<p><code>Promise</code>&lt;<code>Scene</code>&gt;</p>
+</section>
+<section id="overrides-1" class="level4">
+<h4 class="anchored" data-anchor-id="overrides-1">Overrides</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#createscene">createScene</a></p>
+</section>
+<section id="defined-in-12" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-12">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L38">mbrs/mbrs.ts:38</a></p>
+<hr>
+</section>
+</section>
+<section id="destroy" class="level3">
+<h3 class="anchored" data-anchor-id="destroy">destroy</h3>
+<p>▸ <strong>destroy</strong>(): <code>void</code></p>
+<section id="returns-1" class="level4">
+<h4 class="anchored" data-anchor-id="returns-1">Returns</h4>
+<p><code>void</code></p>
+</section>
+<section id="inherited-from-8" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-8">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#destroy">destroy</a></p>
+</section>
+<section id="defined-in-13" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-13">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L70">base/base.ts:70</a></p>
+<hr>
+</section>
+</section>
+<section id="render" class="level3">
+<h3 class="anchored" data-anchor-id="render">render</h3>
+<p>▸ <strong>render</strong>(): <code>void</code></p>
+<section id="returns-2" class="level4">
+<h4 class="anchored" data-anchor-id="returns-2">Returns</h4>
+<p><code>void</code></p>
+</section>
+<section id="inherited-from-9" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-9">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#render">render</a></p>
+</section>
+<section id="defined-in-14" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-14">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L88">base/base.ts:88</a></p>
+<hr>
+</section>
+</section>
+<section id="rerendercanvas" class="level3">
+<h3 class="anchored" data-anchor-id="rerendercanvas">rerenderCanvas</h3>
+<p>▸ <strong>rerenderCanvas</strong>(): <code>Promise</code>&lt;<code>void</code>&gt;</p>
+<section id="returns-3" class="level4">
+<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
+<p><code>Promise</code>&lt;<code>void</code>&gt;</p>
+</section>
+<section id="inherited-from-10" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-10">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#rerendercanvas">rerenderCanvas</a></p>
+</section>
+<section id="defined-in-15" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-15">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L55">base/base.ts:55</a></p>
+<hr>
+</section>
+</section>
+<section id="resizecanvas" class="level3">
+<h3 class="anchored" data-anchor-id="resizecanvas">resizeCanvas</h3>
+<p>▸ <strong>resizeCanvas</strong>(<code>dimensions?</code>): <code>void</code></p>
+<section id="parameters-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>dimensions?</code></td>
+<td style="text-align: left;"><code>Object</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>dimensions.height</code></td>
+<td style="text-align: left;"><code>string</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>dimensions.width</code></td>
+<td style="text-align: left;"><code>string</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-4" class="level4">
+<h4 class="anchored" data-anchor-id="returns-4">Returns</h4>
+<p><code>void</code></p>
+</section>
+<section id="inherited-from-11" class="level4">
+<h4 class="anchored" data-anchor-id="inherited-from-11">Inherited from</h4>
+<p><a href="../../typedocs/classes/TileDBVisualization.html">TileDBVisualization</a>.<a href="../../typedocs/classes/TileDBVisualization.html#resizecanvas">resizeCanvas</a></p>
+</section>
+<section id="defined-in-16" class="level4">
+<h4 class="anchored" data-anchor-id="defined-in-16">Defined in</h4>
+<p><a href="https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L59">base/base.ts:59</a></p>
+
+
+</section>
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../typedocs/classes/TileDBImageVisualization.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Class: TileDBImageVisualization</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../typedocs/classes/TileDBPointCloudVisualization.html" class="pagination-link">
+        <span class="nav-page-text">Class: TileDBPointCloudVisualization</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

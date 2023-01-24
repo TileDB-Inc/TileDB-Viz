@@ -1,0 +1,58 @@
+# Cloned from https://github.com/TileDB-Inc/tiledb-quarto-template
+project:
+  type: website
+  output-dir: docs
+  pre-render: yarn typedoc
+
+format:
+  html:
+    toc: true
+    theme: 
+      light: [flatly, "quarto-materials/tiledb.scss"]
+    mainfont: Helvetica
+    fontsize: 1rem
+    linkcolor: "#4d9fff"
+    code-copy: true
+    code-overflow: wrap
+    css: "quarto-materials/tiledb.css"
+
+website:
+  favicon: "images/favicon.ico"
+  site-url: https://tiledb-inc.github.io/tiledb-quarto-template/
+  repo-url: https://github.com/TileDB-Inc/TileDB-Viz
+  # You may want one or both of these, or neither:
+  repo-actions: [edit, issue]
+  page-navigation: true
+  navbar:
+    background: light
+    logo: "quarto-materials/tiledb-logo.png"
+    collapse-below: lg
+    left:
+      - text: "Home page"
+        href: "https://tiledb.com"
+      - text: "Login"
+        href: "https://cloud.tiledb.com/auth/login"
+      - text: "Contact us"
+        href: "https://tiledb.com/contact"
+      - text: "Repo"
+        href: "https://github.com/TileDB-Inc/TileDB-Viz"
+
+  sidebar:
+    - style: "floating"
+      collapse-level: 2
+      align: left
+      contents:
+        - href: "index.md"
+
+        - section: Core (classes)
+          contents:
+            - href: "typedocs/classes/TileDBImageVisualization.md"
+            - href: "typedocs/classes/TileDBMBRSVisualization.md"
+            - href: "typedocs/classes/TileDBPointCloudVisualization.md"
+            - href: "typedocs/classes/TileDBVisualization.md"
+        - section: Core (interfaces)
+          contents:
+            - href: "typedocs/interfaces/TileDBImageVisualizationOptions.md"
+            - href: "typedocs/interfaces/TileDBMBRSVisualizationOptions.md"
+            - href: "typedocs/interfaces/TileDBPointCloudOptions.md"
+            - href: "typedocs/interfaces/TileDBVisualizationBaseOptions.md"
