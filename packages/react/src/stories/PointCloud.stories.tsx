@@ -2,9 +2,7 @@ import React from 'react';
 
 import { PointCloudVisualization } from '../PointCloud/PointCloud';
 import data from '../../../../__mocks__/point-cloud-data.json';
-import gltfData from '../../../../__mocks__/gltf-data.json';
 import boulderData from '../../../../__mocks__/boulder.json';
-import timeData from '../../../../__mocks__/point-cloud-time-data.json';
 import autzenData from '../../../../__mocks__/autzen-sample.json';
 
 export default {
@@ -19,11 +17,14 @@ export default {
   }
 };
 
+const token = process.env.STORYBOOK_REST_TOKEN;
+
 const Template = () => (
   <PointCloudVisualization
     data={data}
     pointSize={25}
-    cameraRadius={250}
+    cameraZoomOut={[2, 2, 16]}
+    cameraLocation={8}
     width={'100vw'}
     height={'100vh'}
   />
@@ -35,9 +36,10 @@ export const PointCloudSPS = () => (
   <PointCloudVisualization
     data={data}
     pointSize={6}
+    cameraZoomOut={[2, 2, 16]}
+    cameraLocation={1}
     useShader={true}
     useSPS={true}
-    cameraRadius={250}
     colorScheme="light"
     width={'100vw'}
     height={'100vh'}
@@ -48,6 +50,8 @@ export const Boulder = () => (
   <PointCloudVisualization
     data={boulderData}
     colorScheme="dark"
+    cameraZoomOut={[6, 6, 2]}
+    cameraLocation={6}
     pointSize={2.5}
     width={'100vw'}
     height={'100vh'}
@@ -58,6 +62,8 @@ export const BoulderSPS = () => (
   <PointCloudVisualization
     data={boulderData}
     colorScheme="light"
+    cameraZoomOut={[6, 6, 2]}
+    cameraLocation={6}
     pointSize={0.05}
     useShader={true}
     useSPS={true}
@@ -70,8 +76,10 @@ export const Autzen = () => (
   <PointCloudVisualization
     data={autzenData}
     pointSize={5}
-    cameraRadius={600}
+    cameraZoomOut={[2, 2, 2]}
+    cameraLocation={2}
     colorScheme="blue"
+    moveSpeed={2}
     rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
@@ -82,7 +90,8 @@ export const AutzenSPS = () => (
   <PointCloudVisualization
     data={autzenData}
     pointSize={3}
-    cameraRadius={600}
+    cameraZoomOut={[2, 2, 4]}
+    cameraLocation={2}
     colorScheme="light"
     rgbMax={65535}
     useShader={true}
@@ -91,10 +100,6 @@ export const AutzenSPS = () => (
     height={'100vh'}
   />
 );
-
-const token = process.env.STORYBOOK_REST_TOKEN;
-const namespace = process.env.STORYBOOK_NAMESPACE;
-const groupName = process.env.STORYBOOK_GROUP_NAME;
 
 const bbox = {
   X: [636800, 637200],
@@ -110,25 +115,27 @@ export const AutzenBbox = () => (
     namespace="TileDB-Inc"
     arrayName="autzen_classified_tiledb"
     bbox={bbox}
-    pointSize={6}
-    cameraRadius={1000}
+    pointSize={8}
     colorScheme="light"
+    cameraUp={25}
     rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
   />
 );
 
-export const Streamer = () => (
+export const StreamerAutzen = () => (
   <PointCloudVisualization
     streaming={true}
     token={token}
-    namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
-    pointBudget={8000000}
+    namespace={'norman'}
+    groupName={'autzen'}
+    fanOut={100}
+    pointBudget={80000000}
     pointSize={3}
-    cameraRadius={2000}
+    wheelPrecision={0.5}
+    cameraUp={25}
+    moveSpeed={2}
     colorScheme="dark"
     rgbMax={255}
     width={'100vw'}
@@ -136,17 +143,83 @@ export const Streamer = () => (
   />
 );
 
-export const StreamerSPS = () => (
+export const StreamerBristol = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={'margriet-tiledb'}
+    groupName={'bristol'}
+    fanOut={100}
+    pointBudget={80000000}
+    maxNumCacheBlocks={500}
+    pointSize={3}
+    colorScheme="dark"
+    cameraLocation={2}
+    cameraUp={50}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+export const StreamerSantorini = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={'margriet-tiledb'}
+    groupName={'santorini'}
+    fanOut={200}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    pointSize={4}
+    colorScheme="dark"
+    cameraLocation={2}
+    cameraUp={200}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+  />
+);
+
+export const StreamerShaderSantorini = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={'margriet-tiledb'}
+    groupName={'santorini'}
+    fanOut={100}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    pointSize={4}
+    colorScheme="dark"
+    cameraLocation={2}
+    cameraUp={200}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+    useShader={true}
+  />
+);
+
+export const StreamerSPSAutzen = () => (
   <PointCloudVisualization
     streaming={true}
     useSPS={true}
     token={token}
-    namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
-    pointBudget={8000000}
+    namespace={'norman'}
+    groupName={'autzen'}
+    fanOut={100}
+    pointBudget={80000000}
     pointSize={3}
-    cameraRadius={2000}
+    wheelPrecision={0.5}
+    cameraUp={25}
+    moveSpeed={3}
     colorScheme="dark"
     rgbMax={255}
     width={'100vw'}
@@ -154,22 +227,47 @@ export const StreamerSPS = () => (
   />
 );
 
-export const StreamerShaderSPS = () => (
+export const StreamerShaderSPSAutzen = () => (
   <PointCloudVisualization
     streaming={true}
     useSPS={true}
     useShader={true}
     token={token}
-    namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
-    pointBudget={8000000}
+    namespace={'norman'}
+    groupName={'autzen'}
+    fanOut={100}
+    pointBudget={800000000}
     pointSize={3}
-    cameraRadius={2000}
+    wheelPrecision={0.5}
+    cameraUp={25}
+    moveSpeed={3}
     colorScheme="light"
     rgbMax={255}
     edlStrength={2}
     width={'100vw'}
     height={'100vh'}
+  />
+);
+
+export const StreamerShaderSPSSantorini = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={'margriet-tiledb'}
+    groupName={'santorini'}
+    fanOut={100}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    pointSize={4}
+    colorScheme="dark"
+    cameraLocation={2}
+    cameraUp={200}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+    useShader={true}
+    useSPS={true}
   />
 );

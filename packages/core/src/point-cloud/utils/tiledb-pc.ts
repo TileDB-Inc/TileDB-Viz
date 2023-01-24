@@ -108,9 +108,17 @@ export interface TileDBPointCloudOptions
    */
   pointSize?: number;
   /**
-   * Camera radius
+   * Camera location, choose a camera viewpoint towards the centre of the point cloud between 1 and 9
    */
-  cameraRadius?: number;
+  cameraLocation?: number;
+  /**
+   * Camera zoom, move the camera towards or away from the centre of the point cloud in the [x,y,z] directions
+   */
+  cameraZoomOut?: number[];
+  /**
+   * Move the free camera position up or down
+   */
+  cameraUp?: number;
   /**
    * EDL shader strength
    */
@@ -361,7 +369,7 @@ export async function getNonEmptyDomain(
 
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
-): Promise<[Map<string, number>, Array<number>, number]> {
+): Promise<[Map<string, number>, Array<number>, Array<number>, number]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = -1;
@@ -397,22 +405,34 @@ export async function getArrayMetadata(
 
     interface OctantData {
       'octree-bounds': string;
+      'octree-bounds-conforming': string;
       'octant-data': string;
     }
     const o = resp.data as OctantData;
     const obj = JSON.parse(o['octant-data']);
     const bounds = JSON.parse(o['octree-bounds']);
+    let boundsConforming = JSON.parse(o['octree-bounds']);
+    if (o['octree-bounds-conforming']) {
+      boundsConforming = JSON.parse(o['octree-bounds-conforming']);
+    }
 
     writeToCache(storeName, key, {
       'octant-data': obj,
       'octree-bounds': bounds,
+      'octree-bounds-conforming': boundsConforming,
       'octree-levels': nLevels
     });
-    return [new Map<string, number>(Object.entries(obj)), bounds, nLevels];
+    return [
+      new Map<string, number>(Object.entries(obj)),
+      bounds,
+      boundsConforming,
+      nLevels
+    ];
   } else {
     return [
       new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
       dataFromCache['octree-bounds'],
+      dataFromCache['octree-bounds-conforming'],
       dataFromCache['octree-levels']
     ];
   }

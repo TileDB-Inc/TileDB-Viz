@@ -1,4 +1,12 @@
-import { Effect, Scene, ShaderMaterial } from '@babylonjs/core';
+import {
+  Effect,
+  Engine,
+  PostProcess,
+  Scene,
+  ShaderMaterial
+} from '@babylonjs/core';
+import { TileDBPointCloudOptions } from '../utils';
+import ArrayModel from './array-model';
 
 class ParticleShaderMaterial {
   shaderMaterial: ShaderMaterial;
@@ -141,6 +149,58 @@ class ParticleShaderMaterial {
     );
 
     this.shaderMaterial.backFaceCulling = false;
+  }
+
+  public setShader(
+    scene: Scene,
+    model: ArrayModel,
+    options: TileDBPointCloudOptions,
+    engine?: Engine
+  ) {
+    if (scene.activeCameras) {
+      if (engine) {
+        // add shader post-processing for EDL
+        const edlStrength = options.edlStrength || 4.0;
+        const edlRadius = options.edlRadius || 1.4;
+        const neighbourCount = options.edlNeighbours || 8;
+        const neighbours: number[] = [];
+        for (let c = 0; c < neighbourCount; c++) {
+          neighbours[2 * c + 0] = Math.cos((2 * c * Math.PI) / neighbourCount);
+          neighbours[2 * c + 1] = Math.sin((2 * c * Math.PI) / neighbourCount);
+        }
+
+        const depthRenderer = scene.enableDepthRenderer(scene.activeCameras[0]);
+        const depthTex = depthRenderer.getDepthMap();
+        const screenWidth = engine?.getRenderWidth();
+        const screenHeight = engine?.getRenderHeight();
+
+        const postProcess = new PostProcess(
+          'My custom post process',
+          'custom',
+          [
+            'screenWidth',
+            'screenHeight',
+            'neighbours',
+            'edlStrength',
+            'radius'
+          ],
+          ['uEDLDepth'],
+          1.0,
+          scene.activeCameras[0]
+        );
+
+        if (model.useShader) {
+          postProcess.onApply = function (effect: Effect) {
+            effect.setFloat('screenWidth', screenWidth as number);
+            effect.setFloat('screenHeight', screenHeight as number);
+            effect.setArray2('neighbours', neighbours);
+            effect.setFloat('edlStrength', edlStrength);
+            effect.setFloat('radius', edlRadius);
+            effect.setTexture('uEDLDepth', depthTex);
+          };
+        }
+      }
+    }
   }
 }
 
