@@ -1,8 +1,7 @@
 # Cloned from https://github.com/TileDB-Inc/tiledb-quarto-template
 
 name: Render and deploy Quarto files
-on: 
-  push:
+on:
   pull_request:
 
 jobs:
