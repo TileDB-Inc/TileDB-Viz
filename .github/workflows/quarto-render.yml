@@ -25,13 +25,13 @@ jobs:
     # Verify that yarn 3.x is used
     - run: echo Using yarn version $(yarn --version)
     # Install dependencies
-    - run: yarn
+    - run: yarn install && yarn run quarto
       
-    - name: "Quarto render"
-      shell: bash
-      run: |
-        quarto render ./quarto/ --fail-if-warnings && mv quarto/docs/ docs
-        # https://github.com/quarto-dev/quarto-cli/issues/493
+    # - name: "Quarto render"
+    #   shell: bash
+    #   run: |
+    #     quarto render ./quarto/ --fail-if-warnings && mv quarto/docs/ docs
+    #     # https://github.com/quarto-dev/quarto-cli/issues/493
 
     - name: "Deploy to gh-pages"
       uses: peaceiris/actions-gh-pages@v3
