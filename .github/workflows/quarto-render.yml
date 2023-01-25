@@ -25,7 +25,9 @@ jobs:
     # Verify that yarn 3.x is used
     - run: echo Using yarn version $(yarn --version)
     # Install dependencies
-    - run: yarn install && yarn run quarto
+    - run: yarn install
+    - run: yarn typedoc
+    - run: yarn run quarto
       
     # - name: "Quarto render"
     #   shell: bash
