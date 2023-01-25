@@ -2,7 +2,7 @@
 project:
   type: website
   output-dir: docs
-  # pre-render: yarn typedoc
+  pre-render: yarn typedoc
 
 format:
   html:
