@@ -20,7 +20,7 @@
     "build": "yarn workspace @tiledb-inc/viz-core build && yarn workspace @tiledb-inc/viz-react build",
     "g:tsc": "cd $INIT_CWD && tsc",
     "typedoc": "typedoc --plugin typedoc-plugin-markdown --tsconfig ./tsconfig.json",
-    "quarto": "quarto render ./quarto/ --fail-if-warnings && mv quarto/docs/ docs",
+    "quarto": "quarto render ./quarto/ --fail-if-warnings",
     "g:eslint": "cd $INIT_CWD && eslint",
     "g:parcel": "cd $INIT_CWD && parcel",
     "storybook": "yarn workspace @tiledb-inc/viz-react storybook",

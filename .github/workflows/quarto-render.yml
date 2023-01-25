@@ -40,5 +40,5 @@ jobs:
         # This is GitHub Actions magic; no secrets for us to manage; and this works first-time
         # without any extra configs other than visiting Settings -> Pages in your GitHub repo.
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: docs
+        publish_dir: quarto/docs
         destination_dir: docs
