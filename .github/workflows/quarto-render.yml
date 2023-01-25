@@ -10,7 +10,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - uses: actions/setup-node@v3
+    - name: "Install Quarto"
+      uses: quarto-dev/quarto-actions/install-quarto@v1
+      with:
+        version: 0.9.141
+
+    - name: "Install yarn dependencies"
+      uses: actions/setup-node@v3
       with:
         node-version: '16.x'
         registry-url: 'https://registry.npmjs.org'
@@ -20,11 +26,6 @@ jobs:
     - run: echo Using yarn version $(yarn --version)
     # Install dependencies
     - run: yarn
-
-    - name: "Install Quarto"
-      uses: quarto-dev/quarto-actions/install-quarto@v1
-      with:
-        version: 0.9.141
       
     - name: "Quarto render"
       shell: bash
