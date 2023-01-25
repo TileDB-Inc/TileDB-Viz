@@ -11,6 +11,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.x'
+        registry-url: 'https://registry.npmjs.org'
+    # Enable corepack to have yarn v3
+    - run: corepack enable
+    # Verify that yarn 3.x is used
+    - run: echo Using yarn version $(yarn --version)
+    # Install dependencies
+    - run: yarn
+
     - name: "Install Quarto"
       uses: quarto-dev/quarto-actions/install-quarto@v1
       with:
@@ -25,7 +36,6 @@ jobs:
     - name: "Deploy to gh-pages"
       uses: peaceiris/actions-gh-pages@v3
       # Change to the name of your repo's primary branch name:
-      if: github.ref == 'refs/heads/main'
       with:
         # This is GitHub Actions magic; no secrets for us to manage; and this works first-time
         # without any extra configs other than visiting Settings -> Pages in your GitHub repo.
