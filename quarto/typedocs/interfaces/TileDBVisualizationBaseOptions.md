@@ -33,7 +33,7 @@ Height of widget canvas in pixels
 
 #### Defined in
 
-[base/base.ts:16](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L16)
+[base/base.ts:16](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L16)
 
 ___
 
@@ -45,7 +45,7 @@ Show BabylonJS inspector
 
 #### Defined in
 
-[base/base.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L28)
+[base/base.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L28)
 
 ___
 
@@ -57,7 +57,7 @@ When camera view in first-person determines how fast to move
 
 #### Defined in
 
-[base/base.ts:24](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L24)
+[base/base.ts:24](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L24)
 
 ___
 
@@ -69,7 +69,7 @@ The HTML element to render the canvas
 
 #### Defined in
 
-[base/base.ts:32](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L32)
+[base/base.ts:32](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L32)
 
 ___
 
@@ -81,7 +81,7 @@ Gets or Set the mouse wheel precision or how fast is the camera zooming.
 
 #### Defined in
 
-[base/base.ts:20](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L20)
+[base/base.ts:20](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L20)
 
 ___
 
@@ -93,4 +93,4 @@ Width of widget canvas in pixels
 
 #### Defined in
 
-[base/base.ts:12](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L12)
+[base/base.ts:12](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L12)

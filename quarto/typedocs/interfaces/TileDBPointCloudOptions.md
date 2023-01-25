@@ -68,7 +68,7 @@ Name of the array registered in TileDB Cloud (if mode === "cloud")
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:81](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L81)
+[point-cloud/utils/tiledb-pc.ts:81](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L81)
 
 ___
 
@@ -88,7 +88,7 @@ The min and max values of x, y and z
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:73](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L73)
+[point-cloud/utils/tiledb-pc.ts:73](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L73)
 
 ___
 
@@ -100,7 +100,7 @@ TileDB query buffer size
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:97](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L97)
+[point-cloud/utils/tiledb-pc.ts:97](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L97)
 
 ___
 
@@ -112,7 +112,7 @@ Camera radius
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:113](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L113)
+[point-cloud/utils/tiledb-pc.ts:113](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L113)
 
 ___
 
@@ -131,7 +131,7 @@ Lookup table with the index and names of all classes [mode='classes']
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:41](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L41)
+[point-cloud/utils/tiledb-pc.ts:41](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L41)
 
 ___
 
@@ -143,7 +143,7 @@ Color scheme
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:21](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L21)
+[point-cloud/utils/tiledb-pc.ts:21](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L21)
 
 ___
 
@@ -155,7 +155,7 @@ Data to render [all modes]
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:25](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L25)
+[point-cloud/utils/tiledb-pc.ts:25](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L25)
 
 ___
 
@@ -167,7 +167,7 @@ debug, draw octant boxes that are being rendered
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:153](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L153)
+[point-cloud/utils/tiledb-pc.ts:153](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L153)
 
 ___
 
@@ -179,7 +179,7 @@ Perform clash detection between mesh and point cloud if true
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:49](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L49)
+[point-cloud/utils/tiledb-pc.ts:49](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L49)
 
 ___
 
@@ -191,7 +191,7 @@ Number of neightbours used in EDL shader
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:125](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L125)
+[point-cloud/utils/tiledb-pc.ts:125](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L125)
 
 ___
 
@@ -203,7 +203,7 @@ EDL shader radius
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:121](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L121)
+[point-cloud/utils/tiledb-pc.ts:121](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L121)
 
 ___
 
@@ -215,7 +215,7 @@ EDL shader strength
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:117](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L117)
+[point-cloud/utils/tiledb-pc.ts:117](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L117)
 
 ___
 
@@ -227,7 +227,7 @@ Number of blocks to fan out when buffering
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:137](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L137)
+[point-cloud/utils/tiledb-pc.ts:137](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L137)
 
 ___
 
@@ -239,7 +239,7 @@ Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:33](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L33)
+[point-cloud/utils/tiledb-pc.ts:33](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L33)
 
 ___
 
@@ -251,7 +251,7 @@ gltfData is an array with blobs when true
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:65](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L65)
+[point-cloud/utils/tiledb-pc.ts:65](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L65)
 
 ___
 
@@ -263,7 +263,7 @@ Name of the group registered in TileDB Cloud (if mode === "cloud")
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:85](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L85)
+[point-cloud/utils/tiledb-pc.ts:85](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L85)
 
 ___
 
@@ -279,7 +279,7 @@ Height of widget canvas in pixels
 
 #### Defined in
 
-[base/base.ts:16](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L16)
+[base/base.ts:16](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L16)
 
 ___
 
@@ -295,7 +295,7 @@ Show BabylonJS inspector
 
 #### Defined in
 
-[base/base.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L28)
+[base/base.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L28)
 
 ___
 
@@ -307,7 +307,7 @@ Number of blocks in LRU cache
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:129](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L129)
+[point-cloud/utils/tiledb-pc.ts:129](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L129)
 
 ___
 
@@ -319,7 +319,7 @@ Rotate the mesh with [alpha,beta,gamma]
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:53](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L53)
+[point-cloud/utils/tiledb-pc.ts:53](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L53)
 
 ___
 
@@ -331,7 +331,7 @@ Scale the size [x,y,z] of the mesh
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:61](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L61)
+[point-cloud/utils/tiledb-pc.ts:61](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L61)
 
 ___
 
@@ -343,7 +343,7 @@ Shift the mesh with [x,y,z]
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:57](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L57)
+[point-cloud/utils/tiledb-pc.ts:57](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L57)
 
 ___
 
@@ -359,7 +359,7 @@ gltf: add gltf meshes
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:17](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L17)
+[point-cloud/utils/tiledb-pc.ts:17](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L17)
 
 ___
 
@@ -375,7 +375,7 @@ When camera view in first-person determines how fast to move
 
 #### Defined in
 
-[base/base.ts:24](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L24)
+[base/base.ts:24](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L24)
 
 ___
 
@@ -387,7 +387,7 @@ Namespace of the array/group registered in TileDB Cloud (if mode === "cloud")
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:77](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L77)
+[point-cloud/utils/tiledb-pc.ts:77](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L77)
 
 ___
 
@@ -399,7 +399,7 @@ Point budget
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:133](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L133)
+[point-cloud/utils/tiledb-pc.ts:133](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L133)
 
 ___
 
@@ -409,7 +409,7 @@ ___
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:68](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L68)
+[point-cloud/utils/tiledb-pc.ts:68](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L68)
 
 ___
 
@@ -421,7 +421,7 @@ Point size
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:109](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L109)
+[point-cloud/utils/tiledb-pc.ts:109](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L109)
 
 ___
 
@@ -433,7 +433,7 @@ Select point rendering type, 'box' is supported for now
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:105](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L105)
+[point-cloud/utils/tiledb-pc.ts:105](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L105)
 
 ___
 
@@ -443,7 +443,7 @@ ___
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:69](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L69)
+[point-cloud/utils/tiledb-pc.ts:69](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L69)
 
 ___
 
@@ -459,7 +459,7 @@ The HTML element to render the canvas
 
 #### Defined in
 
-[base/base.ts:32](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L32)
+[base/base.ts:32](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L32)
 
 ___
 
@@ -469,7 +469,7 @@ ___
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:67](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L67)
+[point-cloud/utils/tiledb-pc.ts:67](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L67)
 
 ___
 
@@ -479,7 +479,7 @@ ___
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:66](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L66)
+[point-cloud/utils/tiledb-pc.ts:66](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L66)
 
 ___
 
@@ -491,7 +491,7 @@ Stream from TileDB Cloud
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:101](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L101)
+[point-cloud/utils/tiledb-pc.ts:101](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L101)
 
 ___
 
@@ -503,7 +503,7 @@ Path to TileDB config file
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:93](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L93)
+[point-cloud/utils/tiledb-pc.ts:93](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L93)
 
 ___
 
@@ -515,7 +515,7 @@ Time offset
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:45](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L45)
+[point-cloud/utils/tiledb-pc.ts:45](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L45)
 
 ___
 
@@ -527,7 +527,7 @@ TileDB Cloud api token (if mode === "cloud")
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:89](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L89)
+[point-cloud/utils/tiledb-pc.ts:89](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L89)
 
 ___
 
@@ -539,7 +539,7 @@ Move the gltf datas along the z-axis to better align with the mapbox base layer 
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:37](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L37)
+[point-cloud/utils/tiledb-pc.ts:37](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L37)
 
 ___
 
@@ -551,7 +551,7 @@ Add an interactive GUI
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:145](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L145)
+[point-cloud/utils/tiledb-pc.ts:145](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L145)
 
 ___
 
@@ -563,7 +563,7 @@ Use a Solid Particle System for the point cloud
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:149](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L149)
+[point-cloud/utils/tiledb-pc.ts:149](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L149)
 
 ___
 
@@ -575,7 +575,7 @@ Use shaders, on low end system might not want to use shaders
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:141](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L141)
+[point-cloud/utils/tiledb-pc.ts:141](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L141)
 
 ___
 
@@ -591,7 +591,7 @@ Gets or Set the mouse wheel precision or how fast is the camera zooming.
 
 #### Defined in
 
-[base/base.ts:20](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L20)
+[base/base.ts:20](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L20)
 
 ___
 
@@ -607,7 +607,7 @@ Width of widget canvas in pixels
 
 #### Defined in
 
-[base/base.ts:12](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L12)
+[base/base.ts:12](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L12)
 
 ___
 
@@ -619,7 +619,7 @@ Web worker request pool size
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:157](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L157)
+[point-cloud/utils/tiledb-pc.ts:157](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L157)
 
 ___
 
@@ -631,4 +631,4 @@ Scale the z-coordinate values for all points
 
 #### Defined in
 
-[point-cloud/utils/tiledb-pc.ts:29](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/point-cloud/utils/tiledb-pc.ts#L29)
+[point-cloud/utils/tiledb-pc.ts:29](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/point-cloud/utils/tiledb-pc.ts#L29)

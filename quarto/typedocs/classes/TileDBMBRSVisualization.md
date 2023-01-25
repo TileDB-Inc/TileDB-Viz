@@ -54,7 +54,7 @@
 
 #### Defined in
 
-[mbrs/mbrs.ts:31](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L31)
+[mbrs/mbrs.ts:31](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/mbrs/mbrs.ts#L31)
 
 ## Properties
 
@@ -64,7 +64,7 @@
 
 #### Defined in
 
-[mbrs/mbrs.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L28)
+[mbrs/mbrs.ts:28](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/mbrs/mbrs.ts#L28)
 
 ___
 
@@ -78,7 +78,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:37](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L37)
+[base/base.ts:37](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L37)
 
 ___
 
@@ -88,7 +88,7 @@ ___
 
 #### Defined in
 
-[mbrs/mbrs.ts:27](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L27)
+[mbrs/mbrs.ts:27](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/mbrs/mbrs.ts#L27)
 
 ___
 
@@ -102,7 +102,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:38](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L38)
+[base/base.ts:38](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L38)
 
 ___
 
@@ -112,7 +112,7 @@ ___
 
 #### Defined in
 
-[mbrs/mbrs.ts:29](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L29)
+[mbrs/mbrs.ts:29](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/mbrs/mbrs.ts#L29)
 
 ___
 
@@ -126,7 +126,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:36](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L36)
+[base/base.ts:36](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L36)
 
 ___
 
@@ -140,7 +140,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:41](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L41)
+[base/base.ts:41](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L41)
 
 ___
 
@@ -154,7 +154,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:40](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L40)
+[base/base.ts:40](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L40)
 
 ___
 
@@ -168,7 +168,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:42](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L42)
+[base/base.ts:42](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L42)
 
 ___
 
@@ -182,7 +182,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:39](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L39)
+[base/base.ts:39](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L39)
 
 ___
 
@@ -196,7 +196,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:35](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L35)
+[base/base.ts:35](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L35)
 
 ## Methods
 
@@ -214,7 +214,7 @@ ___
 
 #### Defined in
 
-[mbrs/mbrs.ts:38](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/mbrs/mbrs.ts#L38)
+[mbrs/mbrs.ts:38](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/mbrs/mbrs.ts#L38)
 
 ___
 
@@ -232,7 +232,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:70](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L70)
+[base/base.ts:70](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L70)
 
 ___
 
@@ -250,7 +250,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:88](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L88)
+[base/base.ts:88](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L88)
 
 ___
 
@@ -268,7 +268,7 @@ ___
 
 #### Defined in
 
-[base/base.ts:55](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L55)
+[base/base.ts:55](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L55)
 
 ___
 
@@ -294,4 +294,4 @@ ___
 
 #### Defined in
 
-[base/base.ts:59](https://github.com/TileDB-Inc/TileDB-Viz/blob/f8363c2/packages/core/src/base/base.ts#L59)
+[base/base.ts:59](https://github.com/TileDB-Inc/TileDB-Viz/blob/cc0c331/packages/core/src/base/base.ts#L59)
