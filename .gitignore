@@ -30,3 +30,4 @@ packages/**/node_modules
 
 # Docs
 docs
+quarto/typedocs
