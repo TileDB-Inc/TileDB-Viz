@@ -27,6 +27,7 @@ jobs:
     # Install dependencies and build
     - run: yarn install
     - run: yarn build
+    - run: yarn typedoc
       
     - name: "Quarto render"
       shell: bash
