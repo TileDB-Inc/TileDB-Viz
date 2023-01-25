@@ -27,7 +27,6 @@ jobs:
     # Install dependencies and build
     - run: yarn install
     - run: yarn build
-    - run: yarn typedoc
       
     - name: "Quarto render"
       shell: bash
@@ -35,7 +34,7 @@ jobs:
         quarto render ./quarto/ --fail-if-warnings
         # https://github.com/quarto-dev/quarto-cli/issues/493
 
-    - run: ls quarto/docs/ 
+    - run: ls quarto/docs/typedocs 
     - name: "Deploy to gh-pages"
       uses: peaceiris/actions-gh-pages@v3
       # Change to the name of your repo's primary branch name:
