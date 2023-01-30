@@ -132,14 +132,16 @@ export const StreamerAutzen = () => (
     groupName={'autzen'}
     fanOut={100}
     pointBudget={80000000}
+    maxNumCacheBlocks={500}
     pointSize={3}
     wheelPrecision={0.5}
     cameraUp={25}
-    moveSpeed={2}
+    moveSpeed={4}
     colorScheme="dark"
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
+    useShader={true}
   />
 );
 
@@ -150,17 +152,19 @@ export const StreamerBristol = () => (
     namespace={'margriet-tiledb'}
     groupName={'bristol'}
     fanOut={100}
-    pointBudget={80000000}
-    maxNumCacheBlocks={500}
+    pointBudget={800000000}
+    maxNumCacheBlocks={10000}
     pointSize={3}
     colorScheme="dark"
-    cameraLocation={2}
+    cameraLocation={5}
+    cameraZoomOut={[2, 2, 2]}
     cameraUp={50}
     wheelPrecision={0.5}
-    moveSpeed={4}
+    moveSpeed={8}
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
+    useShader={true}
   />
 );
 
@@ -170,18 +174,20 @@ export const StreamerSantorini = () => (
     token={token}
     namespace={'margriet-tiledb'}
     groupName={'santorini'}
-    fanOut={200}
+    fanOut={1000}
     pointBudget={80000000}
-    maxNumCacheBlocks={1000}
+    maxNumCacheBlocks={10000}
     pointSize={4}
     colorScheme="dark"
-    cameraLocation={2}
+    cameraLocation={5}
+    //cameraZoomOut={[2, 2, 2]}
     cameraUp={200}
     wheelPrecision={0.5}
     moveSpeed={4}
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
+    useShader={true}
   />
 );
 

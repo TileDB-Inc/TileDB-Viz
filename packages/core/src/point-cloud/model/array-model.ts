@@ -9,18 +9,18 @@ import {
   SolidParticleSystem,
   SolidParticle,
   StandardMaterial,
-  Vector3
+  Vector3,
+  Particle
 } from '@babylonjs/core';
 
 import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
-import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 import {
   DataRequest,
   InitialRequest,
   SparseResult,
   WorkerType
 } from './sparse-result';
-import ParticleShaderMaterial from './particle-shader';
+import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
 
 /**
@@ -78,7 +78,7 @@ class ArrayModel {
     this.edlStrength = options.edlStrength || 4.0;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
-    this.colorScheme = options.colorScheme || 'blue';
+    this.colorScheme = options.colorScheme || 'dark';
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 200;
     this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
@@ -143,7 +143,7 @@ class ArrayModel {
 
         this.pointCount += numPoints;
 
-        const pointBuilder = function (particle: any, i: number) {
+        const pointBuilder = function (particle: Particle, i: number) {
           if (block.entries !== undefined) {
             particle.position.set(
               block.entries.X[i] - transX,

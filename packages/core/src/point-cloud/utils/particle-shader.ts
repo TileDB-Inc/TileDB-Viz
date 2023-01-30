@@ -5,8 +5,8 @@ import {
   Scene,
   ShaderMaterial
 } from '@babylonjs/core';
-import { TileDBPointCloudOptions } from '../utils';
-import ArrayModel from './array-model';
+import { TileDBPointCloudOptions } from '.';
+import ArrayModel from '../model/array-model';
 
 class ParticleShaderMaterial {
   shaderMaterial: ShaderMaterial;

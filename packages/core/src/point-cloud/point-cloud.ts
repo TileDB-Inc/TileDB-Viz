@@ -11,13 +11,18 @@ import {
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
-import { getArrayMetadata, getPointCloud, setSceneColors } from './utils';
-import { TileDBPointCloudOptions } from './utils/tiledb-pc';
+import {
+  getArrayMetadata,
+  getPointCloud,
+  ParticleShaderMaterial,
+  PointCloudGUI,
+  setCameraLight,
+  setCameraPosition,
+  setSceneColors,
+  TileDBPointCloudOptions
+} from './utils';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
-import PointCloudGUI from './gui/point-cloud-gui';
-import ParticleShaderMaterial from './model/particle-shader';
-import { setCameraLight, setCameraPosition } from './utils/cameras_lights';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -115,6 +120,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               );
             }
           }
+
+          // toggl between background colors
+          if (kbInfo.event.key === 'b') {
+            if (this.model.colorScheme === 'dark') {
+              this.model.colorScheme = 'light';
+            } else if (this.model.colorScheme === 'light') {
+              this.model.colorScheme = 'dark';
+            }
+            const sceneColors = setSceneColors(
+              this.model.colorScheme as string
+            );
+            this.scene.clearColor = sceneColors.backgroundColor;
+          }
           break;
 
         case KeyboardEventTypes.KEYUP:
@@ -130,15 +148,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
 
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-
       this.attachKeys();
-
-      const sceneColors = setSceneColors(this.options.colorScheme as string);
-      this.scene.clearColor = sceneColors.backgroundColor;
 
       // initialize ParticleSystem
       this.model = new ArrayModel(this.options);
@@ -195,6 +205,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       }
 
+      // set background color
+      const sceneColors = setSceneColors(this.model.colorScheme as string);
+      this.scene.clearColor = sceneColors.backgroundColor;
+
       // set up cameras and light
       this.cameras = setCameraLight(
         this.scene,
@@ -204,6 +218,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.moveSpeed,
         this.wheelPrecision
       );
+
+      this.gui = new PointCloudGUI(this.scene);
+      if (this.gui.advancedDynamicTexture.layer !== null) {
+        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+      }
 
       // add shader
       this.model.particleMaterial = new ParticleShaderMaterial(

@@ -1,37 +1,3 @@
-function reduceArrays(arrays: any, showFraction: number) {
-  const arrayKeys = Object.keys(arrays);
-  const reducedArrays: any = {};
-
-  for (const arrayKey of arrayKeys) {
-    if (Array.isArray(arrays[arrayKey])) {
-      reducedArrays[arrayKey] = arrays[arrayKey].filter(
-        (value: any, index: any, Arr: any) => {
-          return index % showFraction === 0;
-        }
-      );
-    }
-  }
-
-  return reducedArrays;
-}
-
-function reduceDataArrays(data: any, showFraction: number) {
-  const GpsTime = data.GpsTime;
-  const X = data.X;
-  const Y = data.Y;
-  const Z = data.Z;
-  const Red = data.Red;
-  const Green = data.Green;
-  const Blue = data.Blue;
-
-  const reducedData = reduceArrays(
-    { GpsTime, X, Y, Z, Red, Green, Blue },
-    showFraction
-  );
-
-  return reducedData;
-}
-
 function sortArrays(
   arrays: any,
   comparator = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0)
@@ -76,4 +42,4 @@ function sortDataArrays(data: any) {
   return sortedData;
 }
 
-export { reduceArrays, reduceDataArrays, sortArrays, sortDataArrays };
+export { sortArrays, sortDataArrays };
