@@ -18,6 +18,8 @@ export default {
 };
 
 const token = process.env.STORYBOOK_REST_TOKEN;
+const namespace = process.env.STORYBOOK_NAMESPACE;
+const groupName = process.env.STORYBOOK_GROUP_NAME;
 
 const Template = () => (
   <PointCloudVisualization
@@ -128,8 +130,8 @@ export const StreamerAutzen = () => (
   <PointCloudVisualization
     streaming={true}
     token={token}
-    namespace={'norman'}
-    groupName={'autzen'}
+    namespace={namespace}
+    groupName={groupName}
     fanOut={100}
     pointBudget={80000000}
     maxNumCacheBlocks={500}
@@ -142,138 +144,5 @@ export const StreamerAutzen = () => (
     width={'100vw'}
     height={'100vh'}
     useShader={true}
-  />
-);
-
-export const StreamerBristol = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={'margriet-tiledb'}
-    groupName={'bristol'}
-    fanOut={100}
-    pointBudget={800000000}
-    maxNumCacheBlocks={10000}
-    pointSize={3}
-    colorScheme="dark"
-    cameraLocation={5}
-    cameraZoomOut={[2, 2, 2]}
-    cameraUp={50}
-    wheelPrecision={0.5}
-    moveSpeed={8}
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-    useShader={true}
-  />
-);
-
-export const StreamerSantorini = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={'margriet-tiledb'}
-    groupName={'santorini'}
-    fanOut={1000}
-    pointBudget={80000000}
-    maxNumCacheBlocks={10000}
-    pointSize={4}
-    colorScheme="dark"
-    cameraLocation={5}
-    //cameraZoomOut={[2, 2, 2]}
-    cameraUp={200}
-    wheelPrecision={0.5}
-    moveSpeed={4}
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-    useShader={true}
-  />
-);
-
-export const StreamerShaderSantorini = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={'margriet-tiledb'}
-    groupName={'santorini'}
-    fanOut={100}
-    pointBudget={80000000}
-    maxNumCacheBlocks={1000}
-    pointSize={4}
-    colorScheme="dark"
-    cameraLocation={2}
-    cameraUp={200}
-    wheelPrecision={0.5}
-    moveSpeed={4}
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-    useShader={true}
-  />
-);
-
-export const StreamerSPSAutzen = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
-    token={token}
-    namespace={'norman'}
-    groupName={'autzen'}
-    fanOut={100}
-    pointBudget={80000000}
-    pointSize={3}
-    wheelPrecision={0.5}
-    cameraUp={25}
-    moveSpeed={3}
-    colorScheme="dark"
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-export const StreamerShaderSPSAutzen = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
-    useShader={true}
-    token={token}
-    namespace={'norman'}
-    groupName={'autzen'}
-    fanOut={100}
-    pointBudget={800000000}
-    pointSize={3}
-    wheelPrecision={0.5}
-    cameraUp={25}
-    moveSpeed={3}
-    colorScheme="light"
-    rgbMax={255}
-    edlStrength={2}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-export const StreamerShaderSPSSantorini = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={'margriet-tiledb'}
-    groupName={'santorini'}
-    fanOut={100}
-    pointBudget={80000000}
-    maxNumCacheBlocks={1000}
-    pointSize={4}
-    colorScheme="dark"
-    cameraLocation={2}
-    cameraUp={200}
-    wheelPrecision={0.5}
-    moveSpeed={4}
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-    useShader={true}
-    useSPS={true}
   />
 );
