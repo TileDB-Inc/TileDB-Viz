@@ -383,9 +383,6 @@ class ArrayModel {
             this.pickedBlockCode = pickCode;
             this.renderBlocks = parentBlocks;
             this.isBuffering = false;
-            // restart count to base level as we are going to redraw
-            // particle systems are based on a lru cache, this is just a way of preventing too many points being loaded
-            this.pointCount = this.basePcs.nbParticles;
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
 
@@ -419,11 +416,14 @@ class ArrayModel {
           }
 
           if (block) {
-            const nextPointCount =
-              this.octree.knownBlocks.get(block.mortonNumber) ||
-              this.pointCount;
+            const nextPointCount = this.octree.knownBlocks.get(
+              block.mortonNumber
+            );
 
-            if (nextPointCount <= this.pointBudget) {
+            if (
+              nextPointCount &&
+              this.pointCount + nextPointCount <= this.pointBudget
+            ) {
               this.fetchBlock(block);
             }
           }
