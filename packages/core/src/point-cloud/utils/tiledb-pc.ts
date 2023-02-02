@@ -3,7 +3,8 @@ import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
 import getTileDBClient from '../../utils/getTileDBClient';
-import { reduceDataArrays, sortDataArrays } from './arrays';
+import { SparseResult } from '../model';
+import { sortDataArrays } from './arrays';
 
 export interface TileDBPointCloudOptions
   extends TileDBVisualizationBaseOptions {
@@ -16,21 +17,21 @@ export interface TileDBPointCloudOptions
    */
   mode?: 'time' | 'classes' | 'topo' | 'gltf';
   /**
-   * Color scheme
+   * Background color scheme, choose from 'dark', 'light' or 'blue' with
    */
   colorScheme?: string;
   /**
-   * Data to render [all modes]
+   * Data to render from a json object
    */
-  data?: any;
+  data?: SparseResult;
   /**
-   * Scale the z-coordinate values for all points
+   * Scale the height (z-coordinate values) of all points
    */
   zScale?: number;
   /**
    * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
    */
-  gltfData?: any;
+  gltfData?: string;
   /**
    * Move the gltf datas along the z-axis to better align with the mapbox base layer [mode='topo']
    */
@@ -64,7 +65,6 @@ export interface TileDBPointCloudOptions
    */
   gltfMulti?: boolean;
   source?: 'dict' | 'cloud';
-  showFraction?: number;
   pointShift?: number[];
   rgbMax?: number;
   /**
@@ -108,9 +108,17 @@ export interface TileDBPointCloudOptions
    */
   pointSize?: number;
   /**
-   * Camera radius
+   * Camera location, choose a camera viewpoint towards the centre of the point cloud between 1 and 9
    */
-  cameraRadius?: number;
+  cameraLocation?: number;
+  /**
+   * Camera zoom, move the camera towards or away from the centre of the point cloud in the [x,y,z] directions
+   */
+  cameraZoomOut?: number[];
+  /**
+   * Move the free camera position up or down
+   */
+  cameraUp?: number;
   /**
    * EDL shader strength
    */
@@ -154,28 +162,29 @@ export interface TileDBPointCloudOptions
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
-  let dataIn: any;
-  let data: any;
-
   if (!options.streaming) {
+    let data: SparseResult = {
+      X: new Float32Array(),
+      Y: new Float32Array(),
+      Z: new Float32Array(),
+      Red: new Uint16Array(),
+      Green: new Uint16Array(),
+      Blue: new Uint16Array()
+    };
+
     if (options.source === 'cloud') {
       const dataUnsorted = await loadPointCloud(options);
       if (options.mode === 'time') {
-        dataIn = sortDataArrays(dataUnsorted);
+        data = sortDataArrays(dataUnsorted);
       } else {
-        dataIn = dataUnsorted;
+        data = dataUnsorted;
       }
     } else {
-      dataIn = options.data;
+      if (options.data) {
+        data = options.data;
+      }
     }
 
-    if (options.showFraction) {
-      data = reduceDataArrays(dataIn, options.showFraction);
-    } else {
-      data = dataIn;
-    }
-
-    // eslint-disable-next-line
     let { xmin, xmax, ymin, ymax, zmin, zmax } = getPointCloudLimits(
       options,
       data
@@ -184,9 +193,9 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
     // shift points with user defined values (optional)
     if (options.pointShift) {
       const [x, y, z] = options.pointShift;
-      data.X = data.X.map((n: any) => n + x);
-      data.Y = data.Y.map((n: any) => n + y);
-      data.Z = data.Z.map((n: any) => n + z);
+      data.X = data.X.map((n: number) => n + x);
+      data.Y = data.Y.map((n: number) => n + y);
+      data.Z = data.Z.map((n: number) => n + z);
       xmin = xmin + x;
       xmax = xmax + x;
       ymin = ymin + y;
@@ -199,9 +208,9 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
 }
 
 export async function loadPointCloud(options: TileDBPointCloudOptions) {
-  const config: Record<string, any> = {};
+  const config: Record<string, string> = {};
 
-  config.apiKey = options.token;
+  config.apiKey = options.token as string;
 
   if (options.tiledbEnv) {
     config.basePath = options.tiledbEnv;
@@ -266,7 +275,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
 
 export function getPointCloudLimits(
   options: TileDBPointCloudOptions,
-  data: any
+  data: SparseResult
 ) {
   let xmin: number;
   let xmax: number;
@@ -276,10 +285,7 @@ export function getPointCloudLimits(
   let zmax: number;
 
   if (options.bbox) {
-    /**
-     * In case pointShift exists add them to the respected values,
-     * otherwise default to zero.
-     */
+    // In case pointShift exists add them to the respected values, otherwise default to zero.
     const [x = 0, y = 0, z = 0] = options.pointShift || [];
     xmin = options.bbox.X[0] + x;
     xmax = options.bbox.X[1] + x;
@@ -335,9 +341,9 @@ export async function getNonEmptyDomain(
   const dataFromCache = await getQueryDataFromCache(storeName, key);
 
   if (!dataFromCache) {
-    const config: Record<string, any> = {};
+    const config: Record<string, string> = {};
 
-    config.apiKey = options.token;
+    config.apiKey = options.token as string;
 
     if (options.tiledbEnv) {
       config.basePath = options.tiledbEnv;
@@ -361,7 +367,7 @@ export async function getNonEmptyDomain(
 
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
-): Promise<[Map<string, number>, Array<number>, number]> {
+): Promise<[Map<string, number>, Array<number>, Array<number>, number]> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = -1;
@@ -369,9 +375,9 @@ export async function getArrayMetadata(
   const dataFromCache = await getQueryDataFromCache(storeName, key);
 
   if (!dataFromCache) {
-    const config: Record<string, any> = {};
+    const config: Record<string, string> = {};
 
-    config.apiKey = options.token;
+    config.apiKey = options.token as string;
 
     if (options.tiledbEnv) {
       config.basePath = options.tiledbEnv;
@@ -397,22 +403,34 @@ export async function getArrayMetadata(
 
     interface OctantData {
       'octree-bounds': string;
+      'octree-bounds-conforming': string;
       'octant-data': string;
     }
     const o = resp.data as OctantData;
     const obj = JSON.parse(o['octant-data']);
     const bounds = JSON.parse(o['octree-bounds']);
+    let boundsConforming = JSON.parse(o['octree-bounds']);
+    if (o['octree-bounds-conforming']) {
+      boundsConforming = JSON.parse(o['octree-bounds-conforming']);
+    }
 
     writeToCache(storeName, key, {
       'octant-data': obj,
       'octree-bounds': bounds,
+      'octree-bounds-conforming': boundsConforming,
       'octree-levels': nLevels
     });
-    return [new Map<string, number>(Object.entries(obj)), bounds, nLevels];
+    return [
+      new Map<string, number>(Object.entries(obj)),
+      bounds,
+      boundsConforming,
+      nLevels
+    ];
   } else {
     return [
       new Map<string, number>(Object.entries(dataFromCache['octant-data'])),
       dataFromCache['octree-bounds'],
+      dataFromCache['octree-bounds-conforming'],
       dataFromCache['octree-levels']
     ];
   }

@@ -15,14 +15,14 @@ export interface TileDBImageVisualizationOptions
   /**
    * Data to render [all modes]
    */
-  data: any;
+  data: string;
   /**
    * The min and max values of x and y
    */
   xyBbox: number[];
 }
 export class TileDBImageVisualization extends TileDBVisualization {
-  private data: any;
+  private data: string;
   private xyBbox: number[];
 
   constructor(options: TileDBImageVisualizationOptions) {

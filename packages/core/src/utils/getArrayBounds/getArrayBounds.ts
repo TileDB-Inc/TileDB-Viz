@@ -1,4 +1,4 @@
-const getArrayBounds = (nums: number[]) =>
+const getArrayBounds = (nums: Float32Array) =>
   nums.reduce(
     (accum, current) => [
       Math.min(current, accum[0]),

@@ -2,9 +2,7 @@ import React from 'react';
 
 import { PointCloudVisualization } from '../PointCloud/PointCloud';
 import data from '../../../../__mocks__/point-cloud-data.json';
-import gltfData from '../../../../__mocks__/gltf-data.json';
 import boulderData from '../../../../__mocks__/boulder.json';
-import timeData from '../../../../__mocks__/point-cloud-time-data.json';
 import autzenData from '../../../../__mocks__/autzen-sample.json';
 
 export default {
@@ -19,11 +17,15 @@ export default {
   }
 };
 
+const token = process.env.STORYBOOK_REST_TOKEN;
+const namespace = process.env.STORYBOOK_NAMESPACE;
+
 const Template = () => (
   <PointCloudVisualization
     data={data}
     pointSize={25}
-    cameraRadius={250}
+    cameraZoomOut={[2, 2, 16]}
+    cameraLocation={8}
     width={'100vw'}
     height={'100vh'}
   />
@@ -35,9 +37,10 @@ export const PointCloudSPS = () => (
   <PointCloudVisualization
     data={data}
     pointSize={6}
+    cameraZoomOut={[2, 2, 16]}
+    cameraLocation={1}
     useShader={true}
     useSPS={true}
-    cameraRadius={250}
     colorScheme="light"
     width={'100vw'}
     height={'100vh'}
@@ -48,6 +51,8 @@ export const Boulder = () => (
   <PointCloudVisualization
     data={boulderData}
     colorScheme="dark"
+    cameraZoomOut={[6, 6, 2]}
+    cameraLocation={6}
     pointSize={2.5}
     width={'100vw'}
     height={'100vh'}
@@ -58,6 +63,8 @@ export const BoulderSPS = () => (
   <PointCloudVisualization
     data={boulderData}
     colorScheme="light"
+    cameraZoomOut={[6, 6, 2]}
+    cameraLocation={6}
     pointSize={0.05}
     useShader={true}
     useSPS={true}
@@ -70,8 +77,10 @@ export const Autzen = () => (
   <PointCloudVisualization
     data={autzenData}
     pointSize={5}
-    cameraRadius={600}
+    cameraZoomOut={[2, 2, 2]}
+    cameraLocation={2}
     colorScheme="blue"
+    moveSpeed={2}
     rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
@@ -82,7 +91,8 @@ export const AutzenSPS = () => (
   <PointCloudVisualization
     data={autzenData}
     pointSize={3}
-    cameraRadius={600}
+    cameraZoomOut={[2, 2, 4]}
+    cameraLocation={2}
     colorScheme="light"
     rgbMax={65535}
     useShader={true}
@@ -91,10 +101,6 @@ export const AutzenSPS = () => (
     height={'100vh'}
   />
 );
-
-const token = process.env.STORYBOOK_REST_TOKEN;
-const namespace = process.env.STORYBOOK_NAMESPACE;
-const groupName = process.env.STORYBOOK_GROUP_NAME;
 
 const bbox = {
   X: [636800, 637200],
@@ -107,69 +113,86 @@ export const AutzenBbox = () => (
     streaming={false}
     source="cloud"
     token={token}
-    namespace="TileDB-Inc"
+    namespace={namespace}
     arrayName="autzen_classified_tiledb"
     bbox={bbox}
-    pointSize={6}
-    cameraRadius={1000}
+    pointSize={10}
     colorScheme="light"
+    cameraUp={25}
+    cameraZoomOut={[2, 2, 2]}
+    cameraLocation={2}
     rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
   />
 );
 
-export const Streamer = () => (
+export const StreamerAutzen = () => (
   <PointCloudVisualization
     streaming={true}
     token={token}
     namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
+    groupName={'autzen'}
+    fanOut={100}
     pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
+    maxNumCacheBlocks={200}
+    pointSize={4}
+    wheelPrecision={0.5}
+    cameraUp={25}
+    moveSpeed={4}
     colorScheme="dark"
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
-  />
-);
-
-export const StreamerSPS = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
-    token={token}
-    namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="dark"
-    rgbMax={255}
-    width={'100vw'}
-    height={'100vh'}
-  />
-);
-
-export const StreamerShaderSPS = () => (
-  <PointCloudVisualization
-    streaming={true}
-    useSPS={true}
     useShader={true}
+    edlStrength={1.0}
+  />
+);
+
+export const StreamerBristol = () => (
+  <PointCloudVisualization
+    streaming={true}
     token={token}
     namespace={namespace}
-    groupName={groupName}
-    fanOut={50}
-    pointBudget={8000000}
-    pointSize={3}
-    cameraRadius={2000}
-    colorScheme="light"
+    groupName={'bristol'}
+    fanOut={100}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    workerPoolSize={20}
+    pointSize={4}
+    colorScheme="dark"
+    cameraLocation={8}
+    cameraZoomOut={[1, 1, 2]}
+    cameraUp={50}
+    wheelPrecision={0.5}
+    moveSpeed={8}
     rgbMax={255}
-    edlStrength={2}
     width={'100vw'}
     height={'100vh'}
+    useShader={true}
+    edlStrength={2.0}
+  />
+);
+
+export const StreamerSantorini = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={namespace}
+    groupName={'santorini'}
+    fanOut={1000}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    pointSize={8}
+    colorScheme="dark"
+    cameraLocation={5}
+    cameraUp={200}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+    useShader={true}
+    edlStrength={2.0}
   />
 );

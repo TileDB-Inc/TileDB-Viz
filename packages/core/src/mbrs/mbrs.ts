@@ -15,7 +15,14 @@ export interface TileDBMBRSVisualizationOptions
   /**
    * Data to render [all modes]
    */
-  data: any;
+  data: {
+    Xmin: number[];
+    Xmax: number[];
+    Ymin: number[];
+    Ymax: number[];
+    Zmin: number[];
+    Zmax: number[];
+  };
   /**
    * The extends (min/max) of each mbrs
    */
@@ -24,7 +31,14 @@ export interface TileDBMBRSVisualizationOptions
 }
 
 export class TileDBMBRSVisualization extends TileDBVisualization {
-  private data: any;
+  private data: {
+    Xmin: number[];
+    Xmax: number[];
+    Ymin: number[];
+    Ymax: number[];
+    Zmin: number[];
+    Zmax: number[];
+  };
   private _zScale: number;
   private extents: number[];
 

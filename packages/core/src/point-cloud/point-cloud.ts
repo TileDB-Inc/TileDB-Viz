@@ -1,13 +1,8 @@
 import {
   ArcRotateCamera,
-  Camera,
-  Color3,
-  DirectionalLight,
-  Effect,
-  HemisphericLight,
+  FreeCamera,
   Matrix,
   Plane,
-  PostProcess,
   Scene,
   Vector3,
   Nullable,
@@ -16,23 +11,34 @@ import {
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
-import { getArrayMetadata, getPointCloud, setSceneColors } from './utils';
-import { TileDBPointCloudOptions } from './utils/tiledb-pc';
+import {
+  getArrayMetadata,
+  getPointCloud,
+  ParticleShaderMaterial,
+  PointCloudGUI,
+  setCameraLight,
+  setCameraPosition,
+  setSceneColors,
+  TileDBPointCloudOptions
+} from './utils';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
-import PointCloudGUI from './gui/point-cloud-gui';
-import ParticleShaderMaterial from './model/particle-shader';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
-  private cameras: Array<Camera> = new Array<Camera>();
+  private cameras: Array<ArcRotateCamera | FreeCamera> = new Array<
+    ArcRotateCamera | FreeCamera
+  >();
   private options: TileDBPointCloudOptions;
   private model!: ArrayModel;
   private gui!: PointCloudGUI;
+  private conformingBounds!: number[];
+  private activeCamera!: number;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
     this.options = options;
+    this.activeCamera = 0;
 
     if (options.token || options.tiledbEnv) {
       getTileDBClient({
@@ -70,7 +76,65 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               }
             );
           }
+
+          // toggle through arcRotate camera locations with 'v'
+          if (kbInfo.event.key === 'v') {
+            if (this.cameras[this.activeCamera].name === 'ArcRotate') {
+              if (
+                this.options.cameraLocation === 9 ||
+                !this.options.cameraLocation
+              ) {
+                this.options.cameraLocation = 1;
+              } else {
+                this.options.cameraLocation = this.options.cameraLocation + 1;
+              }
+              const cameraPosition = setCameraPosition(
+                this.conformingBounds,
+                this.model.translationVector,
+                this.options.cameraZoomOut || [1, 1, 1],
+                this.options.cameraLocation
+              );
+              this.cameras[this.activeCamera].position = cameraPosition;
+            }
+          }
+
+          // toggle between cameras with 'c'
+          if (kbInfo.event.key === 'c') {
+            if (this.activeCamera === 0) {
+              this.activeCamera = 1;
+            } else if (this.activeCamera === 1) {
+              this.activeCamera = 0;
+            }
+            this.scene.activeCameras = [
+              this.cameras[this.activeCamera],
+              this.cameras[this.activeCamera + 2]
+            ];
+            this.scene.activeCameras[0].attachControl(true);
+            this.scene.activeCameras[1].attachControl(true);
+            if (this.model.particleMaterial) {
+              this.model.particleMaterial.setShader(
+                this.scene,
+                this.model,
+                this.options,
+                this.engine
+              );
+            }
+          }
+
+          // toggl between background colors
+          if (kbInfo.event.key === 'b') {
+            if (this.model.colorScheme === 'dark') {
+              this.model.colorScheme = 'light';
+            } else if (this.model.colorScheme === 'light') {
+              this.model.colorScheme = 'dark';
+            }
+            const sceneColors = setSceneColors(
+              this.model.colorScheme as string
+            );
+            this.scene.clearColor = sceneColors.backgroundColor;
+          }
           break;
+
         case KeyboardEventTypes.KEYUP:
           if (kbInfo.event.key === 'r') {
             this.model.debug = false;
@@ -84,88 +148,36 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
 
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-
       this.attachKeys();
-
-      const sceneColors = setSceneColors(this.options.colorScheme as string);
-      this.scene.clearColor = sceneColors.backgroundColor;
-
-      // set up cameras
-      const defaultRadius = 25;
-      const camera = new ArcRotateCamera(
-        'Camera',
-        Math.PI / 3,
-        Math.PI / 4.5,
-        this.options.cameraRadius || defaultRadius,
-        Vector3.Zero(),
-        this.scene
-      );
-
-      camera.attachControl();
-      this.cameras.push(camera);
-
-      if (this.wheelPrecision > 0) {
-        camera.wheelPrecision = this.wheelPrecision;
-      }
-
-      camera.setTarget(Vector3.Zero());
-
-      const guiCamera = new ArcRotateCamera(
-        'Camera',
-        Math.PI / 3,
-        Math.PI / 4.5,
-        this.options.cameraRadius || defaultRadius,
-        Vector3.Zero(),
-        this.scene
-      );
-      guiCamera.layerMask = 0x10000000;
-
-      guiCamera.setTarget(Vector3.Zero());
-
-      this.cameras.push(guiCamera);
-      this.scene.activeCameras = this.cameras;
-
-      // add general light
-      const light1: HemisphericLight = new HemisphericLight(
-        'light1',
-        camera.position,
-        this.scene
-      );
-      light1.intensity = 0.9;
-      light1.specular = Color3.Black();
-
-      // add light for generating shadows
-      const light2: DirectionalLight = new DirectionalLight(
-        'Point',
-        camera.cameraDirection,
-        this.scene
-      );
-      light2.position = camera.position;
-      light2.intensity = 0.7;
-      light2.specular = Color3.Black();
 
       // initialize ParticleSystem
       this.model = new ArrayModel(this.options);
 
       if (this.options.streaming) {
-        const [octantMetadata, bounds, levels] = await getArrayMetadata(
-          this.options
-        );
+        const [octantMetadata, octreeBounds, conformingBounds, levels] =
+          await getArrayMetadata(this.options);
+
+        this.conformingBounds = [
+          conformingBounds[0],
+          conformingBounds[3],
+          conformingBounds[1],
+          conformingBounds[4],
+          conformingBounds[2],
+          conformingBounds[5]
+        ];
+
         await this.model.init(
           this.scene,
-          bounds[0],
-          bounds[3],
-          bounds[1],
-          bounds[4],
-          bounds[2],
-          bounds[5],
+          octreeBounds[0],
+          octreeBounds[3],
+          octreeBounds[1],
+          octreeBounds[4],
+          octreeBounds[2],
+          octreeBounds[5],
           levels,
           this.options.rgbMax || 1.0
         );
+
         this.model.metadata = octantMetadata;
       } else {
         const pcData = await getPointCloud(this.options);
@@ -182,50 +194,49 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             this.options.rgbMax || 1.0,
             pcData.data as SparseResult
           );
+          this.conformingBounds = [
+            pcData.xmin,
+            pcData.xmax,
+            pcData.ymin,
+            pcData.ymax,
+            pcData.zmin,
+            pcData.zmax
+          ];
         }
       }
 
-      // add shader post-processing for EDL
-      const edlStrength = this.options.edlStrength || 4.0;
-      const edlRadius = this.options.edlRadius || 1.4;
-      const neighbourCount = this.options.edlNeighbours || 8;
-      const neighbours: number[] = [];
-      for (let c = 0; c < neighbourCount; c++) {
-        neighbours[2 * c + 0] = Math.cos((2 * c * Math.PI) / neighbourCount);
-        neighbours[2 * c + 1] = Math.sin((2 * c * Math.PI) / neighbourCount);
+      // set background color
+      const sceneColors = setSceneColors(this.model.colorScheme as string);
+      this.scene.clearColor = sceneColors.backgroundColor;
+
+      // set up cameras and light
+      this.cameras = setCameraLight(
+        this.scene,
+        this.options,
+        this.conformingBounds,
+        this.model.translationVector,
+        this.moveSpeed,
+        this.wheelPrecision
+      );
+
+      this.gui = new PointCloudGUI(this.scene);
+      if (this.gui.advancedDynamicTexture.layer !== null) {
+        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
       }
 
-      const depthRenderer = this.scene.enableDepthRenderer(camera);
-      const depthTex = depthRenderer.getDepthMap();
-
-      const screenWidth = this.engine?.getRenderWidth();
-      const screenHeight = this.engine?.getRenderHeight();
-
+      // add shader
       this.model.particleMaterial = new ParticleShaderMaterial(
         scene,
         this.model.edlNeighbours,
         this.model.pointSize
       );
 
-      const postProcess = new PostProcess(
-        'My custom post process',
-        'custom',
-        ['screenWidth', 'screenHeight', 'neighbours', 'edlStrength', 'radius'],
-        ['uEDLDepth'],
-        1.0,
-        camera
+      this.model.particleMaterial.setShader(
+        this.scene,
+        this.model,
+        this.options,
+        this.engine
       );
-
-      if (this.model.useShader) {
-        postProcess.onApply = function (effect: Effect) {
-          effect.setFloat('screenWidth', screenWidth as number);
-          effect.setFloat('screenHeight', screenHeight as number);
-          effect.setArray2('neighbours', neighbours);
-          effect.setFloat('edlStrength', edlStrength);
-          effect.setFloat('radius', edlRadius);
-          effect.setTexture('uEDLDepth', depthTex);
-        };
-      }
 
       // add panning control
       let plane: Plane;
@@ -237,7 +248,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           if (pickResult) {
             pickOrigin = pickResult.pickedPoint;
           } else {
-            const ray = camera.getForwardRay();
+            const ray = this.cameras[0].getForwardRay();
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -249,17 +260,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
 
           if (pickOrigin) {
-            const normal = camera.position.subtract(pickOrigin).normalize();
+            const normal = this.cameras[0].position
+              .subtract(pickOrigin)
+              .normalize();
             plane = Plane.FromPositionAndNormal(pickOrigin, normal);
             isPanning = true;
           }
-          camera.detachControl();
+          this.cameras[0].detachControl();
         }
       };
 
       scene.onPointerUp = () => {
         isPanning = false;
-        camera.attachControl(true, true);
+        this.cameras[0].attachControl(true, true);
       };
 
       const identity = Matrix.Identity();
@@ -269,7 +282,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             scene.pointerX,
             scene.pointerY,
             identity,
-            camera,
+            this.cameras[0],
             false
           );
           const distance = ray.intersectsPlane(plane);
@@ -279,7 +292,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
           const pickedPoint = ray.direction.scale(distance).add(ray.origin);
           const diff = pickedPoint.subtract(pickOrigin);
-          camera.target.subtractInPlace(diff);
+          this.cameras[0].target.subtractInPlace(diff);
         }
       };
 

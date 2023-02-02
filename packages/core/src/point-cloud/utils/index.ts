@@ -8,26 +8,26 @@ import {
 } from './tiledb-pc';
 import type { TileDBPointCloudOptions } from './tiledb-pc';
 import { setSceneColors, updateSceneColors } from './scene-colors';
-import {
-  reduceArrays,
-  reduceDataArrays,
-  sortArrays,
-  sortDataArrays
-} from './arrays';
+import { sortArrays, sortDataArrays } from './arrays';
+import { setCameraLight, setCameraPosition } from './camera_utils';
+import PointCloudGUI from './point-cloud-gui';
+import ParticleShaderMaterial from './particle-shader';
 
 export type { TileDBPointCloudOptions };
 
 export {
-  getNonEmptyDomain,
   getArrayMetadata,
+  getNonEmptyDomain,
   getPointCloud,
   getPointCloudLimits,
   loadPointCloud,
-  reduceArrays,
-  reduceDataArrays,
+  ParticleShaderMaterial,
+  PointCloudGUI,
+  setCameraLight,
+  setCameraPosition,
   setPointCloudSwitches,
   setSceneColors,
-  updateSceneColors,
   sortArrays,
-  sortDataArrays
+  sortDataArrays,
+  updateSceneColors
 };
