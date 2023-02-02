@@ -11,13 +11,13 @@ interface SparsePoint {
 }
 
 interface SparseResult {
-  X: number[];
-  Y: number[];
-  Z: number[];
-  Red: number[];
-  Green: number[];
-  Blue: number[];
-  GpsTime?: number[];
+  X: Float32Array;
+  Y: Float32Array;
+  Z: Float32Array;
+  Red: Uint16Array;
+  Green: Uint16Array;
+  Blue: Uint16Array;
+  GpsTime?: Float64Array;
 }
 
 enum WorkerType {

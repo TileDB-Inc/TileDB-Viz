@@ -164,12 +164,12 @@ export interface TileDBPointCloudOptions
 export async function getPointCloud(options: TileDBPointCloudOptions) {
   if (!options.streaming) {
     let data: SparseResult = {
-      X: [0],
-      Y: [0],
-      Z: [0],
-      Red: [0],
-      Green: [0],
-      Blue: [0]
+      X: new Float32Array(),
+      Y: new Float32Array(),
+      Z: new Float32Array(),
+      Red: new Uint16Array(),
+      Green: new Uint16Array(),
+      Blue: new Uint16Array()
     };
 
     if (options.source === 'cloud') {
