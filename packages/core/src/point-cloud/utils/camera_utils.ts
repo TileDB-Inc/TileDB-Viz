@@ -12,7 +12,7 @@ import { TileDBPointCloudOptions } from './tiledb-pc';
 export function setCameraLight(
   scene: Scene,
   options: TileDBPointCloudOptions,
-  dataBounds: Array<number>,
+  conformingBounds: Array<number>,
   translationVector: Vector3,
   moveSpeed: number,
   wheelPrecision: number
@@ -22,19 +22,19 @@ export function setCameraLight(
   const cameraUp = options.cameraUp || 0;
 
   const centreWorld = new Vector3(
-    (dataBounds[1] + dataBounds[0]) / 2 - translationVector.x,
-    dataBounds[4] - translationVector.y,
-    (dataBounds[3] + dataBounds[2]) / 2 - translationVector.z
+    (conformingBounds[1] + conformingBounds[0]) / 2 - translationVector.x,
+    conformingBounds[4] - translationVector.y,
+    (conformingBounds[3] + conformingBounds[2]) / 2 - translationVector.z
   );
 
   const centreFreeWorld = new Vector3(
-    (dataBounds[1] + dataBounds[0]) / 2 - translationVector.x,
-    dataBounds[4] + cameraUp - translationVector.y,
-    (dataBounds[3] + dataBounds[2]) / 2 - translationVector.z
+    (conformingBounds[1] + conformingBounds[0]) / 2 - translationVector.x,
+    conformingBounds[4] + cameraUp - translationVector.y,
+    (conformingBounds[3] + conformingBounds[2]) / 2 - translationVector.z
   );
 
   const cameraPosition = setCameraPosition(
-    dataBounds,
+    conformingBounds,
     translationVector,
     cameraZoomOut,
     cameraLocation
@@ -135,52 +135,68 @@ export function setCameraLight(
   return cameras;
 }
 export function setCameraPosition(
-  dataBounds: number[],
+  conformingBounds: number[],
   translationVector: Vector3,
   cameraZoomOut: number[],
   cameraLocation: number
 ) {
   let cameraVector = Vector3.Zero();
-  const spanX = (dataBounds[1] - dataBounds[0]) / 2.0;
-  const spanY = (dataBounds[3] - dataBounds[2]) / 2.0;
+  const spanX = (conformingBounds[1] - conformingBounds[0]) / 2.0;
+  const spanY = (conformingBounds[3] - conformingBounds[2]) / 2.0;
 
   if (cameraLocation === 1) {
     cameraVector = new Vector3(
-      dataBounds[0] + spanX,
-      dataBounds[5],
-      dataBounds[2]
+      conformingBounds[0] + spanX,
+      conformingBounds[5],
+      conformingBounds[2]
     );
   } else if (cameraLocation === 8) {
-    cameraVector = new Vector3(dataBounds[0], dataBounds[5], dataBounds[2]);
+    cameraVector = new Vector3(
+      conformingBounds[0],
+      conformingBounds[5],
+      conformingBounds[2]
+    );
   } else if (cameraLocation === 7) {
     cameraVector = new Vector3(
-      dataBounds[0],
-      dataBounds[5],
-      dataBounds[2] + spanY
+      conformingBounds[0],
+      conformingBounds[5],
+      conformingBounds[2] + spanY
     );
   } else if (cameraLocation === 6) {
-    cameraVector = new Vector3(dataBounds[0], dataBounds[5], dataBounds[3]);
+    cameraVector = new Vector3(
+      conformingBounds[0],
+      conformingBounds[5],
+      conformingBounds[3]
+    );
   } else if (cameraLocation === 5) {
     cameraVector = new Vector3(
-      dataBounds[0] + spanX,
-      dataBounds[5],
-      dataBounds[3]
+      conformingBounds[0] + spanX,
+      conformingBounds[5],
+      conformingBounds[3]
     );
   } else if (cameraLocation === 4) {
-    cameraVector = new Vector3(dataBounds[1], dataBounds[5], dataBounds[3]);
+    cameraVector = new Vector3(
+      conformingBounds[1],
+      conformingBounds[5],
+      conformingBounds[3]
+    );
   } else if (cameraLocation === 3) {
     cameraVector = new Vector3(
-      dataBounds[1],
-      dataBounds[5],
-      dataBounds[2] + spanY
+      conformingBounds[1],
+      conformingBounds[5],
+      conformingBounds[2] + spanY
     );
   } else if (cameraLocation === 2) {
-    cameraVector = new Vector3(dataBounds[1], dataBounds[5], dataBounds[2]);
+    cameraVector = new Vector3(
+      conformingBounds[1],
+      conformingBounds[5],
+      conformingBounds[2]
+    );
   } else if (cameraLocation === 9) {
     cameraVector = new Vector3(
-      dataBounds[0] + spanX,
-      dataBounds[5],
-      dataBounds[2] + spanY
+      conformingBounds[0] + spanX,
+      conformingBounds[5],
+      conformingBounds[2] + spanY
     );
   }
 

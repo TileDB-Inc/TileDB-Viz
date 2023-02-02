@@ -32,7 +32,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private options: TileDBPointCloudOptions;
   private model!: ArrayModel;
   private gui!: PointCloudGUI;
-  private dataBounds!: number[];
+  private conformingBounds!: number[];
   private activeCamera!: number;
 
   constructor(options: TileDBPointCloudOptions) {
@@ -89,7 +89,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 this.options.cameraLocation = this.options.cameraLocation + 1;
               }
               const cameraPosition = setCameraPosition(
-                this.dataBounds,
+                this.conformingBounds,
                 this.model.translationVector,
                 this.options.cameraZoomOut || [1, 1, 1],
                 this.options.cameraLocation
@@ -154,16 +154,16 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.model = new ArrayModel(this.options);
 
       if (this.options.streaming) {
-        const [octantMetadata, octreeBounds, dataBounds, levels] =
+        const [octantMetadata, octreeBounds, conformingBounds, levels] =
           await getArrayMetadata(this.options);
 
-        this.dataBounds = [
-          dataBounds[0],
-          dataBounds[3],
-          dataBounds[1],
-          dataBounds[4],
-          dataBounds[2],
-          dataBounds[5]
+        this.conformingBounds = [
+          conformingBounds[0],
+          conformingBounds[3],
+          conformingBounds[1],
+          conformingBounds[4],
+          conformingBounds[2],
+          conformingBounds[5]
         ];
 
         await this.model.init(
@@ -194,7 +194,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             this.options.rgbMax || 1.0,
             pcData.data as SparseResult
           );
-          this.dataBounds = [
+          this.conformingBounds = [
             pcData.xmin,
             pcData.xmax,
             pcData.ymin,
@@ -213,7 +213,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.cameras = setCameraLight(
         this.scene,
         this.options,
-        this.dataBounds,
+        this.conformingBounds,
         this.model.translationVector,
         this.moveSpeed,
         this.wheelPrecision
@@ -242,17 +242,13 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;
       let isPanning = false;
-      let panCamera: ArcRotateCamera | FreeCamera = this.cameras[0];
-      if (this.scene.activeCameras) {
-        panCamera = this.cameras[0];
-      }
       scene.onPointerDown = evt => {
         if (evt.ctrlKey || evt.shiftKey) {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
           if (pickResult) {
             pickOrigin = pickResult.pickedPoint;
           } else {
-            const ray = panCamera.getForwardRay();
+            const ray = this.cameras[0].getForwardRay();
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -264,17 +260,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
 
           if (pickOrigin) {
-            const normal = panCamera.position.subtract(pickOrigin).normalize();
+            const normal = this.cameras[0].position
+              .subtract(pickOrigin)
+              .normalize();
             plane = Plane.FromPositionAndNormal(pickOrigin, normal);
             isPanning = true;
           }
-          panCamera.detachControl();
+          this.cameras[0].detachControl();
         }
       };
 
       scene.onPointerUp = () => {
         isPanning = false;
-        panCamera.attachControl(true, true);
+        this.cameras[0].attachControl(true, true);
       };
 
       const identity = Matrix.Identity();
@@ -284,7 +282,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             scene.pointerX,
             scene.pointerY,
             identity,
-            panCamera,
+            this.cameras[0],
             false
           );
           const distance = ray.intersectsPlane(plane);
@@ -294,7 +292,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
           const pickedPoint = ray.direction.scale(distance).add(ray.origin);
           const diff = pickedPoint.subtract(pickOrigin);
-          panCamera.target.subtractInPlace(diff);
+          this.cameras[0].target.subtractInPlace(diff);
         }
       };
 
