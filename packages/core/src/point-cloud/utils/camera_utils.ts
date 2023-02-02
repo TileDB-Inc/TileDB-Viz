@@ -68,8 +68,6 @@ export function setCameraLight(
     camera1.speed = 1;
   }
 
-  //camera1.position = centreFreeWorld;
-
   // freeCamera shortcuts
   camera1.keysUp.push(87); // W
   camera1.keysDown.push(83); // D
@@ -98,8 +96,6 @@ export function setCameraLight(
   camera3.maxZ = camera2.maxZ;
   camera3.layerMask = 0x10000000;
 
-  //camera3.position = centreFreeWorld;
-
   const cameras: Array<ArcRotateCamera | FreeCamera> = new Array<
     ArcRotateCamera | FreeCamera
   >();
@@ -109,31 +105,36 @@ export function setCameraLight(
   cameras[2].attachControl(true);
   scene.activeCameras = [cameras[0], cameras[2]];
 
-  //cameras[1].attachControl(true);
-  //cameras[3].attachControl(true);
-  //scene.activeCameras = [cameras[1], cameras[3]];
-
-  // add general light
-  const light1: HemisphericLight = new HemisphericLight(
-    'light1',
-    camera0.position,
-    scene
-  );
-  light1.intensity = 0.9;
-  light1.specular = Color3.Black();
-
-  // add light for generating shadows
-  const light2: DirectionalLight = new DirectionalLight(
-    'Point',
+  // add general lights
+  const cameraLight: HemisphericLight = new HemisphericLight(
+    'cameraLight',
     camera0.cameraDirection,
     scene
   );
-  light2.position = camera0.position;
-  light2.intensity = 0.7;
-  light2.specular = Color3.Black();
+  cameraLight.intensity = 0.8;
+  cameraLight.specular = Color3.Black();
+
+  const downLight: HemisphericLight = new HemisphericLight(
+    'downLight',
+    new Vector3(0, 1, 0),
+    scene
+  );
+  downLight.intensity = 1.0;
+  downLight.specular = Color3.Black();
+
+  // add light for generating shadows
+  const shadowLight: DirectionalLight = new DirectionalLight(
+    'shadowLight',
+    camera0.cameraDirection,
+    scene
+  );
+  shadowLight.position = camera0.position;
+  shadowLight.intensity = 0.7;
+  shadowLight.specular = Color3.Black();
 
   return cameras;
 }
+
 export function setCameraPosition(
   conformingBounds: number[],
   translationVector: Vector3,

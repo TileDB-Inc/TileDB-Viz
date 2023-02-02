@@ -19,7 +19,6 @@ export default {
 
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
-const groupName = process.env.STORYBOOK_GROUP_NAME;
 
 const Template = () => (
   <PointCloudVisualization
@@ -114,12 +113,14 @@ export const AutzenBbox = () => (
     streaming={false}
     source="cloud"
     token={token}
-    namespace="TileDB-Inc"
+    namespace={namespace}
     arrayName="autzen_classified_tiledb"
     bbox={bbox}
-    pointSize={8}
+    pointSize={10}
     colorScheme="light"
     cameraUp={25}
+    cameraZoomOut={[2, 2, 2]}
+    cameraLocation={2}
     rgbMax={65535}
     width={'100vw'}
     height={'100vh'}
@@ -131,11 +132,11 @@ export const StreamerAutzen = () => (
     streaming={true}
     token={token}
     namespace={namespace}
-    groupName={groupName}
+    groupName={'autzen'}
     fanOut={100}
-    pointBudget={80000000}
-    maxNumCacheBlocks={500}
-    pointSize={3}
+    pointBudget={8000000}
+    maxNumCacheBlocks={200}
+    pointSize={4}
     wheelPrecision={0.5}
     cameraUp={25}
     moveSpeed={4}
@@ -144,5 +145,54 @@ export const StreamerAutzen = () => (
     width={'100vw'}
     height={'100vh'}
     useShader={true}
+    edlStrength={1.0}
+  />
+);
+
+export const StreamerBristol = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={namespace}
+    groupName={'bristol'}
+    fanOut={100}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    workerPoolSize={20}
+    pointSize={4}
+    colorScheme="dark"
+    cameraLocation={8}
+    cameraZoomOut={[1, 1, 2]}
+    cameraUp={50}
+    wheelPrecision={0.5}
+    moveSpeed={8}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+    useShader={true}
+    edlStrength={2.0}
+  />
+);
+
+export const StreamerSantorini = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={namespace}
+    groupName={'santorini'}
+    fanOut={1000}
+    pointBudget={80000000}
+    maxNumCacheBlocks={1000}
+    pointSize={8}
+    colorScheme="dark"
+    cameraLocation={5}
+    cameraUp={200}
+    wheelPrecision={0.5}
+    moveSpeed={4}
+    rgbMax={255}
+    width={'100vw'}
+    height={'100vh'}
+    useShader={true}
+    edlStrength={2.0}
   />
 );
