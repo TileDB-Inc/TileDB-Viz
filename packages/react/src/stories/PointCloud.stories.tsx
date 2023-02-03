@@ -22,7 +22,7 @@ const namespace = process.env.STORYBOOK_NAMESPACE;
 
 const Template = () => (
   <PointCloudVisualization
-    data={data}
+    data={data as any}
     pointSize={25}
     cameraZoomOut={[2, 2, 16]}
     cameraLocation={8}
@@ -35,7 +35,7 @@ export const PointCloud = Template.bind({});
 
 export const PointCloudSPS = () => (
   <PointCloudVisualization
-    data={data}
+    data={data as any}
     pointSize={6}
     cameraZoomOut={[2, 2, 16]}
     cameraLocation={1}
@@ -49,7 +49,7 @@ export const PointCloudSPS = () => (
 
 export const Boulder = () => (
   <PointCloudVisualization
-    data={boulderData}
+    data={boulderData as any}
     colorScheme="dark"
     cameraZoomOut={[6, 6, 2]}
     cameraLocation={6}
@@ -61,7 +61,7 @@ export const Boulder = () => (
 
 export const BoulderSPS = () => (
   <PointCloudVisualization
-    data={boulderData}
+    data={boulderData as any}
     colorScheme="light"
     cameraZoomOut={[6, 6, 2]}
     cameraLocation={6}
@@ -75,7 +75,7 @@ export const BoulderSPS = () => (
 
 export const Autzen = () => (
   <PointCloudVisualization
-    data={autzenData}
+    data={autzenData as any}
     pointSize={5}
     cameraZoomOut={[2, 2, 2]}
     cameraLocation={2}
@@ -89,7 +89,7 @@ export const Autzen = () => (
 
 export const AutzenSPS = () => (
   <PointCloudVisualization
-    data={autzenData}
+    data={autzenData as any}
     pointSize={3}
     cameraZoomOut={[2, 2, 4]}
     cameraLocation={2}
@@ -152,6 +152,7 @@ export const StreamerAutzen = () => (
 export const StreamerBristol = () => (
   <PointCloudVisualization
     streaming={true}
+    useSPS={true}
     token={token}
     namespace={namespace}
     groupName={'bristol'}

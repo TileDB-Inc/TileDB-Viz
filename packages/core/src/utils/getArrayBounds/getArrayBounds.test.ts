@@ -3,7 +3,7 @@ import data from '../../../../../__mocks__/point-cloud-data.json';
 
 describe('getArrayBounds', () => {
   it('returns array bounds', () => {
-    const [xmin, xmax] = getArrayBounds(data.X);
+    const [xmin, xmax] = getArrayBounds(data.X as any);
     expect(xmin).toBe(-129.70648948476708);
     expect(xmax).toBe(129.668742200572);
   });

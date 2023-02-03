@@ -16,8 +16,7 @@ export default {
 const Template = () => (
   <ImageVisualization
     xyBbox={[11500, 14000, 11500, 14000]}
-    data={uintArray.buffer}
-    zScale={5}
+    data={uintArray.buffer as any}
     moveSpeed={-1}
     wheelPrecision={-1}
     inspector={false}

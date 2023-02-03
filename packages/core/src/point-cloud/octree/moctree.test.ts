@@ -1,4 +1,5 @@
 import { Ray, Vector3 } from '@babylonjs/core';
+import { SparseResult } from '../model';
 import {
   decodeMorton,
   encodeMorton,
@@ -382,13 +383,13 @@ describe('moctree tests', () => {
 
   test('create entries', () => {
     // required for code coverage
-    const entries = {
-      X: [],
-      Y: [],
-      Z: [],
-      Red: [],
-      Green: [],
-      Blue: []
+    const entries: SparseResult = {
+      X: new Float32Array([]),
+      Y: new Float32Array([]),
+      Z: new Float32Array([]),
+      Red: new Uint16Array([]),
+      Green: new Uint16Array([]),
+      Blue: new Uint16Array([])
     };
     const block = new MoctreeBlock(
       1,

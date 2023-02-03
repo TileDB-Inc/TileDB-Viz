@@ -5,7 +5,7 @@ import {
 } from '@tiledb-inc/viz-core';
 import classnames from 'classnames';
 
-interface PointCloudVisualizationProps
+export interface PointCloudVisualizationProps
   extends Omit<TileDBPointCloudOptions, 'rootElement'> {
   className?: string;
 }

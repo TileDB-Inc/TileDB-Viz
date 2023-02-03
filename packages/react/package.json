@@ -46,6 +46,7 @@
     "@storybook/manager-webpack5": "^6.5.12",
     "@storybook/react": "^6.5.12",
     "@storybook/testing-library": "^0.0.13",
+    "@types/node": "^18.11.18",
     "@types/react": "^18.0.17",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "webpack": "^5.74.0"

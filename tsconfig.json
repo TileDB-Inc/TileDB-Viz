@@ -18,5 +18,9 @@
     "skipLibCheck": true,
     "target": "es2020"
   },
-  "include": ["./packages/**/src"]
+  "typedocOptions": {
+    "entryPoints": ["packages/core/src/index.ts"],
+    "out": "quarto/typedocs"
+  },
+  "include": ["./packages/**/src", "./__mocks__/**/*.json"]
 }
