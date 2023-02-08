@@ -174,6 +174,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           octreeBounds[4],
           octreeBounds[2],
           octreeBounds[5],
+          this.conformingBounds,
           levels,
           this.options.rgbMax || 1.0
         );
@@ -182,18 +183,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       } else {
         const pcData = await getPointCloud(this.options);
         if (pcData) {
-          await this.model.init(
-            this.scene,
-            pcData.xmin,
-            pcData.xmax,
-            pcData.ymin,
-            pcData.ymax,
-            pcData.zmin,
-            pcData.zmax,
-            1,
-            this.options.rgbMax || 1.0,
-            pcData.data as SparseResult
-          );
           this.conformingBounds = [
             pcData.xmin,
             pcData.xmax,
@@ -202,6 +191,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             pcData.zmin,
             pcData.zmax
           ];
+          await this.model.init(
+            this.scene,
+            pcData.xmin,
+            pcData.xmax,
+            pcData.ymin,
+            pcData.ymax,
+            pcData.zmin,
+            pcData.zmax,
+            this.conformingBounds,
+            1,
+            this.options.rgbMax || 1.0,
+            pcData.data as SparseResult
+          );
         }
       }
 

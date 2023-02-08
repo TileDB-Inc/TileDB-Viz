@@ -282,6 +282,7 @@ class ArrayModel {
     ymax: number,
     zmin: number,
     zmax: number,
+    conformingBounds: number[],
     nLevels?: number,
     rgbMax?: number,
     data?: SparseResult
@@ -324,6 +325,12 @@ class ArrayModel {
           height: 2 * spanY
         },
         scene
+      );
+
+      ground.position = new Vector3(
+        0,
+        conformingBounds[4] - this.translationVector.y,
+        0
       );
 
       ground.isVisible = true;

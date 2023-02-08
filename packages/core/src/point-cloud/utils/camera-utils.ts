@@ -22,15 +22,15 @@ export function setCameraLight(
   const cameraUp = options.cameraUp || 0;
 
   const centreWorld = new Vector3(
-    (conformingBounds[1] + conformingBounds[0]) / 2 - translationVector.x,
+    0,
     conformingBounds[4] - translationVector.y,
-    (conformingBounds[3] + conformingBounds[2]) / 2 - translationVector.z
+    0
   );
 
   const centreFreeWorld = new Vector3(
-    (conformingBounds[1] + conformingBounds[0]) / 2 - translationVector.x,
+    0,
     conformingBounds[4] + cameraUp - translationVector.y,
-    (conformingBounds[3] + conformingBounds[2]) / 2 - translationVector.z
+    0
   );
 
   const cameraPosition = setCameraPosition(
