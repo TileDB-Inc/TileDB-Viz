@@ -328,11 +328,9 @@ class ArrayModel {
       );
 
       ground.position = new Vector3(
-        (conformingBounds[1] + conformingBounds[0]) / 2 -
-          this.translationVector.x,
+        0,
         conformingBounds[4] - this.translationVector.y,
-        (conformingBounds[3] + conformingBounds[2]) / 2 -
-          this.translationVector.z
+        0
       );
 
       ground.isVisible = true;
