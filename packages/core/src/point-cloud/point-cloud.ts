@@ -41,10 +41,16 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     this.activeCamera = 0;
 
     if (options.token || options.tiledbEnv) {
-      getTileDBClient({
+      const tiledbClient = getTileDBClient({
         ...(options.token ? { apiKey: options.token } : {}),
         ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
+      const arraySchemaResponse = tiledbClient.arrayAPI.getArray(
+        this.options.namespace,
+        this.options.arrayName,
+        "application/json"
+      );
+      this.options.arraySchema = arraySchemaResponse.data;
     }
   }
 
