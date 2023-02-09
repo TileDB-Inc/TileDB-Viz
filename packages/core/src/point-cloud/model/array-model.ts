@@ -23,6 +23,7 @@ import {
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
+import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 /**
  * The ArrayModel manages the client octree
@@ -30,6 +31,7 @@ import { getQueryDataFromCache } from '../../utils/cache';
 class ArrayModel {
   groupName?: string;
   namespace?: string;
+  arraySchema?: ArraySchema;
   octree!: Moctree;
   bufferSize: number;
   rgbMax!: number;
@@ -295,6 +297,7 @@ class ArrayModel {
     zmin: number,
     zmax: number,
     conformingBounds: number[],
+    arraySchema?: ArraySchema,
     nLevels?: number,
     rgbMax?: number,
     data?: SparseResult
@@ -302,6 +305,7 @@ class ArrayModel {
     this.scene = scene;
     this.rgbMax = rgbMax || 65535;
     this.maxLevel = nLevels || 1;
+    this.arraySchema = arraySchema;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
@@ -359,6 +363,7 @@ class ArrayModel {
           token: this.token,
           tiledbEnv: this.tiledbEnv,
           groupName: this.groupName,
+          arraySchema: this.arraySchema,
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
           translateZ: this.translationVector.z,

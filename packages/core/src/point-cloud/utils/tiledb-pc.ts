@@ -1,5 +1,4 @@
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
@@ -160,10 +159,6 @@ export interface TileDBPointCloudOptions
    * Web worker request pool size
    */
   workerPoolSize?: number;
-  /**
-   * Cached array schema
-   */
-  arraySchema?: ArraySchema;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {
@@ -260,8 +255,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
     options.namespace!,
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     options.arrayName!,
-    query,
-    options.arraySchema
+    query
   )) {
     for (const [attributeKey, attributeValues] of Object.entries(results)) {
       // If attribute key aready exists push attributes to the array
