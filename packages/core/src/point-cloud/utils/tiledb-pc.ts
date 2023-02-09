@@ -371,6 +371,37 @@ export async function getNonEmptyDomain(
   }
 }
 
+export async function getArraySchema(options: TileDBPointCloudOptions) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const storeName = getStoreName(options.namespace!, options.groupName!);
+  const key = -2;
+  // we might have the data cached
+  const dataFromCache = await getQueryDataFromCache(storeName, key);
+
+  if (!dataFromCache) {
+    const config: Record<string, string> = {};
+
+    config.apiKey = options.token as string;
+
+    if (options.tiledbEnv) {
+      config.basePath = options.tiledbEnv;
+    }
+    const tiledbClient = getTileDBClient(config);
+
+    const arraySchemaResponse = await tiledbClient.ArrayApi.getArray(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace!,
+      options.groupName + '_0',
+      'application/json'
+    );
+    writeToCache(storeName, key, arraySchemaResponse.data);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return arraySchemaResponse.data;
+  } else {
+    return dataFromCache;
+  }
+}
+
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
 ): Promise<[Map<string, number>, Array<number>, Array<number>, number]> {

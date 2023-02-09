@@ -13,6 +13,7 @@ import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,
+  getArraySchema,
   getPointCloud,
   ParticleShaderMaterial,
   PointCloudGUI,
@@ -41,16 +42,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     this.activeCamera = 0;
 
     if (options.token || options.tiledbEnv) {
-      const tiledbClient = getTileDBClient({
+      getTileDBClient({
         ...(options.token ? { apiKey: options.token } : {}),
         ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
-      const arraySchemaResponse = tiledbClient.arrayAPI.getArray(
-        this.options.namespace,
-        this.options.arrayName,
-        "application/json"
-      );
-      this.options.arraySchema = arraySchemaResponse.data;
     }
   }
 
@@ -162,6 +157,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
           await getArrayMetadata(this.options);
+
+        const arraySchema = await getArraySchema(this.options);
+        this.options.arraySchema = arraySchema;
 
         this.conformingBounds = [
           conformingBounds[0],
