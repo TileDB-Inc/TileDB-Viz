@@ -134,7 +134,7 @@ export const StreamerAutzen = () => (
     namespace={namespace}
     groupName={'autzen'}
     fanOut={100}
-    pointBudget={8000000}
+    pointBudget={8_000_000}
     maxNumCacheBlocks={200}
     pointSize={4}
     wheelPrecision={0.5}
