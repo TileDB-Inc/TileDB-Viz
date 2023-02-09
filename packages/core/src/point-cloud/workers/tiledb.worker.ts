@@ -1,10 +1,9 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
-import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 
 import {
   DataRequest,
   InitialRequest,
-  SparseResult,
+  SparseResultRaw,
   WorkerRequest,
   WorkerType
 } from '../model';
@@ -43,59 +42,46 @@ self.onmessage = async (e: MessageEvent) => {
   }
 };
 
-function returnData(block: MoctreeBlock) {
-  // TODO use transferable objects
-  self.postMessage({
-    type: WorkerType.data,
-    block: block,
-    name: self.name
-  });
+function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
+  self.postMessage(
+    {
+      type: WorkerType.data,
+      block: block,
+      entries: rawEntries,
+      name: self.name
+    },
+    Object.values(rawEntries) as any
+  );
 }
 
 async function fetchData(block: MoctreeBlock) {
-  const queryCacheKey = block.mortonNumber;
-  const storeName = `${namespace}:${groupName}`;
+  // load points into block, block is now just a serialized json object, no methods so use private accessors
+  const ranges = [
+    [block.minPoint._x + translateX, block.maxPoint._x + translateX],
+    [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
+    [block.minPoint._y + translateY, block.maxPoint._y + translateY]
+  ];
 
-  // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
+  const queryData = {
+    layout: 'row-major',
+    ranges: ranges,
+    attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
+    bufferSize: bufferSize,
+    returnRawBuffers: true
+  } as QueryData;
 
-  if (dataFromCache) {
-    block.entries = dataFromCache as SparseResult;
-    returnData(block);
-    self.postMessage({
-      type: WorkerType.idle,
-      name: self.name,
-      idle: true
-    });
-  } else {
-    // load points into block, block is now just a serialized json object, no methods so use private accessors
-    const ranges = [
-      [block.minPoint._x + translateX, block.maxPoint._x + translateX],
-      [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
-      [block.minPoint._y + translateY, block.maxPoint._y + translateY]
-    ];
-
-    const queryData = {
-      layout: 'row-major',
-      ranges: ranges,
-      attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
-      bufferSize: bufferSize
-    } as QueryData;
-
-    for await (const results of tiledbQuery.ReadQuery(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      namespace,
-      groupName + '_' + block.lod,
-      queryData
-    )) {
-      block.entries = results as SparseResult;
-      returnData(block);
-      await writeToCache(storeName, queryCacheKey, results);
-      self.postMessage({
-        type: WorkerType.idle,
-        name: self.name,
-        idle: true
-      });
-    }
+  for await (const results of tiledbQuery.ReadQuery(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    namespace,
+    groupName + '_' + block.lod,
+    queryData
+  )) {
+    returnData(block, results as SparseResultRaw);
   }
+
+  self.postMessage({
+    type: WorkerType.idle,
+    name: self.name,
+    idle: true
+  });
 }

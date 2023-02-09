@@ -1,4 +1,6 @@
+// import { Vector3 } from '@babylonjs/core';
 import { Vector3 } from '@babylonjs/core';
+import { writeToCache } from '../../utils/cache';
 import {
   DataRequest,
   DataResponse,
@@ -8,12 +10,15 @@ import {
   WorkerType
 } from '../model';
 import { MoctreeBlock } from '../octree';
+import buffersToSparseResult from '../utils/buffersToSparseResult';
 
 class TileDBWorkerPool {
   private poolSize: number;
   private workers: Worker[] = [];
   private callbackFn: (block: MoctreeBlock) => void;
   private mapStatus: Map<string, boolean>;
+  private namespace: string;
+  private groupName: string;
 
   constructor(
     initRequest: InitialRequest,
@@ -23,6 +28,8 @@ class TileDBWorkerPool {
     this.poolSize = poolSize || 5;
     this.callbackFn = callbackFn;
     this.mapStatus = new Map<string, boolean>();
+    this.namespace = initRequest.namespace;
+    this.groupName = initRequest.groupName;
 
     for (let w = 0; w < this.poolSize; w++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
@@ -36,11 +43,12 @@ class TileDBWorkerPool {
     }
   }
 
-  private onData(e: MessageEvent) {
+  private async onData(e: MessageEvent) {
     const m = e.data as WorkerResponse;
     if (m.type === WorkerType.data) {
       const resp = m as DataResponse;
       let block = resp.block;
+      const { entries } = resp;
 
       // refresh block as it was serialized,
       block = new MoctreeBlock(
@@ -50,14 +58,21 @@ class TileDBWorkerPool {
         new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
         block.entries
       );
+
+      block.entries = buffersToSparseResult(entries);
+
+      const queryCacheKey = block.mortonNumber;
+      const storeName = `${this.namespace}:${this.groupName}`;
       this.callbackFn(block);
+
+      await writeToCache(storeName, queryCacheKey, block);
     } else if (m.type === WorkerType.idle) {
       const idleMessage = m as IdleResponse;
       this.mapStatus.set(idleMessage.name, false);
     }
   }
 
-  public postMessage(request: DataRequest) {
+  public async postMessage(request: DataRequest) {
     // loop over available workers
     for (const [k, v] of this.mapStatus) {
       if (!v) {
