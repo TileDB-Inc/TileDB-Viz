@@ -1,5 +1,6 @@
 import { BoundingInfo, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
+import Octree from './octree';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 // If we need more octants than supported by 32 bit then we can combine octrees
@@ -55,7 +56,7 @@ function getMortonRange(lod: number) {
   };
 }
 
-class Moctree {
+class Moctree implements Octree<MoctreeBlock> {
   knownBlocks: Map<number, number>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [

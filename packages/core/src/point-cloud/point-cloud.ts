@@ -10,7 +10,6 @@ import {
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
-import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,
   getPointCloud,
@@ -23,6 +22,7 @@ import {
 } from './utils';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
+import { ArrayModelClass, ArrayModelType } from '../constants';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -30,7 +30,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     ArcRotateCamera | FreeCamera
   >();
   private options: TileDBPointCloudOptions;
-  private model!: ArrayModel;
+  private model!: ArrayModelType;
   private gui!: PointCloudGUI;
   private conformingBounds!: number[];
   private activeCamera!: number;
@@ -151,7 +151,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.attachKeys();
 
       // initialize ParticleSystem
-      this.model = new ArrayModel(this.options);
+      this.model = new ArrayModelClass(this.options);
 
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =

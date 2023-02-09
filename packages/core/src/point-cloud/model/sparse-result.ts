@@ -47,12 +47,12 @@ interface InitialRequest extends WorkerRequest {
   id?: number;
 }
 
-interface DataRequest extends WorkerRequest {
-  block: MoctreeBlock;
+interface DataRequest<BlockType> extends WorkerRequest {
+  block: BlockType;
 }
 
-interface DataResponse extends WorkerResponse {
-  block: MoctreeBlock;
+interface DataResponse<BlockType> extends WorkerResponse {
+  block: BlockType;
 }
 
 interface IdleResponse extends WorkerResponse {

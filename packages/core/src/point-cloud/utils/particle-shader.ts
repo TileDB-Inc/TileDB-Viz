@@ -6,7 +6,7 @@ import {
   ShaderMaterial
 } from '@babylonjs/core';
 import { TileDBPointCloudOptions } from '.';
-import ArrayModel from '../model/array-model';
+import { ArrayModelType } from '../../constants';
 
 class ParticleShaderMaterial {
   shaderMaterial: ShaderMaterial;
@@ -153,7 +153,7 @@ class ParticleShaderMaterial {
 
   public setShader(
     scene: Scene,
-    model: ArrayModel,
+    model: ArrayModelType,
     options: TileDBPointCloudOptions,
     engine?: Engine
   ) {
