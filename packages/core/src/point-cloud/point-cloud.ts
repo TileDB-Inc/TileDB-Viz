@@ -13,6 +13,7 @@ import { SparseResult } from './model';
 import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,
+  getArraySchema,
   getPointCloud,
   ParticleShaderMaterial,
   PointCloudGUI,
@@ -23,6 +24,7 @@ import {
 } from './utils';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
+import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -34,6 +36,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private gui!: PointCloudGUI;
   private conformingBounds!: number[];
   private activeCamera!: number;
+  private arraySchema!: ArraySchema;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -157,6 +160,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
           await getArrayMetadata(this.options);
 
+        this.arraySchema = await getArraySchema(this.options);
+
         this.conformingBounds = [
           conformingBounds[0],
           conformingBounds[3],
@@ -175,6 +180,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           octreeBounds[2],
           octreeBounds[5],
           this.conformingBounds,
+          this.arraySchema,
           levels,
           this.options.rgbMax || 1.0
         );
@@ -200,6 +206,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             pcData.zmin,
             pcData.zmax,
             this.conformingBounds,
+            this.arraySchema,
             1,
             this.options.rgbMax || 1.0,
             pcData.data as SparseResult
