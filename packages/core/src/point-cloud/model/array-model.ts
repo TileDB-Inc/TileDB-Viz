@@ -22,6 +22,7 @@ import {
 } from './sparse-result';
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
+import { getQueryDataFromCache } from '../../utils/cache';
 
 /**
  * The ArrayModel manages the client octree
@@ -263,10 +264,21 @@ class ArrayModel {
     // fetch if not populated
     if (block) {
       if (!block.entries) {
-        this.workerPool?.postMessage({
-          type: WorkerType.data,
-          block: block
-        } as DataRequest);
+        // TODO: add caching
+        const queryCacheKey = block.mortonNumber;
+        const storeName = `${this.namespace}:${this.groupName}`;
+        const dataFromCache = await getQueryDataFromCache(
+          storeName,
+          queryCacheKey
+        );
+        if (dataFromCache) {
+          this.loadSystem(dataFromCache);
+        } else {
+          this.workerPool?.postMessage({
+            type: WorkerType.data,
+            block: block
+          } as DataRequest);
+        }
       } else {
         // already have data
         this.loadSystem(block);

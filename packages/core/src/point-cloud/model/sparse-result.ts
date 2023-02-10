@@ -20,6 +20,16 @@ interface SparseResult {
   GpsTime?: Float64Array;
 }
 
+export interface SparseResultRaw {
+  X: ArrayBuffer;
+  Y: ArrayBuffer;
+  Z: ArrayBuffer;
+  Red: ArrayBuffer;
+  Green: ArrayBuffer;
+  Blue: ArrayBuffer;
+  GpsTime?: ArrayBuffer;
+}
+
 enum WorkerType {
   init,
   data,
@@ -53,6 +63,7 @@ interface DataRequest extends WorkerRequest {
 
 interface DataResponse extends WorkerResponse {
   block: MoctreeBlock;
+  entries: SparseResultRaw;
 }
 
 interface IdleResponse extends WorkerResponse {

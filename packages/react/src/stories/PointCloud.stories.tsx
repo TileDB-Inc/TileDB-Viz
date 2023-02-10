@@ -133,6 +133,7 @@ export const StreamerAutzen = () => (
     token={token}
     namespace={namespace}
     groupName={'autzen'}
+    rgbMax={65535}
     fanOut={100}
     pointBudget={8000000}
     maxNumCacheBlocks={200}
@@ -141,7 +142,6 @@ export const StreamerAutzen = () => (
     cameraUp={25}
     moveSpeed={4}
     colorScheme="dark"
-    rgbMax={255}
     width={'100vw'}
     height={'100vh'}
     useShader={true}

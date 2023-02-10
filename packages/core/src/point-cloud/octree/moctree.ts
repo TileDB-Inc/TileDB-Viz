@@ -233,8 +233,8 @@ class MoctreeBlock {
     maxPoint: Vector3,
     entries?: SparseResult
   ) {
-    this.minPoint = minPoint.clone();
-    this.maxPoint = maxPoint.clone();
+    this.minPoint = minPoint;
+    this.maxPoint = maxPoint;
     if (entries) {
       this.entries = entries;
     }
