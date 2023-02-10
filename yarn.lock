@@ -4888,16 +4888,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tiledb-inc/tiledb-cloud@npm:1.0.12-alpha.2":
-  version: 1.0.12-alpha.2
-  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.12-alpha.2"
+"@tiledb-inc/tiledb-cloud@npm:1.0.12-beta.0 ":
+  version: 1.0.12-beta.0
+  resolution: "@tiledb-inc/tiledb-cloud@npm:1.0.12-beta.0"
   dependencies:
     axios: ^0.21.1
     capnp-ts: ^0.4.0
     capnpc-ts: ^0.4.0
     paralleljs: "github:SarantopoulosKon/parallel.js#node-mode-in-web-worker"
     save-file: ^2.3.1
-  checksum: 72ffc9aeb50e3580ccf6c45fb15c1e3828b85ee7b143865a3426fc4de3ce86967cf8261490cd2bbd701ee302809468e29784e1dd10bf2b69adddee237884d2ad
+  checksum: 1f34388b575b4006905b09bff8f8eae0142d580ce0372ed751ee4ed7504e320689b64b358a8532d730b60f902d92246e74e12e1d116dfddfb585d2347f5b3514
   languageName: node
   linkType: hard
 
@@ -4915,7 +4915,7 @@ __metadata:
     "@babylonjs/loaders": ^5.42.0
     "@babylonjs/materials": ^5.42.0
     "@babylonjs/serializers": ^5.42.0
-    "@tiledb-inc/tiledb-cloud": 1.0.12-alpha.2
+    "@tiledb-inc/tiledb-cloud": "1.0.12-beta.0 "
     babylonjs-gui: ^5.42.0
     babylonjs-materials: ^5.42.0
     idb: ^7.0.2
