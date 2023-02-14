@@ -386,7 +386,8 @@ class ArrayModel {
       // find centre point and load higher resolution around it
       if (scene.activeCamera && this.workerPool?.isReady()) {
         const ray = scene.activeCamera.getForwardRay();
-        const epsilon = Math.pow(10, -12);
+        // don't set epsilon to be too sensitive
+        const epsilon = Math.pow(10, -4);
 
         // check cache size, this is different the point budget and refers the number of particle systems
         if (this.particleSystems.size > this.maxNumCacheBlocks) {
