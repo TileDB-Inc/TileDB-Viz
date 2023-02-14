@@ -156,11 +156,13 @@ class Moctree {
 
         const ranges = getMortonRange(l);
 
-        // display more blocks from higher resolution data and tail off
-        const fanOut = Math.min(
-          Math.ceil(this.fanOut / (this.maxDepth - l + 1)),
-          ranges.maxMorton - ranges.minMorton // 1 missing block for centre
-        );
+        // // display more blocks from higher resolution data and tail off
+        // const fanOut = Math.min(
+        //   Math.ceil(this.fanOut / (this.maxDepth - l + 1)),
+        //   ranges.maxMorton - ranges.minMorton // 1 missing block for centre
+        // );
+
+        const fanOut = this.fanOut;
 
         let leftBlockCode = currentCode - positions[l - 1].left;
         let rightBlockCode = currentCode + positions[l - 1].right;
