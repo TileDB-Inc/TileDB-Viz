@@ -399,7 +399,7 @@ class ArrayModel {
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
           // this.workerPool.cleanUp();
-          this.rayOrigin = ray.origin.clone();
+          this.rayOrigin = ray.origin;
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
