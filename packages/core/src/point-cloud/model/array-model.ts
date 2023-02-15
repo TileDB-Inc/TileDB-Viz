@@ -94,7 +94,8 @@ class ArrayModel {
     if (options.streaming === true) {
       this.useStreaming = true;
     }
-    this.poolSize = options.workerPoolSize || 5;
+    this.poolSize =
+      options.workerPoolSize || navigator.hardwareConcurrency || 5;
     this.debug = options.debug || false;
 
     this.debugOctant = MeshBuilder.CreateBox('debugOctant');
