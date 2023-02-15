@@ -128,6 +128,7 @@ class ArrayModel {
 
   private loadSystem(block: MoctreeBlock) {
     if (block.entries !== undefined && this.scene) {
+      // profiler is showing we don't need to check if the block is in frustrum but noting a possible optimization here
       if (!this.particleSystems.has(block.mortonNumber) || !this.basePcs) {
         console.log(
           'received: ' +
@@ -396,6 +397,7 @@ class ArrayModel {
 
         // have we panned
         if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
+          // this.workerPool.cleanUp();
           this.rayOrigin = ray.origin.clone();
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,

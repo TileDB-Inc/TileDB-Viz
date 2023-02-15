@@ -1,4 +1,3 @@
-// import { Vector3 } from '@babylonjs/core';
 import { Vector3 } from '@babylonjs/core';
 import { writeToCache } from '../../utils/cache';
 import {
@@ -17,8 +16,7 @@ class TileDBWorkerPool {
   private workers: Worker[] = [];
   private callbackFn: (block: MoctreeBlock) => void;
   private mapStatus: Map<string, boolean>;
-  private namespace: string;
-  private groupName: string;
+  private initRequest: InitialRequest;
 
   constructor(
     initRequest: InitialRequest,
@@ -28,8 +26,7 @@ class TileDBWorkerPool {
     this.poolSize = poolSize || 5;
     this.callbackFn = callbackFn;
     this.mapStatus = new Map<string, boolean>();
-    this.namespace = initRequest.namespace;
-    this.groupName = initRequest.groupName;
+    this.initRequest = initRequest;
 
     for (let w = 0; w < this.poolSize; w++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
@@ -37,7 +34,7 @@ class TileDBWorkerPool {
         name: w.toString()
       });
       worker.onmessage = this.onData.bind(this);
-      worker.postMessage(initRequest);
+      worker.postMessage(this.initRequest);
       this.workers.push(worker);
       this.mapStatus.set(w.toString(), false);
     }
@@ -62,7 +59,7 @@ class TileDBWorkerPool {
       block.entries = buffersToSparseResult(entries);
 
       const queryCacheKey = block.mortonNumber;
-      const storeName = `${this.namespace}:${this.groupName}`;
+      const storeName = `${this.initRequest.namespace}:${this.initRequest.groupName}`;
       this.callbackFn(block);
 
       await writeToCache(storeName, queryCacheKey, block);
@@ -79,6 +76,24 @@ class TileDBWorkerPool {
         this.workers[parseInt(k)].postMessage(request);
         this.mapStatus.set(k, true);
         break;
+      }
+    }
+  }
+
+  public async cleanUp() {
+    // terminate only busy workers
+    for (const [k, v] of this.mapStatus) {
+      if (!v) {
+        this.workers[parseInt(k)].terminate();
+        const newWorker = new Worker(
+          new URL('tiledb.worker', import.meta.url),
+          {
+            type: 'module',
+            name: k
+          }
+        );
+        this.workers[parseInt(k)] = newWorker;
+        this.mapStatus.set(k, false);
       }
     }
   }

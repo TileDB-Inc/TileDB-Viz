@@ -1,5 +1,4 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 import {
   DataRequest,
@@ -12,7 +11,6 @@ import { MoctreeBlock } from '../octree';
 
 let namespace = '';
 let groupName = '';
-let arraySchema: ArraySchema;
 let translateX = 0;
 let translateY = 0;
 let translateZ = 0;
@@ -26,7 +24,6 @@ self.onmessage = async (e: MessageEvent) => {
     const o = m as InitialRequest;
     namespace = o.namespace;
     groupName = o.groupName;
-    arraySchema = o.arraySchema;
     translateX = o.translateX;
     translateY = o.translateY;
     translateZ = o.translateZ;
@@ -77,8 +74,7 @@ async function fetchData(block: MoctreeBlock) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     namespace,
     groupName + '_' + block.lod,
-    queryData,
-    arraySchema
+    queryData
   )) {
     returnData(block, results as SparseResultRaw);
   }
