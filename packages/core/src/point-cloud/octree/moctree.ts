@@ -144,28 +144,28 @@ class Moctree {
     }
 
     let blockCount = 0;
+    const lods = [...Array(lod).keys()];
 
     // keep generating blocks to fill until the caller decides enough
     while (blockCount < totalBlocks) {
       let currentCode = code;
-      // loop the lods
-      for (let l = lod; l > 0; l--) {
+      // map the lods, splice the lods that are complete
+      for (let l = lods.length - 1; l > 1; l--) {
+        const currentLod = lods[l];
         const blockSize = this.maxPoint
           .subtract(this.minPoint)
-          .scale(1 / Math.pow(2, l));
+          .scale(1 / Math.pow(2, currentLod));
 
-        const ranges = getMortonRange(l);
+        const ranges = getMortonRange(currentLod);
 
-        // // display more blocks from higher resolution data and tail off
-        // const fanOut = Math.min(
-        //   Math.ceil(this.fanOut / (this.maxDepth - l + 1)),
-        //   ranges.maxMorton - ranges.minMorton // 1 missing block for centre
-        // );
+        // display more blocks from higher resolution data and tail off
+        const fanOut = Math.min(
+          Math.ceil(this.fanOut / (this.maxDepth - currentLod + 1)),
+          ranges.maxMorton - ranges.minMorton // 1 missing block for centre
+        );
 
-        const fanOut = this.fanOut;
-
-        let leftBlockCode = currentCode - positions[l - 1].left;
-        let rightBlockCode = currentCode + positions[l - 1].right;
+        let leftBlockCode = currentCode - positions[currentLod - 1].left;
+        let rightBlockCode = currentCode + positions[currentLod - 1].right;
 
         if (
           leftBlockCode >= ranges.minMorton ||
@@ -182,14 +182,14 @@ class Moctree {
                   relativeV1.multiply(blockSize)
                 );
                 yield new MoctreeBlock(
-                  l,
+                  currentLod,
                   leftBlockCode,
                   actualV1,
                   actualV1.add(blockSize)
                 );
               }
               blockCount++;
-              leftBlockCode = currentCode - ++positions[l - 1].left;
+              leftBlockCode = currentCode - ++positions[currentLod - 1].left;
             }
 
             if (rightBlockCode <= ranges.maxMorton) {
@@ -202,16 +202,19 @@ class Moctree {
                   relativeV2.multiply(blockSize)
                 );
                 yield new MoctreeBlock(
-                  l,
+                  currentLod,
                   rightBlockCode,
                   actualV2,
                   actualV2.add(blockSize)
                 );
               }
               blockCount++;
-              rightBlockCode = currentCode + ++positions[l - 1].right;
+              rightBlockCode = currentCode + ++positions[currentLod - 1].right;
             }
           }
+        } else {
+          // all done for this lod
+          lods.splice(l, 1);
         }
         // up a block level
         currentCode = currentCode >> 3;
