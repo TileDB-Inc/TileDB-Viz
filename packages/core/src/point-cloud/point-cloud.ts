@@ -247,6 +247,13 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.engine
       );
 
+      // add interactive GUI
+      this.gui = new PointCloudGUI(this.scene);
+      if (this.gui.advancedDynamicTexture.layer !== null) {
+        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
+      }
+      await this.gui.init(this.scene, this.model);
+
       // add panning control
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;

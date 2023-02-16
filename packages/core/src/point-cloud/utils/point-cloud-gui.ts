@@ -4,9 +4,15 @@ import {
   Button,
   Control,
   Grid,
+  RadioGroup,
+  SelectionPanel,
+  SliderGroup,
+  //StackPanel,
   TextBlock,
   TextWrapping
 } from '@babylonjs/gui';
+import ArrayModel from '../model/array-model';
+import { setSceneColors, updateSceneColors } from './scene-colors';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -93,6 +99,183 @@ class PointCloudGUI {
     title.top = -50;
     title.text = titleText;
     panel.addControl(title);
+  }
+
+  public async init(scene: Scene, model: ArrayModel) {
+    let sceneColors = setSceneColors(model.colorScheme as string);
+
+    const rightPanel = new Grid();
+    rightPanel.width = '250px';
+    rightPanel.setPadding('16px', '16px', '16px', '16px');
+    rightPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    rightPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    rightPanel.addRowDefinition(50, true);
+    rightPanel.addRowDefinition(5, true);
+    rightPanel.addRowDefinition(500, true);
+    this.advancedDynamicTexture.addControl(rightPanel);
+
+    const button = Button.CreateImageOnlyButton(
+      'button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
+    );
+    button.width = '48px';
+    button.height = '48px';
+    button.background = 'transparent';
+    button.thickness = 0;
+    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+
+    rightPanel.addControl(button, 0, 0);
+
+    // expand and collapse the panel menu on click of button
+    let _menu = 0;
+    const showControls = function () {
+      if (_menu === 0) {
+        _menu = 1;
+        controls.isVisible = true;
+      } else if (_menu === 1) {
+        controls.isVisible = false;
+        _menu = 0;
+      }
+      return _menu;
+    };
+
+    button.onPointerUpObservable.add(() => {
+      showControls();
+    });
+
+    function setControlsColors(sceneColors: {
+      backgroundColor: { toHexString: () => string };
+      textColor: string;
+      accentColor: string;
+      secondColor: string;
+    }) {
+      controls.background = sceneColors.backgroundColor.toHexString();
+      controls.color = sceneColors.textColor;
+      controls.barColor = sceneColors.textColor;
+      controls.headerColor = sceneColors.textColor;
+      controls.buttonColor = sceneColors.accentColor;
+      controls.buttonBackground = sceneColors.secondColor;
+      controls.labelColor = sceneColors.textColor;
+    }
+
+    // add the control panel
+    const controls = new SelectionPanel('controlPanel');
+    controls.width = 1;
+    controls.height = 1;
+    controls.thickness = 0;
+    controls.fontSize = 14;
+    controls.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    controls.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    setControlsColors(sceneColors);
+    rightPanel.addControl(controls, 2, 0);
+
+    if (model.useStreaming) {
+      // add streaming performance sliders
+      const performanceGroup = new SliderGroup('Performance');
+
+      const updatePointBudget = function (value: number) {
+        model.pointBudget = value;
+      };
+
+      performanceGroup.addSlider(
+        'Point budget',
+        updatePointBudget,
+        ' ',
+        1_000_000,
+        50_000_000,
+        model.pointBudget,
+        (value: number) => {
+          return +value.toFixed(1);
+        }
+      );
+
+      const updateFanOut = function (value: number) {
+        model.fanOut = value;
+      };
+
+      performanceGroup.addSlider(
+        'Fan out',
+        updateFanOut,
+        ' ',
+        1,
+        100,
+        model.fanOut,
+        (value: number) => {
+          return +value.toFixed(1);
+        }
+      );
+
+      const updateBlocks = function (value: number) {
+        model.maxNumCacheBlocks = value;
+      };
+
+      performanceGroup.addSlider(
+        'Max cached blocks',
+        updateBlocks,
+        ' ',
+        20,
+        500,
+        model.maxNumCacheBlocks,
+        (value: number) => {
+          return +value.toFixed(0);
+        }
+      );
+
+      controls.addGroup(performanceGroup);
+    }
+
+    // add color scheme radio buttons
+    enum ColorScheme {
+      Dark = 0,
+      Light = 1,
+      Blue = 2
+    }
+
+    function setColors(colors: string) {
+      updateSceneColors(scene, colors);
+      sceneColors = setSceneColors(colors);
+      setControlsColors(sceneColors);
+    }
+
+    const setColor = (but: ColorScheme) => {
+      switch (but) {
+        case ColorScheme.Dark:
+          setColors('dark');
+          break;
+        case ColorScheme.Light:
+          setColors('light');
+          break;
+        case ColorScheme.Blue:
+          setColors('blue');
+          break;
+      }
+    };
+
+    const colorGroup = new RadioGroup('Color scheme');
+    let darkOn = false;
+    let lightOn = false;
+    let blueOn = false;
+    if (model.colorScheme === 'dark') {
+      darkOn = true;
+    }
+    if (model.colorScheme === 'light') {
+      lightOn = true;
+    }
+    if (model.colorScheme === 'blue') {
+      blueOn = true;
+    }
+    colorGroup.addRadio('dark', setColor, darkOn);
+    colorGroup.addRadio('light', setColor, lightOn);
+    colorGroup.addRadio('blue', setColor, blueOn);
+    controls.addGroup(colorGroup);
+
+    // to make sure the menu is collapsed at the start
+    const sceneInit = function () {
+      controls.isVisible = false;
+    };
+
+    sceneInit();
   }
 }
 

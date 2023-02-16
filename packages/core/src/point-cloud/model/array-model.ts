@@ -420,6 +420,9 @@ class ArrayModel {
 
         // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage, this is enforced
         if (this.particleSystems.size > this.maxNumCacheBlocks) {
+          console.log(
+            'cached blocks max reached: ' + this.particleSystems.size
+          );
           this.dropLRUParticleSystem();
         }
 
