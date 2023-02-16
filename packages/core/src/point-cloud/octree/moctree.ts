@@ -144,14 +144,14 @@ class Moctree {
     }
 
     let blockCount = 0;
-    const lods = [...Array(lod).keys()];
+    const lods = [...Array(lod).keys()].reverse();
 
     // keep generating blocks to fill until the caller decides enough
     while (blockCount < totalBlocks) {
-      let currentCode = code;
-      // map the lods, splice the lods that are complete
-      for (let l = lods.length - 1; l > 1; l--) {
-        const currentLod = lods[l];
+      // map the lods, from low to high, splice the lods that are complete
+      for (let l = lods.length - 1; l >= 0; l--) {
+        const currentLod = lods[l] + 1; // lods array is initialized from zero
+        const currentCode = code >> (3 * (lod - currentLod));
         const blockSize = this.maxPoint
           .subtract(this.minPoint)
           .scale(1 / Math.pow(2, currentLod));
@@ -216,8 +216,6 @@ class Moctree {
           // all done for this lod
           lods.splice(l, 1);
         }
-        // up a block level
-        currentCode = currentCode >> 3;
       }
     }
     return;

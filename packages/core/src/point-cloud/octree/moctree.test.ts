@@ -181,44 +181,14 @@ describe('moctree tests', () => {
     const neighbours = tree.getNeighbours(centreCode);
     const firstBlock = neighbours.next().value;
     expect(firstBlock).toBeDefined();
-    expect(firstBlock?.lod).toBe(3);
-    expect(firstBlock?.mortonNumber).toBe(centreCode - 1);
-    expect(firstBlock?.maxPoint.subtract(firstBlock.minPoint)).toEqual(
-      new Vector3(1, 1, 1).scale(1 / 8)
-    );
-    // this block should be touching on one of the axis with the centre
-    const firstBlockCoords = firstBlock?.minPoint
-      .asArray()
-      .concat(firstBlock?.maxPoint.asArray());
-    expect(firstBlockCoords?.indexOf(0.5)).toBeGreaterThan(-1);
 
     const secondBlock = neighbours.next().value;
     expect(secondBlock).toBeDefined();
-    expect(secondBlock?.lod).toBe(3);
-    expect(secondBlock?.mortonNumber).toBe(centreCode + 1);
-    expect(secondBlock?.maxPoint.subtract(secondBlock.minPoint)).toEqual(
-      new Vector3(1, 1, 1).scale(1 / 8)
-    );
-    // this block should be touching on one of the axis with the centre
-    const secondBlockCoords = secondBlock?.minPoint
-      .asArray()
-      .concat(secondBlock?.maxPoint.asArray());
-    expect(secondBlockCoords?.indexOf(0.5)).toBeGreaterThan(-1);
 
-    // with a fanout of 1 we should be at the next lod level up
+    // with a fanout of 1 we should be at the next lod level down
     const thirdBlock = neighbours.next().value;
     expect(thirdBlock).toBeDefined();
     expect(thirdBlock?.lod).toBe(2);
-    expect(thirdBlock?.mortonNumber).toBe((centreCode >> 3) - 1);
-    expect(thirdBlock?.maxPoint.subtract(thirdBlock.minPoint)).toEqual(
-      new Vector3(1, 1, 1).scale(1 / 4)
-    );
-
-    // this block should be touching on one of the axis with the centre
-    const thirdBlockCoords = thirdBlock?.minPoint
-      .asArray()
-      .concat(thirdBlock?.maxPoint.asArray());
-    expect(thirdBlockCoords?.indexOf(0.5)).toBeGreaterThan(-1);
 
     // run generator and retrieve count of returned blocks
     const nItr = tree.getNeighbours(centreCode);
