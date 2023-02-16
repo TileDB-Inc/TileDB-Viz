@@ -228,11 +228,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.wheelPrecision
       );
 
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-
       // add shader
       this.model.particleMaterial = new ParticleShaderMaterial(
         scene,
