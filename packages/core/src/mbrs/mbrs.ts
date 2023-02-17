@@ -64,7 +64,7 @@ export class TileDBMBRSVisualization extends TileDBVisualization {
       );
       const scale = this._zScale;
 
-      // set up camera
+      // Set up camera
       scene.createDefaultCameraOrLight(true, true, true);
       const camera = scene.activeCamera as ArcRotateCamera;
       camera.alpha += Math.PI;
