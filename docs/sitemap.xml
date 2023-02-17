@@ -2,50 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/index.html</loc>
-    <lastmod>2023-02-17T16:50:50.990Z</lastmod>
+    <lastmod>2023-02-17T17:50:12.884Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/react/overview.html</loc>
-    <lastmod>2023-02-17T16:50:52.694Z</lastmod>
+    <lastmod>2023-02-17T17:50:13.508Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/core/overview.html</loc>
-    <lastmod>2023-02-17T16:50:52.994Z</lastmod>
+    <lastmod>2023-02-17T17:50:13.820Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBVisualizationBaseOptions.html</loc>
-    <lastmod>2023-02-17T16:50:53.318Z</lastmod>
+    <lastmod>2023-02-17T17:50:14.128Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBPointCloudOptions.html</loc>
-    <lastmod>2023-02-17T16:50:53.834Z</lastmod>
+    <lastmod>2023-02-17T17:50:14.616Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBMBRSVisualizationOptions.html</loc>
-    <lastmod>2023-02-17T16:50:54.114Z</lastmod>
+    <lastmod>2023-02-17T17:50:14.908Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBImageVisualizationOptions.html</loc>
-    <lastmod>2023-02-17T16:50:54.370Z</lastmod>
+    <lastmod>2023-02-17T17:50:15.200Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/modules.html</loc>
-    <lastmod>2023-02-17T16:50:54.582Z</lastmod>
+    <lastmod>2023-02-17T17:50:15.456Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBVisualization.html</loc>
-    <lastmod>2023-02-17T16:50:54.862Z</lastmod>
+    <lastmod>2023-02-17T17:50:15.756Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBMBRSVisualization.html</loc>
-    <lastmod>2023-02-17T16:50:55.182Z</lastmod>
+    <lastmod>2023-02-17T17:50:16.100Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBImageVisualization.html</loc>
-    <lastmod>2023-02-17T16:50:55.494Z</lastmod>
+    <lastmod>2023-02-17T17:50:16.444Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBPointCloudVisualization.html</loc>
-    <lastmod>2023-02-17T16:50:55.830Z</lastmod>
+    <lastmod>2023-02-17T17:50:16.808Z</lastmod>
   </url>
 </urlset>
