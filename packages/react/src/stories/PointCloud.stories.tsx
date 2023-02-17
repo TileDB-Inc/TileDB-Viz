@@ -20,6 +20,11 @@ export default {
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 
+let numWorkers: number | undefined = undefined;
+if (process.env.STORYBOOK_NUM_WORKERS) {
+  numWorkers = parseInt(process.env.STORYBOOK_NUM_WORKERS);
+}
+
 const Template = () => (
   <PointCloudVisualization
     data={data as any}
@@ -132,7 +137,8 @@ export const StreamerAutzen = () => (
     streaming={true}
     token={token}
     namespace={namespace}
-    groupName={'autzen-classified'}
+    groupName={'autzen'}
+    workerPoolSize={numWorkers}
     rgbMax={65535}
     fanOut={10}
     pointBudget={8_000_000}
@@ -157,6 +163,7 @@ export const StreamerBristol = () => (
     token={token}
     namespace={namespace}
     groupName={'bristol'}
+    workerPoolSize={numWorkers}
     fanOut={10}
     pointBudget={8_000_000}
     maxNumCacheBlocks={200}
@@ -181,6 +188,7 @@ export const StreamerSantorini = () => (
     token={token}
     namespace={namespace}
     groupName={'santorini'}
+    workerPoolSize={numWorkers}
     fanOut={10}
     pointBudget={8_000_000}
     maxNumCacheBlocks={200}
