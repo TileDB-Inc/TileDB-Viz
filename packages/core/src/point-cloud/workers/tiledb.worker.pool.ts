@@ -92,6 +92,8 @@ class TileDBWorkerPool {
             name: k
           }
         );
+        newWorker.postMessage(this.initRequest); // message to initalize the tiledb client
+        newWorker.onmessage = this.onData.bind(this);
         this.workers[parseInt(k)] = newWorker;
         this.mapStatus.set(k, false);
       }
