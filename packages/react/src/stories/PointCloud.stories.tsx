@@ -134,8 +134,8 @@ export const StreamerAutzen = () => (
     namespace={namespace}
     groupName={'autzen'}
     rgbMax={65535}
-    fanOut={100}
-    pointBudget={8000000}
+    fanOut={10}
+    pointBudget={8_000_000}
     maxNumCacheBlocks={200}
     pointSize={4}
     wheelPrecision={0.5}
@@ -144,7 +144,7 @@ export const StreamerAutzen = () => (
     colorScheme="dark"
     width={'100vw'}
     height={'100vh'}
-    useShader={true}
+    useShader={false}
     edlStrength={1.0}
   />
 );
@@ -152,14 +152,12 @@ export const StreamerAutzen = () => (
 export const StreamerBristol = () => (
   <PointCloudVisualization
     streaming={true}
-    useSPS={true}
     token={token}
     namespace={namespace}
     groupName={'bristol'}
-    fanOut={100}
-    pointBudget={80000000}
-    maxNumCacheBlocks={1000}
-    workerPoolSize={20}
+    fanOut={10}
+    pointBudget={8_000_000}
+    maxNumCacheBlocks={200}
     pointSize={4}
     colorScheme="dark"
     cameraLocation={8}
@@ -170,7 +168,7 @@ export const StreamerBristol = () => (
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
-    useShader={true}
+    useShader={false}
     edlStrength={2.0}
   />
 );
@@ -181,10 +179,10 @@ export const StreamerSantorini = () => (
     token={token}
     namespace={namespace}
     groupName={'santorini'}
-    fanOut={1000}
-    pointBudget={80000000}
-    maxNumCacheBlocks={1000}
-    pointSize={8}
+    fanOut={10}
+    pointBudget={8_000_000}
+    maxNumCacheBlocks={200}
+    pointSize={4}
     colorScheme="dark"
     cameraLocation={5}
     cameraUp={200}
@@ -193,7 +191,7 @@ export const StreamerSantorini = () => (
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
-    useShader={true}
+    useShader={false}
     edlStrength={2.0}
   />
 );

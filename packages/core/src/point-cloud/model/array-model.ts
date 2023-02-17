@@ -48,6 +48,7 @@ class ArrayModel {
   pointSize: number;
   pickedBlockCode = -1;
   rayOrigin = Vector3.Zero();
+  cameraHeight: number | undefined;
   maxNumCacheBlocks: number;
   renderBlocks: MoctreeBlock[] = [];
   isBuffering = false;
@@ -94,7 +95,8 @@ class ArrayModel {
     if (options.streaming === true) {
       this.useStreaming = true;
     }
-    this.poolSize = options.workerPoolSize || 5;
+    this.poolSize =
+      options.workerPoolSize || navigator.hardwareConcurrency || 5;
     this.debug = options.debug || false;
 
     this.debugOctant = MeshBuilder.CreateBox('debugOctant');
@@ -128,12 +130,15 @@ class ArrayModel {
 
   private loadSystem(block: MoctreeBlock) {
     if (block.entries !== undefined && this.scene) {
+      // profiler is showing we don't need to check if the block is in frustrum but noting a possible optimization here
       if (!this.particleSystems.has(block.mortonNumber) || !this.basePcs) {
         console.log(
           'received: ' +
             block.entries?.X.length +
             ' of approximately: ' +
-            this.octree.knownBlocks.get(block.mortonNumber)
+            this.octree.knownBlocks.get(block.mortonNumber) +
+            ' at LOD: ' +
+            block.lod
         );
 
         const transX = this.translationVector.x;
@@ -183,6 +188,7 @@ class ArrayModel {
             { size: this.pointSize },
             this.scene
           );
+          sps.computeBoundingBox = true;
           sps.addShape(box, numPoints, { positionFunction: pointBuilder });
           box.dispose();
           sps.buildMesh();
@@ -199,7 +205,7 @@ class ArrayModel {
             this.scene,
             { updatable: false }
           );
-
+          pcs.computeBoundingBox = true;
           pcs.addPoints(numPoints, pointBuilder);
 
           pcs.buildMeshAsync().then(() => {
@@ -250,16 +256,39 @@ class ArrayModel {
     }
   }
 
-  private dropLRUParticleSystem() {
+  private dropLRUParticleSystem(targetPointCount?: number) {
     // simple lru cache, evict first key, this is fine as we are backed by local storage
-    const k = this.particleSystems.keys().next().value;
-    // delete pcs corresponding to this key
-    const p = this.particleSystems.get(k);
-    if (p) {
-      this.pointCount -= p.nbParticles;
-      p.dispose();
-      this.particleSystems.delete(k);
+    const candidates: Array<number> = [];
+    if (targetPointCount) {
+      // different style of dropping particle systems, we want to preserve the scene
+      const scene = this.scene;
+      let n = 0;
+      for (const [k, pcs] of this.particleSystems) {
+        const bounds = pcs.mesh?.getBoundingInfo();
+        if (scene && bounds) {
+          if (!scene.activeCamera?.isInFrustum(bounds)) {
+            candidates.push(k);
+            n += pcs.nbParticles;
+            if (n > targetPointCount) {
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      const k = this.particleSystems.keys().next().value;
+      candidates.push(k);
     }
+
+    candidates.map(k => {
+      // delete pcs corresponding to this key
+      const p = this.particleSystems.get(k);
+      if (p) {
+        this.pointCount -= p.nbParticles;
+        p.dispose();
+        this.particleSystems.delete(k);
+      }
+    }, this);
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
@@ -386,16 +415,22 @@ class ArrayModel {
       // find centre point and load higher resolution around it
       if (scene.activeCamera && this.workerPool?.isReady()) {
         const ray = scene.activeCamera.getForwardRay();
-        const epsilon = Math.pow(10, -12);
+        // don't set epsilon to be too sensitive
+        const epsilon = Math.pow(10, -4);
 
-        // check cache size, this is different the point budget and refers the number of particle systems
+        // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage, this is enforced
         if (this.particleSystems.size > this.maxNumCacheBlocks) {
           this.dropLRUParticleSystem();
         }
 
-        // have we panned
-        if (!ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon)) {
-          this.rayOrigin = ray.origin.clone();
+        // have we panned or moved the camera in towards the scene
+        if (
+          !ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon) ||
+          this.scene?.activeCamera?.position.z !== this.cameraHeight
+        ) {
+          // this.workerPool.cleanUp();
+          this.rayOrigin = ray.origin;
+          this.cameraHeight = this.scene?.activeCamera?.position.z;
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -410,12 +445,10 @@ class ArrayModel {
             this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
 
-          // drop cache blocks if we are at the point budget
+          // drop cache blocks if we are at the point budget, this is loose, if all blocks are in view we don't drop blocks but don't load any more as we have exceeded the point budget
           if (this.pointCount >= this.pointBudget) {
-            const n = this.pointBudget / 2;
-            while (this.pointCount > n) {
-              this.dropLRUParticleSystem();
-            }
+            const pointTargetCount = this.pointBudget / 2;
+            this.dropLRUParticleSystem(pointTargetCount);
           }
         }
 
