@@ -193,6 +193,10 @@ class ArrayModel {
           box.dispose();
           sps.buildMesh();
 
+          if (this.debug && sps.mesh) {
+            sps.mesh.showBoundingBox = true;
+          }
+
           if (block.mortonNumber !== Moctree.startBlockIndex) {
             this.particleSystems.set(block.mortonNumber, sps);
           } else {
@@ -214,6 +218,9 @@ class ArrayModel {
               this.particleSystems.set(block.mortonNumber, pcs);
             } else {
               this.basePcs = pcs;
+            }
+            if (this.debug && pcs.mesh) {
+              pcs.mesh.showBoundingBox = true;
             }
           });
         }
@@ -261,16 +268,25 @@ class ArrayModel {
     const candidates: Array<number> = [];
     if (targetPointCount) {
       // different style of dropping particle systems, we want to preserve the scene
-      const scene = this.scene;
       let n = 0;
-      for (const [k, pcs] of this.particleSystems) {
-        const bounds = pcs.mesh?.getBoundingInfo();
-        if (scene && bounds) {
-          if (!scene.activeCamera?.isInFrustum(bounds)) {
-            candidates.push(k);
-            n += pcs.nbParticles;
-            if (n > targetPointCount) {
-              break;
+
+      // sort keys by descending morton index, hence we drop the higher levels of detail data first
+      const keys = [...this.particleSystems.keys()].sort(
+        (a, b) => 0 - (a > b ? 1 : -1)
+      );
+
+      for (const k in keys) {
+        const code = keys[k];
+        const pcs = this.particleSystems.get(code);
+        if (pcs) {
+          const bounds = pcs.mesh?.getBoundingInfo();
+          if (this.scene && bounds) {
+            if (!this.scene.activeCamera?.isCompletelyInFrustum(bounds)) {
+              candidates.push(code);
+              n += pcs.nbParticles;
+              if (n > targetPointCount) {
+                break;
+              }
             }
           }
         }
@@ -462,7 +478,7 @@ class ArrayModel {
             block = this.neighbours?.next().value;
             while (
               block &&
-              !scene.activeCamera.isInFrustum(block.boundingInfo)
+              !scene.activeCamera.isInFrustum(block.boundingInfo) // check the centre of each box
             ) {
               const g = this.neighbours?.next();
               if (g?.done) {
@@ -473,14 +489,7 @@ class ArrayModel {
           }
 
           if (block) {
-            const nextPointCount = this.octree.knownBlocks.get(
-              block.mortonNumber
-            );
-
-            if (
-              nextPointCount &&
-              this.pointCount + nextPointCount <= this.pointBudget
-            ) {
+            if (this.pointCount <= this.pointBudget) {
               this.fetchBlock(block);
             }
           }
