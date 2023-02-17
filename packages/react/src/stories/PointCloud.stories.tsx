@@ -132,13 +132,15 @@ export const StreamerAutzen = () => (
     streaming={true}
     token={token}
     namespace={namespace}
-    groupName={'autzen'}
+    groupName={'autzen-classified'}
     rgbMax={65535}
     fanOut={10}
     pointBudget={8_000_000}
     maxNumCacheBlocks={200}
     pointSize={4}
     wheelPrecision={0.5}
+    cameraLocation={8}
+    cameraZoomOut={[1, 1, 2]}
     cameraUp={25}
     moveSpeed={4}
     colorScheme="dark"
