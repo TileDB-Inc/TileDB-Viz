@@ -158,9 +158,9 @@ class Moctree {
 
         const ranges = getMortonRange(currentLod);
 
-        // display more blocks from higher resolution data and tail off
+        // display more blocks from lower level of detail data and tail off
         const fanOut = Math.min(
-          Math.ceil(this.fanOut / (this.maxDepth - currentLod + 1)),
+          Math.ceil(this.fanOut / currentLod),
           ranges.maxMorton - ranges.minMorton // 1 missing block for centre
         );
 
