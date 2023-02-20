@@ -9,7 +9,7 @@ import {
   KeyboardEventTypes
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
-import { SparseResult } from './model';
+import { SparseResult } from './model/sparse-result';
 import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,

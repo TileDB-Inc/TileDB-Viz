@@ -7,7 +7,7 @@ import {
   SparseResultRaw,
   WorkerRequest,
   WorkerType
-} from '../model';
+} from '../model/sparse-result';
 import { MoctreeBlock } from '../octree';
 
 let namespace = '';
