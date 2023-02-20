@@ -137,7 +137,7 @@ export const StreamerAutzen = () => (
     streaming={true}
     token={token}
     namespace={namespace}
-    groupName={'autzen'}
+    groupName={'autzen-classified'}
     workerPoolSize={numWorkers}
     rgbMax={65535}
     fanOut={10}
