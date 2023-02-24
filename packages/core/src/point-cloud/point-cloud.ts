@@ -6,7 +6,9 @@ import {
   Scene,
   Vector3,
   Nullable,
-  KeyboardEventTypes
+  KeyboardEventTypes,
+  PointerEventTypes,
+  IWheelEvent
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -253,6 +255,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;
       let isPanning = false;
+
+      // register for onPointerDown as we need the keyboard state as well
       scene.onPointerDown = evt => {
         if (evt.ctrlKey || evt.shiftKey) {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
@@ -281,31 +285,50 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       };
 
-      scene.onPointerUp = () => {
-        isPanning = false;
-        this.cameras[0].attachControl(true, true);
-      };
-
-      const identity = Matrix.Identity();
-      scene.onPointerMove = evt => {
-        if (isPanning && pickOrigin) {
-          const ray = scene.createPickingRay(
-            scene.pointerX,
-            scene.pointerY,
-            identity,
-            this.cameras[0],
-            false
-          );
-          const distance = ray.intersectsPlane(plane);
-
-          if (distance === null) {
-            return;
+      scene.onPointerObservable.add(eventData => {
+        switch (eventData.type) {
+          case PointerEventTypes.POINTERWHEEL: {
+            const event = eventData.event as IWheelEvent;
+            const delta = event.deltaY;
+            if (delta) {
+              if (delta < 0) {
+                // more detail
+                this.model.fetchPoints(scene, true);
+              } else {
+                // less detail
+                this.model.fetchPoints(scene, true, true);
+              }
+            }
+            break;
           }
-          const pickedPoint = ray.direction.scale(distance).add(ray.origin);
-          const diff = pickedPoint.subtract(pickOrigin);
-          this.cameras[0].target.subtractInPlace(diff);
+          case PointerEventTypes.POINTERUP: {
+            isPanning = false;
+            this.model.fetchPoints(scene, true);
+            this.cameras[0].attachControl(true, true);
+            break;
+          }
+          case PointerEventTypes.POINTERMOVE: {
+            if (isPanning && pickOrigin) {
+              const identity = Matrix.Identity();
+              const ray = scene.createPickingRay(
+                scene.pointerX,
+                scene.pointerY,
+                identity,
+                this.cameras[0],
+                false
+              );
+              const distance = ray.intersectsPlane(plane);
+              if (distance === null) {
+                return;
+              }
+              const pickedPoint = ray.direction.scale(distance).add(ray.origin);
+              const diff = pickedPoint.subtract(pickOrigin);
+              this.cameras[0].target.subtractInPlace(diff);
+              break;
+            }
+          }
         }
-      };
+      });
 
       return scene;
     });

@@ -20,7 +20,7 @@ export default {
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 
-let numWorkers: number | undefined = undefined;
+let numWorkers: number = navigator.hardwareConcurrency;
 if (process.env.STORYBOOK_NUM_WORKERS) {
   numWorkers = parseInt(process.env.STORYBOOK_NUM_WORKERS);
 }
@@ -140,13 +140,12 @@ export const StreamerAutzen = () => (
     groupName={'autzen-classified'}
     workerPoolSize={numWorkers}
     rgbMax={65535}
-    fanOut={10}
-    pointBudget={8_000_000}
-    maxNumCacheBlocks={200}
-    pointSize={4}
+    fanOut={60} // fanOut can be fixed or specified by level (TODO)
+    pointBudget={3_500_000}
+    maxNumCacheBlocks={250}
     wheelPrecision={0.5}
     cameraLocation={8}
-    cameraZoomOut={[1, 1, 2]}
+    cameraZoomOut={[1, 1, 4]}
     cameraUp={25}
     moveSpeed={4}
     colorScheme="dark"
@@ -154,6 +153,7 @@ export const StreamerAutzen = () => (
     height={'100vh'}
     useShader={false}
     edlStrength={1.0}
+    debug={true}
   />
 );
 
@@ -164,10 +164,9 @@ export const StreamerBristol = () => (
     namespace={namespace}
     groupName={'bristol'}
     workerPoolSize={numWorkers}
-    fanOut={10}
-    pointBudget={8_000_000}
-    maxNumCacheBlocks={200}
-    pointSize={4}
+    fanOut={200}
+    pointBudget={4_500_000}
+    maxNumCacheBlocks={250}
     colorScheme="dark"
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
@@ -189,12 +188,12 @@ export const StreamerSantorini = () => (
     namespace={namespace}
     groupName={'santorini'}
     workerPoolSize={numWorkers}
-    fanOut={10}
-    pointBudget={8_000_000}
-    maxNumCacheBlocks={200}
-    pointSize={4}
+    fanOut={200}
+    pointBudget={3_500_000}
+    maxNumCacheBlocks={250}
     colorScheme="dark"
     cameraLocation={5}
+    cameraZoomOut={[1, 1, 4]}
     cameraUp={200}
     wheelPrecision={0.5}
     moveSpeed={4}

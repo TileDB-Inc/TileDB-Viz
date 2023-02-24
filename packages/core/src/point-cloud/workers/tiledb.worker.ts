@@ -1,5 +1,5 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 import {
   DataRequest,
@@ -66,7 +66,7 @@ async function fetchData(block: MoctreeBlock) {
   ];
 
   const queryData = {
-    layout: 'row-major',
+    layout: Layout.Unordered,
     ranges: ranges,
     attributes: ['X', 'Y', 'Z', 'Red', 'Green', 'Blue'], // choose a subset of attributes
     bufferSize: bufferSize,
