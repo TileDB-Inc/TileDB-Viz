@@ -8,7 +8,8 @@ import {
   StandardMaterial,
   Vector3,
   Particle,
-  Frustum
+  Frustum,
+  Camera
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -262,10 +263,12 @@ class ArrayModel {
   private dropParticleSystems(targetPointCount?: number, lessDetail?: boolean) {
     const candidates: Array<number> = [];
 
-    if (this.scene && this.scene.activeCamera) {
-      const planes = Frustum.GetPlanes(
-        this.scene.activeCamera.getTransformationMatrix()
-      );
+	const activeCamera: Camera | undefined = this.scene?.activeCameras?.find((camera: Camera) => {
+		return !camera.name.startsWith('GUI')
+	  })
+
+    if (this.scene && activeCamera) {
+      const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
 
       if (targetPointCount && this.maxLevel) {
         // different style of dropping particle systems, we want to preserve the scene
@@ -293,6 +296,7 @@ class ArrayModel {
           if (code === 531) {
             console.log('Block 531');
             pcs?.mesh?.computeWorldMatrix(true);
+			console.log(activeCamera);
             console.log(pcs?.mesh?.isInFrustum(planes));
           }
 
