@@ -55,6 +55,7 @@ class ArrayModel {
   neighbours?: Generator<MoctreeBlock, undefined, undefined>;
   basePcs?: SolidParticleSystem | PointsCloudSystem;
   particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
+  particleSystemsLRU: Set<number>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -126,6 +127,7 @@ class ArrayModel {
       number,
       SolidParticleSystem | PointsCloudSystem
     >();
+    this.particleSystemsLRU = new Set<number>();
   }
 
   private loadSystem(block: MoctreeBlock) {
@@ -195,6 +197,7 @@ class ArrayModel {
 
           if (block.mortonNumber !== Moctree.startBlockIndex) {
             this.particleSystems.set(block.mortonNumber, sps);
+            this.particleSystemsLRU.add(block.mortonNumber);
           } else {
             this.basePcs = sps;
           }
@@ -212,6 +215,7 @@ class ArrayModel {
             pcs.setParticles();
             if (block.mortonNumber !== Moctree.startBlockIndex) {
               this.particleSystems.set(block.mortonNumber, pcs);
+              this.particleSystemsLRU.add(block.mortonNumber);
             } else {
               this.basePcs = pcs;
             }
@@ -246,10 +250,9 @@ class ArrayModel {
       } else {
         // lru cache - reinsert this pcs
         if (block.mortonNumber !== Moctree.startBlockIndex) {
-          const pcs = this.particleSystems.get(block.mortonNumber);
-          if (pcs) {
-            this.particleSystems.delete(block.mortonNumber);
-            this.particleSystems.set(block.mortonNumber, pcs);
+          if (this.particleSystemsLRU.has(block.mortonNumber)) {
+            this.particleSystemsLRU.delete(block.mortonNumber);
+            this.particleSystemsLRU.add(block.mortonNumber);
           }
         }
       }
@@ -276,7 +279,7 @@ class ArrayModel {
         }
       }
     } else {
-      const k = this.particleSystems.keys().next().value;
+      const k = this.particleSystemsLRU.keys().next().value;
       candidates.push(k);
     }
 
@@ -287,6 +290,7 @@ class ArrayModel {
         this.pointCount -= p.nbParticles;
         p.dispose();
         this.particleSystems.delete(k);
+        this.particleSystemsLRU.delete(k);
       }
     }, this);
   }
