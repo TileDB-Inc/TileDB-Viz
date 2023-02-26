@@ -263,9 +263,11 @@ class ArrayModel {
   private dropParticleSystems(targetPointCount?: number, lessDetail?: boolean) {
     const candidates: Array<number> = [];
 
-	const activeCamera: Camera | undefined = this.scene?.activeCameras?.find((camera: Camera) => {
-		return !camera.name.startsWith('GUI')
-	  })
+    const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+      (camera: Camera) => {
+        return !camera.name.startsWith('GUI');
+      }
+    );
 
     if (this.scene && activeCamera) {
       const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
@@ -293,13 +295,6 @@ class ArrayModel {
 
           const pcs = this.particleSystems.get(code);
 
-          if (code === 531) {
-            console.log('Block 531');
-            pcs?.mesh?.computeWorldMatrix(true);
-			console.log(activeCamera);
-            console.log(pcs?.mesh?.isInFrustum(planes));
-          }
-
           if (pcs && pcs.mesh && !pcs.mesh.isInFrustum(planes)) {
             candidates.push(code);
             n += pcs.nbParticles;
@@ -319,8 +314,6 @@ class ArrayModel {
       }
     }
 
-    console.log(candidates);
-    console.log('before: ' + this.pointCount);
     candidates.map(k => {
       // delete pcs corresponding to this key
       const p = this.particleSystems.get(k);
@@ -330,7 +323,6 @@ class ArrayModel {
         this.particleSystems.delete(k);
       }
     }, this);
-    console.log('after: ' + this.pointCount);
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
@@ -459,9 +451,19 @@ class ArrayModel {
     // fully load immutable layer
     if (this.basePcs && this.basePcs.nbParticles > 0) {
       // find centre point and load higher resolution around it
-      if (scene.activeCamera && this.workerPool?.isReady()) {
+      if (this.workerPool?.isReady()) {
         if (this.pointCount <= this.pointBudget || hasChanged) {
-          const ray = scene.activeCamera.getForwardRay();
+          const activeCamera: Camera | undefined =
+            this.scene?.activeCameras?.find((camera: Camera) => {
+              return !camera.name.startsWith('GUI');
+            });
+
+          if (!activeCamera) {
+            // nothing else to do
+            return;
+          }
+
+          const ray = activeCamera.getForwardRay();
 
           // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage
           if (this.particleSystems.size > this.maxNumCacheBlocks) {
@@ -496,10 +498,11 @@ class ArrayModel {
             let block = this.renderBlocks.pop();
 
             // check block is in frustrum and not empty
-            if (!block) {
+            if (!block && activeCamera) {
               const planes = Frustum.GetPlanes(
-                scene.activeCamera.getTransformationMatrix()
+                activeCamera.getTransformationMatrix()
               );
+
               // we are buffering
               this.isBuffering = true;
 
