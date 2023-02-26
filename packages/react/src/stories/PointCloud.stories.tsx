@@ -153,7 +153,6 @@ export const StreamerAutzen = () => (
     height={'100vh'}
     useShader={false}
     edlStrength={1.0}
-    debug={true}
   />
 );
 
