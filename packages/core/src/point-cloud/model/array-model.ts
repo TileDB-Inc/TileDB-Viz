@@ -346,7 +346,7 @@ class ArrayModel {
       this.maxLevel,
       this.fanOut
     );
-    this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
+    this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex, scene.activeCamera?.position.z);
 
     // maintain compatibility with directly loading data
     if (data) {
@@ -433,7 +433,7 @@ class ArrayModel {
           this.cameraHeight = this.scene?.activeCamera?.position.z;
           const parentBlocks = this.octree.getContainingBlocksByRay(
             ray,
-            this.cameraHeight,
+            this.cameraHeight!,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.maxLevel! - 1
           );
@@ -443,7 +443,7 @@ class ArrayModel {
             this.pickedBlockCode = pickCode;
             this.renderBlocks = parentBlocks;
             this.isBuffering = false;
-            this.neighbours = this.octree.getNeighbours(this.pickedBlockCode, this.cameraHeight);
+            this.neighbours = this.octree.getNeighbours(this.pickedBlockCode, this.cameraHeight!);
           }
 
           // drop cache blocks if we are at the point budget, this is loose, if all blocks are in view we don't drop blocks but don't load any more as we have exceeded the point budget
