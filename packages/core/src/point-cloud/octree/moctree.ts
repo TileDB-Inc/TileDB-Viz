@@ -78,7 +78,7 @@ class Moctree {
     this.knownBlocks = new Map<number, number>();
   }
 
-  public getContainingBlocksByRay(ray: Ray, lod: number) {
+  public getContainingBlocksByRay(ray: Ray, cameraHeight: number, lod: number) {
     // this only queries the front octant that the ray is looking at, it will however look past empty octants
     const resultBlocks: MoctreeBlock[] = [];
 
@@ -109,20 +109,32 @@ class Moctree {
           // find nearest candidate to ray origin
           let resultBlock = candidates.pop();
           if (resultBlock !== undefined) {
+            let resultDistance = ray.origin.substract(resultBlock!.minPoint).length();
             candidates.forEach(b => {
+              let currDistance = ray.origin.subtract(b.minPoint).length();
               if (
-                ray.origin.subtract(b.minPoint).length() <
+                currDistance <
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                ray.origin.subtract(resultBlock!.minPoint).length()
+                resultDistance
               ) {
                 resultBlock = b;
+                resultDistance = currDistance;
               }
             });
+            // if (resultDistance > childBlockSize.x * 4) {
+            //   return resultBlocks.reverse();
+            // }
+            // if (resultDistance > cameraHeight * 0.75) {
+            //   return resultBlocks.reverse();
+            // }
 
             resultBlocks.push(resultBlock);
             minVector = resultBlock.minPoint;
             code = resultBlock.mortonNumber;
             childBlockSize.scaleInPlace(0.5);
+            if (childBlockSize.x < cameraHeight / 4) {
+              return resultBlocks.reverse();
+            }
           }
         }
       }
@@ -131,7 +143,8 @@ class Moctree {
   }
 
   public *getNeighbours(
-    code: number
+    code: number,
+    cameraHeight: number
   ): Generator<MoctreeBlock, undefined, undefined> {
     const lod = (code.toString(2).length - 1) / 3;
     const positions = [];
@@ -156,6 +169,9 @@ class Moctree {
           .subtract(this.minPoint)
           .scale(1 / Math.pow(2, currentLod));
 
+        if (blockSize.x < cameraHeight / 4) {
+          return;
+        }
         const ranges = getMortonRange(currentLod);
 
         // display more blocks from higher resolution data and tail off
