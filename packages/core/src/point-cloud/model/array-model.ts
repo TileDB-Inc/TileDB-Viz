@@ -170,9 +170,13 @@ class ArrayModel {
 
         this.pointCount += numPoints;
 
-        const pointSize = this.maxLevel
-          ? this.pointSize * (block.lod / this.maxLevel)
-          : this.pointSize;
+        // when streaming data, scale pointSize by LOD level
+        let pointSize = this.pointSize;
+        if (this.useStreaming) {
+          pointSize = this.maxLevel
+            ? this.pointSize * (block.lod / this.maxLevel)
+            : this.pointSize;
+        }
 
         const pointBuilder = function (particle: Particle, i: number) {
           if (block.entries !== undefined) {
