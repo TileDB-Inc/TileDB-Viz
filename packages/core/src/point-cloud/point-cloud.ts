@@ -8,7 +8,11 @@ import {
   Nullable,
   KeyboardEventTypes,
   PointerEventTypes,
-  IWheelEvent
+  IWheelEvent,
+  GizmoManager,
+  Camera,
+  FilesInput,
+  SceneLoader
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -39,6 +43,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private conformingBounds!: number[];
   private activeCamera!: number;
   private arraySchema!: ArraySchema;
+  private gizmoManager!: GizmoManager;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -137,6 +142,24 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               this.model.colorScheme as string
             );
             this.scene.clearColor = sceneColors.backgroundColor;
+          }
+
+          if (kbInfo.event.key === '1') {
+            this.gizmoManager.rotationGizmoEnabled = false;
+            this.gizmoManager.scaleGizmoEnabled = false;
+            this.gizmoManager.positionGizmoEnabled = !this.gizmoManager.positionGizmoEnabled;
+          }
+
+          if (kbInfo.event.key === '2') {
+            this.gizmoManager.rotationGizmoEnabled = false;
+            this.gizmoManager.positionGizmoEnabled = false;
+            this.gizmoManager.scaleGizmoEnabled = !this.gizmoManager.scaleGizmoEnabled;
+          }
+
+          if (kbInfo.event.key === '3') {
+            this.gizmoManager.scaleGizmoEnabled = false;
+            this.gizmoManager.positionGizmoEnabled = false;
+            this.gizmoManager.rotationGizmoEnabled = !this.gizmoManager.rotationGizmoEnabled;
           }
           break;
 
@@ -329,6 +352,28 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
         }
       });
+
+      // glTF drag n' drop mesh loader
+
+      const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+        (camera: Camera) => {
+          return !camera.name.startsWith('GUI');
+        }
+      );
+
+      var filesInput = new FilesInput(this.engine!, this.scene!, null, null, null, null, null, null, null);
+
+      filesInput.onProcessFileCallback = ((file: File, name: string, extension: string) => {
+        SceneLoader.ImportMeshAsync("", "", file, scene);
+        return true;
+      }).bind(this);
+
+      filesInput.reload = function () { };
+      filesInput.monitorElementForDragNDrop(this.canvas!);
+
+      this.gizmoManager = new GizmoManager(scene);
+      this.gizmoManager.usePointerToAttachGizmos = true;
+      this.gizmoManager.utilityLayer.setRenderCamera(activeCamera!);
 
       return scene;
     });
