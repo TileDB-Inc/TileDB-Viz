@@ -147,19 +147,22 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           if (kbInfo.event.key === '1') {
             this.gizmoManager.rotationGizmoEnabled = false;
             this.gizmoManager.scaleGizmoEnabled = false;
-            this.gizmoManager.positionGizmoEnabled = !this.gizmoManager.positionGizmoEnabled;
+            this.gizmoManager.positionGizmoEnabled =
+              !this.gizmoManager.positionGizmoEnabled;
           }
 
           if (kbInfo.event.key === '2') {
             this.gizmoManager.rotationGizmoEnabled = false;
             this.gizmoManager.positionGizmoEnabled = false;
-            this.gizmoManager.scaleGizmoEnabled = !this.gizmoManager.scaleGizmoEnabled;
+            this.gizmoManager.scaleGizmoEnabled =
+              !this.gizmoManager.scaleGizmoEnabled;
           }
 
           if (kbInfo.event.key === '3') {
             this.gizmoManager.scaleGizmoEnabled = false;
             this.gizmoManager.positionGizmoEnabled = false;
-            this.gizmoManager.rotationGizmoEnabled = !this.gizmoManager.rotationGizmoEnabled;
+            this.gizmoManager.rotationGizmoEnabled =
+              !this.gizmoManager.rotationGizmoEnabled;
           }
           break;
 
@@ -361,19 +364,35 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       );
 
-      var filesInput = new FilesInput(this.engine!, this.scene!, null, null, null, null, null, null, null);
+      const filesInput = new FilesInput(
+        this.engine,
+        this.scene,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      );
 
-      filesInput.onProcessFileCallback = ((file: File, name: string, extension: string) => {
-        SceneLoader.ImportMeshAsync("", "", file, scene);
+      filesInput.onProcessFileCallback = ((
+        file: File,
+        name: string,
+        extension: string
+      ) => {
+        SceneLoader.ImportMeshAsync('', '', file, scene);
         return true;
       }).bind(this);
 
-      filesInput.reload = function () { };
-      filesInput.monitorElementForDragNDrop(this.canvas!);
+      filesInput.reload = function () {
+        // do nothing.
+      };
+      filesInput.monitorElementForDragNDrop(this.canvas);
 
       this.gizmoManager = new GizmoManager(scene);
       this.gizmoManager.usePointerToAttachGizmos = true;
-      this.gizmoManager.utilityLayer.setRenderCamera(activeCamera!);
+      this.gizmoManager.utilityLayer.setRenderCamera(activeCamera);
 
       return scene;
     });
