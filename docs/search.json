@@ -1,12 +1,5 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "TileDB-Viz",
-    "section": "",
-    "text": "A collection of packages to help user create beautiful visualizations from TileDB arrays\n\n\nPreferred way with nvm\nnvm install\n\n\n\nNode v16 is recommended. Please note packages use yarn 3.x. Yarn v3 installation  In order to install the dependencies run: yarn install\n\n\n\nyarn build\n\n\n\nyarn storybook\n\n\n\n\n\nRun yarn dlx @yarnpkg/sdks vscode to fix any module resolution issues (prettier one of them), with Vscode extensions and yarn 3.x.\nCaveats\n\nSince the Yarn packages are kept within their archives, editors need to understand how to work with such paths should you want to open the files (for example when command-clicking on an import path originating from an external package). This can only be implemented by those editors, and we can’t do much more than opening issues to ask for this feature to be implemented (for example, here’s the VSCode issue: #75559).\n\nAs a workaround, you can run yarn unplug pkg-name to instruct yarn to unzip the package, which will re-enable Go to definition functionality for the specific package. (e.g. yarn unplug @babylonjs/core -A should fix issues while trying to “go to definition” for babylon core library)."
-  },
-  {
     "objectID": "react/overview.html",
     "href": "react/overview.html",
     "title": "tiledb-inc/viz-react",
@@ -19,6 +12,13 @@
     "title": "tiledb-inc/viz-core",
     "section": "",
     "text": "A collection of visualizations for TileDB arrays.\n\n\nimport { TileDBPointCloudVisualization } from '@tiledb-inc/viz-core';\n\nconst visualization = new TileDBPointCloudVisualization({\n  gltfData: gltfData,\n  data: data,\n  mode: 'gltf',\n  width: '800',\n  height: '600',\n  rootElement: htlmElement\n});\n\nvisualization.render();\n\n\n\nimport { TileDBMBRSVisualization } from '@tiledb-inc/viz-core';\n\nconst visualization = new TileDBMBRSVisualization({\n  data: data,\n  width: '800',\n  height: '600',\n  extents: [ 635577.79, 639003.73, 848882.15, 853537.66 ],\n  rootElement: htlmElement\n});\n\nvisualization.render();\n\n\n\nimport { TileDBImageVisualization } from '@tiledb-inc/viz-core';\n\nconst visualization = new TileDBImageVisualization({\n  data: data,\n  width: '800',\n  height: '600',\n  xyBbox: [11500, 14000, 11500, 14000],\n  rootElement: htlmElement\n});\n\nvisualization.render();"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "TileDB-Viz",
+    "section": "",
+    "text": "A collection of packages to help user create beautiful visualizations from TileDB arrays\n\n\nPreferred way with nvm\nnvm install\n\n\n\nNode v16 is recommended. Please note packages use yarn 3.x. Yarn v3 installation  In order to install the dependencies run: yarn install\n\n\n\nyarn build\n\n\n\nyarn storybook\n\n\n\n\n\nRun yarn dlx @yarnpkg/sdks vscode to fix any module resolution issues (prettier one of them), with Vscode extensions and yarn 3.x.\nCaveats\n\nSince the Yarn packages are kept within their archives, editors need to understand how to work with such paths should you want to open the files (for example when command-clicking on an import path originating from an external package). This can only be implemented by those editors, and we can’t do much more than opening issues to ask for this feature to be implemented (for example, here’s the VSCode issue: #75559).\n\nAs a workaround, you can run yarn unplug pkg-name to instruct yarn to unzip the package, which will re-enable Go to definition functionality for the specific package. (e.g. yarn unplug @babylonjs/core -A should fix issues while trying to “go to definition” for babylon core library)."
   },
   {
     "objectID": "typedocs/interfaces/TileDBVisualizationBaseOptions.html",
@@ -147,6 +147,90 @@
     "text": "Table of contents\n\nClasses\n\nTileDBImageVisualization\nTileDBMBRSVisualization\nTileDBPointCloudVisualization\nTileDBVisualization\n\n\n\nInterfaces\n\nTileDBImageVisualizationOptions\nTileDBMBRSVisualizationOptions\nTileDBPointCloudOptions\nTileDBVisualizationBaseOptions"
   },
   {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html",
+    "title": "",
+    "section": "",
+    "text": "@tiledb-inc/viz-core / Exports / TileDBPointCloudVisualization"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#hierarchy",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html#hierarchy",
+    "title": "",
+    "section": "Hierarchy",
+    "text": "Hierarchy\n\nTileDBVisualization\n↳ TileDBPointCloudVisualization"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#table-of-contents",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html#table-of-contents",
+    "title": "",
+    "section": "Table of contents",
+    "text": "Table of contents\n\nConstructors\n\nconstructor\n\n\n\nProperties\n\nactiveCamera\narraySchema\ncameras\ncanvas\nconformingBounds\nengine\ngui\nheight\ninspector\nmodel\nmoveSpeed\noptions\nrootElement\nscene\nwheelPrecision\nwidth\n\n\n\nMethods\n\nattachKeys\ncreateScene\ndestroy\nrender\nrerenderCanvas\nresizeCanvas\nclearCache"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#constructors-1",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html#constructors-1",
+    "title": "",
+    "section": "Constructors",
+    "text": "Constructors\n\nconstructor\n• new TileDBPointCloudVisualization(options)\n\nParameters\n\n\n\nName\nType\n\n\n\n\noptions\nTileDBPointCloudOptions\n\n\n\n\n\nOverrides\nTileDBVisualization.constructor\n\n\nDefined in\npoint-cloud/point-cloud.ts:41"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#properties-1",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html#properties-1",
+    "title": "",
+    "section": "Properties",
+    "text": "Properties\n\nactiveCamera\n• Private activeCamera: number\n\nDefined in\npoint-cloud/point-cloud.ts:38\n\n\n\n\narraySchema\n• Private arraySchema: ArraySchema\n\nDefined in\npoint-cloud/point-cloud.ts:39\n\n\n\n\ncameras\n• Private cameras: (ArcRotateCamera | FreeCamera)[]\n\nDefined in\npoint-cloud/point-cloud.ts:31\n\n\n\n\ncanvas\n• Optional canvas: HTMLCanvasElement\n\nInherited from\nTileDBVisualization.canvas\n\n\nDefined in\nbase/base.ts:37\n\n\n\n\nconformingBounds\n• Private conformingBounds: number[]\n\nDefined in\npoint-cloud/point-cloud.ts:37\n\n\n\n\nengine\n• Optional engine: Engine\n\nInherited from\nTileDBVisualization.engine\n\n\nDefined in\nbase/base.ts:38\n\n\n\n\ngui\n• Private gui: PointCloudGUI\n\nDefined in\npoint-cloud/point-cloud.ts:36\n\n\n\n\nheight\n• height: string\n\nInherited from\nTileDBVisualization.height\n\n\nDefined in\nbase/base.ts:36\n\n\n\n\ninspector\n• Optional inspector: boolean\n\nInherited from\nTileDBVisualization.inspector\n\n\nDefined in\nbase/base.ts:41\n\n\n\n\nmodel\n• Private model: ArrayModel\n\nDefined in\npoint-cloud/point-cloud.ts:35\n\n\n\n\nmoveSpeed\n• moveSpeed: number\n\nInherited from\nTileDBVisualization.moveSpeed\n\n\nDefined in\nbase/base.ts:40\n\n\n\n\noptions\n• Private options: TileDBPointCloudOptions\n\nDefined in\npoint-cloud/point-cloud.ts:34\n\n\n\n\nrootElement\n• rootElement: HTMLElement\n\nInherited from\nTileDBVisualization.rootElement\n\n\nDefined in\nbase/base.ts:42\n\n\n\n\nscene\n• Private scene: Scene\n\nDefined in\npoint-cloud/point-cloud.ts:30\n\n\n\n\nwheelPrecision\n• wheelPrecision: number\n\nInherited from\nTileDBVisualization.wheelPrecision\n\n\nDefined in\nbase/base.ts:39\n\n\n\n\nwidth\n• width: string\n\nInherited from\nTileDBVisualization.width\n\n\nDefined in\nbase/base.ts:35"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#methods-1",
+    "href": "typedocs/classes/TileDBPointCloudVisualization.html#methods-1",
+    "title": "",
+    "section": "Methods",
+    "text": "Methods\n\nattachKeys\n▸ attachKeys(): void\n\nReturns\nvoid\n\n\nDefined in\npoint-cloud/point-cloud.ts:58\n\n\n\n\ncreateScene\n▸ Protected createScene(): Promise<Scene>\n\nReturns\nPromise<Scene>\n\n\nOverrides\nTileDBVisualization.createScene\n\n\nDefined in\npoint-cloud/point-cloud.ts:150\n\n\n\n\ndestroy\n▸ destroy(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.destroy\n\n\nDefined in\nbase/base.ts:70\n\n\n\n\nrender\n▸ render(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.render\n\n\nDefined in\nbase/base.ts:88\n\n\n\n\nrerenderCanvas\n▸ rerenderCanvas(): Promise<void>\n\nReturns\nPromise<void>\n\n\nInherited from\nTileDBVisualization.rerenderCanvas\n\n\nDefined in\nbase/base.ts:55\n\n\n\n\nresizeCanvas\n▸ resizeCanvas(dimensions?): void\n\nParameters\n\n\n\nName\nType\n\n\n\n\ndimensions?\nObject\n\n\ndimensions.height\nstring\n\n\ndimensions.width\nstring\n\n\n\n\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.resizeCanvas\n\n\nDefined in\nbase/base.ts:59\n\n\n\n\nclearCache\n▸ Static clearCache(storeName): Promise<void>\n\nParameters\n\n\n\nName\nType\n\n\n\n\nstoreName\nstring\n\n\n\n\n\nReturns\nPromise<void>\n\n\nDefined in\npoint-cloud/point-cloud.ts:54"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html",
+    "href": "typedocs/classes/TileDBImageVisualization.html",
+    "title": "",
+    "section": "",
+    "text": "@tiledb-inc/viz-core / Exports / TileDBImageVisualization"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html#hierarchy",
+    "href": "typedocs/classes/TileDBImageVisualization.html#hierarchy",
+    "title": "",
+    "section": "Hierarchy",
+    "text": "Hierarchy\n\nTileDBVisualization\n↳ TileDBImageVisualization"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html#table-of-contents",
+    "href": "typedocs/classes/TileDBImageVisualization.html#table-of-contents",
+    "title": "",
+    "section": "Table of contents",
+    "text": "Table of contents\n\nConstructors\n\nconstructor\n\n\n\nProperties\n\ncanvas\ndata\nengine\nheight\ninspector\nmoveSpeed\nrootElement\nwheelPrecision\nwidth\nxyBbox\n\n\n\nMethods\n\ncreateScene\ndestroy\nrender\nrerenderCanvas\nresizeCanvas"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html#constructors-1",
+    "href": "typedocs/classes/TileDBImageVisualization.html#constructors-1",
+    "title": "",
+    "section": "Constructors",
+    "text": "Constructors\n\nconstructor\n• new TileDBImageVisualization(options)\n\nParameters\n\n\n\nName\nType\n\n\n\n\noptions\nTileDBImageVisualizationOptions\n\n\n\n\n\nOverrides\nTileDBVisualization.constructor\n\n\nDefined in\nimage/image.ts:28"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html#properties-1",
+    "href": "typedocs/classes/TileDBImageVisualization.html#properties-1",
+    "title": "",
+    "section": "Properties",
+    "text": "Properties\n\ncanvas\n• Optional canvas: HTMLCanvasElement\n\nInherited from\nTileDBVisualization.canvas\n\n\nDefined in\nbase/base.ts:37\n\n\n\n\ndata\n• Private data: string\n\nDefined in\nimage/image.ts:25\n\n\n\n\nengine\n• Optional engine: Engine\n\nInherited from\nTileDBVisualization.engine\n\n\nDefined in\nbase/base.ts:38\n\n\n\n\nheight\n• height: string\n\nInherited from\nTileDBVisualization.height\n\n\nDefined in\nbase/base.ts:36\n\n\n\n\ninspector\n• Optional inspector: boolean\n\nInherited from\nTileDBVisualization.inspector\n\n\nDefined in\nbase/base.ts:41\n\n\n\n\nmoveSpeed\n• moveSpeed: number\n\nInherited from\nTileDBVisualization.moveSpeed\n\n\nDefined in\nbase/base.ts:40\n\n\n\n\nrootElement\n• rootElement: HTMLElement\n\nInherited from\nTileDBVisualization.rootElement\n\n\nDefined in\nbase/base.ts:42\n\n\n\n\nwheelPrecision\n• wheelPrecision: number\n\nInherited from\nTileDBVisualization.wheelPrecision\n\n\nDefined in\nbase/base.ts:39\n\n\n\n\nwidth\n• width: string\n\nInherited from\nTileDBVisualization.width\n\n\nDefined in\nbase/base.ts:35\n\n\n\n\nxyBbox\n• Private xyBbox: number[]\n\nDefined in\nimage/image.ts:26"
+  },
+  {
+    "objectID": "typedocs/classes/TileDBImageVisualization.html#methods-1",
+    "href": "typedocs/classes/TileDBImageVisualization.html#methods-1",
+    "title": "",
+    "section": "Methods",
+    "text": "Methods\n\ncreateScene\n▸ Protected createScene(): Promise<Scene>\n\nReturns\nPromise<Scene>\n\n\nOverrides\nTileDBVisualization.createScene\n\n\nDefined in\nimage/image.ts:34\n\n\n\n\ndestroy\n▸ destroy(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.destroy\n\n\nDefined in\nbase/base.ts:70\n\n\n\n\nrender\n▸ render(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.render\n\n\nDefined in\nbase/base.ts:88\n\n\n\n\nrerenderCanvas\n▸ rerenderCanvas(): Promise<void>\n\nReturns\nPromise<void>\n\n\nInherited from\nTileDBVisualization.rerenderCanvas\n\n\nDefined in\nbase/base.ts:55\n\n\n\n\nresizeCanvas\n▸ resizeCanvas(dimensions?): void\n\nParameters\n\n\n\nName\nType\n\n\n\n\ndimensions?\nObject\n\n\ndimensions.height\nstring\n\n\ndimensions.width\nstring\n\n\n\n\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.resizeCanvas\n\n\nDefined in\nbase/base.ts:59"
+  },
+  {
     "objectID": "typedocs/classes/TileDBVisualization.html",
     "href": "typedocs/classes/TileDBVisualization.html",
     "title": "",
@@ -229,89 +313,5 @@
     "title": "",
     "section": "Methods",
     "text": "Methods\n\ncreateScene\n▸ Protected createScene(): Promise<Scene>\n\nReturns\nPromise<Scene>\n\n\nOverrides\nTileDBVisualization.createScene\n\n\nDefined in\nmbrs/mbrs.ts:52\n\n\n\n\ndestroy\n▸ destroy(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.destroy\n\n\nDefined in\nbase/base.ts:70\n\n\n\n\nrender\n▸ render(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.render\n\n\nDefined in\nbase/base.ts:88\n\n\n\n\nrerenderCanvas\n▸ rerenderCanvas(): Promise<void>\n\nReturns\nPromise<void>\n\n\nInherited from\nTileDBVisualization.rerenderCanvas\n\n\nDefined in\nbase/base.ts:55\n\n\n\n\nresizeCanvas\n▸ resizeCanvas(dimensions?): void\n\nParameters\n\n\n\nName\nType\n\n\n\n\ndimensions?\nObject\n\n\ndimensions.height\nstring\n\n\ndimensions.width\nstring\n\n\n\n\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.resizeCanvas\n\n\nDefined in\nbase/base.ts:59"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html",
-    "href": "typedocs/classes/TileDBImageVisualization.html",
-    "title": "",
-    "section": "",
-    "text": "@tiledb-inc/viz-core / Exports / TileDBImageVisualization"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html#hierarchy",
-    "href": "typedocs/classes/TileDBImageVisualization.html#hierarchy",
-    "title": "",
-    "section": "Hierarchy",
-    "text": "Hierarchy\n\nTileDBVisualization\n↳ TileDBImageVisualization"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html#table-of-contents",
-    "href": "typedocs/classes/TileDBImageVisualization.html#table-of-contents",
-    "title": "",
-    "section": "Table of contents",
-    "text": "Table of contents\n\nConstructors\n\nconstructor\n\n\n\nProperties\n\ncanvas\ndata\nengine\nheight\ninspector\nmoveSpeed\nrootElement\nwheelPrecision\nwidth\nxyBbox\n\n\n\nMethods\n\ncreateScene\ndestroy\nrender\nrerenderCanvas\nresizeCanvas"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html#constructors-1",
-    "href": "typedocs/classes/TileDBImageVisualization.html#constructors-1",
-    "title": "",
-    "section": "Constructors",
-    "text": "Constructors\n\nconstructor\n• new TileDBImageVisualization(options)\n\nParameters\n\n\n\nName\nType\n\n\n\n\noptions\nTileDBImageVisualizationOptions\n\n\n\n\n\nOverrides\nTileDBVisualization.constructor\n\n\nDefined in\nimage/image.ts:28"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html#properties-1",
-    "href": "typedocs/classes/TileDBImageVisualization.html#properties-1",
-    "title": "",
-    "section": "Properties",
-    "text": "Properties\n\ncanvas\n• Optional canvas: HTMLCanvasElement\n\nInherited from\nTileDBVisualization.canvas\n\n\nDefined in\nbase/base.ts:37\n\n\n\n\ndata\n• Private data: string\n\nDefined in\nimage/image.ts:25\n\n\n\n\nengine\n• Optional engine: Engine\n\nInherited from\nTileDBVisualization.engine\n\n\nDefined in\nbase/base.ts:38\n\n\n\n\nheight\n• height: string\n\nInherited from\nTileDBVisualization.height\n\n\nDefined in\nbase/base.ts:36\n\n\n\n\ninspector\n• Optional inspector: boolean\n\nInherited from\nTileDBVisualization.inspector\n\n\nDefined in\nbase/base.ts:41\n\n\n\n\nmoveSpeed\n• moveSpeed: number\n\nInherited from\nTileDBVisualization.moveSpeed\n\n\nDefined in\nbase/base.ts:40\n\n\n\n\nrootElement\n• rootElement: HTMLElement\n\nInherited from\nTileDBVisualization.rootElement\n\n\nDefined in\nbase/base.ts:42\n\n\n\n\nwheelPrecision\n• wheelPrecision: number\n\nInherited from\nTileDBVisualization.wheelPrecision\n\n\nDefined in\nbase/base.ts:39\n\n\n\n\nwidth\n• width: string\n\nInherited from\nTileDBVisualization.width\n\n\nDefined in\nbase/base.ts:35\n\n\n\n\nxyBbox\n• Private xyBbox: number[]\n\nDefined in\nimage/image.ts:26"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBImageVisualization.html#methods-1",
-    "href": "typedocs/classes/TileDBImageVisualization.html#methods-1",
-    "title": "",
-    "section": "Methods",
-    "text": "Methods\n\ncreateScene\n▸ Protected createScene(): Promise<Scene>\n\nReturns\nPromise<Scene>\n\n\nOverrides\nTileDBVisualization.createScene\n\n\nDefined in\nimage/image.ts:34\n\n\n\n\ndestroy\n▸ destroy(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.destroy\n\n\nDefined in\nbase/base.ts:70\n\n\n\n\nrender\n▸ render(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.render\n\n\nDefined in\nbase/base.ts:88\n\n\n\n\nrerenderCanvas\n▸ rerenderCanvas(): Promise<void>\n\nReturns\nPromise<void>\n\n\nInherited from\nTileDBVisualization.rerenderCanvas\n\n\nDefined in\nbase/base.ts:55\n\n\n\n\nresizeCanvas\n▸ resizeCanvas(dimensions?): void\n\nParameters\n\n\n\nName\nType\n\n\n\n\ndimensions?\nObject\n\n\ndimensions.height\nstring\n\n\ndimensions.width\nstring\n\n\n\n\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.resizeCanvas\n\n\nDefined in\nbase/base.ts:59"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html",
-    "title": "",
-    "section": "",
-    "text": "@tiledb-inc/viz-core / Exports / TileDBPointCloudVisualization"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#hierarchy",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html#hierarchy",
-    "title": "",
-    "section": "Hierarchy",
-    "text": "Hierarchy\n\nTileDBVisualization\n↳ TileDBPointCloudVisualization"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#table-of-contents",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html#table-of-contents",
-    "title": "",
-    "section": "Table of contents",
-    "text": "Table of contents\n\nConstructors\n\nconstructor\n\n\n\nProperties\n\nactiveCamera\narraySchema\ncameras\ncanvas\nconformingBounds\nengine\ngui\nheight\ninspector\nmodel\nmoveSpeed\noptions\nrootElement\nscene\nwheelPrecision\nwidth\n\n\n\nMethods\n\nattachKeys\ncreateScene\ndestroy\nrender\nrerenderCanvas\nresizeCanvas\nclearCache"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#constructors-1",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html#constructors-1",
-    "title": "",
-    "section": "Constructors",
-    "text": "Constructors\n\nconstructor\n• new TileDBPointCloudVisualization(options)\n\nParameters\n\n\n\nName\nType\n\n\n\n\noptions\nTileDBPointCloudOptions\n\n\n\n\n\nOverrides\nTileDBVisualization.constructor\n\n\nDefined in\npoint-cloud/point-cloud.ts:41"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#properties-1",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html#properties-1",
-    "title": "",
-    "section": "Properties",
-    "text": "Properties\n\nactiveCamera\n• Private activeCamera: number\n\nDefined in\npoint-cloud/point-cloud.ts:38\n\n\n\n\narraySchema\n• Private arraySchema: ArraySchema\n\nDefined in\npoint-cloud/point-cloud.ts:39\n\n\n\n\ncameras\n• Private cameras: (ArcRotateCamera | FreeCamera)[]\n\nDefined in\npoint-cloud/point-cloud.ts:31\n\n\n\n\ncanvas\n• Optional canvas: HTMLCanvasElement\n\nInherited from\nTileDBVisualization.canvas\n\n\nDefined in\nbase/base.ts:37\n\n\n\n\nconformingBounds\n• Private conformingBounds: number[]\n\nDefined in\npoint-cloud/point-cloud.ts:37\n\n\n\n\nengine\n• Optional engine: Engine\n\nInherited from\nTileDBVisualization.engine\n\n\nDefined in\nbase/base.ts:38\n\n\n\n\ngui\n• Private gui: PointCloudGUI\n\nDefined in\npoint-cloud/point-cloud.ts:36\n\n\n\n\nheight\n• height: string\n\nInherited from\nTileDBVisualization.height\n\n\nDefined in\nbase/base.ts:36\n\n\n\n\ninspector\n• Optional inspector: boolean\n\nInherited from\nTileDBVisualization.inspector\n\n\nDefined in\nbase/base.ts:41\n\n\n\n\nmodel\n• Private model: ArrayModel\n\nDefined in\npoint-cloud/point-cloud.ts:35\n\n\n\n\nmoveSpeed\n• moveSpeed: number\n\nInherited from\nTileDBVisualization.moveSpeed\n\n\nDefined in\nbase/base.ts:40\n\n\n\n\noptions\n• Private options: TileDBPointCloudOptions\n\nDefined in\npoint-cloud/point-cloud.ts:34\n\n\n\n\nrootElement\n• rootElement: HTMLElement\n\nInherited from\nTileDBVisualization.rootElement\n\n\nDefined in\nbase/base.ts:42\n\n\n\n\nscene\n• Private scene: Scene\n\nDefined in\npoint-cloud/point-cloud.ts:30\n\n\n\n\nwheelPrecision\n• wheelPrecision: number\n\nInherited from\nTileDBVisualization.wheelPrecision\n\n\nDefined in\nbase/base.ts:39\n\n\n\n\nwidth\n• width: string\n\nInherited from\nTileDBVisualization.width\n\n\nDefined in\nbase/base.ts:35"
-  },
-  {
-    "objectID": "typedocs/classes/TileDBPointCloudVisualization.html#methods-1",
-    "href": "typedocs/classes/TileDBPointCloudVisualization.html#methods-1",
-    "title": "",
-    "section": "Methods",
-    "text": "Methods\n\nattachKeys\n▸ attachKeys(): void\n\nReturns\nvoid\n\n\nDefined in\npoint-cloud/point-cloud.ts:58\n\n\n\n\ncreateScene\n▸ Protected createScene(): Promise<Scene>\n\nReturns\nPromise<Scene>\n\n\nOverrides\nTileDBVisualization.createScene\n\n\nDefined in\npoint-cloud/point-cloud.ts:150\n\n\n\n\ndestroy\n▸ destroy(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.destroy\n\n\nDefined in\nbase/base.ts:70\n\n\n\n\nrender\n▸ render(): void\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.render\n\n\nDefined in\nbase/base.ts:88\n\n\n\n\nrerenderCanvas\n▸ rerenderCanvas(): Promise<void>\n\nReturns\nPromise<void>\n\n\nInherited from\nTileDBVisualization.rerenderCanvas\n\n\nDefined in\nbase/base.ts:55\n\n\n\n\nresizeCanvas\n▸ resizeCanvas(dimensions?): void\n\nParameters\n\n\n\nName\nType\n\n\n\n\ndimensions?\nObject\n\n\ndimensions.height\nstring\n\n\ndimensions.width\nstring\n\n\n\n\n\nReturns\nvoid\n\n\nInherited from\nTileDBVisualization.resizeCanvas\n\n\nDefined in\nbase/base.ts:59\n\n\n\n\nclearCache\n▸ Static clearCache(storeName): Promise<void>\n\nParameters\n\n\n\nName\nType\n\n\n\n\nstoreName\nstring\n\n\n\n\n\nReturns\nPromise<void>\n\n\nDefined in\npoint-cloud/point-cloud.ts:54"
   }
 ]
