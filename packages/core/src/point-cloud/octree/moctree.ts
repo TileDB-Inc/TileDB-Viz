@@ -121,12 +121,6 @@ class Moctree {
                 resultDistance = currDistance;
               }
             });
-            // if (resultDistance > childBlockSize.x * 4) {
-            //   return resultBlocks.reverse();
-            // }
-            // if (resultDistance > cameraHeight * 0.75) {
-            //   return resultBlocks.reverse();
-            // }
 
             resultBlocks.push(resultBlock);
             minVector = resultBlock.minPoint;
@@ -197,12 +191,16 @@ class Moctree {
                 const actualV1 = this.minPoint.add(
                   relativeV1.multiply(blockSize)
                 );
-                yield new MoctreeBlock(
-                  currentLod,
-                  leftBlockCode,
-                  actualV1,
-                  actualV1.add(blockSize)
-                );
+                if (actualV1.x < cameraHeight / 4) {
+                  blockCount--;
+                } else {
+                  yield new MoctreeBlock(
+                    currentLod,
+                    leftBlockCode,
+                    actualV1,
+                    actualV1.add(blockSize)
+                  );
+                }
               }
               blockCount++;
               leftBlockCode = currentCode - ++positions[currentLod - 1].left;
@@ -217,12 +215,16 @@ class Moctree {
                 const actualV2 = this.minPoint.add(
                   relativeV2.multiply(blockSize)
                 );
-                yield new MoctreeBlock(
-                  currentLod,
-                  rightBlockCode,
-                  actualV2,
-                  actualV2.add(blockSize)
-                );
+                if (actualV2.x < cameraHeight / 4) {
+                  blockCount--;
+                } else {
+                  yield new MoctreeBlock(
+                    currentLod,
+                    rightBlockCode,
+                    actualV2,
+                    actualV2.add(blockSize)
+                  );
+                }
               }
               blockCount++;
               rightBlockCode = currentCode + ++positions[currentLod - 1].right;

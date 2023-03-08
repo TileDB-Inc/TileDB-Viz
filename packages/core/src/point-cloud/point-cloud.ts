@@ -263,6 +263,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const block = this.model.octree.getContainingBlocksByRay(
               ray,
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              this.cameras[0].z,
               this.model.maxLevel!
             )[0];
             pickOrigin = block.minPoint.add(
