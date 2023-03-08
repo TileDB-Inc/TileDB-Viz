@@ -191,15 +191,20 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       this.renderTargets = [];
 
-      const depthRenderTarget = new RenderTargetTexture('LinearDepthRenderTarget', {width: 1000, height: 1000}, scene, {
-        generateDepthBuffer: true,
-        format: Constants.TEXTUREFORMAT_RED,
-        type: Constants.TEXTURETYPE_FLOAT,
-      });
+      const depthRenderTarget = new RenderTargetTexture(
+        'LinearDepthRenderTarget',
+        { width: 1000, height: 1000 },
+        scene,
+        {
+          generateDepthBuffer: true,
+          format: Constants.TEXTUREFORMAT_RED,
+          type: Constants.TEXTURETYPE_FLOAT
+        }
+      );
 
       this.scene.customRenderTargets.push(depthRenderTarget);
 
-      this.renderTargets.push(depthRenderTarget);   
+      this.renderTargets.push(depthRenderTarget);
 
       // initialize ParticleSystem
       this.model = new ArrayModel(this.options, depthRenderTarget);
@@ -302,22 +307,26 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           
       }
   `;
-    scene.disablePhysicsEngine();
+      scene.disablePhysicsEngine();
 
-    const postProcess = new PostProcess(
+      const postProcess = new PostProcess(
         'depth-viz',
         'custom',
         null,
         ['depthh'],
         1.0,
         activeCamera
-    );
-        
-    postProcess.onApply = function (effect) {
-        effect.setTexture('depthh', depthRenderTarget);
-    }; 
+      );
 
-      this.model.depthMaterial = new LinearDepthMaterial(scene, activeCamera.minZ, activeCamera.maxZ);
+      postProcess.onApply = function (effect) {
+        effect.setTexture('depthh', depthRenderTarget);
+      };
+
+      this.model.depthMaterial = new LinearDepthMaterial(
+        scene,
+        activeCamera.minZ,
+        activeCamera.maxZ
+      );
 
       // add shader
       // this.model.particleMaterial = new ParticleShaderMaterial(

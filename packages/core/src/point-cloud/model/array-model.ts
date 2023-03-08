@@ -81,7 +81,10 @@ class ArrayModel {
   depthRenderTarget: RenderTargetTexture;
   depthMaterial: LinearDepthMaterial;
 
-  constructor(options: TileDBPointCloudOptions, depthRenderTarget: RenderTargetTexture) {
+  constructor(
+    options: TileDBPointCloudOptions,
+    depthRenderTarget: RenderTargetTexture
+  ) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
@@ -257,12 +260,16 @@ class ArrayModel {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
 
-            const matForDepth = pcs.mesh.material.clone("matForDepth");
-            matForDepth.sizeAttenuationDepthPlugin = new LinearDepthMaterialPlugin(matForDepth);
+            const matForDepth = pcs.mesh.material.clone('matForDepth');
+            matForDepth.sizeAttenuationDepthPlugin =
+              new LinearDepthMaterialPlugin(matForDepth);
             matForDepth.sizeAttenuationDepthPlugin.isEnabled = true;
 
             this.depthRenderTarget.renderList.push(pcs.mesh);
-            this.depthRenderTarget.setMaterialForRendering(pcs.mesh, matForDepth);
+            this.depthRenderTarget.setMaterialForRendering(
+              pcs.mesh,
+              matForDepth
+            );
           });
         }
       } else {
