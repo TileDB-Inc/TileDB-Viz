@@ -9,7 +9,8 @@ import {
   Vector3,
   Particle,
   Frustum,
-  Camera
+  Camera,
+  RenderTargetTexture
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -31,6 +32,8 @@ import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { LinearDepthMaterial } from '../material/linearDepthMaterial';
+import { LinearDepthMaterialPlugin } from '../material/plugins/linearDepthPlugin';
 
 /**
  * The ArrayModel manages the client octree
@@ -75,8 +78,10 @@ class ArrayModel {
   particleBuffer: SolidParticle[] = [];
   debugTexture?: AdvancedDynamicTexture;
   static groundName = 'ground';
+  depthRenderTarget: RenderTargetTexture;
+  depthMaterial: LinearDepthMaterial;
 
-  constructor(options: TileDBPointCloudOptions) {
+  constructor(options: TileDBPointCloudOptions, depthRenderTarget: RenderTargetTexture) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
@@ -113,6 +118,8 @@ class ArrayModel {
       number,
       SolidParticleSystem | PointsCloudSystem
     >();
+
+    this.depthRenderTarget = depthRenderTarget;
   }
 
   private addDebugLabel(
@@ -249,6 +256,13 @@ class ArrayModel {
             if (this.debug && this.debugTexture && pcs.mesh) {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
+
+            const matForDepth = pcs.mesh.material.clone("matForDepth");
+            matForDepth.sizeAttenuationDepthPlugin = new LinearDepthMaterialPlugin(matForDepth);
+            matForDepth.sizeAttenuationDepthPlugin.isEnabled = true;
+
+            this.depthRenderTarget.renderList.push(pcs.mesh);
+            this.depthRenderTarget.setMaterialForRendering(pcs.mesh, matForDepth);
           });
         }
       } else {

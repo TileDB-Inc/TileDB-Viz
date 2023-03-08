@@ -12,7 +12,11 @@ import {
   GizmoManager,
   Camera,
   FilesInput,
-  SceneLoader
+  SceneLoader,
+  RenderTargetTexture,
+  Constants,
+  PostProcess,
+  Effect
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -31,6 +35,7 @@ import {
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { LinearDepthMaterial } from './material/linearDepthMaterial';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -44,6 +49,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private activeCamera!: number;
   private arraySchema!: ArraySchema;
   private gizmoManager!: GizmoManager;
+  private renderTargets!: RenderTargetTexture[];
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -181,8 +187,22 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       this.attachKeys();
 
+      // Setup multipass rendering
+
+      this.renderTargets = [];
+
+      const depthRenderTarget = new RenderTargetTexture('LinearDepthRenderTarget', {width: 1000, height: 1000}, scene, {
+        generateDepthBuffer: true,
+        format: Constants.TEXTUREFORMAT_RED,
+        type: Constants.TEXTURETYPE_FLOAT,
+      });
+
+      this.scene.customRenderTargets.push(depthRenderTarget);
+
+      this.renderTargets.push(depthRenderTarget);   
+
       // initialize ParticleSystem
-      this.model = new ArrayModel(this.options);
+      this.model = new ArrayModel(this.options, depthRenderTarget);
 
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
@@ -256,19 +276,62 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.wheelPrecision
       );
 
-      // add shader
-      this.model.particleMaterial = new ParticleShaderMaterial(
-        scene,
-        this.model.edlNeighbours,
-        this.model.pointSize
+      const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+        (camera: Camera) => {
+          return !camera.name.startsWith('GUI');
+        }
       );
 
-      this.model.particleMaterial.setShader(
-        this.scene,
-        this.model,
-        this.options,
-        this.engine
-      );
+      Effect.ShadersStore['customFragmentShader'] = `
+      #extension GL_EXT_frag_depth : enable
+      precision highp float;
+      varying vec2 vUV;
+      uniform sampler2D textureSampler;
+      uniform sampler2D depthh;
+
+      void main(void)
+      {
+
+          float depth = texture(depthh, vUV).r;
+          vec4 color = texture(textureSampler, vUV);
+          gl_FragColor = vec4(color.rgb, 1.0);
+
+          //gl_FragColor = vec4(vec3(depth.a), 1.0);
+
+          gl_FragColor = vec4(vec3(depth), 1.0);
+          
+      }
+  `;
+    scene.disablePhysicsEngine();
+
+    const postProcess = new PostProcess(
+        'depth-viz',
+        'custom',
+        null,
+        ['depthh'],
+        1.0,
+        activeCamera
+    );
+        
+    postProcess.onApply = function (effect) {
+        effect.setTexture('depthh', depthRenderTarget);
+    }; 
+
+      this.model.depthMaterial = new LinearDepthMaterial(scene, activeCamera.minZ, activeCamera.maxZ);
+
+      // add shader
+      // this.model.particleMaterial = new ParticleShaderMaterial(
+      //   scene,
+      //   this.model.edlNeighbours,
+      //   this.model.pointSize
+      // );
+
+      // this.model.particleMaterial.setShader(
+      //   this.scene,
+      //   this.model,
+      //   this.options,
+      //   this.engine
+      // );
 
       // add interactive GUI
       this.gui = new PointCloudGUI(this.scene);
@@ -357,12 +420,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       });
 
       // glTF drag n' drop mesh loader
-
-      const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
-        (camera: Camera) => {
-          return !camera.name.startsWith('GUI');
-        }
-      );
 
       const filesInput = new FilesInput(
         this.engine,
