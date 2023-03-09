@@ -39,10 +39,10 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
         { name: 'blendLimit', size: 1, type: 'float' }
       ],
       vertex: `
-                uniform float nearPLane;
-                uniform float farPlane;
-                uniform float blendLimit;
-            `
+        uniform float nearPLane;
+        uniform float farPlane;
+        uniform float blendLimit;
+    `
     };
   }
 
@@ -73,25 +73,31 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
     return shaderType === 'vertex'
       ? {
           CUSTOM_VERTEX_DEFINITIONS: `
-                    varying float vDepthMetric;
-                `,
+          varying float vDepthMetric;
+        `,
           CUSTOM_VERTEX_MAIN_END: `
-                    vDepthMetric = (gl_Position.z + nearPlane) / farPlane;
-                `
+          vDepthMetric = (gl_Position.z + nearPlane) / farPlane;
+        `
         }
       : {
           CUSTOM_FRAGMENT_DEFINITIONS: `
-                    uniform highp sampler2D linearDepthTexture;
-                    varying float vDepthMetric;
-                `,
+            uniform highp sampler2D linearDepthTexture;
+            varying float vDepthMetric;
+        `,
           CUSTOM_FRAGMENT_MAIN_END: `
-                    float depth = texture(linearDepthTexture, gl_FragCoord.xy / 1000.0).r; 
-    
-                    if (abs(depth - vDepthMetric) > blendLimit)
-                    {
-                        gl_FragColor = vec4(0.0);
-                    }
-                `
+          float depth = texture(linearDepthTexture, gl_FragCoord.xy / 1000.0).r; 
+
+          if (abs(depth - vDepthMetric) < blendLimit)
+          {
+            float weight = pow(1.0 - pow(abs(depth - vDepthMetric) / blendLimit, 2.0), 1.5);
+            gl_FragColor = vec4(gl_FragColor.rgb * weight, weight);
+          }
+          else
+          {
+            discard;
+          }
+          
+      `
         };
   }
 }

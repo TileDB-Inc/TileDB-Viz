@@ -33,7 +33,7 @@ import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { LinearDepthMaterial } from '../material/linearDepthMaterial';
-import { LinearDepthMaterialPlugin } from '../material/plugins/linearDepthPlugin';
+import { AdditiveProximityMaterial } from '../material/additiveProximityMaterial';
 
 /**
  * The ArrayModel manages the client octree
@@ -78,12 +78,13 @@ class ArrayModel {
   particleBuffer: SolidParticle[] = [];
   debugTexture?: AdvancedDynamicTexture;
   static groundName = 'ground';
-  depthRenderTarget: RenderTargetTexture;
-  depthMaterial: LinearDepthMaterial;
+  renderTargets: RenderTargetTexture[];
+  depthMaterial: LinearDepthMaterial = null;
+  additiveProximityMaterial: AdditiveProximityMaterial = null;
 
   constructor(
     options: TileDBPointCloudOptions,
-    depthRenderTarget: RenderTargetTexture
+    renderTargets: RenderTargetTexture[]
   ) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
@@ -122,7 +123,7 @@ class ArrayModel {
       SolidParticleSystem | PointsCloudSystem
     >();
 
-    this.depthRenderTarget = depthRenderTarget;
+    this.renderTargets = renderTargets;
   }
 
   private addDebugLabel(
@@ -242,7 +243,7 @@ class ArrayModel {
         } else {
           const pcs = new PointsCloudSystem(
             block.mortonNumber.toString(),
-            pointSize,
+            5,
             this.scene,
             { updatable: false }
           );
@@ -260,15 +261,28 @@ class ArrayModel {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
 
-            const matForDepth = pcs.mesh.material.clone('matForDepth');
-            matForDepth.sizeAttenuationDepthPlugin =
-              new LinearDepthMaterialPlugin(matForDepth);
-            matForDepth.sizeAttenuationDepthPlugin.isEnabled = true;
+            if (!this.depthMaterial) {
+              this.depthMaterial = new LinearDepthMaterial(pcs.mesh.material);
+            }
 
-            this.depthRenderTarget.renderList.push(pcs.mesh);
-            this.depthRenderTarget.setMaterialForRendering(
+            this.renderTargets[0].renderList.push(pcs.mesh);
+            this.renderTargets[0].setMaterialForRendering(
               pcs.mesh,
-              matForDepth
+              this.depthMaterial.material
+            );
+
+            if (!this.additiveProximityMaterial) {
+              this.additiveProximityMaterial = new AdditiveProximityMaterial(
+                pcs.mesh.material,
+                1,
+                this.renderTargets[0]
+              );
+            }
+
+            this.renderTargets[1].renderList.push(pcs.mesh);
+            this.renderTargets[1].setMaterialForRendering(
+              pcs.mesh,
+              this.additiveProximityMaterial.material
             );
           });
         }

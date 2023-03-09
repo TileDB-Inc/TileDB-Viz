@@ -25,7 +25,6 @@ import {
   getArrayMetadata,
   getArraySchema,
   getPointCloud,
-  ParticleShaderMaterial,
   PointCloudGUI,
   setCameraLight,
   setCameraPosition,
@@ -35,7 +34,6 @@ import {
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
-import { LinearDepthMaterial } from './material/linearDepthMaterial';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -202,12 +200,24 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       );
 
+      const additiveColorRenderTarget = new RenderTargetTexture(
+        'additiveColorRenderTarget',
+        { width: 1000, height: 1000 },
+        scene,
+        {
+          format: Constants.TEXTUREFORMAT_RGBA,
+          type: Constants.TEXTURETYPE_FLOAT
+        }
+      );
+
       this.scene.customRenderTargets.push(depthRenderTarget);
+      this.scene.customRenderTargets.push(additiveColorRenderTarget);
 
       this.renderTargets.push(depthRenderTarget);
+      this.renderTargets.push(additiveColorRenderTarget);
 
       // initialize ParticleSystem
-      this.model = new ArrayModel(this.options, depthRenderTarget);
+      this.model = new ArrayModel(this.options, this.renderTargets);
 
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
@@ -297,13 +307,14 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       void main(void)
       {
 
-          float depth = texture(depthh, vUV).r;
+          vec4 depth = texture(depthh, vUV);
           vec4 color = texture(textureSampler, vUV);
           gl_FragColor = vec4(color.rgb, 1.0);
 
           //gl_FragColor = vec4(vec3(depth.a), 1.0);
 
-          gl_FragColor = vec4(vec3(depth), 1.0);
+          //gl_FragColor = vec4(vec3(depth), 1.0);
+          gl_FragColor = vec4(depth.rgb / depth.a, 1.0);
           
       }
   `;
@@ -319,14 +330,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       );
 
       postProcess.onApply = function (effect) {
-        effect.setTexture('depthh', depthRenderTarget);
+        effect.setTexture('depthh', additiveColorRenderTarget);
       };
-
-      this.model.depthMaterial = new LinearDepthMaterial(
-        scene,
-        activeCamera.minZ,
-        activeCamera.maxZ
-      );
 
       // add shader
       // this.model.particleMaterial = new ParticleShaderMaterial(
