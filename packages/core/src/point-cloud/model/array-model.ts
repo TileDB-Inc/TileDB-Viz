@@ -467,15 +467,14 @@ class ArrayModel {
             return;
           }
 
-          const ray = activeCamera.getForwardRay();
-
           // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage
           if (this.particleSystems.size > this.maxNumCacheBlocks) {
             this.dropParticleSystems();
           }
 
-          // check we have initializaed the scene by checking the size of the particleSystems cache
-          if (hasChanged || this.particleSystems.size === 0) {
+          // check we have initialized the scene
+          if (hasChanged) {
+            const ray = activeCamera.getForwardRay();
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const maxLevel = this.maxLevel! - 1;
             const parentBlocks = this.octree.getContainingBlocksByRay(
@@ -545,6 +544,8 @@ class ArrayModel {
             this.octree.maxPoint
           )
         );
+        // initialize loading of blocks
+        this.fetchPoints(scene, true);
       }
     }
   }
