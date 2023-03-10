@@ -41,7 +41,7 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
         { name: 'height', size: 1, type: 'float' }
       ],
       vertex: `
-        uniform float nearPLane;
+        uniform float nearPlane;
         uniform float farPlane;
         uniform float blendLimit;
         uniform float width;
@@ -103,7 +103,6 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
           {
             discard;
           }
-          
       `
         };
   }
