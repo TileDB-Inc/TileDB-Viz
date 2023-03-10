@@ -212,6 +212,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         },
         scene,
         {
+          generateDepthBuffer: true,
           format: Constants.TEXTUREFORMAT_RGBA,
           type: Constants.TEXTURETYPE_FLOAT
         }
@@ -321,7 +322,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
           //gl_FragColor = vec4(vec3(depth.a), 1.0);
 
-          //gl_FragColor = vec4(vec3(depth.r), 1.0);
+          gl_FragColor = vec4(vec3(depth.r), 1.0);
           gl_FragColor = vec4(depth.rgb / depth.a, 1.0);
           
       }

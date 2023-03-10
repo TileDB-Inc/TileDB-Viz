@@ -21,6 +21,7 @@ import {
 import ArrayModel from '../model/array-model';
 import { setSceneColors, updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
+import { CustomDepthTestMaterialPlugin } from '../material/plugins/customDepthTestPlugin';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -304,6 +305,20 @@ class PointCloudGUI {
 
             result.meshes[0].scaling = new Vector3(scale, scale, scale);
             result.meshes[0].translate(new Vector3(x, y, z), 1, Space.WORLD);
+
+            for (const mesh of result.meshes) {
+              if (mesh.material) {
+                mesh.material.customDepthTestMaterialPlugin =
+                  new CustomDepthTestMaterialPlugin(mesh.material);
+                mesh.material.customDepthTestMaterialPlugin.isEnabled = true;
+                mesh.material.customDepthTestMaterialPlugin.linearDepthTexture =
+                  model.renderTargets[0];
+
+                model.renderTargets[1].renderList.push(mesh);
+                // const depthMaterial = new LinearDepthMaterial(mesh.material);
+                // model.renderTargets[0].setMaterialForRendering(mesh, depthMaterial.material);
+              }
+            }
           });
         });
     });

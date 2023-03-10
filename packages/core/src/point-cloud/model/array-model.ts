@@ -261,7 +261,6 @@ class ArrayModel {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
             pcs.mesh.LOD = 1;
-
             if (!this.depthMaterial) {
               this.depthMaterial = new LinearDepthMaterial(pcs.mesh.material);
             }
