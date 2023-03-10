@@ -96,7 +96,9 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
 
           if (abs(depth - vDepthMetric) < blendLimit)
           {
-            float weight = pow(1.0 - pow(abs(depth - vDepthMetric) / blendLimit, 2.0), 1.5);
+            float distance = length(gl_PointCoord.xy - vec2(0.5)) / 0.5;
+
+            float weight = pow(1.0 - pow(distance, 2.0), 1.5);
             gl_FragColor = vec4(gl_FragColor.rgb * weight, weight);
           }
           else
