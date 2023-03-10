@@ -36,12 +36,16 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
       ubo: [
         { name: 'nearPlane', size: 1, type: 'float' },
         { name: 'farPlane', size: 1, type: 'float' },
-        { name: 'blendLimit', size: 1, type: 'float' }
+        { name: 'blendLimit', size: 1, type: 'float' },
+        { name: 'width', size: 1, type: 'float' },
+        { name: 'height', size: 1, type: 'float' }
       ],
       vertex: `
         uniform float nearPLane;
         uniform float farPlane;
         uniform float blendLimit;
+        uniform float width;
+        uniform float height;
     `
     };
   }
@@ -60,6 +64,9 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
         'blendLimit',
         this.blendLimit / (activeCamera.maxZ - activeCamera.minZ)
       );
+
+      uniformBuffer.updateFloat('width', engine._gl.canvas.width);
+      uniformBuffer.updateFloat('height', engine._gl.canvas.height);
 
       uniformBuffer.setTexture('linearDepthTexture', this.linearDepthTexture);
     }
@@ -85,7 +92,7 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
             varying float vDepthMetric;
         `,
           CUSTOM_FRAGMENT_MAIN_END: `
-          float depth = texture(linearDepthTexture, gl_FragCoord.xy / 1000.0).r; 
+          float depth = texture(linearDepthTexture, vec2(gl_FragCoord.x / width, gl_FragCoord.y / height)).r; 
 
           if (abs(depth - vDepthMetric) < blendLimit)
           {

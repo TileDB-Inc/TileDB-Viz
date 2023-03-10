@@ -243,7 +243,7 @@ class ArrayModel {
         } else {
           const pcs = new PointsCloudSystem(
             block.mortonNumber.toString(),
-            5,
+            pointSize,
             this.scene,
             { updatable: false }
           );
@@ -260,6 +260,7 @@ class ArrayModel {
             if (this.debug && this.debugTexture && pcs.mesh) {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
+            pcs.mesh.LOD = 1;
 
             if (!this.depthMaterial) {
               this.depthMaterial = new LinearDepthMaterial(pcs.mesh.material);

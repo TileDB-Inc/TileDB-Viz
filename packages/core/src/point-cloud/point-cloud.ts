@@ -16,7 +16,8 @@ import {
   RenderTargetTexture,
   Constants,
   PostProcess,
-  Effect
+  Effect,
+  Color4
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model';
@@ -191,7 +192,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       const depthRenderTarget = new RenderTargetTexture(
         'LinearDepthRenderTarget',
-        { width: 1000, height: 1000 },
+        {
+          width: this.engine._gl.canvas.width,
+          height: this.engine._gl.canvas.height
+        },
         scene,
         {
           generateDepthBuffer: true,
@@ -202,13 +206,17 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       const additiveColorRenderTarget = new RenderTargetTexture(
         'additiveColorRenderTarget',
-        { width: 1000, height: 1000 },
+        {
+          width: this.engine._gl.canvas.width,
+          height: this.engine._gl.canvas.height
+        },
         scene,
         {
           format: Constants.TEXTUREFORMAT_RGBA,
           type: Constants.TEXTURETYPE_FLOAT
         }
       );
+      additiveColorRenderTarget.clearColor = new Color4(0.0, 0.0, 0.0, 0.0);
 
       this.scene.customRenderTargets.push(depthRenderTarget);
       this.scene.customRenderTargets.push(additiveColorRenderTarget);
@@ -313,7 +321,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
           //gl_FragColor = vec4(vec3(depth.a), 1.0);
 
-          //gl_FragColor = vec4(vec3(depth), 1.0);
+          //gl_FragColor = vec4(vec3(depth.r), 1.0);
           gl_FragColor = vec4(depth.rgb / depth.a, 1.0);
           
       }
