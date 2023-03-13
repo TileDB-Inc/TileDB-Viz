@@ -47,7 +47,7 @@ class TileDBWorkerPool {
       let block = resp.block;
       const { entries } = resp;
 
-      // refresh block as it was serialized,
+      // refresh block as it was serialized
       block = new MoctreeBlock(
         block.lod,
         block.mortonNumber,
@@ -57,11 +57,13 @@ class TileDBWorkerPool {
       );
 
       block.entries = buffersToSparseResult(entries);
+      if (block.entries) {
+        block.pointCount = block.entries?.X.length;
+      }
 
       const queryCacheKey = block.mortonNumber;
       const storeName = `${this.initRequest.namespace}:${this.initRequest.groupName}`;
       this.callbackFn(block);
-
       await writeToCache(storeName, queryCacheKey, block);
     } else if (m.type === WorkerType.idle) {
       const idleMessage = m as IdleResponse;
@@ -92,6 +94,8 @@ class TileDBWorkerPool {
             name: k
           }
         );
+        newWorker.postMessage(this.initRequest); // message to initalize the tiledb client
+        newWorker.onmessage = this.onData.bind(this);
         this.workers[parseInt(k)] = newWorker;
         this.mapStatus.set(k, false);
       }

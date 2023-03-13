@@ -1,8 +1,5 @@
 import {
-  Color3,
   Color4,
-  DynamicTexture,
-  Mesh,
   MeshBuilder,
   PointsCloudSystem,
   Scene,
@@ -10,10 +7,20 @@ import {
   SolidParticle,
   StandardMaterial,
   Vector3,
-  Particle
+  Particle,
+  Frustum,
+  Camera
 } from '@babylonjs/core';
 
-import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
+import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
+
+import {
+  decodeMorton,
+  encodeMorton,
+  getMortonRange,
+  Moctree,
+  MoctreeBlock
+} from '../octree';
 import {
   DataRequest,
   InitialRequest,
@@ -47,7 +54,6 @@ class ArrayModel {
   pointType: string;
   pointSize: number;
   pickedBlockCode = -1;
-  rayOrigin = Vector3.Zero();
   cameraHeight: number | undefined;
   maxNumCacheBlocks: number;
   renderBlocks: MoctreeBlock[] = [];
@@ -64,11 +70,11 @@ class ArrayModel {
   useShader = false;
   useStreaming = false;
   useSPS = false;
-  debugOctant: Mesh;
-  debugOrigin: Mesh;
   scene?: Scene;
   poolSize: number;
   particleBuffer: SolidParticle[] = [];
+  debugTexture?: AdvancedDynamicTexture;
+  static groundName = 'ground';
 
   constructor(options: TileDBPointCloudOptions) {
     this.groupName = options.groupName;
@@ -99,46 +105,59 @@ class ArrayModel {
       options.workerPoolSize || navigator.hardwareConcurrency || 5;
     this.debug = options.debug || false;
 
-    this.debugOctant = MeshBuilder.CreateBox('debugOctant');
-    this.debugOctant.visibility = 0;
-    this.debugOctant.isPickable = false;
-    const matOctantLabel = new DynamicTexture('debugOctantMatLabel', {
-      width: 512,
-      height: 256
-    });
+    if (this.debug) {
+      this.debugTexture = AdvancedDynamicTexture.CreateFullscreenUI('Debug UI');
+    }
 
-    const matOctant = new StandardMaterial('debugOctantMat');
-    matOctant.diffuseTexture = matOctantLabel;
-    matOctant.diffuseColor = Color3.Green();
-    matOctant.alpha = 0.8;
-    this.debugOctant.material = matOctant;
-
-    this.debugOrigin = MeshBuilder.CreateSphere('debugOrigin', {
-      diameter: 100
-    });
-    this.debugOrigin.visibility = 0;
-    this.debugOrigin.isPickable = false;
-    const matOrigin = new StandardMaterial('debugOriginMat');
-    matOrigin.diffuseColor = Color3.Purple();
-    matOrigin.alpha = 0.8;
-    this.debugOrigin.material = matOrigin;
     this.particleSystems = new Map<
       number,
       SolidParticleSystem | PointsCloudSystem
     >();
   }
 
+  private addDebugLabel(
+    pcs: PointsCloudSystem | SolidParticleSystem,
+    text: string
+  ) {
+    if (pcs && pcs.mesh && this.debugTexture) {
+      pcs.mesh.showBoundingBox = true;
+
+      // create a fixed size label
+      const rect = new Rectangle();
+      rect.width = '50px';
+      rect.height = '50px';
+      rect.cornerRadius = 20;
+      rect.color = 'Orange';
+      rect.thickness = 4;
+      rect.background = 'green';
+      this.debugTexture.addControl(rect);
+
+      const label = new TextBlock();
+      label.text = text;
+      rect.addControl(label);
+
+      rect.linkWithMesh(pcs.mesh);
+      rect.linkOffsetY = -50;
+    }
+  }
+
   private loadSystem(block: MoctreeBlock) {
-    if (block.entries !== undefined && this.scene) {
+    if (
+      block.entries !== undefined &&
+      block.entries.X.length > 0 &&
+      this.scene
+    ) {
       // profiler is showing we don't need to check if the block is in frustrum but noting a possible optimization here
       if (!this.particleSystems.has(block.mortonNumber) || !this.basePcs) {
+        const debugCoords = decodeMorton(block.mortonNumber);
         console.log(
-          'received: ' +
-            block.entries?.X.length +
-            ' of approximately: ' +
-            this.octree.knownBlocks.get(block.mortonNumber) +
-            ' at LOD: ' +
-            block.lod
+          block.lod +
+            ' ' +
+            debugCoords.x +
+            ' ' +
+            debugCoords.z +
+            ' ' +
+            debugCoords.y
         );
 
         const transX = this.translationVector.x;
@@ -150,6 +169,14 @@ class ArrayModel {
         const numPoints = block.entries.X.length;
 
         this.pointCount += numPoints;
+
+        // when streaming data, scale pointSize by LOD level
+        let pointSize = this.pointSize;
+        if (this.useStreaming) {
+          pointSize = this.maxLevel
+            ? this.pointSize * (block.lod / this.maxLevel)
+            : this.pointSize;
+        }
 
         const pointBuilder = function (particle: Particle, i: number) {
           if (block.entries !== undefined) {
@@ -185,13 +212,17 @@ class ArrayModel {
 
           const box = MeshBuilder.CreateBox(
             'b',
-            { size: this.pointSize },
+            { size: pointSize },
             this.scene
           );
           sps.computeBoundingBox = true;
           sps.addShape(box, numPoints, { positionFunction: pointBuilder });
           box.dispose();
           sps.buildMesh();
+
+          if (this.debug && this.debugTexture && sps.mesh) {
+            this.addDebugLabel(sps, block.mortonNumber.toString());
+          }
 
           if (block.mortonNumber !== Moctree.startBlockIndex) {
             this.particleSystems.set(block.mortonNumber, sps);
@@ -201,7 +232,7 @@ class ArrayModel {
         } else {
           const pcs = new PointsCloudSystem(
             block.mortonNumber.toString(),
-            this.pointSize,
+            pointSize,
             this.scene,
             { updatable: false }
           );
@@ -215,33 +246,10 @@ class ArrayModel {
             } else {
               this.basePcs = pcs;
             }
+            if (this.debug && this.debugTexture && pcs.mesh) {
+              this.addDebugLabel(pcs, block.mortonNumber.toString());
+            }
           });
-        }
-
-        if (this.debug) {
-          // TODO make box colors configurable
-          this.debugOctant.scaling = block.maxPoint.subtract(block.minPoint);
-          this.debugOctant.position = block.minPoint.add(
-            this.debugOctant.scaling.scale(0.5)
-          );
-          const label =
-            this.debugOctant.material?.getActiveTextures()[0] as DynamicTexture;
-          const font = 'bold 44px monospace';
-          label.drawText(
-            block.entries.X.length.toString(),
-            72,
-            135,
-            font,
-            'red',
-            'white',
-            true,
-            true
-          );
-          this.debugOctant.visibility = 1;
-          this.debugOrigin.visibility = 1;
-        } else {
-          this.debugOctant.visibility = 0;
-          this.debugOrigin.visibility = 0;
         }
       } else {
         // lru cache - reinsert this pcs
@@ -256,28 +264,58 @@ class ArrayModel {
     }
   }
 
-  private dropLRUParticleSystem(targetPointCount?: number) {
-    // simple lru cache, evict first key, this is fine as we are backed by local storage
+  private dropParticleSystems(targetPointCount?: number, lessDetail?: boolean) {
     const candidates: Array<number> = [];
-    if (targetPointCount) {
-      // different style of dropping particle systems, we want to preserve the scene
-      const scene = this.scene;
-      let n = 0;
-      for (const [k, pcs] of this.particleSystems) {
-        const bounds = pcs.mesh?.getBoundingInfo();
-        if (scene && bounds) {
-          if (!scene.activeCamera?.isInFrustum(bounds)) {
-            candidates.push(k);
+
+    const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+      (camera: Camera) => {
+        return !camera.name.startsWith('GUI');
+      }
+    );
+
+    if (this.scene && activeCamera) {
+      const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
+
+      if (targetPointCount && this.maxLevel) {
+        // different style of dropping particle systems, we want to preserve the scene
+        let n = 0;
+
+        // sort by lod and drop high LoDs first
+        const keys = [...this.particleSystems.keys()].sort(
+          (a, b) => 0 - (a > b ? 1 : -1)
+        );
+
+        const highRange = getMortonRange(this.maxLevel - 1);
+        for (const k in keys) {
+          const code = keys[k];
+
+          if (lessDetail) {
+            if (code >= highRange.minMorton && code <= highRange.maxMorton) {
+              // don't count towards point count, we are intentionally getting less detail
+              candidates.push(code);
+              continue;
+            }
+          }
+
+          const pcs = this.particleSystems.get(code);
+
+          if (pcs && pcs.mesh && !pcs.mesh.isInFrustum(planes)) {
+            candidates.push(code);
             n += pcs.nbParticles;
             if (n > targetPointCount) {
               break;
             }
           }
         }
+      } else {
+        // simple lru cache, evict first key if not in frustum, this is fine as we are backed by local storage
+        const k = this.particleSystems.keys().next().value;
+        const pcs = this.particleSystems.get(k);
+        const bounds = pcs?.mesh?.getBoundingInfo();
+        if (pcs && bounds && !bounds.isInFrustum(planes)) {
+          candidates.push(k);
+        }
       }
-    } else {
-      const k = this.particleSystems.keys().next().value;
-      candidates.push(k);
     }
 
     candidates.map(k => {
@@ -292,12 +330,12 @@ class ArrayModel {
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
-    // fetch if not populated
     if (block) {
-      if (!block.entries) {
-        // TODO: add caching
+      // check memory cache
+      if (!this.particleSystems.has(block.mortonNumber)) {
         const queryCacheKey = block.mortonNumber;
         const storeName = `${this.namespace}:${this.groupName}`;
+        // check indexeddb cache
         const dataFromCache = await getQueryDataFromCache(
           storeName,
           queryCacheKey
@@ -364,7 +402,7 @@ class ArrayModel {
     } else {
       // create a ground so we always having picking for panning the scene
       const ground = MeshBuilder.CreateGround(
-        'ground',
+        ArrayModel.groundName,
         {
           width: 2 * spanX,
           height: 2 * spanY
@@ -409,90 +447,96 @@ class ArrayModel {
     return scene;
   }
 
-  public async fetchPoints(scene: Scene) {
+  public async fetchPoints(
+    scene: Scene,
+    hasChanged?: boolean,
+    lessDetail?: boolean
+  ) {
     // fully load immutable layer
     if (this.basePcs && this.basePcs.nbParticles > 0) {
       // find centre point and load higher resolution around it
-      if (scene.activeCamera && this.workerPool?.isReady()) {
-        const ray = scene.activeCamera.getForwardRay();
-        // don't set epsilon to be too sensitive
-        const epsilon = Math.pow(10, -4);
+      if (this.workerPool?.isReady()) {
+        if (this.pointCount <= this.pointBudget || hasChanged) {
+          const activeCamera: Camera | undefined =
+            this.scene?.activeCameras?.find((camera: Camera) => {
+              return !camera.name.startsWith('GUI');
+            });
 
-        // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage, this is enforced
-        if (this.particleSystems.size > this.maxNumCacheBlocks) {
-          this.dropLRUParticleSystem();
-        }
+          if (!activeCamera) {
+            // nothing else to do
+            return;
+          }
 
-        // have we panned or moved the camera in towards the scene
-        if (
-          !ray.origin.equalsWithEpsilon(this.rayOrigin, epsilon) ||
-          this.scene?.activeCamera?.position.z !== this.cameraHeight
-        ) {
-          // this.workerPool.cleanUp();
-          this.rayOrigin = ray.origin;
-          this.cameraHeight = this.scene?.activeCamera?.position.z;
-          const parentBlocks = this.octree.getContainingBlocksByRay(
-            ray,
+          // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage
+          if (this.particleSystems.size > this.maxNumCacheBlocks) {
+            this.dropParticleSystems();
+          }
+
+          // check we have initialized the scene
+          if (hasChanged) {
+            const ray = activeCamera.getForwardRay();
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            this.maxLevel! - 1
-          );
+            const maxLevel = this.maxLevel! - 1;
+            const parentBlocks = this.octree.getContainingBlocksByRay(
+              ray,
+              maxLevel
+            );
 
-          if (parentBlocks.length > 0) {
-            const pickCode = parentBlocks[0].mortonNumber;
-            this.pickedBlockCode = pickCode;
-            this.renderBlocks = parentBlocks;
-            this.isBuffering = false;
-            this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+            if (parentBlocks.length > 0) {
+              const pickCode = parentBlocks[0].mortonNumber;
+              this.pickedBlockCode = pickCode;
+              this.renderBlocks = parentBlocks;
+              this.isBuffering = false;
+              this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+            }
           }
 
           // drop cache blocks if we are at the point budget, this is loose, if all blocks are in view we don't drop blocks but don't load any more as we have exceeded the point budget
           if (this.pointCount >= this.pointBudget) {
-            const pointTargetCount = this.pointBudget / 2;
-            this.dropLRUParticleSystem(pointTargetCount);
+            const pointTargetCount = this.pointBudget / 4;
+            this.dropParticleSystems(pointTargetCount, lessDetail);
           }
-        }
 
-        if (this.pointCount < this.pointBudget) {
-          let block = this.renderBlocks.pop();
+          if (this.pointCount < this.pointBudget) {
+            let block = this.renderBlocks.pop();
 
-          // check block is in frustrum and not empty
-          if (!block) {
-            // we are buffering
-            this.isBuffering = true;
-            block = this.neighbours?.next().value;
-            while (
-              block &&
-              !scene.activeCamera.isInFrustum(block.boundingInfo)
-            ) {
-              const g = this.neighbours?.next();
-              if (g?.done) {
-                break;
-              }
+            // check block is in frustrum and not empty
+            if (!block && activeCamera) {
+              const planes = Frustum.GetPlanes(
+                activeCamera.getTransformationMatrix()
+              );
+
+              // we are buffering
+              this.isBuffering = true;
+
               block = this.neighbours?.next().value;
+              while (
+                block &&
+                !block.boundingInfo.isInFrustum(planes) // check the centre of each box
+              ) {
+                const g = this.neighbours?.next();
+                if (g?.done) {
+                  break;
+                }
+                block = this.neighbours?.next().value;
+              }
             }
-          }
 
-          if (block) {
-            const nextPointCount = this.octree.knownBlocks.get(
-              block.mortonNumber
-            );
-
-            if (
-              nextPointCount &&
-              this.pointCount + nextPointCount <= this.pointBudget
-            ) {
-              this.fetchBlock(block);
+            if (block) {
+              if (this.pointCount <= this.pointBudget) {
+                this.fetchBlock(block);
+              }
             }
+          } else {
+            // point budget reached
+            console.log('particle budget reached: ' + this.pointCount);
           }
-        } else {
-          // point budget reached
-          console.log('particle budget reached: ' + this.pointCount);
         }
       }
     } else {
       // load immutable layer immediately, we don't want to fire this off to multiple workers
       if (this.workerPool?.numActive() === 0) {
-        this.fetchBlock(
+        await this.fetchBlock(
           new MoctreeBlock(
             0,
             Moctree.startBlockIndex,
@@ -500,6 +544,8 @@ class ArrayModel {
             this.octree.maxPoint
           )
         );
+        // initialize loading of blocks
+        this.fetchPoints(scene, true);
       }
     }
   }

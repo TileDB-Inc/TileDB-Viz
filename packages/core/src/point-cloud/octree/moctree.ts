@@ -158,9 +158,11 @@ class Moctree {
 
         const ranges = getMortonRange(currentLod);
 
-        // display more blocks from higher resolution data and tail off
+        // display more blocks from lower level of detail data on each iteration and tail off
         const fanOut = Math.min(
-          Math.ceil(this.fanOut / (this.maxDepth - currentLod + 1)),
+          // avoid log(1)
+          Math.ceil(Math.log(this.maxDepth - currentLod + 2) * this.fanOut),
+          this.fanOut,
           ranges.maxMorton - ranges.minMorton // 1 missing block for centre
         );
 
@@ -171,7 +173,8 @@ class Moctree {
           leftBlockCode >= ranges.minMorton ||
           rightBlockCode <= ranges.maxMorton
         ) {
-          for (let i = 0; i < fanOut; i++) {
+          let i = 0;
+          while (i < fanOut) {
             if (leftBlockCode >= ranges.minMorton) {
               if (
                 this.knownBlocks.has(leftBlockCode) ||
@@ -187,6 +190,8 @@ class Moctree {
                   actualV1,
                   actualV1.add(blockSize)
                 );
+                // fanOut only counts blocks with data
+                i++;
               }
               blockCount++;
               leftBlockCode = currentCode - ++positions[currentLod - 1].left;
@@ -207,9 +212,18 @@ class Moctree {
                   actualV2,
                   actualV2.add(blockSize)
                 );
+                // fanOut only counts blocks with data
+                i++;
               }
               blockCount++;
               rightBlockCode = currentCode + ++positions[currentLod - 1].right;
+            }
+
+            if (
+              rightBlockCode > ranges.maxMorton &&
+              leftBlockCode < ranges.minMorton
+            ) {
+              break;
             }
           }
         } else {
@@ -240,6 +254,7 @@ class MoctreeBlock {
     this.maxPoint = maxPoint;
     if (entries) {
       this.entries = entries;
+      this.pointCount = this.entries.X.length;
     }
 
     this.boundingInfo = new BoundingInfo(this.minPoint, this.maxPoint);
