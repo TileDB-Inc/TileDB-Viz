@@ -73,8 +73,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               "Are you sure you want to delete the array's cache?",
               'Clear cache',
               () => {
-                if (this.options.namespace && this.options.arrayName) {
-                  const storeName = `${this.options.namespace}:${this.options.arrayName}`;
+                if (this.options.namespace && this.options.groupName) {
+                  const storeName = `${this.options.namespace}:${this.options.groupName}`;
 
                   clearCache(storeName);
                 }
