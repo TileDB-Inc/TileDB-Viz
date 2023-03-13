@@ -101,8 +101,8 @@ export function setCameraLight(
   >();
   cameras.push(camera0, camera1, camera2, camera3);
 
-  cameras[0].attachControl(true);
-  cameras[2].attachControl(true);
+  cameras[0].attachControl(false);
+  cameras[2].attachControl(false);
   scene.activeCameras = [cameras[0], cameras[2]];
 
   // add general lights
