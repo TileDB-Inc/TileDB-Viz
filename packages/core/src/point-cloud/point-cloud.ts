@@ -114,8 +114,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               this.cameras[this.activeCamera],
               this.cameras[this.activeCamera + 2]
             ];
-            this.scene.activeCameras[0].attachControl(true);
-            this.scene.activeCameras[1].attachControl(true);
+            this.scene.activeCameras[0].attachControl(false);
+            this.scene.activeCameras[1].attachControl(false);
             if (this.model.particleMaterial) {
               this.model.particleMaterial.setShader(
                 this.scene,
