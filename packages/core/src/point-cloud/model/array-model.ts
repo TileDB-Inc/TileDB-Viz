@@ -230,6 +230,8 @@ class ArrayModel {
             this.particleSystems.set(block.mortonNumber, sps);
           } else {
             this.basePcs = sps;
+            // initialize the loader
+            this.fetchPoints(this.scene, true);
           }
         } else {
           const pcs = new PointsCloudSystem(
@@ -238,6 +240,7 @@ class ArrayModel {
             this.scene,
             { updatable: false }
           );
+          const scene = this.scene;
           pcs.computeBoundingBox = true;
           pcs.addPoints(numPoints, pointBuilder);
 
@@ -247,6 +250,8 @@ class ArrayModel {
               this.particleSystems.set(block.mortonNumber, pcs);
             } else {
               this.basePcs = pcs;
+              // initialize the loader
+              this.fetchPoints(scene, true);
             }
             if (this.debug && this.debugTexture && pcs.mesh) {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
@@ -493,11 +498,6 @@ class ArrayModel {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const pad = this.maxLevel! - 1 - lod;
                 this.pickedBlockCode = this.pickedBlockCode << (pad * 3);
-                console.log(
-                  this.maxLevel +
-                    ' ' +
-                    (this.pickedBlockCode.toString(2).length - 1)
-                );
               }
             } else {
               const ray = activeCamera.getForwardRay();
@@ -570,8 +570,6 @@ class ArrayModel {
             this.octree.maxPoint
           )
         );
-        // initialize loading of blocks
-        this.fetchPoints(scene, true);
       }
     }
   }
