@@ -68,6 +68,7 @@ class Moctree {
     new Vector3(0, 1, 1),
     new Vector3(1, 1, 1)
   ];
+  blocklist: Map<number, MoctreeBlock>;
 
   constructor(
     public minPoint: Vector3,
@@ -75,7 +76,32 @@ class Moctree {
     public maxDepth: number,
     public fanOut: number
   ) {
+
+
+    this.blocklist = new Map<number, MoctreeBlock>();
     this.knownBlocks = new Map<number, number>();
+    console.time("Octree build");
+    const ranges = [maxPoint.x - minPoint.x, maxPoint.y - minPoint.y, maxPoint.z - minPoint.z]
+    for (let level = 0; level <= maxDepth; ++level)
+    {
+      const partsPerDimension = Math.pow(2, level);
+      const StepX = ranges[0] / partsPerDimension;
+      const StepY = ranges[1] / partsPerDimension;
+      const StepZ = ranges[2] / partsPerDimension;
+      for (let partX = 0; partX < partsPerDimension; ++partX)
+      {
+        for (let partY = 0; partY < partsPerDimension; ++partY)
+        {
+          for (let partZ = 0; partZ < partsPerDimension; ++partZ)
+          {
+            const partMin = new Vector3(minPoint.x + partX * StepX, minPoint.y + partY * StepY, minPoint.z + partZ * StepZ);
+            const partMax = new Vector3(minPoint.x + (partX + 1) * StepX, minPoint.y + (partY + 1) * StepY, minPoint.z + (partZ + 1) * StepZ);
+            this.blocklist.set(encodeMorton(new Vector3(partX, partY, partZ), level), new MoctreeBlock(level, encodeMorton(new Vector3(partX, partY, partZ), level), partMin, partMax));
+          }
+        }
+      }
+    }
+    console.timeEnd("Octree build");
   }
 
   public getContainingBlocksByRay(ray: Ray, lod: number) {

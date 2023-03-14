@@ -10,7 +10,8 @@ import {
   Particle,
   Frustum,
   Camera,
-  RenderTargetTexture
+  RenderTargetTexture,
+  AbstractMesh
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -34,6 +35,7 @@ import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { LinearDepthMaterial } from '../material/linearDepthMaterial';
 import { AdditiveProximityMaterial } from '../material/additiveProximityMaterial';
+import { PriorityQueue } from '../utils/binary-heap';
 
 /**
  * The ArrayModel manages the client octree
@@ -81,6 +83,8 @@ class ArrayModel {
   renderTargets: RenderTargetTexture[];
   depthMaterial: LinearDepthMaterial = null;
   additiveProximityMaterial: AdditiveProximityMaterial = null;
+  loaded: MoctreeBlock[] = [];
+  pending: MoctreeBlock[] = [];
 
   constructor(
     options: TileDBPointCloudOptions,
@@ -163,12 +167,12 @@ class ArrayModel {
         const debugCoords = decodeMorton(block.mortonNumber);
         console.log(
           block.lod +
-            ' ' +
-            debugCoords.x +
-            ' ' +
-            debugCoords.z +
-            ' ' +
-            debugCoords.y
+          ' ' +
+          debugCoords.x +
+          ' ' +
+          debugCoords.z +
+          ' ' +
+          debugCoords.y
         );
 
         const transX = this.translationVector.x;
@@ -475,6 +479,10 @@ class ArrayModel {
         this.poolSize
       );
 
+      scene.onBeforeRenderObservable.add((scene: Scene) => {
+        this.beforeRender(scene)
+      });
+
       scene.onAfterRenderObservable.add((scene: Scene) => {
         this.afterRender(scene);
       });
@@ -502,29 +510,11 @@ class ArrayModel {
             return;
           }
 
-          const ray = activeCamera.getForwardRay();
-
+          // TODO: We should drop all loaded point clouds that are not in the loaded or pending list
+          
           // check cache size, this is slightly different the point budget and refers to the number of particle systems and is a way to limit memory usage
           if (this.particleSystems.size > this.maxNumCacheBlocks) {
             this.dropParticleSystems();
-          }
-
-          // check we have initializaed the scene by checking the size of the particleSystems cache
-          if (hasChanged || this.particleSystems.size === 0) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const maxLevel = this.maxLevel! - 1;
-            const parentBlocks = this.octree.getContainingBlocksByRay(
-              ray,
-              maxLevel
-            );
-
-            if (parentBlocks.length > 0) {
-              const pickCode = parentBlocks[0].mortonNumber;
-              this.pickedBlockCode = pickCode;
-              this.renderBlocks = parentBlocks;
-              this.isBuffering = false;
-              this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
-            }
           }
 
           // drop cache blocks if we are at the point budget, this is loose, if all blocks are in view we don't drop blocks but don't load any more as we have exceeded the point budget
@@ -534,32 +524,13 @@ class ArrayModel {
           }
 
           if (this.pointCount < this.pointBudget) {
-            let block = this.renderBlocks.pop();
+            let block = this.pending.pop();
+            this.loaded.push(block);
 
-            // check block is in frustrum and not empty
-            if (!block && activeCamera) {
-              const planes = Frustum.GetPlanes(
-                activeCamera.getTransformationMatrix()
-              );
-
-              // we are buffering
-              this.isBuffering = true;
-
-              block = this.neighbours?.next().value;
-              while (
-                block &&
-                !block.boundingInfo.isInFrustum(planes) // check the centre of each box
-              ) {
-                const g = this.neighbours?.next();
-                if (g?.done) {
-                  break;
-                }
-                block = this.neighbours?.next().value;
-              }
-            }
-
-            if (block) {
-              if (this.pointCount <= this.pointBudget) {
+            if (block) 
+            {
+              if (this.pointCount <= this.pointBudget) 
+              {
                 this.fetchBlock(block);
               }
             }
@@ -601,6 +572,61 @@ class ArrayModel {
 
   public afterRender(scene: Scene) {
     this.fetchPoints(scene);
+  }
+
+  public beforeRender(scene: Scene) {
+
+    // Find the active camera of the scene
+    const activeCamera: Camera | undefined =
+      this.scene?.activeCameras?.find((camera: Camera) => {
+        return !camera.name.startsWith('GUI');
+      });
+
+    if (!activeCamera) {
+      // nothing else to do
+      return;
+    }
+
+    //Get the frustrum of the active camera to perform the visibility test for each octree block
+    const planes = Frustum.GetPlanes(
+      activeCamera.getTransformationMatrix()
+    );
+
+    const slope = Math.tan(activeCamera.fov / 2);
+    const height = this.scene.getEngine()._gl.canvas.height / 2;
+    let queue = new PriorityQueue(500);
+
+    console.time("Bounding Sphere Frustrum Check")
+
+    // TODO: Ideally the iteration order should follow the lod level
+    for (let [key, value] of this.octree.knownBlocks) 
+    {
+      const block = this.octree.blocklist.get(key);
+      if (block.boundingInfo.isInFrustum(planes, AbstractMesh.CULLINGSTRATEGY_BOUNDINGSPHERE_ONLY)) {
+        const distance = activeCamera.position.subtract(block.boundingInfo.boundingSphere.centerWorld).length();
+        const score = (height * block.boundingInfo.boundingSphere.radiusWorld) / (slope * distance);
+        if (score > 20) {
+          queue.insert(score, block);
+        }
+      }
+
+      if (queue.size > 450) {
+        break;
+      }
+    }
+
+    console.timeEnd("Bounding Sphere Frustrum Check")
+    console.log(`${queue.size}`);
+
+    while(queue.size > 0)
+    {
+      // TODO: Need to remove from loaded list all points that are not in the queue
+
+      // TODO: Need to add only the points that are not loaded
+      this.pending.push(queue.extractMax().octreeBlock);
+    }
+
+
   }
 }
 
