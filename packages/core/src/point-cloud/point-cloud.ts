@@ -267,7 +267,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       );
 
       if (!this.options.useSPS) {
-        pipeline.initializePostProcess();
+        pipeline.initializePostProcess(this.options);
       } else {
         // add shader
         this.model.particleMaterial = new ParticleShaderMaterial(
