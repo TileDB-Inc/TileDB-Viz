@@ -144,6 +144,7 @@ export const StreamerAutzen = () => (
     pointBudget={3_500_000}
     maxNumCacheBlocks={250}
     wheelPrecision={0.5}
+    pointSize={5}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={25}
@@ -167,6 +168,7 @@ export const StreamerBristol = () => (
     pointBudget={4_500_000}
     maxNumCacheBlocks={250}
     colorScheme="dark"
+    pointSize={8}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
     cameraUp={50}
@@ -191,6 +193,7 @@ export const StreamerSantorini = () => (
     pointBudget={3_500_000}
     maxNumCacheBlocks={250}
     colorScheme="dark"
+    pointSize={8}
     cameraLocation={5}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={200}
