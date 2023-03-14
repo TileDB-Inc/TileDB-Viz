@@ -159,6 +159,10 @@ export interface TileDBPointCloudOptions
    * Web worker request pool size
    */
   workerPoolSize?: number;
+  /**
+   * Use nearest octant for highest LoD, alternatively ray tracing is use to determine focal point
+   */
+  nearest?: boolean;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {

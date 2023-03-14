@@ -1,4 +1,4 @@
-import { BoundingInfo, Ray, Vector3 } from '@babylonjs/core';
+import { BoundingInfo, Plane, Ray, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
@@ -76,6 +76,73 @@ class Moctree {
     public fanOut: number
   ) {
     this.knownBlocks = new Map<number, number>();
+  }
+
+  public getNearestPickCode(
+    position: Vector3,
+    planes: Plane[],
+    maxLevel?: number
+  ) {
+    // find the nearest non-empty visible block to position at a high LoD
+    const nLevels = maxLevel || this.maxDepth;
+    let code = 1;
+    let dist = Number.MAX_SAFE_INTEGER;
+    const blocks: Array<MoctreeBlock> = [];
+
+    for (let l = 1; l < nLevels; l++) {
+      const blockSize = this.maxPoint
+        .subtract(this.minPoint)
+        .scale(1 / Math.pow(2, l));
+
+      code = code << 3;
+      const candidates = [];
+
+      for (let c = 0; c < 8; c++) {
+        const currentCode = code + c;
+        // loop over children and find nearest occupied block
+        const relativeV1 = decodeMorton(currentCode);
+        const actualV1 = this.minPoint.add(relativeV1.multiply(blockSize));
+        const centrePoint = actualV1.add(
+          blockSize.divide(new Vector3(2.0, 2.0, 2.0))
+        );
+        const d = position.subtract(centrePoint).length();
+
+        if (d <= dist && this.knownBlocks.has(currentCode)) {
+          const block = new MoctreeBlock(
+            l,
+            currentCode,
+            actualV1,
+            actualV1.add(blockSize)
+          );
+
+          if (block.boundingInfo.isInFrustum(planes)) {
+            candidates.push(block);
+            dist = d;
+          }
+        }
+      }
+
+      // filter candidates and update code
+      let resultBlock = candidates.pop();
+      if (resultBlock !== undefined) {
+        candidates.forEach(b => {
+          if (
+            position.subtract(b.boundingInfo.boundingSphere.center).length() <
+            position
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .subtract(resultBlock!.boundingInfo.boundingSphere.center)
+              .length()
+          ) {
+            resultBlock = b;
+          }
+        });
+
+        code = resultBlock.mortonNumber;
+        blocks.push(resultBlock);
+      }
+    }
+    // we return the containing blocks as they should be rendered first
+    return blocks.reverse();
   }
 
   public getContainingBlocksByRay(ray: Ray, lod: number) {
