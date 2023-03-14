@@ -9,7 +9,8 @@ import {
   Vector3,
   Particle,
   Frustum,
-  Camera
+  Camera,
+  RenderTargetTexture
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -31,6 +32,8 @@ import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
+import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
 
 /**
  * The ArrayModel manages the client octree
@@ -75,8 +78,14 @@ class ArrayModel {
   particleBuffer: SolidParticle[] = [];
   debugTexture?: AdvancedDynamicTexture;
   static groundName = 'ground';
+  renderTargets: RenderTargetTexture[];
+  depthMaterial: LinearDepthMaterial = null;
+  additiveProximityMaterial: AdditiveProximityMaterial = null;
 
-  constructor(options: TileDBPointCloudOptions) {
+  constructor(
+    options: TileDBPointCloudOptions,
+    renderTargets: RenderTargetTexture[]
+  ) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
@@ -113,6 +122,8 @@ class ArrayModel {
       number,
       SolidParticleSystem | PointsCloudSystem
     >();
+
+    this.renderTargets = renderTargets;
   }
 
   private addDebugLabel(
@@ -249,6 +260,34 @@ class ArrayModel {
             if (this.debug && this.debugTexture && pcs.mesh) {
               this.addDebugLabel(pcs, block.mortonNumber.toString());
             }
+
+            if (!this.depthMaterial) {
+              this.depthMaterial = new LinearDepthMaterial(
+                pcs.mesh.material,
+                pointSize
+              );
+            }
+
+            this.renderTargets[0].renderList.push(pcs.mesh);
+            this.renderTargets[0].setMaterialForRendering(
+              pcs.mesh,
+              this.depthMaterial.material
+            );
+
+            if (!this.additiveProximityMaterial) {
+              this.additiveProximityMaterial = new AdditiveProximityMaterial(
+                pcs.mesh.material,
+                1,
+                pointSize,
+                this.renderTargets[0]
+              );
+            }
+
+            this.renderTargets[1].renderList.push(pcs.mesh);
+            this.renderTargets[1].setMaterialForRendering(
+              pcs.mesh,
+              this.additiveProximityMaterial.material
+            );
           });
         }
       } else {
