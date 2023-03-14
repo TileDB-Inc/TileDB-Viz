@@ -86,19 +86,13 @@ class Moctree {
     // find the nearest non-empty visible block to position at a high LoD
     const nLevels = maxLevel || this.maxDepth;
     let code = 1;
-    let dist = 0; // initialize at dims of octree
+    let dist = Number.MAX_SAFE_INTEGER;
     const blocks: Array<MoctreeBlock> = [];
 
-    for (let l = 0; l < nLevels; l++) {
+    for (let l = 1; l < nLevels; l++) {
       const blockSize = this.maxPoint
         .subtract(this.minPoint)
         .scale(1 / Math.pow(2, l));
-
-      if (l === 0) {
-        // subtract furthest point
-        dist = position.subtract(this.minPoint).length();
-        continue;
-      }
 
       code = code << 3;
       const candidates = [];
@@ -108,7 +102,10 @@ class Moctree {
         // loop over children and find nearest occupied block
         const relativeV1 = decodeMorton(currentCode);
         const actualV1 = this.minPoint.add(relativeV1.multiply(blockSize));
-        const d = position.subtract(actualV1).length();
+        const centrePoint = actualV1.add(
+          blockSize.divide(new Vector3(2.0, 2.0, 2.0))
+        );
+        const d = position.subtract(centrePoint).length();
 
         if (d <= dist && this.knownBlocks.has(currentCode)) {
           const block = new MoctreeBlock(
@@ -130,9 +127,11 @@ class Moctree {
       if (resultBlock !== undefined) {
         candidates.forEach(b => {
           if (
-            position.subtract(b.maxPoint).length() <
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            position.subtract(resultBlock!.maxPoint).length()
+            position.subtract(b.boundingInfo.boundingSphere.center).length() <
+            position
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .subtract(resultBlock!.boundingInfo.boundingSphere.center)
+              .length()
           ) {
             resultBlock = b;
           }
