@@ -74,6 +74,7 @@ class ArrayModel {
   poolSize: number;
   particleBuffer: SolidParticle[] = [];
   debugTexture?: AdvancedDynamicTexture;
+  nearest: boolean;
   static groundName = 'ground';
 
   constructor(options: TileDBPointCloudOptions) {
@@ -92,6 +93,7 @@ class ArrayModel {
     this.maxNumCacheBlocks = options.maxNumCacheBlocks || 200;
     this.pointBudget = options.pointBudget || 500_000;
     this.fanOut = options.fanOut || 100;
+    this.nearest = options.nearest || true;
     if (options.useShader === true) {
       this.useShader = true;
     }
@@ -474,21 +476,45 @@ class ArrayModel {
 
           // check we have initialized the scene
           if (hasChanged) {
-            const ray = activeCamera.getForwardRay();
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const maxLevel = this.maxLevel! - 1;
-            const parentBlocks = this.octree.getContainingBlocksByRay(
-              ray,
-              maxLevel
-            );
+            if (this.nearest) {
+              const position = activeCamera.globalPosition;
+              const planes = Frustum.GetPlanes(
+                activeCamera.getTransformationMatrix()
+              );
+              this.renderBlocks = this.octree.getNearestPickCode(
+                position,
+                planes
+              );
+              this.pickedBlockCode = this.renderBlocks[0].mortonNumber;
+              // may need to pad code to max number of levels
+              const lod = (this.pickedBlockCode.toString(2).length - 1) / 3;
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              if (lod !== this.maxLevel! - 1) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const pad = this.maxLevel! - 1 - lod;
+                this.pickedBlockCode = this.pickedBlockCode << (pad * 3);
+                console.log(
+                  this.maxLevel +
+                    ' ' +
+                    (this.pickedBlockCode.toString(2).length - 1)
+                );
+              }
+            } else {
+              const ray = activeCamera.getForwardRay();
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              const maxLevel = this.maxLevel! - 1;
+              const parentBlocks = this.octree.getContainingBlocksByRay(
+                ray,
+                maxLevel
+              );
 
-            if (parentBlocks.length > 0) {
-              const pickCode = parentBlocks[0].mortonNumber;
-              this.pickedBlockCode = pickCode;
-              this.renderBlocks = parentBlocks;
-              this.isBuffering = false;
-              this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
+              if (parentBlocks.length > 0) {
+                this.pickedBlockCode = parentBlocks[0].mortonNumber;
+                this.renderBlocks = parentBlocks;
+              }
             }
+            this.isBuffering = false;
+            this.neighbours = this.octree.getNeighbours(this.pickedBlockCode);
           }
 
           // drop cache blocks if we are at the point budget, this is loose, if all blocks are in view we don't drop blocks but don't load any more as we have exceeded the point budget
