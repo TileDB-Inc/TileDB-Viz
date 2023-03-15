@@ -61,7 +61,7 @@ class ArrayModel {
   visible: Map<number, boolean>;
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
-  initalized = false;
+  isInitalized = false;
   static groundName = 'ground';
 
   constructor(options: TileDBPointCloudOptions) {
@@ -303,6 +303,7 @@ class ArrayModel {
         Vector3.Zero()
       );
       block.entries = data;
+      this.visible.set(block.mortonNumber, true);
       this.loadSystem(block);
       // no need to save entries for LOD 0
       block.entries = undefined;
@@ -523,13 +524,15 @@ class ArrayModel {
   }
 
   public beforeRender(scene: Scene) {
-    this.scene = scene;
-    // initialize blocks here
-    if (!this.initalized) {
-      this.initalized = true;
-      this.calculateBlocks(scene);
+    if (this.useStreaming) {
+      this.scene = scene;
+      // initialize blocks here
+      if (!this.isInitalized) {
+        this.isInitalized = true;
+        this.calculateBlocks(scene);
+      }
+      this.fetchPoints(scene);
     }
-    this.fetchPoints(scene);
   }
 }
 
