@@ -109,9 +109,14 @@ class PointCloudGUI {
     rightPanel.setPadding('16px', '16px', '16px', '16px');
     rightPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     rightPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    rightPanel.addRowDefinition(50, true);
+    rightPanel.addRowDefinition(1);
+    if (model.useStreaming) {
+      rightPanel.addRowDefinition(360, true);
+    } else {
+      rightPanel.addRowDefinition(160, true);
+    }
     rightPanel.addRowDefinition(5, true);
-    rightPanel.addRowDefinition(500, true);
+    rightPanel.addRowDefinition(50, true);
     this.advancedDynamicTexture.addControl(rightPanel);
 
     const button = Button.CreateImageOnlyButton(
@@ -125,7 +130,7 @@ class PointCloudGUI {
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 
-    rightPanel.addControl(button, 0, 0);
+    rightPanel.addControl(button, 3, 0);
 
     // expand and collapse the panel menu on click of button
     let _menu = 0;
@@ -166,9 +171,9 @@ class PointCloudGUI {
     controls.thickness = 0;
     controls.fontSize = 14;
     controls.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    controls.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    controls.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     setControlsColors(sceneColors);
-    rightPanel.addControl(controls, 2, 0);
+    rightPanel.addControl(controls, 1, 0);
 
     if (model.useStreaming) {
       // add streaming performance sliders
