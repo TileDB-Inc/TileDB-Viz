@@ -4,7 +4,6 @@ import {
   PointsCloudSystem,
   Scene,
   SolidParticleSystem,
-  SolidParticle,
   StandardMaterial,
   Vector3,
   Particle,
@@ -14,13 +13,7 @@ import {
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 
-import {
-  decodeMorton,
-  encodeMorton,
-  getMortonRange,
-  Moctree,
-  MoctreeBlock
-} from '../octree';
+import { decodeMorton, encodeMorton, Moctree, MoctreeBlock } from '../octree';
 import {
   DataRequest,
   InitialRequest,
@@ -54,29 +47,18 @@ class ArrayModel {
   tiledbEnv?: string;
   pointType: string;
   pointSize: number;
-  pickedBlockCode = -1;
-  cameraHeight: number | undefined;
-  maxNumCacheBlocks: number;
-  renderBlocks: MoctreeBlock[] = [];
-  isBuffering = false;
-  neighbours?: Generator<MoctreeBlock, undefined, undefined>;
-  basePcs?: SolidParticleSystem | PointsCloudSystem;
   particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
   pointBudget: number;
-  pointCount = 0;
-  fanOut = 3;
   useShader = false;
   useStreaming = false;
   useSPS = false;
   scene?: Scene;
   poolSize: number;
-  particleBuffer: SolidParticle[] = [];
   debugTexture?: AdvancedDynamicTexture;
-  nearest: boolean;
-  visible: Map<number, MoctreeBlock>;
+  visible: Map<number, boolean>;
   pending: MoctreeBlock[];
   static groundName = 'ground';
 
@@ -93,10 +75,7 @@ class ArrayModel {
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
-    this.maxNumCacheBlocks = options.maxNumCacheBlocks || 200;
     this.pointBudget = options.pointBudget || 500_000;
-    this.fanOut = options.fanOut || 100;
-    this.nearest = options.nearest || true;
     if (options.useShader === true) {
       this.useShader = true;
     }
@@ -119,7 +98,7 @@ class ArrayModel {
       SolidParticleSystem | PointsCloudSystem
     >();
 
-    this.visible = new Map<number, MoctreeBlock>();
+    this.visible = new Map<number, boolean>();
     this.pending = [];
   }
 
@@ -162,8 +141,6 @@ class ArrayModel {
       block.entries.X.length > 0 &&
       this.scene
     ) {
-      // profiler is showing we don't need to check if the block is in frustrum but noting a possible optimization here
-
       const debugCoords = decodeMorton(block.mortonNumber);
       console.log(
         block.lod +
@@ -182,8 +159,6 @@ class ArrayModel {
       const zScale = this.zScale;
 
       const numPoints = block.entries.X.length;
-
-      this.pointCount += numPoints;
 
       // when streaming data, scale pointSize by LOD level
       let pointSize = this.pointSize;
@@ -237,10 +212,6 @@ class ArrayModel {
 
         if (block.mortonNumber !== Moctree.startBlockIndex) {
           this.particleSystems.set(block.mortonNumber, sps);
-        } else {
-          this.basePcs = sps;
-          // initialize the loader
-          this.fetchPoints(this.scene, true);
         }
       } else {
         const pcs = new PointsCloudSystem(
@@ -249,7 +220,6 @@ class ArrayModel {
           this.scene,
           { updatable: false }
         );
-        const scene = this.scene;
         pcs.computeBoundingBox = true;
         pcs.addPoints(numPoints, pointBuilder);
 
@@ -257,10 +227,6 @@ class ArrayModel {
           pcs.setParticles();
           if (block.mortonNumber !== Moctree.startBlockIndex) {
             this.particleSystems.set(block.mortonNumber, pcs);
-          } else {
-            this.basePcs = pcs;
-            // initialize the loader
-            this.fetchPoints(scene, true);
           }
           if (this.debug && this.debugTexture && pcs.mesh) {
             this.addDebugLabel(pcs, block.mortonNumber.toString());
@@ -268,71 +234,6 @@ class ArrayModel {
         });
       }
     }
-  }
-
-  private dropParticleSystems(targetPointCount?: number, lessDetail?: boolean) {
-    const candidates: Array<number> = [];
-
-    const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
-      (camera: Camera) => {
-        return !camera.name.startsWith('GUI');
-      }
-    );
-
-    if (this.scene && activeCamera) {
-      const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
-
-      if (targetPointCount && this.maxLevel) {
-        // different style of dropping particle systems, we want to preserve the scene
-        let n = 0;
-
-        // sort by lod and drop high LoDs first
-        const keys = [...this.particleSystems.keys()].sort(
-          (a, b) => 0 - (a > b ? 1 : -1)
-        );
-
-        const highRange = getMortonRange(this.maxLevel - 1);
-        for (const k in keys) {
-          const code = keys[k];
-
-          if (lessDetail) {
-            if (code >= highRange.minMorton && code <= highRange.maxMorton) {
-              // don't count towards point count, we are intentionally getting less detail
-              candidates.push(code);
-              continue;
-            }
-          }
-
-          const pcs = this.particleSystems.get(code);
-
-          if (pcs && pcs.mesh && !pcs.mesh.isInFrustum(planes)) {
-            candidates.push(code);
-            n += pcs.nbParticles;
-            if (n > targetPointCount) {
-              break;
-            }
-          }
-        }
-      } else {
-        // simple lru cache, evict first key if not in frustum, this is fine as we are backed by local storage
-        const k = this.particleSystems.keys().next().value;
-        const pcs = this.particleSystems.get(k);
-        const bounds = pcs?.mesh?.getBoundingInfo();
-        if (pcs && bounds && !bounds.isInFrustum(planes)) {
-          candidates.push(k);
-        }
-      }
-    }
-
-    candidates.map(k => {
-      // delete pcs corresponding to this key
-      const p = this.particleSystems.get(k);
-      if (p) {
-        this.pointCount -= p.nbParticles;
-        p.dispose();
-        this.particleSystems.delete(k);
-      }
-    }, this);
   }
 
   private async fetchBlock(block: MoctreeBlock | undefined) {
@@ -387,10 +288,8 @@ class ArrayModel {
     this.octree = new Moctree(
       new Vector3(-spanX, 0, -spanY),
       new Vector3(spanX, zmax - zmin, spanY),
-      this.maxLevel,
-      this.fanOut
+      this.maxLevel
     );
-    this.neighbours = this.octree.getNeighbours(Moctree.startBlockIndex);
 
     // maintain compatibility with directly loading data
     if (data) {
@@ -445,10 +344,6 @@ class ArrayModel {
         this.loadSystem.bind(this),
         this.poolSize
       );
-
-      // scene.onAfterRenderObservable.add((scene: Scene) => {
-      //   this.afterRender(scene);
-      // });
 
       scene.onBeforeRenderObservable.add((scene: Scene) => {
         this.beforeRender(scene);
@@ -521,25 +416,25 @@ class ArrayModel {
         );
         this.octree.knownBlocks.set(morton, v);
 
-        const partsPerDimension = Math.pow(2, parts[0]);
-        const StepX = ranges[0] / partsPerDimension;
-        const StepY = ranges[1] / partsPerDimension;
-        const StepZ = ranges[2] / partsPerDimension;
+        const blocksPerDimension = Math.pow(2, parts[0]);
+        const stepX = ranges[0] / blocksPerDimension;
+        const stepY = ranges[1] / blocksPerDimension;
+        const stepZ = ranges[2] / blocksPerDimension;
 
         this.octree.knownBlocks.set(morton, v);
-        const partMin = new Vector3(
-          this.octree.minPoint.x + parts[1] * StepX,
-          this.octree.minPoint.y + parts[3] * StepY,
-          this.octree.minPoint.z + parts[2] * StepZ
+        const minPoint = new Vector3(
+          this.octree.minPoint.x + parts[1] * stepX,
+          this.octree.minPoint.y + parts[3] * stepY,
+          this.octree.minPoint.z + parts[2] * stepZ
         );
-        const partMax = new Vector3(
-          this.octree.minPoint.x + (parts[1] + 1) * StepX,
-          this.octree.minPoint.y + (parts[3] + 1) * StepY,
-          this.octree.minPoint.z + (parts[2] + 1) * StepZ
+        const maxPoint = new Vector3(
+          this.octree.minPoint.x + (parts[1] + 1) * stepX,
+          this.octree.minPoint.y + (parts[3] + 1) * stepY,
+          this.octree.minPoint.z + (parts[2] + 1) * stepZ
         );
         this.octree.blocklist.set(
           morton,
-          new MoctreeBlock(parts[0], morton, partMin, partMax)
+          new MoctreeBlock(parts[0], morton, minPoint, maxPoint)
         );
       }
     });
@@ -550,6 +445,8 @@ class ArrayModel {
   }
 
   public beforeRender(scene: Scene) {
+    this.scene = scene;
+
     // Find the active camera of the scene
     const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
       (camera: Camera) => {
@@ -573,60 +470,66 @@ class ArrayModel {
     const root = this.octree.blocklist.get(
       encodeMorton(new Vector3(0, 0, 0), 0)
     );
-    const rootScore =
-      (height * root.boundingInfo.boundingSphere.radiusWorld) /
-      (slope *
-        activeCamera.position
-          .subtract(root.boundingInfo.boundingSphere.centerWorld)
-          .length());
-    queue.insert(rootScore, root);
-    this.pending = [];
-    let points = 0;
+    if (root) {
+      const rootScore =
+        (height * root.boundingInfo.boundingSphere.radiusWorld) /
+        (slope *
+          activeCamera.position
+            .subtract(root.boundingInfo.boundingSphere.centerWorld)
+            .length());
+      queue.insert(rootScore, root);
+      this.pending = [];
+      let points = 0;
 
-    for (const [key, value] of this.visible) {
-      this.visible.set(key, false);
-    }
-
-    while (!queue.isEmpty() && points < 2000000) {
-      const block = queue.extractMax().octreeBlock;
-
-      if (!block.boundingInfo.isInFrustum(planes)) {
-        continue;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for (const [key, _] of this.visible) {
+        this.visible.set(key, false);
       }
 
-      if (!this.visible.has(block.mortonNumber)) {
-        this.pending.push(block);
-      } else {
-        this.visible.set(block.mortonNumber, true);
-      }
+      while (!queue.isEmpty() && points < this.pointBudget) {
+        const block = queue.extractMax().octreeBlock;
+        if (!block) {
+          break;
+        }
 
-      points += this.octree.knownBlocks.get(block.mortonNumber);
-
-      // Caclulate children
-      for (let i = 0; i < 8; ++i) {
-        const code = (block.mortonNumber << 3) + i;
-
-        if (!this.octree.knownBlocks.has(code)) {
+        if (!block.boundingInfo.isInFrustum(planes)) {
           continue;
         }
 
-        const child = this.octree.blocklist.get(code);
-        const childScore =
-          (height * child.boundingInfo.boundingSphere.radiusWorld) /
-          (slope *
-            activeCamera.position
-              .subtract(child.boundingInfo.boundingSphere.centerWorld)
-              .length());
-
-        if (childScore < screenSizeLimit) {
-          continue;
+        if (!this.visible.has(block.mortonNumber)) {
+          this.pending.push(block);
+        } else {
+          this.visible.set(block.mortonNumber, true);
         }
 
-        queue.insert(childScore, child);
-      }
-    }
+        points += this.octree.knownBlocks.get(block.mortonNumber) || 0;
 
-    this.fetchPoints(scene);
+        // Calculate children
+        for (let i = 0; i < 8; ++i) {
+          const code = (block.mortonNumber << 3) + i;
+
+          if (!this.octree.knownBlocks.has(code)) {
+            continue;
+          }
+
+          const child = this.octree.blocklist.get(code);
+          if (child) {
+            const childScore =
+              (height * child.boundingInfo.boundingSphere.radiusWorld) /
+              (slope *
+                activeCamera.position
+                  .subtract(child.boundingInfo.boundingSphere.centerWorld)
+                  .length());
+
+            if (childScore < screenSizeLimit) {
+              continue;
+            }
+            queue.insert(childScore, child);
+          }
+        }
+      }
+      this.fetchPoints(scene);
+    }
   }
 }
 

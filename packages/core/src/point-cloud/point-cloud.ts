@@ -262,18 +262,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
           if (pickResult) {
             pickOrigin = pickResult.pickedPoint;
-          } else {
-            const ray = this.cameras[0].getForwardRay();
-            const block = this.model.octree.getContainingBlocksByRay(
-              ray,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              this.model.maxLevel!
-            )[0];
-            pickOrigin = block.minPoint.add(
-              block.maxPoint.subtract(block.minPoint).scale(0.5)
-            );
           }
-
           if (pickOrigin) {
             const normal = this.cameras[0].position
               .subtract(pickOrigin)

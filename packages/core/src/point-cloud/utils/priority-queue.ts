@@ -2,7 +2,7 @@ import { MoctreeBlock } from '../octree/moctree';
 
 export class Block {
   public score: number = Number.MAX_VALUE;
-  public octreeBlock: MoctreeBlock;
+  public octreeBlock?: MoctreeBlock;
 }
 
 export class PriorityQueue {
@@ -15,7 +15,7 @@ export class PriorityQueue {
       (_, index) =>
         ({
           score: -1,
-          octreeBlock: null
+          octreeBlock: undefined
         } as Block)
     );
   }
@@ -77,7 +77,7 @@ export class PriorityQueue {
     }
 
     // If i not same as maxIndex
-    if (index != maxIndex) {
+    if (index !== maxIndex) {
       this.swap(index, maxIndex);
       this.shiftDown(maxIndex);
     }
@@ -144,6 +144,6 @@ export class PriorityQueue {
   }
 
   isEmpty(): boolean {
-    return this.size == -1;
+    return this.size === -1;
   }
 }
