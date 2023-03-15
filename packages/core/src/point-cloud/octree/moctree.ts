@@ -57,6 +57,7 @@ function getMortonRange(lod: number) {
 
 class Moctree {
   knownBlocks: Map<number, number>;
+  blocklist: Map<number, MoctreeBlock>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [
     new Vector3(0, 0, 0),
@@ -76,6 +77,7 @@ class Moctree {
     public fanOut: number
   ) {
     this.knownBlocks = new Map<number, number>();
+    this.blocklist = new Map<number, MoctreeBlock>();
   }
 
   public getNearestPickCode(
