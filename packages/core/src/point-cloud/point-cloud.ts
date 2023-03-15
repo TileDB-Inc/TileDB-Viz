@@ -100,6 +100,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 this.options.cameraLocation
               );
               this.cameras[this.activeCamera].position = cameraPosition;
+              this.model.calculateBlocks(this.scene);
             }
           }
 
@@ -124,6 +125,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 this.engine
               );
             }
+            this.model.calculateBlocks(this.scene);
           }
 
           // toggl between background colors
@@ -270,7 +272,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             plane = Plane.FromPositionAndNormal(pickOrigin, normal);
             isPanning = true;
           }
-          this.cameras[0].detachControl();
         }
       };
 
@@ -280,20 +281,13 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const event = eventData.event as IWheelEvent;
             const delta = event.deltaY;
             if (delta) {
-              if (delta < 0) {
-                // more detail
-                this.model.fetchPoints(scene, true);
-              } else {
-                // less detail
-                this.model.fetchPoints(scene, true, true);
-              }
+              this.model.calculateBlocks(scene);
             }
             break;
           }
           case PointerEventTypes.POINTERUP: {
             isPanning = false;
-            this.model.fetchPoints(scene, true);
-            this.cameras[0].attachControl(true, true);
+            this.model.calculateBlocks(scene);
             break;
           }
           case PointerEventTypes.POINTERMOVE: {

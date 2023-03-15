@@ -56,7 +56,6 @@ function getMortonRange(lod: number) {
 }
 
 class Moctree {
-  knownBlocks: Map<number, number>;
   blocklist: Map<number, MoctreeBlock>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [
@@ -75,7 +74,6 @@ class Moctree {
     public maxPoint: Vector3,
     public maxDepth: number
   ) {
-    this.knownBlocks = new Map<number, number>();
     this.blocklist = new Map<number, MoctreeBlock>();
   }
 }
@@ -92,6 +90,7 @@ class MoctreeBlock {
     public mortonNumber: number,
     minPoint: Vector3,
     maxPoint: Vector3,
+    pointCount = -1,
     entries?: SparseResult
   ) {
     this.minPoint = minPoint;
@@ -99,6 +98,10 @@ class MoctreeBlock {
     if (entries) {
       this.entries = entries;
       this.pointCount = this.entries.X.length;
+    }
+
+    if (pointCount > -1) {
+      this.pointCount = pointCount;
     }
 
     this.boundingInfo = new BoundingInfo(this.minPoint, this.maxPoint);
