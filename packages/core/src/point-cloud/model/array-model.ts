@@ -62,6 +62,7 @@ class ArrayModel {
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
   isInitalized = false;
+  blockQueue?: PriorityQueue;
   static groundName = 'ground';
 
   constructor(options: TileDBPointCloudOptions) {
@@ -454,7 +455,14 @@ class ArrayModel {
 
     const slope = Math.tan(activeCamera.fov / 2);
     const height = scene.getEngine()._gl.canvas.height / 2;
-    const queue = new PriorityQueue(this.octree.blocklist.size);
+    if (!this.blockQueue)
+    {
+      this.blockQueue = new PriorityQueue(this.octree.blocklist.size);
+    }
+    else
+    {
+      this.blockQueue.reset();
+    }
     const root = this.octree.blocklist.get(
       encodeMorton(new Vector3(0, 0, 0), 0)
     );
@@ -465,7 +473,7 @@ class ArrayModel {
           activeCamera.position
             .subtract(root.boundingInfo.boundingSphere.centerWorld)
             .length());
-      queue.insert(rootScore, root);
+      this.blockQueue.insert(rootScore, root);
       this.pending = [];
       let points = 0;
 
@@ -474,8 +482,8 @@ class ArrayModel {
         this.visible.set(key, false);
       }
 
-      while (!queue.isEmpty() && points < this.pointBudget) {
-        const block = queue.extractMax().octreeBlock;
+      while (!this.blockQueue.isEmpty() && points < this.pointBudget) {
+        const block = this.blockQueue.extractMax().octreeBlock;
         if (!block) {
           break;
         }
@@ -513,13 +521,15 @@ class ArrayModel {
             if (childScore < this.screenSizeLimit) {
               continue;
             }
-            queue.insert(childScore, child);
+            this.blockQueue.insert(childScore, child);
           }
         }
       }
       if (points > this.pointBudget) {
         console.log('Point budget reached');
       }
+
+      this.pending.reverse();
     }
   }
 

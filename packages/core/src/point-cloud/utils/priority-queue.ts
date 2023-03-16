@@ -146,4 +146,9 @@ export class PriorityQueue {
   isEmpty(): boolean {
     return this.size === -1;
   }
+
+  reset(): void
+  {
+    this.size = -1;
+  }
 }
