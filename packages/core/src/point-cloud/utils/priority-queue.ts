@@ -147,8 +147,7 @@ export class PriorityQueue {
     return this.size === -1;
   }
 
-  reset(): void
-  {
+  reset(): void {
     this.size = -1;
   }
 }

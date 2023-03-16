@@ -455,12 +455,9 @@ class ArrayModel {
 
     const slope = Math.tan(activeCamera.fov / 2);
     const height = scene.getEngine()._gl.canvas.height / 2;
-    if (!this.blockQueue)
-    {
+    if (!this.blockQueue) {
       this.blockQueue = new PriorityQueue(this.octree.blocklist.size);
-    }
-    else
-    {
+    } else {
       this.blockQueue.reset();
     }
     const root = this.octree.blocklist.get(
