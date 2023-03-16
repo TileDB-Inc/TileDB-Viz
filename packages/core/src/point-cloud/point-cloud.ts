@@ -128,6 +128,15 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             this.model.calculateBlocks(this.scene);
           }
 
+          switch (kbInfo.event.key) {
+            case 'ArrowUp':
+            case 'ArrowDown':
+            case 'ArrowLeft':
+            case 'ArrowRight':
+              this.model.calculateBlocks(this.scene);
+              break;
+          }
+
           // toggl between background colors
           if (kbInfo.event.key === 'b') {
             if (this.model.colorScheme === 'dark') {
