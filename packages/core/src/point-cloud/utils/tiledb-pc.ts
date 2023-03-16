@@ -132,17 +132,9 @@ export interface TileDBPointCloudOptions
    */
   edlNeighbours?: number;
   /**
-   * Number of blocks in LRU cache
-   */
-  maxNumCacheBlocks?: number;
-  /**
    * Point budget
    */
   pointBudget?: number;
-  /**
-   * Number of blocks to fan out when buffering
-   */
-  fanOut?: number;
   /**
    * Use shaders, on low end system might not want to use shaders
    */
@@ -159,10 +151,6 @@ export interface TileDBPointCloudOptions
    * Web worker request pool size
    */
   workerPoolSize?: number;
-  /**
-   * Use nearest octant for highest LoD, alternatively ray tracing is use to determine focal point
-   */
-  nearest?: boolean;
 }
 
 export async function getPointCloud(options: TileDBPointCloudOptions) {

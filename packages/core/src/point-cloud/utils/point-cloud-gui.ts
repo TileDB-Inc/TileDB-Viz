@@ -189,39 +189,6 @@ class PointCloudGUI {
           return +value.toFixed(1);
         }
       );
-
-      const updateFanOut = function (value: number) {
-        model.fanOut = value;
-      };
-
-      performanceGroup.addSlider(
-        'Fan out',
-        updateFanOut,
-        ' ',
-        1,
-        100,
-        model.fanOut,
-        (value: number) => {
-          return +value.toFixed(1);
-        }
-      );
-
-      const updateBlocks = function (value: number) {
-        model.maxNumCacheBlocks = value;
-      };
-
-      performanceGroup.addSlider(
-        'Max cached blocks',
-        updateBlocks,
-        ' ',
-        20,
-        500,
-        model.maxNumCacheBlocks,
-        (value: number) => {
-          return +value.toFixed(0);
-        }
-      );
-
       controls.addGroup(performanceGroup);
     }
 
