@@ -279,6 +279,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               .subtract(pickOrigin)
               .normalize();
             plane = Plane.FromPositionAndNormal(pickOrigin, normal);
+            this.cameras[0].detachControl();
             isPanning = true;
           }
         }
@@ -296,6 +297,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           }
           case PointerEventTypes.POINTERUP: {
             isPanning = false;
+            this.cameras[0].attachControl(true, true);
             this.model.calculateBlocks(scene);
             break;
           }
