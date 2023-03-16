@@ -120,7 +120,12 @@ describe('moctree tests', () => {
     expect(blockData.size).toBe(1 + 8 - 1 + 64 - 8);
 
     // unit cube
-    const octree = new Moctree(Vector3.Zero(), new Vector3(1, 1, 1), 2, 10);
+    const octree = new Moctree(Vector3.Zero(), new Vector3(1, 1, 1), 2);
+    const ranges = [
+      octree.maxPoint.x - octree.minPoint.x,
+      octree.maxPoint.y - octree.minPoint.y,
+      octree.maxPoint.z - octree.minPoint.z
+    ];
 
     blockData.forEach((v, k) => {
       const parts = k.split('-').map(Number);
@@ -129,11 +134,30 @@ describe('moctree tests', () => {
         new Vector3(parts[1], parts[3], parts[2]),
         parts[0]
       );
-      octree.knownBlocks.set(morton, v);
+      const blocksPerDimension = Math.pow(2, parts[0]);
+      const stepX = ranges[0] / blocksPerDimension;
+      const stepY = ranges[1] / blocksPerDimension;
+      const stepZ = ranges[2] / blocksPerDimension;
+
+      const minPoint = new Vector3(
+        octree.minPoint.x + parts[1] * stepX,
+        octree.minPoint.y + parts[3] * stepY,
+        octree.minPoint.z + parts[2] * stepZ
+      );
+      const maxPoint = new Vector3(
+        octree.minPoint.x + (parts[1] + 1) * stepX,
+        octree.minPoint.y + (parts[3] + 1) * stepY,
+        octree.minPoint.z + (parts[2] + 1) * stepZ
+      );
+
+      octree.blocklist.set(
+        morton,
+        new MoctreeBlock(parts[0], morton, minPoint, maxPoint)
+      );
     });
 
-    expect(octree.knownBlocks.has(14)).toBe(true);
-    expect(octree.knownBlocks.has(15)).toBe(false);
+    expect(octree.blocklist.has(14)).toBe(true);
+    expect(octree.blocklist.has(15)).toBe(false);
   });
 
   test('create entries', () => {
@@ -151,6 +175,7 @@ describe('moctree tests', () => {
       1,
       Vector3.Zero(),
       new Vector3(1, 1, 1),
+      0,
       entries
     );
 

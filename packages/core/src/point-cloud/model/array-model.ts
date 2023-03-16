@@ -60,6 +60,8 @@ class ArrayModel {
   debugTexture?: AdvancedDynamicTexture;
   visible: Map<number, boolean>;
   pending: MoctreeBlock[];
+  screenSizeLimit = 20;
+  isInitalized = false;
   static groundName = 'ground';
 
   constructor(options: TileDBPointCloudOptions) {
@@ -301,6 +303,7 @@ class ArrayModel {
         Vector3.Zero()
       );
       block.entries = data;
+      this.visible.set(block.mortonNumber, true);
       this.loadSystem(block);
       // no need to save entries for LOD 0
       block.entries = undefined;
@@ -352,12 +355,7 @@ class ArrayModel {
     return scene;
   }
 
-  public async fetchPoints(
-    scene: Scene,
-    hasChanged?: boolean,
-    lessDetail?: boolean
-  ) {
-    // find centre point and load higher resolution around it
+  public async fetchPoints(scene: Scene) {
     if (this.workerPool?.isReady()) {
       const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
         (camera: Camera) => {
@@ -414,14 +412,12 @@ class ArrayModel {
           new Vector3(parts[1], parts[3], parts[2]),
           parts[0]
         );
-        this.octree.knownBlocks.set(morton, v);
 
         const blocksPerDimension = Math.pow(2, parts[0]);
         const stepX = ranges[0] / blocksPerDimension;
         const stepY = ranges[1] / blocksPerDimension;
         const stepZ = ranges[2] / blocksPerDimension;
 
-        this.octree.knownBlocks.set(morton, v);
         const minPoint = new Vector3(
           this.octree.minPoint.x + parts[1] * stepX,
           this.octree.minPoint.y + parts[3] * stepY,
@@ -434,19 +430,13 @@ class ArrayModel {
         );
         this.octree.blocklist.set(
           morton,
-          new MoctreeBlock(parts[0], morton, minPoint, maxPoint)
+          new MoctreeBlock(parts[0], morton, minPoint, maxPoint, v)
         );
       }
     });
   }
 
-  public afterRender(scene: Scene) {
-    this.fetchPoints(scene);
-  }
-
-  public beforeRender(scene: Scene) {
-    this.scene = scene;
-
+  public calculateBlocks(scene: Scene) {
     // Find the active camera of the scene
     const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
       (camera: Camera) => {
@@ -463,10 +453,8 @@ class ArrayModel {
     const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
 
     const slope = Math.tan(activeCamera.fov / 2);
-    const height = this.scene.getEngine()._gl.canvas.height / 2;
-    const queue = new PriorityQueue(this.octree.knownBlocks.size);
-
-    const screenSizeLimit = 20;
+    const height = scene.getEngine()._gl.canvas.height / 2;
+    const queue = new PriorityQueue(this.octree.blocklist.size);
     const root = this.octree.blocklist.get(
       encodeMorton(new Vector3(0, 0, 0), 0)
     );
@@ -502,13 +490,14 @@ class ArrayModel {
           this.visible.set(block.mortonNumber, true);
         }
 
-        points += this.octree.knownBlocks.get(block.mortonNumber) || 0;
+        points +=
+          this.octree.blocklist.get(block.mortonNumber)?.pointCount || 0;
 
         // Calculate children
         for (let i = 0; i < 8; ++i) {
           const code = (block.mortonNumber << 3) + i;
 
-          if (!this.octree.knownBlocks.has(code)) {
+          if (!this.octree.blocklist.has(code)) {
             continue;
           }
 
@@ -521,12 +510,26 @@ class ArrayModel {
                   .subtract(child.boundingInfo.boundingSphere.centerWorld)
                   .length());
 
-            if (childScore < screenSizeLimit) {
+            if (childScore < this.screenSizeLimit) {
               continue;
             }
             queue.insert(childScore, child);
           }
         }
+      }
+      if (points > this.pointBudget) {
+        console.log('Point budget reached');
+      }
+    }
+  }
+
+  public beforeRender(scene: Scene) {
+    if (this.useStreaming) {
+      this.scene = scene;
+      // initialize blocks here
+      if (!this.isInitalized) {
+        this.isInitalized = true;
+        this.calculateBlocks(scene);
       }
       this.fetchPoints(scene);
     }
