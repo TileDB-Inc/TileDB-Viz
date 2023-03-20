@@ -14,7 +14,7 @@ import {
   RenderTargetTexture
 } from '@babylonjs/core';
 
-import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
+import { AdvancedDynamicTexture } from '@babylonjs/gui';
 
 import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
 import {
@@ -68,7 +68,7 @@ class ArrayModel {
   octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
-  isInitalized = false;
+  isInitialized = false;
   blockQueue!: PriorityQueue;
   static groundName = 'ground';
   renderTargets: RenderTargetTexture[];
@@ -108,10 +108,6 @@ class ArrayModel {
       options.workerPoolSize || navigator.hardwareConcurrency || 5;
     this.debug = options.debug || false;
 
-    if (this.debug) {
-      this.debugTexture = AdvancedDynamicTexture.CreateFullscreenUI('Debug UI');
-    }
-
     this.particleSystems = new Map<
       number,
       SolidParticleSystem | PointsCloudSystem
@@ -121,32 +117,6 @@ class ArrayModel {
     this.loaded = new Map<number, boolean>();
     this.visible = new Map<number, boolean>();
     this.pending = [];
-  }
-
-  private addDebugLabel(
-    pcs: PointsCloudSystem | SolidParticleSystem,
-    text: string
-  ) {
-    if (pcs && pcs.mesh && this.debugTexture) {
-      pcs.mesh.showBoundingBox = true;
-
-      // create a fixed size label
-      const rect = new Rectangle();
-      rect.width = '50px';
-      rect.height = '50px';
-      rect.cornerRadius = 20;
-      rect.color = 'Orange';
-      rect.thickness = 4;
-      rect.background = 'green';
-      this.debugTexture.addControl(rect);
-
-      const label = new TextBlock();
-      label.text = text;
-      rect.addControl(label);
-
-      rect.linkWithMesh(pcs.mesh);
-      rect.linkOffsetY = -50;
-    }
   }
 
   private loadSystem(block: MoctreeBlock) {
@@ -221,13 +191,11 @@ class ArrayModel {
         sps.computeBoundingBox = true;
         sps.addShape(box, numPoints, { positionFunction: pointBuilder });
         sps.buildMesh();
-        box.dispose();
-
-        if (this.debug && this.debugTexture && sps.mesh) {
-          this.addDebugLabel(sps, block.mortonNumber.toString());
-        }
 
         if (block.mortonNumber !== Moctree.startBlockIndex) {
+          if (this.debug && sps.mesh) {
+            sps.mesh.showBoundingBox = true;
+          }
           this.particleSystems.set(block.mortonNumber, sps);
         }
       } else {
@@ -242,10 +210,12 @@ class ArrayModel {
         pcs.addPoints(numPoints, pointBuilder);
 
         pcs.buildMeshAsync().then(() => {
-          this.particleSystems.set(block.mortonNumber, pcs);
+          if (block.mortonNumber !== Moctree.startBlockIndex) {
+            this.particleSystems.set(block.mortonNumber, pcs);
 
-          if (this.debug && this.debugTexture && pcs.mesh) {
-            this.addDebugLabel(pcs, block.mortonNumber.toString());
+            if (this.debug && pcs.mesh) {
+              pcs.mesh.showBoundingBox = true;
+            }
           }
 
           if (!pcs.mesh || !pcs.mesh.material) {
@@ -681,8 +651,8 @@ class ArrayModel {
     if (this.useStreaming) {
       this.scene = scene;
       // initialize blocks here
-      if (!this.isInitalized) {
-        this.isInitalized = true;
+      if (!this.isInitialized) {
+        this.isInitialized = true;
         this.calculateBlocks(scene);
       }
       this.fetchPoints(scene);

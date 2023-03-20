@@ -14,7 +14,6 @@ import {
   RadioGroup,
   SelectionPanel,
   SliderGroup,
-  StackPanel,
   TextBlock,
   TextWrapping,
   InputText
@@ -360,11 +359,11 @@ class PointCloudGUI {
     fileStackPanel.addControl(loadButton);
 
     const rightPanel = new Grid();
-    rightPanel.width = '250px';
+    rightPanel.width = '200px';
     rightPanel.setPadding('16px', '16px', '16px', '16px');
     rightPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     rightPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    rightPanel.addRowDefinition(50, true);
+    rightPanel.addRowDefinition(40, true);
     rightPanel.addRowDefinition(5, true);
     rightPanel.addRowDefinition(500, true);
     this.advancedDynamicTexture.addControl(rightPanel);
@@ -415,7 +414,7 @@ class PointCloudGUI {
     controls.width = 1;
     controls.height = 1;
     controls.thickness = 0;
-    controls.fontSize = 14;
+    controls.fontSize = 12;
     controls.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     controls.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     setControlsColors(sceneColors);
@@ -441,6 +440,44 @@ class PointCloudGUI {
         }
       );
       controls.addGroup(performanceGroup);
+
+      // add radio buttons to turn of octant bounding boxes
+      const octantsGroup = new RadioGroup('Show octants');
+
+      // eslint-disable-next-line no-inner-declarations
+      function redrawOctants(debug: boolean) {
+        model.particleSystems.forEach((pcs, k) => {
+          if (pcs.mesh) {
+            pcs.mesh.showBoundingBox = debug;
+          }
+        });
+      }
+
+      const setOctant = (but: ColorScheme) => {
+        switch (but) {
+          case 0:
+            redrawOctants(false);
+            model.debug = false;
+            break;
+          case 1:
+            redrawOctants(true);
+            model.debug = true;
+            break;
+        }
+      };
+
+      let octantsOn = false;
+      let octantsOff = false;
+      if (model.debug === false) {
+        octantsOff = true;
+      }
+      if (model.debug === true) {
+        octantsOn = true;
+      }
+
+      octantsGroup.addRadio('off', setOctant, octantsOff);
+      octantsGroup.addRadio('on', setOctant, octantsOn);
+      controls.addGroup(octantsGroup);
     }
 
     // add color scheme radio buttons
