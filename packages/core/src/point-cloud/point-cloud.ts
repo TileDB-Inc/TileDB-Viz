@@ -35,6 +35,7 @@ import getTileDBClient from '../utils/getTileDBClient';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
+import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -394,12 +395,29 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           (result: ISceneLoaderAsyncResult) => {
             for (const mesh of result.meshes) {
               if (mesh.material) {
-                mesh.material.customDepthTestMaterialPlugin =
-                  new CustomDepthTestMaterialPlugin(mesh.material);
-                mesh.material.customDepthTestMaterialPlugin.isEnabled = true;
-                mesh.material.customDepthTestMaterialPlugin.linearDepthTexture =
-                  this.renderTargets[0];
-                this.renderTargets[1].renderList.push(mesh);
+                const depthMaterial = mesh.material.clone('DepthMaterial');
+                depthMaterial.lineraDepthMaterialPlugin =
+                  new LinearDepthMaterialPlugin(depthMaterial);
+                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+                this.renderTargets[2].renderList.push(mesh);
+                this.renderTargets[2].setMaterialForRendering(
+                  mesh,
+                  depthMaterial
+                );
+
+                const defaultMaterial = mesh.material.clone('defaultMaterial');
+                defaultMaterial.customDepthTestMaterialPlugin =
+                  new CustomDepthTestMaterialPlugin(defaultMaterial);
+                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
+                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
+                this.renderTargets[0];
+
+                  this.renderTargets[1].renderList.push(mesh);
+                  this.renderTargets[1].setMaterialForRendering(
+                  mesh,
+                  defaultMaterial
+                );
               }
             }
           }
