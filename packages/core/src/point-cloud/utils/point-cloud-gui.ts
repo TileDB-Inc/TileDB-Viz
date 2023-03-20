@@ -1,4 +1,10 @@
-import { Scene } from '@babylonjs/core';
+import {
+  Scene,
+  SceneLoader,
+  Vector3,
+  Space,
+  ISceneLoaderAsyncResult
+} from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
   Button,
@@ -7,12 +13,16 @@ import {
   RadioGroup,
   SelectionPanel,
   SliderGroup,
-  //StackPanel,
+  StackPanel,
   TextBlock,
-  TextWrapping
+  TextWrapping,
+  InputText
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
 import { setSceneColors, updateSceneColors } from './scene-colors';
+import getTileDBClient from '../../utils/getTileDBClient';
+import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
+import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -103,6 +113,232 @@ class PointCloudGUI {
 
   public async init(scene: Scene, model: ArrayModel) {
     let sceneColors = setSceneColors(model.colorScheme as string);
+
+    const leftPanel = new Grid();
+    leftPanel.width = '300px';
+    leftPanel.setPadding('16px', '16px', '16px', '16px');
+    leftPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    leftPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    leftPanel.addRowDefinition(50, true);
+    leftPanel.addRowDefinition(5, true);
+    leftPanel.addRowDefinition(500, true);
+    this.advancedDynamicTexture.addControl(leftPanel);
+
+    const fileButton = Button.CreateImageOnlyButton(
+      'button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
+    );
+    fileButton.width = '48px';
+    fileButton.height = '48px';
+    fileButton.background = 'transparent';
+    fileButton.thickness = 0;
+    fileButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    fileButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    leftPanel.addControl(fileButton, 0, 0);
+
+    let _filemenu = 0;
+    const showFileControls = function () {
+      if (_filemenu === 0) {
+        _filemenu = 1;
+        fileStackPanel.isVisible = true;
+      } else if (_filemenu === 1) {
+        fileStackPanel.isVisible = false;
+        _filemenu = 0;
+      }
+      return _filemenu;
+    };
+
+    fileButton.onPointerUpObservable.add(() => {
+      showFileControls();
+    });
+
+    const fileStackPanel = new StackPanel('stackPanel');
+    fileStackPanel.width = 1;
+    fileStackPanel.height = '500px';
+    fileStackPanel.background = 'rgba(0,0,0,0.8)';
+    fileStackPanel.setPaddingInPixels(12, 12, 12, 12);
+    fileStackPanel.descendantsOnlyPadding = true;
+    fileStackPanel.isVisible = false;
+    leftPanel.addControl(fileStackPanel, 2, 0);
+
+    const namespaceLabel = new TextBlock('inputLabel', 'Namespace');
+    namespaceLabel.width = 1;
+    namespaceLabel.color = 'white';
+    namespaceLabel.height = '30px';
+    namespaceLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    fileStackPanel.addControl(namespaceLabel);
+
+    const namespaceInput = new InputText('namespaceInput');
+    namespaceInput.height = '40px';
+    namespaceInput.color = 'white';
+    namespaceInput.text = 'TileDB-Inc';
+    namespaceInput.placeholderText = 'Namespace';
+    namespaceInput.width = 1;
+
+    fileStackPanel.addControl(namespaceInput);
+
+    const fileLabel = new TextBlock('fileLabel', 'File');
+    fileLabel.width = 1;
+    fileLabel.color = 'white';
+    fileLabel.height = '30px';
+    fileLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    fileStackPanel.addControl(fileLabel);
+
+    const fileInput = new InputText('fileInput');
+    fileInput.height = '40px';
+    fileInput.color = 'white';
+    fileInput.text = 'dragon.glb';
+    fileInput.placeholderText = 'File';
+    fileInput.width = 1;
+
+    fileStackPanel.addControl(fileInput);
+
+    const positionGrid = new Grid('positionGrid');
+    positionGrid.addColumnDefinition(0.5, false);
+    positionGrid.addColumnDefinition(0.5, false);
+    positionGrid.addRowDefinition(40, true);
+    positionGrid.addRowDefinition(40, true);
+    positionGrid.addRowDefinition(40, true);
+    positionGrid.addRowDefinition(40, true);
+    positionGrid.width = 1;
+    positionGrid.setPaddingInPixels(4, 0, 4, 0);
+    positionGrid.descendantsOnlyPadding = true;
+    positionGrid.height = '190px';
+
+    const positionXLabel = new TextBlock('positionXLabel', 'Translation X');
+    positionXLabel.width = 1;
+    positionXLabel.color = 'white';
+    positionXLabel.height = '30px';
+    positionXLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    const positionYLabel = new TextBlock('positionYLabel', 'Translation Y');
+    positionYLabel.width = 1;
+    positionYLabel.color = 'white';
+    positionYLabel.height = '30px';
+    positionYLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    const positionZLabel = new TextBlock('positionZLabel', 'Translation Z');
+    positionZLabel.width = 1;
+    positionZLabel.color = 'white';
+    positionZLabel.height = '30px';
+    positionZLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    const scaleLabel = new TextBlock('scaleLabel', 'Scale');
+    scaleLabel.width = 1;
+    scaleLabel.color = 'white';
+    scaleLabel.height = '30px';
+    scaleLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    positionGrid.addControl(positionXLabel, 0, 0);
+    positionGrid.addControl(positionYLabel, 1, 0);
+    positionGrid.addControl(positionZLabel, 2, 0);
+    positionGrid.addControl(scaleLabel, 3, 0);
+
+    const positionXInput = new InputText('positionXInput');
+    positionXInput.height = 1;
+    positionXInput.color = 'white';
+    positionXInput.text = '0.000';
+    positionXInput.placeholderText = 'Translation X';
+    positionXInput.width = 1;
+
+    const positionYInput = new InputText('positionYInput');
+    positionYInput.height = 1;
+    positionYInput.color = 'white';
+    positionYInput.text = '0.000';
+    positionYInput.placeholderText = 'Translation Y';
+    positionYInput.width = 1;
+
+    const positionZInput = new InputText('positionZInput');
+    positionZInput.height = 1;
+    positionZInput.color = 'white';
+    positionZInput.text = '0.000';
+    positionZInput.placeholderText = 'Translation Z';
+    positionZInput.width = 1;
+
+    const scaleInput = new InputText('scaleInput');
+    scaleInput.height = 1;
+    scaleInput.color = 'white';
+    scaleInput.text = '1.000';
+    scaleInput.placeholderText = 'Scale';
+    scaleInput.width = 1;
+
+    positionGrid.addControl(positionXInput, 0, 1);
+    positionGrid.addControl(positionYInput, 1, 1);
+    positionGrid.addControl(positionZInput, 2, 1);
+    positionGrid.addControl(scaleInput, 3, 1);
+
+    fileStackPanel.addControl(positionGrid);
+
+    const loadButton = Button.CreateSimpleButton('loadButton', 'Load Model');
+    loadButton.width = 1;
+    loadButton.height = '40px';
+    loadButton.background = 'rgb(120, 150, 30)';
+
+    loadButton.onPointerUpObservable.add(() => {
+      const config: Record<string, string> = {};
+      config.apiKey = process.env.STORYBOOK_REST_TOKEN as string;
+
+      const client = getTileDBClient(config);
+
+      client
+        .getFileContents(namespaceInput.text, fileInput.text)
+        .then((response: { buffer: ArrayBuffer; originalFileName: string }) => {
+          const filetype = '.' + response.originalFileName.split('.').pop();
+
+          SceneLoader.ImportMeshAsync(
+            '',
+            '',
+            new File(
+              [response.buffer.slice(0, response.buffer.byteLength - 1)],
+              response.originalFileName
+            ),
+            scene,
+            null,
+            filetype
+          ).then((result: ISceneLoaderAsyncResult) => {
+            const x = parseFloat(positionXInput.text.replace('.', ','));
+            const y = parseFloat(positionYInput.text.replace('.', ','));
+            const z = parseFloat(positionZInput.text.replace('.', ','));
+
+            const scale = parseFloat(scaleInput.text.replace('.', ','));
+
+            result.meshes[0].scaling = new Vector3(scale, scale, scale);
+            result.meshes[0].translate(new Vector3(x, y, z), 1, Space.WORLD);
+
+            for (const mesh of result.meshes) {
+              if (mesh.material) {
+                const depthMaterial = mesh.material.clone('DepthMaterial');
+                depthMaterial.lineraDepthMaterialPlugin =
+                  new LinearDepthMaterialPlugin(depthMaterial);
+                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+                model.renderTargets[2].renderList.push(mesh);
+                model.renderTargets[2].setMaterialForRendering(
+                  mesh,
+                  depthMaterial
+                );
+
+                const defaultMaterial = mesh.material.clone('defaultMaterial');
+                defaultMaterial.customDepthTestMaterialPlugin =
+                  new CustomDepthTestMaterialPlugin(defaultMaterial);
+                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
+                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
+                  model.renderTargets[0];
+
+                model.renderTargets[1].renderList.push(mesh);
+                model.renderTargets[1].setMaterialForRendering(
+                  mesh,
+                  defaultMaterial
+                );
+              }
+            }
+          });
+        });
+    });
+
+    fileStackPanel.addControl(loadButton);
 
     const rightPanel = new Grid();
     rightPanel.width = '250px';
