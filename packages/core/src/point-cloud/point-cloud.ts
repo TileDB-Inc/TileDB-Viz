@@ -411,10 +411,10 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                   new CustomDepthTestMaterialPlugin(defaultMaterial);
                 defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
                 defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
-                this.renderTargets[0];
+                  this.renderTargets[0];
 
-                  this.renderTargets[1].renderList.push(mesh);
-                  this.renderTargets[1].setMaterialForRendering(
+                this.renderTargets[1].renderList.push(mesh);
+                this.renderTargets[1].setMaterialForRendering(
                   mesh,
                   defaultMaterial
                 );
