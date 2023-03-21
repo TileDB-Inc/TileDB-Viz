@@ -40,11 +40,15 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
         { name: 'height', size: 1, type: 'float' }
       ],
       vertex: `
-              uniform float nearPlane;
-              uniform float farPlane;
-              uniform float width;
-              uniform float height;
-          `
+          uniform float nearPlane;
+          uniform float farPlane;
+          uniform float width;
+          uniform float height;
+      `,
+      fragment: `
+        uniform float width;
+        uniform float height;
+      `
     };
   }
 
@@ -55,7 +59,6 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
           return !camera.name.startsWith('GUI');
         }
       );
-
       uniformBuffer.updateFloat('nearPlane', activeCamera.minZ);
       uniformBuffer.updateFloat('farPlane', activeCamera.maxZ);
 

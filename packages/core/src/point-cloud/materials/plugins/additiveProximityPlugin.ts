@@ -46,7 +46,12 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
             uniform float blendLimit;
             uniform float width;
             uniform float height;
-        `
+        `,
+      fragment: `
+        uniform float blendLimit;
+        uniform float width;
+        uniform float height;
+      `
     };
   }
 
