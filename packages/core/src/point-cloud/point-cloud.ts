@@ -50,7 +50,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private arraySchema!: ArraySchema;
   private gizmoManager!: GizmoManager;
   private renderTargets: RenderTargetTexture[] = [];
-  private pipeline: SPSHighQualitySplats;
+  private pipeline!: SPSHighQualitySplats;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -368,11 +368,15 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         }
       });
 
-      const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+      const activeCamera: Camera = this.scene?.activeCameras?.find(
         (camera: Camera) => {
           return !camera.name.startsWith('GUI');
         }
-      );
+      ) as Camera;
+
+      if (!this.engine) {
+        throw new Error('Engine is unitialized');
+      }
 
       const filesInput = new FilesInput(
         this.engine,
@@ -395,10 +399,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           (result: ISceneLoaderAsyncResult) => {
             for (const mesh of result.meshes) {
               if (mesh.material) {
-                const depthMaterial = mesh.material.clone('DepthMaterial');
+                const depthMaterial: any = mesh.material.clone('DepthMaterial');
+
+                if (!depthMaterial) {
+                  throw new Error('Import mesh meaterial is null');
+                }
+
                 depthMaterial.lineraDepthMaterialPlugin =
                   new LinearDepthMaterialPlugin(depthMaterial);
                 depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+                if (!this.renderTargets[2].renderList) {
+                  throw new Error('Render target 2 is uninitialized');
+                }
 
                 this.renderTargets[2].renderList.push(mesh);
                 this.renderTargets[2].setMaterialForRendering(
@@ -406,12 +419,20 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                   depthMaterial
                 );
 
-                const defaultMaterial = mesh.material.clone('defaultMaterial');
+                const defaultMaterial: any =
+                  mesh.material.clone('defaultMaterial');
+                if (!defaultMaterial) {
+                  throw new Error('Import mesh meaterial is null');
+                }
                 defaultMaterial.customDepthTestMaterialPlugin =
                   new CustomDepthTestMaterialPlugin(defaultMaterial);
                 defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
                 defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
                   this.renderTargets[0];
+
+                if (!this.renderTargets[1].renderList) {
+                  throw new Error('Render target 1 is uninitialized');
+                }
 
                 this.renderTargets[1].renderList.push(mesh);
                 this.renderTargets[1].setMaterialForRendering(
@@ -428,7 +449,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       filesInput.reload = function () {
         // do nothing.
       };
-      filesInput.monitorElementForDragNDrop(this.canvas);
+      filesInput.monitorElementForDragNDrop(this.canvas as HTMLElement);
 
       this.gizmoManager = new GizmoManager(scene);
       this.gizmoManager.usePointerToAttachGizmos = true;

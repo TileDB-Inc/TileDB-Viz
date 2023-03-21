@@ -5,11 +5,13 @@ import {
   UniformBuffer,
   Scene,
   Engine,
-  SubMesh
+  SubMesh,
+  Material,
+  Nullable
 } from '@babylonjs/core';
 
 export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
-  linearDepthTexture: RenderTargetTexture = null;
+  linearDepthTexture!: RenderTargetTexture;
   blendLimit = 1;
 
   get isEnabled() {
@@ -27,7 +29,7 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
 
   _isEnabled = false;
 
-  constructor(material) {
+  constructor(material: Material) {
     super(material, 'CustomDepthTest', 1001);
   }
 
@@ -63,11 +65,12 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
     subMesh: SubMesh
   ) {
     if (this._isEnabled) {
-      const activeCamera: Camera | undefined = scene.activeCameras?.find(
+      const activeCamera: Camera = scene.activeCameras?.find(
         (camera: Camera) => {
           return !camera.name.startsWith('GUI');
         }
-      );
+      ) as Camera;
+
       uniformBuffer.updateFloat('nearPlane', activeCamera.minZ);
       uniformBuffer.updateFloat('farPlane', activeCamera.maxZ);
 
@@ -82,7 +85,7 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
     return 'CustomDepthTestMaterialPlugin';
   }
 
-  getCustomCode(shaderType) {
+  getCustomCode(shaderType: string): Nullable<{ [pointName: string]: string }> {
     return shaderType === 'vertex'
       ? {
           CUSTOM_VERTEX_DEFINITIONS: `

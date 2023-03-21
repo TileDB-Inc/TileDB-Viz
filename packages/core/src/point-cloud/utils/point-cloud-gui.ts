@@ -278,7 +278,7 @@ class PointCloudGUI {
 
     loadButton.onPointerUpObservable.add(() => {
       const config: Record<string, string> = {};
-      config.apiKey = process.env.STORYBOOK_REST_TOKEN as string;
+      config.apiKey = model.token as string;
 
       const client = getTileDBClient(config);
 
@@ -309,10 +309,18 @@ class PointCloudGUI {
 
             for (const mesh of result.meshes) {
               if (mesh.material) {
-                const depthMaterial = mesh.material.clone('DepthMaterial');
+                const depthMaterial: any = mesh.material.clone('DepthMaterial');
+                if (!depthMaterial) {
+                  throw new Error('Imported mesh material is null');
+                }
+
                 depthMaterial.lineraDepthMaterialPlugin =
                   new LinearDepthMaterialPlugin(depthMaterial);
                 depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+                if (!model.renderTargets[2].renderList) {
+                  throw new Error('Render target 2 is uninitialized');
+                }
 
                 model.renderTargets[2].renderList.push(mesh);
                 model.renderTargets[2].setMaterialForRendering(
@@ -320,13 +328,20 @@ class PointCloudGUI {
                   depthMaterial
                 );
 
-                const defaultMaterial = mesh.material.clone('defaultMaterial');
+                const defaultMaterial: any =
+                  mesh.material.clone('defaultMaterial');
+                if (!defaultMaterial) {
+                  throw new Error('Imported mesh material is null');
+                }
                 defaultMaterial.customDepthTestMaterialPlugin =
                   new CustomDepthTestMaterialPlugin(defaultMaterial);
                 defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
                 defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
                   model.renderTargets[0];
 
+                if (!model.renderTargets[1].renderList) {
+                  throw new Error('Render target 1 is uninitialized');
+                }
                 model.renderTargets[1].renderList.push(mesh);
                 model.renderTargets[1].setMaterialForRendering(
                   mesh,

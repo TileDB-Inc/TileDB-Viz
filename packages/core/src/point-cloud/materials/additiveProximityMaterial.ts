@@ -12,7 +12,7 @@ import {
 } from './plugins/roundPointPlugin';
 
 export class AdditiveProximityMaterial {
-  public material: Material;
+  public material: any;
 
   constructor(
     baseMaterial: Material,

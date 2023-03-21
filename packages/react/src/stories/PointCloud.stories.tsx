@@ -30,6 +30,7 @@ const Template = () => (
   <PointCloudVisualization
     data={data as any}
     pointSize={25}
+    token={token}
     cameraZoomOut={[2, 2, 16]}
     cameraLocation={8}
     width={'100vw'}
@@ -44,6 +45,7 @@ export const PointCloudSPS = () => (
   <PointCloudVisualization
     data={data as any}
     pointSize={6}
+    token={token}
     cameraZoomOut={[2, 2, 16]}
     cameraLocation={1}
     useShader={true}
@@ -58,6 +60,7 @@ export const Boulder = () => (
   <PointCloudVisualization
     data={boulderData as any}
     colorScheme="dark"
+    token={token}
     cameraZoomOut={[6, 6, 2]}
     cameraLocation={6}
     pointSize={2.5}
@@ -71,6 +74,7 @@ export const BoulderSPS = () => (
   <PointCloudVisualization
     data={boulderData as any}
     colorScheme="light"
+    token={token}
     cameraZoomOut={[6, 6, 2]}
     cameraLocation={6}
     pointSize={0.05}
@@ -85,6 +89,7 @@ export const Autzen = () => (
   <PointCloudVisualization
     data={autzenData as any}
     pointSize={3}
+    token={token}
     pointType={PointType.FixedWorldSizePoint}
     cameraZoomOut={[2, 2, 2]}
     cameraLocation={2}
@@ -100,6 +105,7 @@ export const AutzenSPS = () => (
   <PointCloudVisualization
     data={autzenData as any}
     pointSize={3}
+    token={token}
     cameraZoomOut={[2, 2, 4]}
     cameraLocation={2}
     colorScheme="light"

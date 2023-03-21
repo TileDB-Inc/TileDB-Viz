@@ -6,7 +6,7 @@ import {
 } from './plugins/roundPointPlugin';
 
 export class LinearDepthMaterial {
-  public material: Material;
+  public material: any;
 
   constructor(
     material: Material,

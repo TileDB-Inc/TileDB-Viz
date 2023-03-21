@@ -2,7 +2,15 @@ import {
   MaterialPluginBase,
   Camera,
   RawTexture,
-  Vector3
+  Vector3,
+  UniformBuffer,
+  Scene,
+  Engine,
+  SubMesh,
+  Material,
+  Nullable,
+  MaterialDefines,
+  AbstractMesh
 } from '@babylonjs/core';
 
 export enum PointType {
@@ -13,10 +21,10 @@ export enum PointType {
 
 export class RoundPointMaterialPlugin extends MaterialPluginBase {
   radius = 1;
-  visibilityTexture: RawTexture = null;
-  minPoint: Vector3;
-  maxPoint: Vector3;
-  pointType: PointType;
+  visibilityTexture!: RawTexture;
+  minPoint!: Vector3;
+  maxPoint!: Vector3;
+  pointType!: PointType;
 
   get isEnabled() {
     return this._isEnabled;
@@ -33,7 +41,7 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
 
   _isEnabled = false;
 
-  constructor(material) {
+  constructor(material: Material) {
     super(material, 'RoundPoint', 1001, {
       FIXED_SCREEN_SIZE: false,
       FIXED_WORLD_SIZE: false,
@@ -60,11 +68,15 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     };
   }
 
-  getSamplers(samplers: string[]): void {
+  public getSamplers(samplers: string[]): void {
     samplers.push('visibilityTexture');
   }
 
-  prepareDefines(defines, scene, mesh) {
+  public prepareDefines(
+    defines: MaterialDefines,
+    scene: Scene,
+    mesh: AbstractMesh
+  ): void {
     switch (this.pointType) {
       case PointType.FixedScreenSizePoint:
         defines.FIXED_SCREEN_SIZE = true;
@@ -84,13 +96,18 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     }
   }
 
-  bindForSubMesh(uniformBuffer, scene, engine, subMesh) {
+  public bindForSubMesh(
+    uniformBuffer: UniformBuffer,
+    scene: Scene,
+    engine: Engine,
+    subMesh: SubMesh
+  ) {
     if (this._isEnabled) {
-      const activeCamera: Camera | undefined = scene.activeCameras?.find(
+      const activeCamera: Camera = scene.activeCameras?.find(
         (camera: Camera) => {
           return !camera.name.startsWith('GUI');
         }
-      );
+      ) as Camera;
 
       uniformBuffer.updateFloat('slope', Math.tan(activeCamera.fov / 2));
       uniformBuffer.updateFloat('half_height', engine._gl.canvas.height / 2);
@@ -117,7 +134,9 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     return 'RoundPointMaterialPlugin';
   }
 
-  getCustomCode(shaderType) {
+  public getCustomCode(
+    shaderType: string
+  ): Nullable<{ [pointName: string]: string }> {
     return shaderType === 'vertex'
       ? {
           CUSTOM_VERTEX_DEFINITIONS: `

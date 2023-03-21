@@ -7,16 +7,15 @@ import {
   Constants,
   Color4
 } from '@babylonjs/core';
+import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
 
 export class SPSHighQualitySplats {
   private scene: Scene;
-  private postProcess: PostProcess;
-  public renderTargets: RenderTargetTexture[];
+  private postProcess!: PostProcess;
+  public renderTargets: RenderTargetTexture[] = [];
 
   constructor(scene: Scene) {
     this.scene = scene;
-    this.renderTargets = [];
-    this.postProcess = null;
   }
 
   initializeRTTs(): RenderTargetTexture[] {
@@ -82,7 +81,7 @@ export class SPSHighQualitySplats {
     ];
   }
 
-  initializePostProcess(options) {
+  initializePostProcess(options: TileDBPointCloudOptions) {
     const activeCamera: Camera | undefined = this.scene.activeCameras?.find(
       (camera: Camera) => {
         return !camera.name.startsWith('GUI');
@@ -194,7 +193,7 @@ export class SPSHighQualitySplats {
       effect.setTexture('uEDLDepth', depthTexture);
       effect.setTexture('additiveTexture', additiveTexture);
       effect.setTexture('meshDepthTexture', meshDepthTexture);
-      effect.setColor4('clearColor', scene.clearColor);
+      effect.setColor4('clearColor', scene.clearColor, 1.0);
     };
   }
 

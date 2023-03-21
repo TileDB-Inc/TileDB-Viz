@@ -65,15 +65,15 @@ class ArrayModel {
   poolSize: number;
   debugTexture?: AdvancedDynamicTexture;
   loaded: Map<number, boolean>;
-  octreeTexture?: RawTexture = undefined;
+  octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
   isInitalized = false;
-  blockQueue?: PriorityQueue;
+  blockQueue!: PriorityQueue;
   static groundName = 'ground';
   renderTargets: RenderTargetTexture[];
-  depthMaterial?: LinearDepthMaterial = null;
-  additiveProximityMaterial?: AdditiveProximityMaterial = null;
+  depthMaterial!: LinearDepthMaterial;
+  additiveProximityMaterial!: AdditiveProximityMaterial;
   basePointSize = 1;
   visible: Map<number, boolean>;
 
@@ -86,7 +86,7 @@ class ArrayModel {
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointType = options.pointType || 'box';
+    this.pointType = options.pointType || PointType.FixedScreenSizePoint;
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
     this.edlStrength = options.edlStrength || 4.0;
@@ -94,6 +94,7 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
     this.pointBudget = options.pointBudget || 500_000;
+
     if (options.useShader === true) {
       this.useShader = true;
     }
@@ -247,6 +248,10 @@ class ArrayModel {
             this.addDebugLabel(pcs, block.mortonNumber.toString());
           }
 
+          if (!pcs.mesh || !pcs.mesh.material) {
+            throw new Error('Point cloud build failed');
+          }
+
           if (!this.depthMaterial) {
             this.depthMaterial = new LinearDepthMaterial(
               pcs.mesh.material,
@@ -256,6 +261,10 @@ class ArrayModel {
               this.octree.maxPoint,
               this.pointType
             );
+          }
+
+          if (!this.renderTargets[0].renderList) {
+            throw new Error('Render Targer 0 uninitialized');
           }
 
           this.renderTargets[0].renderList.push(pcs.mesh);
@@ -275,6 +284,10 @@ class ArrayModel {
               this.octree.maxPoint,
               this.pointType
             );
+          }
+
+          if (!this.renderTargets[1].renderList) {
+            throw new Error('Render Targer 1 uninitialized');
           }
 
           this.renderTargets[1].renderList.push(pcs.mesh);
@@ -317,33 +330,11 @@ class ArrayModel {
 
   public reassignMaterials(renderTargets: RenderTargetTexture[]) {
     this.renderTargets = renderTargets;
-    this.depthMaterial = null;
-    this.additiveProximityMaterial = null;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const [_1, pcs] of this.particleSystems) {
-      if (!this.depthMaterial) {
-        this.depthMaterial = new LinearDepthMaterial(
-          pcs.mesh.material,
-          this.pointSize,
-          this.octreeTexture,
-          this.octree.minPoint,
-          this.octree.maxPoint,
-          this.pointType
-        );
-      }
-
-      if (!this.additiveProximityMaterial) {
-        this.additiveProximityMaterial = new AdditiveProximityMaterial(
-          pcs.mesh.material,
-          1,
-          this.pointSize,
-          this.renderTargets[0],
-          this.octreeTexture,
-          this.octree.minPoint,
-          this.octree.maxPoint,
-          this.pointType
-        );
+      if (!pcs.mesh || !pcs.mesh.material) {
+        throw new Error('Point cloud build failed');
       }
 
       //this.renderTargets[0].renderList.push(pcs.mesh);
@@ -642,6 +633,10 @@ class ArrayModel {
     for (const key of keys) {
       const block = this.octree.blocklist.get(key);
 
+      if (!block) {
+        continue;
+      }
+
       for (let i = 0; i < 8; ++i) {
         const code = (block.mortonNumber << 3) + i;
 
@@ -665,6 +660,10 @@ class ArrayModel {
     if (this.octreeTexture) {
       this.octreeTexture.update(textureData);
     } else {
+      if (!this.scene) {
+        throw new Error('Scene is unitilialized');
+      }
+
       this.octreeTexture = new RawTexture(
         textureData,
         200,

@@ -1,4 +1,13 @@
-import { MaterialPluginBase, Camera } from '@babylonjs/core';
+import {
+  MaterialPluginBase,
+  Camera,
+  UniformBuffer,
+  Scene,
+  Engine,
+  SubMesh,
+  Material,
+  Nullable
+} from '@babylonjs/core';
 
 export class LinearDepthMaterialPlugin extends MaterialPluginBase {
   get isEnabled() {
@@ -16,7 +25,7 @@ export class LinearDepthMaterialPlugin extends MaterialPluginBase {
 
   _isEnabled = false;
 
-  constructor(material) {
+  constructor(material: Material) {
     super(material, 'LinearDepth', 1001);
   }
 
@@ -37,17 +46,21 @@ export class LinearDepthMaterialPlugin extends MaterialPluginBase {
     };
   }
 
-  bindForSubMesh(uniformBuffer, scene, engine, subMesh) {
-    const activeCamera: Camera | undefined = scene.activeCameras?.find(
-      (camera: Camera) => {
-        return !camera.name.startsWith('GUI');
-      }
-    );
+  public bindForSubMesh(
+    uniformBuffer: UniformBuffer,
+    scene: Scene,
+    engine: Engine,
+    subMesh: SubMesh
+  ) {
+    const activeCamera: Camera = scene.activeCameras?.find((camera: Camera) => {
+      return !camera.name.startsWith('GUI');
+    }) as Camera;
+
     uniformBuffer.updateFloat('nearPlane', activeCamera.minZ);
     uniformBuffer.updateFloat('farPlane', activeCamera.maxZ);
   }
 
-  getCustomCode(shaderType) {
+  getCustomCode(shaderType: string): Nullable<{ [pointName: string]: string }> {
     return shaderType === 'vertex'
       ? {
           CUSTOM_VERTEX_DEFINITIONS: `
