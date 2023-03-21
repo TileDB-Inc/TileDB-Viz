@@ -3,7 +3,8 @@ import {
   SceneLoader,
   Vector3,
   Space,
-  ISceneLoaderAsyncResult
+  ISceneLoaderAsyncResult,
+  Tags
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -347,6 +348,8 @@ class PointCloudGUI {
                   mesh,
                   defaultMaterial
                 );
+
+                Tags.AddTagsTo(mesh, 'Imported');
               }
             }
           });

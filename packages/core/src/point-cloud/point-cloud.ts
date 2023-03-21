@@ -14,7 +14,8 @@ import {
   FilesInput,
   SceneLoader,
   RenderTargetTexture,
-  ISceneLoaderAsyncResult
+  ISceneLoaderAsyncResult,
+  Tags
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
 import { SparseResult } from './model/sparse-result';
@@ -439,6 +440,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                   mesh,
                   defaultMaterial
                 );
+
+                Tags.AddTagsTo(mesh, 'Imported');
               }
             }
           }
@@ -460,6 +463,44 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.engine.onResizeObservable.add(() => {
         pipeline.resize();
         model.reassignMaterials(pipeline.renderTargets);
+
+        for (const mesh of scene.getMeshesByTags('Imported')) {
+          if (!mesh || !mesh.material) {
+            throw new Error('Import mesh meaterial is null');
+          }
+
+          const depthMaterial: any = mesh.material.clone('DepthMaterial');
+
+          if (!depthMaterial) {
+            throw new Error('Import mesh meaterial is null');
+          }
+
+          depthMaterial.lineraDepthMaterialPlugin =
+            new LinearDepthMaterialPlugin(depthMaterial);
+          depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+          if (!this.renderTargets[2].renderList) {
+            throw new Error('Render target 2 is uninitialized');
+          }
+
+          this.renderTargets[2].setMaterialForRendering(mesh, depthMaterial);
+
+          const defaultMaterial: any = mesh.material.clone('defaultMaterial');
+          if (!defaultMaterial) {
+            throw new Error('Import mesh meaterial is null');
+          }
+          defaultMaterial.customDepthTestMaterialPlugin =
+            new CustomDepthTestMaterialPlugin(defaultMaterial);
+          defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
+          defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
+            this.renderTargets[0];
+
+          if (!this.renderTargets[1].renderList) {
+            throw new Error('Render target 1 is uninitialized');
+          }
+
+          this.renderTargets[1].setMaterialForRendering(mesh, defaultMaterial);
+        }
       });
 
       return scene;
