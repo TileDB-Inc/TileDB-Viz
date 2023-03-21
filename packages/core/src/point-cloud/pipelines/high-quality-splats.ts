@@ -11,7 +11,7 @@ import {
 export class SPSHighQualitySplats {
   private scene: Scene;
   private postProcess: PostProcess;
-  private renderTargets: RenderTargetTexture[];
+  public renderTargets: RenderTargetTexture[];
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -214,5 +214,16 @@ export class SPSHighQualitySplats {
     this.renderTargets[2].activeCamera = activeCamera;
 
     activeCamera.attachPostProcess(this.postProcess);
+  }
+
+  resize(): void {
+    const width = this.scene.getEngine()._gl.canvas.width;
+    const height = this.scene.getEngine()._gl.canvas.height;
+
+    console.log(width, height);
+
+    this.renderTargets[0].resize({ height: height, width: width });
+    this.renderTargets[1].resize({ height: height, width: width });
+    this.renderTargets[2].resize({ height: height, width: width });
   }
 }

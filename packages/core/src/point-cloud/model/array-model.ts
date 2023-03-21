@@ -72,8 +72,8 @@ class ArrayModel {
   blockQueue?: PriorityQueue;
   static groundName = 'ground';
   renderTargets: RenderTargetTexture[];
-  depthMaterial: LinearDepthMaterial = null;
-  additiveProximityMaterial: AdditiveProximityMaterial = null;
+  depthMaterial?: LinearDepthMaterial = null;
+  additiveProximityMaterial?: AdditiveProximityMaterial = null;
   basePointSize = 1;
   visible: Map<number, boolean>;
 
@@ -241,9 +241,8 @@ class ArrayModel {
         pcs.addPoints(numPoints, pointBuilder);
 
         pcs.buildMeshAsync().then(() => {
-          if (block.mortonNumber !== Moctree.startBlockIndex) {
-            this.particleSystems.set(block.mortonNumber, pcs);
-          }
+          this.particleSystems.set(block.mortonNumber, pcs);
+
           if (this.debug && this.debugTexture && pcs.mesh) {
             this.addDebugLabel(pcs, block.mortonNumber.toString());
           }
@@ -313,6 +312,51 @@ class ArrayModel {
         // already have data
         this.loadSystem(block);
       }
+    }
+  }
+
+  public reassignMaterials(renderTargets: RenderTargetTexture[]) {
+    this.renderTargets = renderTargets;
+    this.depthMaterial = null;
+    this.additiveProximityMaterial = null;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_1, pcs] of this.particleSystems) {
+      if (!this.depthMaterial) {
+        this.depthMaterial = new LinearDepthMaterial(
+          pcs.mesh.material,
+          this.pointSize,
+          this.octreeTexture,
+          this.octree.minPoint,
+          this.octree.maxPoint,
+          this.pointType
+        );
+      }
+
+      if (!this.additiveProximityMaterial) {
+        this.additiveProximityMaterial = new AdditiveProximityMaterial(
+          pcs.mesh.material,
+          1,
+          this.pointSize,
+          this.renderTargets[0],
+          this.octreeTexture,
+          this.octree.minPoint,
+          this.octree.maxPoint,
+          this.pointType
+        );
+      }
+
+      //this.renderTargets[0].renderList.push(pcs.mesh);
+      this.renderTargets[0].setMaterialForRendering(
+        pcs.mesh,
+        this.depthMaterial.material
+      );
+
+      //this.renderTargets[1].renderList.push(pcs.mesh);
+      this.renderTargets[1].setMaterialForRendering(
+        pcs.mesh,
+        this.additiveProximityMaterial.material
+      );
     }
   }
 

@@ -434,6 +434,13 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       this.gizmoManager.usePointerToAttachGizmos = true;
       this.gizmoManager.utilityLayer.setRenderCamera(activeCamera);
 
+      const pipeline = this.pipeline;
+      const model = this.model;
+      this.engine.onResizeObservable.add(() => {
+        pipeline.resize();
+        model.reassignMaterials(pipeline.renderTargets);
+      });
+
       return scene;
     });
   }
