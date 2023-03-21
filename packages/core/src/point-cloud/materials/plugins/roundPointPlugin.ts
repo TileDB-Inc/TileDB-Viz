@@ -60,7 +60,7 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     };
   }
 
-  getSamplers(samplers) {
+  getSamplers(samplers: string[]): void {
     samplers.push('visibilityTexture');
   }
 

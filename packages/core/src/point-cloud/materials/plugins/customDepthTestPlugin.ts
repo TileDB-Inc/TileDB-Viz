@@ -1,7 +1,11 @@
 import {
   MaterialPluginBase,
   Camera,
-  RenderTargetTexture
+  RenderTargetTexture,
+  UniformBuffer,
+  Scene,
+  Engine,
+  SubMesh
 } from '@babylonjs/core';
 
 export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
@@ -27,7 +31,7 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
     super(material, 'CustomDepthTest', 1001);
   }
 
-  getSamplers(samplers) {
+  public getSamplers(samplers: string[]): void {
     samplers.push('linearDepthTexture');
   }
 
@@ -52,7 +56,12 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
     };
   }
 
-  bindForSubMesh(uniformBuffer, scene, engine, subMesh) {
+  public bindForSubMesh(
+    uniformBuffer: UniformBuffer,
+    scene: Scene,
+    engine: Engine,
+    subMesh: SubMesh
+  ) {
     if (this._isEnabled) {
       const activeCamera: Camera | undefined = scene.activeCameras?.find(
         (camera: Camera) => {

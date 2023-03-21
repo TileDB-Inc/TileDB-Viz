@@ -27,7 +27,7 @@ export class AdditiveProximityMaterialPlugin extends MaterialPluginBase {
     super(material, 'AdditiveProximity', 1001);
   }
 
-  getSamplers(samplers) {
+  getSamplers(samplers: string[]): void {
     samplers.push('linearDepthTexture');
   }
 

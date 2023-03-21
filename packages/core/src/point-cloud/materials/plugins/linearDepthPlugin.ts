@@ -31,7 +31,7 @@ export class LinearDepthMaterialPlugin extends MaterialPluginBase {
         { name: 'farPlane', size: 1, type: 'float' }
       ],
       vertex: `
-        uniform float nearPLane;
+        uniform float nearPlane;
         uniform float farPlane;
     `
     };
