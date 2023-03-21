@@ -13,6 +13,8 @@ export class SPSHighQualitySplats {
   private scene: Scene;
   private postProcess!: PostProcess;
   public renderTargets: RenderTargetTexture[] = [];
+  private width!: number;
+  private height!: number;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -101,8 +103,8 @@ export class SPSHighQualitySplats {
       neighbours[2 * c + 1] = Math.sin((2 * c * Math.PI) / neighbourCount);
     }
 
-    const screenWidth = this.scene.getEngine().getRenderWidth();
-    const screenHeight = this.scene.getEngine().getRenderHeight();
+    this.width = this.scene.getEngine().getRenderWidth();
+    this.height = this.scene.getEngine().getRenderHeight();
 
     Effect.ShadersStore['customFragmentShader'] = `
         precision highp float;
@@ -179,21 +181,16 @@ export class SPSHighQualitySplats {
     this.renderTargets[1].activeCamera = activeCamera;
     this.renderTargets[2].activeCamera = activeCamera;
 
-    const depthTexture = this.renderTargets[0];
-    const additiveTexture = this.renderTargets[1];
-    const meshDepthTexture = this.renderTargets[2];
-    const scene = this.scene;
-
-    this.postProcess.onApply = function (effect: Effect) {
-      effect.setFloat('screenWidth', screenWidth as number);
-      effect.setFloat('screenHeight', screenHeight as number);
+    this.postProcess.onApply = (effect: Effect) => {
+      effect.setFloat('screenWidth', this.width);
+      effect.setFloat('screenHeight', this.height);
       effect.setArray2('neighbours', neighbours);
       effect.setFloat('edlStrength', edlStrength);
       effect.setFloat('radius', edlRadius);
-      effect.setTexture('uEDLDepth', depthTexture);
-      effect.setTexture('additiveTexture', additiveTexture);
-      effect.setTexture('meshDepthTexture', meshDepthTexture);
-      effect.setColor4('clearColor', scene.clearColor, 1.0);
+      effect.setTexture('uEDLDepth', this.renderTargets[0]);
+      effect.setTexture('additiveTexture', this.renderTargets[1]);
+      effect.setTexture('meshDepthTexture', this.renderTargets[2]);
+      effect.setColor4('clearColor', this.scene.clearColor, 1.0);
     };
   }
 
@@ -216,13 +213,11 @@ export class SPSHighQualitySplats {
   }
 
   resize(): void {
-    const width = this.scene.getEngine()._gl.canvas.width;
-    const height = this.scene.getEngine()._gl.canvas.height;
+    this.width = this.scene.getEngine()._gl.canvas.width;
+    this.height = this.scene.getEngine()._gl.canvas.height;
 
-    console.log(width, height);
-
-    this.renderTargets[0].resize({ height: height, width: width });
-    this.renderTargets[1].resize({ height: height, width: width });
-    this.renderTargets[2].resize({ height: height, width: width });
+    this.renderTargets[0].resize({ height: this.height, width: this.width });
+    this.renderTargets[1].resize({ height: this.height, width: this.width });
+    this.renderTargets[2].resize({ height: this.height, width: this.width });
   }
 }
