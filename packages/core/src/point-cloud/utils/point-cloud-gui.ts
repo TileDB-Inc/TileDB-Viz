@@ -21,11 +21,9 @@ import {
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
 import { setSceneColors, updateSceneColors } from './scene-colors';
-
 import getTileDBClient from '../../utils/getTileDBClient';
 import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
-
 import menuIcon from '../../assets/menu-48.png';
 
 
