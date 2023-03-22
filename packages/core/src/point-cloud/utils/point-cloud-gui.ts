@@ -117,20 +117,41 @@ class PointCloudGUI {
     }
     rightPanel.addRowDefinition(5, true);
     rightPanel.addRowDefinition(50, true);
+    rightPanel.addRowDefinition(5, true);
+    rightPanel.addRowDefinition(50, true);
+    rightPanel.addRowDefinition(5, true);
+    rightPanel.addRowDefinition(50, true);
     this.advancedDynamicTexture.addControl(rightPanel);
 
-    const button = Button.CreateImageOnlyButton(
-      'button',
+    function createButton(name: string, url: string) {
+      const button = Button.CreateImageOnlyButton(name, url);
+      button.width = '48px';
+      button.height = '48px';
+      button.background = 'transparent';
+      button.thickness = 0;
+      button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+      button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+      return button;
+    }
+
+    const controlsButton = createButton(
+      'control button',
       'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
     );
-    button.width = '48px';
-    button.height = '48px';
-    button.background = 'transparent';
-    button.thickness = 0;
-    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 
-    rightPanel.addControl(button, 3, 0);
+    const menuButton = createButton(
+      'menu button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
+    );
+
+    const modelButton = createButton(
+      'menu button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
+    );
+
+    rightPanel.addControl(controlsButton, 7, 0);
+    rightPanel.addControl(menuButton, 5, 0);
+    rightPanel.addControl(modelButton, 3, 0);
 
     // expand and collapse the panel menu on click of button
     let _menu = 0;
@@ -145,7 +166,15 @@ class PointCloudGUI {
       return _menu;
     };
 
-    button.onPointerUpObservable.add(() => {
+    controlsButton.onPointerUpObservable.add(() => {
+      showControls();
+    });
+
+    menuButton.onPointerUpObservable.add(() => {
+      showControls();
+    });
+
+    modelButton.onPointerUpObservable.add(() => {
       showControls();
     });
 
