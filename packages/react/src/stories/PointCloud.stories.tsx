@@ -140,9 +140,7 @@ export const StreamerAutzen = () => (
     groupName={'autzen-classified'}
     workerPoolSize={numWorkers}
     rgbMax={65535}
-    fanOut={60} // fanOut can be fixed or specified by level (TODO)
     pointBudget={3_500_000}
-    maxNumCacheBlocks={250}
     wheelPrecision={0.5}
     pointSize={5}
     cameraLocation={8}
@@ -164,9 +162,7 @@ export const StreamerBristol = () => (
     namespace={namespace}
     groupName={'bristol'}
     workerPoolSize={numWorkers}
-    fanOut={200}
     pointBudget={4_500_000}
-    maxNumCacheBlocks={250}
     colorScheme="dark"
     pointSize={8}
     cameraLocation={8}
@@ -189,9 +185,7 @@ export const StreamerSantorini = () => (
     namespace={namespace}
     groupName={'santorini'}
     workerPoolSize={numWorkers}
-    fanOut={200}
     pointBudget={3_500_000}
-    maxNumCacheBlocks={250}
     colorScheme="dark"
     pointSize={8}
     cameraLocation={5}

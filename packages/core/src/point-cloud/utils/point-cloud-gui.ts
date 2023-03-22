@@ -13,6 +13,7 @@ import {
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
 import { setSceneColors, updateSceneColors } from './scene-colors';
+import menuIcon from '../../assets/menu-48.png';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -123,8 +124,8 @@ class PointCloudGUI {
     rightPanel.addRowDefinition(50, true);
     this.advancedDynamicTexture.addControl(rightPanel);
 
-    function createButton(name: string, url: string) {
-      const button = Button.CreateImageOnlyButton(name, url);
+    function createButton(name: string, icon: string) {
+      const button = Button.CreateImageOnlyButton(name, icon);
       button.width = '48px';
       button.height = '48px';
       button.background = 'transparent';
@@ -134,20 +135,11 @@ class PointCloudGUI {
       return button;
     }
 
-    const controlsButton = createButton(
-      'control button',
-      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
-    );
+    const controlsButton = createButton('control button', menuIcon);
 
-    const menuButton = createButton(
-      'menu button',
-      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
-    );
+    const menuButton = createButton('menu button', menuIcon);
 
-    const modelButton = createButton(
-      'menu button',
-      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
-    );
+    const modelButton = createButton('menu button', menuIcon);
 
     rightPanel.addControl(controlsButton, 7, 0);
     rightPanel.addControl(menuButton, 5, 0);
@@ -223,39 +215,6 @@ class PointCloudGUI {
           return +value.toFixed(1);
         }
       );
-
-      const updateFanOut = function (value: number) {
-        model.fanOut = value;
-      };
-
-      performanceGroup.addSlider(
-        'Fan out',
-        updateFanOut,
-        ' ',
-        1,
-        100,
-        model.fanOut,
-        (value: number) => {
-          return +value.toFixed(1);
-        }
-      );
-
-      const updateBlocks = function (value: number) {
-        model.maxNumCacheBlocks = value;
-      };
-
-      performanceGroup.addSlider(
-        'Max cached blocks',
-        updateBlocks,
-        ' ',
-        20,
-        500,
-        model.maxNumCacheBlocks,
-        (value: number) => {
-          return +value.toFixed(0);
-        }
-      );
-
       controls.addGroup(performanceGroup);
     }
 

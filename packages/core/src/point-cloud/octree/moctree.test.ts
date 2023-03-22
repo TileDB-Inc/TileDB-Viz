@@ -1,4 +1,4 @@
-import { Ray, Vector3 } from '@babylonjs/core';
+import { Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 import {
   decodeMorton,
@@ -9,10 +9,6 @@ import {
 } from './moctree';
 
 describe('moctree tests', () => {
-  // most tests use a unit cube but for those that don't we use these values
-  const minPoint = new Vector3(-1, -1, -1);
-  const maxPoint = new Vector3(1, 1, 1);
-
   test('morton ordering', () => {
     // a series of simple tests that check encode / decode and walk through the algorithm, start here to understand the moctree
 
@@ -101,185 +97,6 @@ describe('moctree tests', () => {
     }
   });
 
-  test('multi-level moctree by ray', () => {
-    const maxDepth = 2;
-    const tree = new Moctree(minPoint, maxPoint, maxDepth, 1);
-
-    // test at lod 1, a diagonal ray
-    let lod = 1;
-    let blockSize = maxPoint.subtract(minPoint).scale(1 / Math.pow(2, lod));
-    const ray = new Ray(minPoint, maxPoint.subtract(minPoint));
-
-    let blocks = tree.getContainingBlocksByRay(ray, lod);
-    expect(blocks.length).toBe(1);
-    // get block opposite as we pick the closest block
-    expect(blocks[0].minPoint).toEqual(minPoint);
-    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
-    expect(blocks[0].lod).toBe(1);
-
-    // opposite block, reverse direction
-    ray.origin = maxPoint;
-    ray.direction = minPoint.subtract(maxPoint);
-    blocks = tree.getContainingBlocksByRay(ray, lod);
-    expect(blocks[0].minPoint).toEqual(minPoint.add(blockSize));
-    expect(blocks[0].maxPoint).toEqual(maxPoint);
-    expect(blocks.length).toBe(1);
-    expect(blocks[0].lod === 1);
-
-    // test at lod 2, a diagonal ray
-    lod = 2;
-    blockSize = maxPoint.subtract(minPoint).scale(1 / Math.pow(2, lod));
-    ray.origin = minPoint;
-    ray.direction = maxPoint.subtract(minPoint);
-    blocks = tree.getContainingBlocksByRay(ray, lod);
-    expect(blocks.length).toBe(2);
-    expect(blocks[0].minPoint).toEqual(minPoint);
-    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
-    expect(blocks[1].minPoint).toEqual(minPoint);
-    expect(blocks[1].maxPoint).toEqual(minPoint.add(blockSize.scale(2)));
-
-    ray.origin = maxPoint;
-    ray.direction = minPoint.subtract(maxPoint);
-    blocks = tree.getContainingBlocksByRay(ray, lod);
-    expect(blocks.length).toBe(2);
-    expect(blocks[0].minPoint).toEqual(maxPoint.subtract(blockSize));
-    expect(blocks[0].maxPoint).toEqual(maxPoint);
-    expect(blocks[1].minPoint).toEqual(maxPoint.subtract(blockSize.scale(2)));
-    expect(blocks[1].maxPoint).toEqual(maxPoint);
-
-    // test at lod 3 - we should get lod 2 results as maxDepth is 2
-    lod = 3;
-    ray.origin = minPoint;
-    ray.direction = maxPoint.subtract(minPoint);
-    blocks = tree.getContainingBlocksByRay(ray, lod);
-    expect(blocks[0].minPoint).toEqual(minPoint);
-    expect(blocks[0].maxPoint).toEqual(minPoint.add(blockSize));
-    expect(blocks[1].minPoint).toEqual(minPoint);
-    expect(blocks[1].maxPoint).toEqual(minPoint.add(blockSize.scale(2)));
-  });
-
-  test('deep multi-level moctree by ray', () => {
-    const maxDepth = 10;
-    const tree = new Moctree(minPoint, maxPoint, maxDepth, 1);
-
-    const lod = 10;
-    const ray = new Ray(minPoint, maxPoint.subtract(minPoint));
-    expect(tree.getContainingBlocksByRay(ray, lod).length).toBe(lod);
-  });
-
-  test('get neighbours', () => {
-    const maxDepth = 3;
-    // operate on a unit cube
-    const tree = new Moctree(Vector3.Zero(), new Vector3(1, 1, 1), maxDepth, 1);
-    // relative position of the centre at lod 3 is 4 blocks away from the origin
-    const centre = new Vector3(4, 4, 4);
-    const centreCode = encodeMorton(centre, 3);
-    // 8 blocks across
-    const centreVector = decodeMorton(centreCode).scale(1 / 8);
-    expect(centreVector).toEqual(new Vector3(0.5, 0.5, 0.5));
-
-    const neighbours = tree.getNeighbours(centreCode);
-    const firstBlock = neighbours.next().value;
-    expect(firstBlock).toBeDefined();
-
-    const secondBlock = neighbours.next().value;
-    expect(secondBlock).toBeDefined();
-
-    // with a fanout of 1 we should be at the next lod level down
-    const thirdBlock = neighbours.next().value;
-    expect(thirdBlock).toBeDefined();
-    expect(thirdBlock?.lod).toBe(2);
-
-    // run generator and retrieve count of returned blocks
-    const nItr = tree.getNeighbours(centreCode);
-
-    // expect 8 + 64 + 512 - 3 = 581 results (-3 because of the centre for each of the levels)
-    let c = 0;
-    let block: MoctreeBlock | undefined;
-    while (c < 581) {
-      block = nItr.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-    expect(nItr.next().value).toBeUndefined();
-
-    // shift a level up and we will get less blocks
-    // expect 8 + 64 - 2 = 70 results (-2 because of the centre for each of the levels)
-    const nItr2 = tree.getNeighbours(centreCode >> 3);
-    c = 0;
-    while (c < 70) {
-      block = nItr2.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-    expect(nItr2.next().value).toBeUndefined();
-
-    // shift a level up and we will get less blocks
-    // expect 8 - 1 results (-1 because of the centre for each of the levels)
-    const nItr3 = tree.getNeighbours(centreCode >> 6);
-    c = 0;
-    while (c < 7) {
-      block = nItr3.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-    expect(nItr3.next().value).toBeUndefined();
-  });
-
-  test('get neighbours with fan out larger than one', () => {
-    const maxDepth = 3;
-    const fanOut = 5;
-    // operate on a unit cube
-    const tree = new Moctree(
-      Vector3.Zero(),
-      new Vector3(1, 1, 1),
-      maxDepth,
-      fanOut
-    );
-    // relative position of the centre at lod 3 is 4 blocks away from the origin
-    const centre = new Vector3(4, 4, 4);
-    const centreCode = encodeMorton(centre, 3);
-
-    // run generator and retrieve count of returned blocks
-    const nItr = tree.getNeighbours(centreCode);
-
-    // expect 8 + 64 + 512 - 3 = 581 results (-3 because of the centre for each of the levels)
-    let c = 0;
-    let block: MoctreeBlock | undefined;
-    while (c < 581) {
-      block = nItr.next().value;
-      expect(block).toBeDefined();
-      expect(block?.mortonNumber).toBeLessThanOrEqual(
-        parseInt('1111111111', 2)
-      );
-      c++;
-    }
-    const v = nItr.next().value;
-    expect(v).toBeUndefined();
-
-    // shift a level up and we will get less blocks
-    // expect 8 + 64 - 2 = 70 results (-2 because of the centre for each of the levels)
-    const nItr2 = tree.getNeighbours(centreCode >> 3);
-    c = 0;
-    while (c < 70) {
-      block = nItr2.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-    expect(nItr2.next().value).toBeUndefined();
-
-    // shift a level up and we will get less blocks
-    // expect 8 - 1 results (-1 because of the centre for each of the levels)
-    const nItr3 = tree.getNeighbours(centreCode >> 6);
-    c = 0;
-    while (c < 7) {
-      block = nItr3.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-    expect(nItr3.next().value).toBeUndefined();
-  });
-
   test('load block metadata', () => {
     // known data, block 1-1-1-1 (15) (D-X-Y-Z) is missing
     const blockData = new Map<string, number>();
@@ -303,7 +120,12 @@ describe('moctree tests', () => {
     expect(blockData.size).toBe(1 + 8 - 1 + 64 - 8);
 
     // unit cube
-    const octree = new Moctree(Vector3.Zero(), new Vector3(1, 1, 1), 2, 10);
+    const octree = new Moctree(Vector3.Zero(), new Vector3(1, 1, 1), 2);
+    const ranges = [
+      octree.maxPoint.x - octree.minPoint.x,
+      octree.maxPoint.y - octree.minPoint.y,
+      octree.maxPoint.z - octree.minPoint.z
+    ];
 
     blockData.forEach((v, k) => {
       const parts = k.split('-').map(Number);
@@ -312,43 +134,30 @@ describe('moctree tests', () => {
         new Vector3(parts[1], parts[3], parts[2]),
         parts[0]
       );
-      octree.knownBlocks.set(morton, v);
+      const blocksPerDimension = Math.pow(2, parts[0]);
+      const stepX = ranges[0] / blocksPerDimension;
+      const stepY = ranges[1] / blocksPerDimension;
+      const stepZ = ranges[2] / blocksPerDimension;
+
+      const minPoint = new Vector3(
+        octree.minPoint.x + parts[1] * stepX,
+        octree.minPoint.y + parts[3] * stepY,
+        octree.minPoint.z + parts[2] * stepZ
+      );
+      const maxPoint = new Vector3(
+        octree.minPoint.x + (parts[1] + 1) * stepX,
+        octree.minPoint.y + (parts[3] + 1) * stepY,
+        octree.minPoint.z + (parts[2] + 1) * stepZ
+      );
+
+      octree.blocklist.set(
+        morton,
+        new MoctreeBlock(parts[0], morton, minPoint, maxPoint)
+      );
     });
 
-    expect(octree.knownBlocks.has(14)).toBe(true);
-    expect(octree.knownBlocks.has(15)).toBe(false);
-
-    // test get neighbours block count at lod 1
-    const nItr = octree.getNeighbours(1 << 3);
-    let block: MoctreeBlock | undefined;
-    let c = 0;
-
-    // miss requested block and furthest octant
-    while (c < 6) {
-      block = nItr.next().value;
-      expect(block).toBeDefined();
-      if (block) {
-        expect(block.mortonNumber).toBeGreaterThan(8);
-        expect(block.mortonNumber).toBeLessThan(15);
-      }
-      c++;
-    }
-    // minus one empty block at lod 1 and the known block
-    expect(nItr.next().value).toBeUndefined();
-
-    // test get neighbours at lod 2
-    const nItr2 = octree.getNeighbours(1 << 6);
-    c = 0;
-
-    // (level 1) - (one lod-1 octant) + (level 2) - (8 lod-2 octants) - (start octant at lod 2 and its parent)
-    const totalBlocks = 8 - 1 + 64 - 8 - 2;
-    while (c < totalBlocks) {
-      const block = nItr2.next().value;
-      expect(block).toBeDefined();
-      c++;
-    }
-
-    expect(nItr2.next().value).toBeUndefined();
+    expect(octree.blocklist.has(14)).toBe(true);
+    expect(octree.blocklist.has(15)).toBe(false);
   });
 
   test('create entries', () => {
@@ -366,6 +175,7 @@ describe('moctree tests', () => {
       1,
       Vector3.Zero(),
       new Vector3(1, 1, 1),
+      0,
       entries
     );
 

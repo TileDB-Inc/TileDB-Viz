@@ -1,4 +1,4 @@
-import { BoundingInfo, Plane, Ray, Vector3 } from '@babylonjs/core';
+import { BoundingInfo, Vector3 } from '@babylonjs/core';
 import { SparseResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
@@ -56,7 +56,7 @@ function getMortonRange(lod: number) {
 }
 
 class Moctree {
-  knownBlocks: Map<number, number>;
+  blocklist: Map<number, MoctreeBlock>;
   static startBlockIndex = 1;
   static indexes: Array<Vector3> = [
     new Vector3(0, 0, 0),
@@ -72,234 +72,9 @@ class Moctree {
   constructor(
     public minPoint: Vector3,
     public maxPoint: Vector3,
-    public maxDepth: number,
-    public fanOut: number
+    public maxDepth: number
   ) {
-    this.knownBlocks = new Map<number, number>();
-  }
-
-  public getNearestPickCode(
-    position: Vector3,
-    planes: Plane[],
-    maxLevel?: number
-  ) {
-    // find the nearest non-empty visible block to position at a high LoD
-    const nLevels = maxLevel || this.maxDepth;
-    let code = 1;
-    let dist = Number.MAX_SAFE_INTEGER;
-    const blocks: Array<MoctreeBlock> = [];
-
-    for (let l = 1; l < nLevels; l++) {
-      const blockSize = this.maxPoint
-        .subtract(this.minPoint)
-        .scale(1 / Math.pow(2, l));
-
-      code = code << 3;
-      const candidates = [];
-
-      for (let c = 0; c < 8; c++) {
-        const currentCode = code + c;
-        // loop over children and find nearest occupied block
-        const relativeV1 = decodeMorton(currentCode);
-        const actualV1 = this.minPoint.add(relativeV1.multiply(blockSize));
-        const centrePoint = actualV1.add(
-          blockSize.divide(new Vector3(2.0, 2.0, 2.0))
-        );
-        const d = position.subtract(centrePoint).length();
-
-        if (d <= dist && this.knownBlocks.has(currentCode)) {
-          const block = new MoctreeBlock(
-            l,
-            currentCode,
-            actualV1,
-            actualV1.add(blockSize)
-          );
-
-          if (block.boundingInfo.isInFrustum(planes)) {
-            candidates.push(block);
-            dist = d;
-          }
-        }
-      }
-
-      // filter candidates and update code
-      let resultBlock = candidates.pop();
-      if (resultBlock !== undefined) {
-        candidates.forEach(b => {
-          if (
-            position.subtract(b.boundingInfo.boundingSphere.center).length() <
-            position
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              .subtract(resultBlock!.boundingInfo.boundingSphere.center)
-              .length()
-          ) {
-            resultBlock = b;
-          }
-        });
-
-        code = resultBlock.mortonNumber;
-        blocks.push(resultBlock);
-      }
-    }
-    // we return the containing blocks as they should be rendered first
-    return blocks.reverse();
-  }
-
-  public getContainingBlocksByRay(ray: Ray, lod: number) {
-    // this only queries the front octant that the ray is looking at, it will however look past empty octants
-    const resultBlocks: MoctreeBlock[] = [];
-
-    if (lod > 0) {
-      if (ray.intersectsBoxMinMax(this.minPoint, this.maxPoint)) {
-        if (lod > this.maxDepth) {
-          lod = this.maxDepth;
-        }
-        let minVector = this.minPoint;
-        let code = Moctree.startBlockIndex;
-        const childBlockSize = this.maxPoint.subtract(this.minPoint).scale(0.5);
-
-        for (let l = 1; l <= lod; l++) {
-          const candidates: Array<MoctreeBlock> = [];
-          for (let i = 0; i < Moctree.indexes.length; i++) {
-            const st = minVector.add(
-              childBlockSize.multiply(Moctree.indexes[i])
-            );
-            const ed = st.add(childBlockSize);
-            const v = (code << 3) + i;
-            const block = new MoctreeBlock(l, v, st, ed);
-
-            if (ray.intersectsBoxMinMax(st, ed)) {
-              candidates.push(block);
-            }
-          }
-
-          // find nearest candidate to ray origin
-          let resultBlock = candidates.pop();
-          if (resultBlock !== undefined) {
-            candidates.forEach(b => {
-              if (
-                ray.origin.subtract(b.minPoint).length() <
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                ray.origin.subtract(resultBlock!.minPoint).length()
-              ) {
-                resultBlock = b;
-              }
-            });
-
-            resultBlocks.push(resultBlock);
-            minVector = resultBlock.minPoint;
-            code = resultBlock.mortonNumber;
-            childBlockSize.scaleInPlace(0.5);
-          }
-        }
-      }
-    }
-    return resultBlocks.reverse();
-  }
-
-  public *getNeighbours(
-    code: number
-  ): Generator<MoctreeBlock, undefined, undefined> {
-    const lod = (code.toString(2).length - 1) / 3;
-    const positions = [];
-
-    let totalBlocks = -lod; // remove the containing blocks from the result
-    for (let l = 1; l <= lod; l++) {
-      const rng = getMortonRange(l);
-      totalBlocks += rng.maxMorton - rng.minMorton + 1;
-      positions.push({ left: 1, right: 1 });
-    }
-
-    let blockCount = 0;
-    const lods = [...Array(lod).keys()].reverse();
-
-    // keep generating blocks to fill until the caller decides enough
-    while (blockCount < totalBlocks) {
-      // map the lods, from low to high, splice the lods that are complete
-      for (let l = lods.length - 1; l >= 0; l--) {
-        const currentLod = lods[l] + 1; // lods array is initialized from zero
-        const currentCode = code >> (3 * (lod - currentLod));
-        const blockSize = this.maxPoint
-          .subtract(this.minPoint)
-          .scale(1 / Math.pow(2, currentLod));
-
-        const ranges = getMortonRange(currentLod);
-
-        // display more blocks from lower level of detail data on each iteration and tail off
-        const fanOut = Math.min(
-          // avoid log(1)
-          Math.ceil(Math.log(this.maxDepth - currentLod + 2) * this.fanOut),
-          this.fanOut,
-          ranges.maxMorton - ranges.minMorton // 1 missing block for centre
-        );
-
-        let leftBlockCode = currentCode - positions[currentLod - 1].left;
-        let rightBlockCode = currentCode + positions[currentLod - 1].right;
-
-        if (
-          leftBlockCode >= ranges.minMorton ||
-          rightBlockCode <= ranges.maxMorton
-        ) {
-          let i = 0;
-          while (i < fanOut) {
-            if (leftBlockCode >= ranges.minMorton) {
-              if (
-                this.knownBlocks.has(leftBlockCode) ||
-                this.knownBlocks.size === 0
-              ) {
-                const relativeV1 = decodeMorton(leftBlockCode);
-                const actualV1 = this.minPoint.add(
-                  relativeV1.multiply(blockSize)
-                );
-                yield new MoctreeBlock(
-                  currentLod,
-                  leftBlockCode,
-                  actualV1,
-                  actualV1.add(blockSize)
-                );
-                // fanOut only counts blocks with data
-                i++;
-              }
-              blockCount++;
-              leftBlockCode = currentCode - ++positions[currentLod - 1].left;
-            }
-
-            if (rightBlockCode <= ranges.maxMorton) {
-              if (
-                this.knownBlocks.has(rightBlockCode) ||
-                this.knownBlocks.size === 0
-              ) {
-                const relativeV2 = decodeMorton(rightBlockCode);
-                const actualV2 = this.minPoint.add(
-                  relativeV2.multiply(blockSize)
-                );
-                yield new MoctreeBlock(
-                  currentLod,
-                  rightBlockCode,
-                  actualV2,
-                  actualV2.add(blockSize)
-                );
-                // fanOut only counts blocks with data
-                i++;
-              }
-              blockCount++;
-              rightBlockCode = currentCode + ++positions[currentLod - 1].right;
-            }
-
-            if (
-              rightBlockCode > ranges.maxMorton &&
-              leftBlockCode < ranges.minMorton
-            ) {
-              break;
-            }
-          }
-        } else {
-          // all done for this lod
-          lods.splice(l, 1);
-        }
-      }
-    }
-    return;
+    this.blocklist = new Map<number, MoctreeBlock>();
   }
 }
 
@@ -315,6 +90,7 @@ class MoctreeBlock {
     public mortonNumber: number,
     minPoint: Vector3,
     maxPoint: Vector3,
+    pointCount = -1,
     entries?: SparseResult
   ) {
     this.minPoint = minPoint;
@@ -322,6 +98,10 @@ class MoctreeBlock {
     if (entries) {
       this.entries = entries;
       this.pointCount = this.entries.X.length;
+    }
+
+    if (pointCount > -1) {
+      this.pointCount = pointCount;
     }
 
     this.boundingInfo = new BoundingInfo(this.minPoint, this.maxPoint);

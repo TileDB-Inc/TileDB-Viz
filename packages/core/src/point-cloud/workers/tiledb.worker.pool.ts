@@ -53,6 +53,7 @@ class TileDBWorkerPool {
         block.mortonNumber,
         new Vector3(block.minPoint._x, block.minPoint._y, block.minPoint._z),
         new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
+        block.pointCount,
         block.entries
       );
 
