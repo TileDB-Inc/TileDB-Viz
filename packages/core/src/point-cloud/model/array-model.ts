@@ -8,12 +8,15 @@ import {
   Vector3,
   Particle,
   Frustum,
-  Camera
+  RawTexture,
+  Constants,
+  Camera,
+  RenderTargetTexture
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 
-import { decodeMorton, encodeMorton, Moctree, MoctreeBlock } from '../octree';
+import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
 import {
   DataRequest,
   InitialRequest,
@@ -25,6 +28,9 @@ import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
+import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
+import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
+import { PointType } from '../materials/plugins/roundPointPlugin';
 
 /**
  * The ArrayModel manages the client octree
@@ -45,7 +51,7 @@ class ArrayModel {
   maxLevel?: number;
   token?: string;
   tiledbEnv?: string;
-  pointType: string;
+  pointType: PointType;
   pointSize: number;
   particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
@@ -58,20 +64,29 @@ class ArrayModel {
   scene?: Scene;
   poolSize: number;
   debugTexture?: AdvancedDynamicTexture;
-  visible: Map<number, boolean>;
+  loaded: Map<number, boolean>;
+  octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
   isInitalized = false;
-  blockQueue?: PriorityQueue;
+  blockQueue!: PriorityQueue;
   static groundName = 'ground';
+  renderTargets: RenderTargetTexture[];
+  depthMaterial!: LinearDepthMaterial;
+  additiveProximityMaterial!: AdditiveProximityMaterial;
+  basePointSize = 1;
+  visible: Map<number, boolean>;
 
-  constructor(options: TileDBPointCloudOptions) {
+  constructor(
+    options: TileDBPointCloudOptions,
+    renderTargets: RenderTargetTexture[]
+  ) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointType = options.pointType || 'box';
+    this.pointType = options.pointType || PointType.FixedScreenSizePoint;
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
     this.edlStrength = options.edlStrength || 4.0;
@@ -79,6 +94,7 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
     this.pointBudget = options.pointBudget || 500_000;
+
     if (options.useShader === true) {
       this.useShader = true;
     }
@@ -101,6 +117,8 @@ class ArrayModel {
       SolidParticleSystem | PointsCloudSystem
     >();
 
+    this.renderTargets = renderTargets;
+    this.loaded = new Map<number, boolean>();
     this.visible = new Map<number, boolean>();
     this.pending = [];
   }
@@ -133,8 +151,8 @@ class ArrayModel {
 
   private loadSystem(block: MoctreeBlock) {
     if (
-      !this.visible.has(block.mortonNumber) ||
-      !this.visible.get(block.mortonNumber)
+      !this.loaded.has(block.mortonNumber) ||
+      !this.loaded.get(block.mortonNumber)
     ) {
       return;
     }
@@ -144,16 +162,16 @@ class ArrayModel {
       block.entries.X.length > 0 &&
       this.scene
     ) {
-      const debugCoords = decodeMorton(block.mortonNumber);
-      console.log(
-        block.lod +
-          ' ' +
-          debugCoords.x +
-          ' ' +
-          debugCoords.z +
-          ' ' +
-          debugCoords.y
-      );
+      // const debugCoords = decodeMorton(block.mortonNumber);
+      // console.log(
+      //   block.lod +
+      //     ' ' +
+      //     debugCoords.x +
+      //     ' ' +
+      //     debugCoords.z +
+      //     ' ' +
+      //     debugCoords.y
+      // );
 
       const transX = this.translationVector.x;
       const transY = this.translationVector.y;
@@ -162,14 +180,6 @@ class ArrayModel {
       const zScale = this.zScale;
 
       const numPoints = block.entries.X.length;
-
-      // when streaming data, scale pointSize by LOD level
-      let pointSize = this.pointSize;
-      if (this.useStreaming) {
-        pointSize = this.maxLevel
-          ? this.pointSize * (block.lod / this.maxLevel)
-          : this.pointSize;
-      }
 
       const pointBuilder = function (particle: Particle, i: number) {
         if (block.entries !== undefined) {
@@ -203,11 +213,15 @@ class ArrayModel {
           { updatable: false }
         );
 
-        const box = MeshBuilder.CreateBox('b', { size: pointSize }, this.scene);
+        const box = MeshBuilder.CreateBox(
+          'b',
+          { size: this.pointSize },
+          this.scene
+        );
         sps.computeBoundingBox = true;
         sps.addShape(box, numPoints, { positionFunction: pointBuilder });
-        box.dispose();
         sps.buildMesh();
+        box.dispose();
 
         if (this.debug && this.debugTexture && sps.mesh) {
           this.addDebugLabel(sps, block.mortonNumber.toString());
@@ -219,21 +233,70 @@ class ArrayModel {
       } else {
         const pcs = new PointsCloudSystem(
           block.mortonNumber.toString(),
-          pointSize,
+          this.pointSize,
           this.scene,
           { updatable: false }
         );
+
         pcs.computeBoundingBox = true;
         pcs.addPoints(numPoints, pointBuilder);
 
         pcs.buildMeshAsync().then(() => {
-          pcs.setParticles();
-          if (block.mortonNumber !== Moctree.startBlockIndex) {
-            this.particleSystems.set(block.mortonNumber, pcs);
-          }
+          this.particleSystems.set(block.mortonNumber, pcs);
+
           if (this.debug && this.debugTexture && pcs.mesh) {
             this.addDebugLabel(pcs, block.mortonNumber.toString());
           }
+
+          if (!pcs.mesh || !pcs.mesh.material) {
+            throw new Error('Point cloud build failed');
+          }
+
+          if (!this.depthMaterial) {
+            this.depthMaterial = new LinearDepthMaterial(
+              pcs.mesh.material,
+              this.pointSize,
+              this.octreeTexture,
+              this.octree.minPoint,
+              this.octree.maxPoint,
+              this.pointType
+            );
+          }
+
+          if (!this.renderTargets[0].renderList) {
+            throw new Error('Render Targer 0 uninitialized');
+          }
+
+          this.renderTargets[0].renderList.push(pcs.mesh);
+          this.renderTargets[0].setMaterialForRendering(
+            pcs.mesh,
+            this.depthMaterial.material
+          );
+
+          if (!this.additiveProximityMaterial) {
+            this.additiveProximityMaterial = new AdditiveProximityMaterial(
+              pcs.mesh.material,
+              1,
+              this.pointSize,
+              this.renderTargets[0],
+              this.octreeTexture,
+              this.octree.minPoint,
+              this.octree.maxPoint,
+              this.pointType
+            );
+          }
+
+          if (!this.renderTargets[1].renderList) {
+            throw new Error('Render Targer 1 uninitialized');
+          }
+
+          this.renderTargets[1].renderList.push(pcs.mesh);
+          this.renderTargets[1].setMaterialForRendering(
+            pcs.mesh,
+            this.additiveProximityMaterial.material
+          );
+
+          this.visible.set(block.mortonNumber, true);
         });
       }
     }
@@ -265,6 +328,29 @@ class ArrayModel {
     }
   }
 
+  public reassignMaterials(renderTargets: RenderTargetTexture[]) {
+    this.renderTargets = renderTargets;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_1, pcs] of this.particleSystems) {
+      if (!pcs.mesh || !pcs.mesh.material) {
+        throw new Error('Point cloud build failed');
+      }
+
+      //this.renderTargets[0].renderList.push(pcs.mesh);
+      this.renderTargets[0].setMaterialForRendering(
+        pcs.mesh,
+        this.depthMaterial.material
+      );
+
+      //this.renderTargets[1].renderList.push(pcs.mesh);
+      this.renderTargets[1].setMaterialForRendering(
+        pcs.mesh,
+        this.additiveProximityMaterial.material
+      );
+    }
+  }
+
   public async init(
     scene: Scene,
     xmin: number,
@@ -279,6 +365,7 @@ class ArrayModel {
     rgbMax?: number,
     data?: SparseResult
   ) {
+    this.basePointSize = 50;
     this.scene = scene;
     this.rgbMax = rgbMax || 65535;
     this.maxLevel = nLevels || 1;
@@ -304,7 +391,7 @@ class ArrayModel {
         Vector3.Zero()
       );
       block.entries = data;
-      this.visible.set(block.mortonNumber, true);
+      this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
       // no need to save entries for LOD 0
       block.entries = undefined;
@@ -373,7 +460,7 @@ class ArrayModel {
       const block = this.pending.pop();
 
       if (block) {
-        this.visible.set(block.mortonNumber, true);
+        this.loaded.set(block.mortonNumber, true);
         this.fetchBlock(block);
       }
     }
@@ -381,7 +468,7 @@ class ArrayModel {
 
   public dropBlocks() {
     const keys: number[] = [];
-    for (const [key, value] of this.visible) {
+    for (const [key, value] of this.loaded) {
       if (!value) {
         keys.push(key);
       }
@@ -389,11 +476,12 @@ class ArrayModel {
 
     for (const key of keys) {
       const p = this.particleSystems.get(key);
-      this.visible.delete(key);
+      this.loaded.delete(key);
 
       if (p) {
         p.dispose();
         this.particleSystems.delete(key);
+        this.visible.delete(key);
       }
     }
   }
@@ -405,6 +493,7 @@ class ArrayModel {
       this.octree.maxPoint.z - this.octree.minPoint.z
     ];
     // TODO change this format to send morton codes in the node metadata from the server
+
     m.forEach((v, k) => {
       if (!k.startsWith('_')) {
         const parts = k.split('-').map(Number);
@@ -475,11 +564,15 @@ class ArrayModel {
       let points = 0;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for (const [key, _] of this.visible) {
-        this.visible.set(key, false);
+      for (const [key, _] of this.loaded) {
+        this.loaded.set(key, false);
       }
 
-      while (!this.blockQueue.isEmpty() && points < this.pointBudget) {
+      while (
+        !this.blockQueue.isEmpty() &&
+        points < this.pointBudget &&
+        this.pending.length + this.loaded.size < 200
+      ) {
         const block = this.blockQueue.extractMax().octreeBlock;
         if (!block) {
           break;
@@ -489,10 +582,10 @@ class ArrayModel {
           continue;
         }
 
-        if (!this.visible.has(block.mortonNumber)) {
+        if (!this.loaded.has(block.mortonNumber)) {
           this.pending.push(block);
         } else {
-          this.visible.set(block.mortonNumber, true);
+          this.loaded.set(block.mortonNumber, true);
         }
 
         points +=
@@ -522,11 +615,65 @@ class ArrayModel {
           }
         }
       }
+
       if (points > this.pointBudget) {
         console.log('Point budget reached');
       }
 
       this.pending.reverse();
+    }
+  }
+
+  private calculateOctreeTexture(): void {
+    const keys = Array.from(this.visible.keys()).sort((a, b) => a - b);
+
+    const textureData: Uint8Array = new Uint8Array(400);
+    let counter = 0;
+
+    for (const key of keys) {
+      const block = this.octree.blocklist.get(key);
+
+      if (!block) {
+        continue;
+      }
+
+      for (let i = 0; i < 8; ++i) {
+        const code = (block.mortonNumber << 3) + i;
+
+        if (!this.visible.has(code) || !this.visible.get(code)) {
+          continue;
+        }
+
+        if (textureData[2 * counter] === 0) {
+          // This is the first child so we need to find its index
+          // in the keys array relatice to the current index
+          textureData[2 * counter + 1] =
+            keys.indexOf(code, counter + 1) - counter;
+        }
+
+        textureData[2 * counter] = textureData[2 * counter] | (1 << i);
+      }
+
+      ++counter;
+    }
+
+    if (this.octreeTexture) {
+      this.octreeTexture.update(textureData);
+    } else {
+      if (!this.scene) {
+        throw new Error('Scene is unitilialized');
+      }
+
+      this.octreeTexture = new RawTexture(
+        textureData,
+        200,
+        1,
+        Constants.TEXTUREFORMAT_RG_INTEGER,
+        this.scene,
+        false,
+        false,
+        Constants.TEXTURE_NEAREST_SAMPLINGMODE
+      );
     }
   }
 
@@ -539,6 +686,7 @@ class ArrayModel {
         this.calculateBlocks(scene);
       }
       this.fetchPoints(scene);
+      this.calculateOctreeTexture();
     }
   }
 }

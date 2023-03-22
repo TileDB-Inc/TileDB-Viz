@@ -3,6 +3,7 @@ import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
 import getTileDBClient from '../../utils/getTileDBClient';
+import { PointType } from '../materials/plugins/roundPointPlugin';
 import { SparseResult } from '../model';
 import { sortDataArrays } from './arrays';
 
@@ -102,7 +103,7 @@ export interface TileDBPointCloudOptions
   /**
    * Select point rendering type, 'box' is supported for now
    */
-  pointType?: string;
+  pointType?: PointType;
   /**
    * Point size
    */

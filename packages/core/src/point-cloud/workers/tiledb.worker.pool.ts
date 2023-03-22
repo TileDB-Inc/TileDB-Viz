@@ -17,6 +17,7 @@ class TileDBWorkerPool {
   private callbackFn: (block: MoctreeBlock) => void;
   private mapStatus: Map<string, boolean>;
   private initRequest: InitialRequest;
+  private messageQueue: DataRequest[] = [];
 
   constructor(
     initRequest: InitialRequest,
@@ -68,18 +69,29 @@ class TileDBWorkerPool {
       await writeToCache(storeName, queryCacheKey, block);
     } else if (m.type === WorkerType.idle) {
       const idleMessage = m as IdleResponse;
-      this.mapStatus.set(idleMessage.name, false);
+      if (this.messageQueue.length > 0) {
+        const request = this.messageQueue.shift();
+        this.workers[parseInt(idleMessage.name)].postMessage(request);
+      } else {
+        this.mapStatus.set(idleMessage.name, false);
+      }
     }
   }
 
   public async postMessage(request: DataRequest) {
     // loop over available workers
+    let dispached = false;
     for (const [k, v] of this.mapStatus) {
       if (!v) {
         this.workers[parseInt(k)].postMessage(request);
         this.mapStatus.set(k, true);
+        dispached = true;
         break;
       }
+    }
+
+    if (!dispached) {
+      this.messageQueue.push(request);
     }
   }
 
