@@ -26,7 +26,6 @@ import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthT
 import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 import menuIcon from '../../assets/menu-48.png';
 
-
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
 
