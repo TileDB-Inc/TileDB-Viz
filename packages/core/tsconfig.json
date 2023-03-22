@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.build.json",
-  "include": ["src"],
+  "include": ["src", "src/custom.d.ts"],
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src"
