@@ -20,11 +20,13 @@ import {
   InputText
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
-import { setSceneColors, updateSceneColors } from './scene-colors';
+import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
 import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
-import menuIcon from '../../assets/menu-48.png';
+import menuIcon from '../../assets/menu.png';
+import filesIcon from '../../assets/model.png';
+import controlsIcon from '../../assets/controls.png';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -114,88 +116,349 @@ class PointCloudGUI {
   }
 
   public async init(scene: Scene, model: ArrayModel) {
-    let sceneColors = setSceneColors(model.colorScheme as string);
+    const backgroundColor = '#494949CC';
+    const lightColor = '#FFF';
+    const buttonColor = '#0077FF';
 
-    const leftPanel = new Grid();
-    leftPanel.width = '300px';
-    leftPanel.setPadding('16px', '16px', '16px', '16px');
-    leftPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    leftPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    leftPanel.addRowDefinition(50, true);
-    leftPanel.addRowDefinition(5, true);
-    leftPanel.addRowDefinition(500, true);
-    this.advancedDynamicTexture.addControl(leftPanel);
+    const mainGrid = new Grid();
+    mainGrid.setPadding('16px', '16px', '16px', '16px');
+    mainGrid.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    mainGrid.addColumnDefinition(1);
+    mainGrid.addColumnDefinition(250, true);
+    mainGrid.addColumnDefinition(64, true);
+    mainGrid.addColumnDefinition(6, true);
+    mainGrid.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    mainGrid.addRowDefinition(1);
+    mainGrid.color = '#FFF';
+    mainGrid.fontSize = 14;
 
-    const fileButton = Button.CreateImageOnlyButton(
-      'button',
-      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
-    );
-    fileButton.width = '48px';
-    fileButton.height = '48px';
-    fileButton.background = 'transparent';
-    fileButton.thickness = 0;
-    fileButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    fileButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    leftPanel.addControl(fileButton, 0, 0);
+    this.advancedDynamicTexture.addControl(mainGrid);
 
-    let _filemenu = 0;
-    const showFileControls = function () {
-      if (_filemenu === 0) {
-        _filemenu = 1;
-        fileStackPanel.isVisible = true;
-      } else if (_filemenu === 1) {
-        fileStackPanel.isVisible = false;
-        _filemenu = 0;
+    // add buttons
+    const buttonGrid = new Grid('buttonGrid');
+    buttonGrid.addRowDefinition(1);
+    buttonGrid.addRowDefinition(64, true);
+    buttonGrid.addRowDefinition(64, true);
+    buttonGrid.addRowDefinition(64, true);
+    buttonGrid.width = 1;
+
+    mainGrid.addControl(buttonGrid, 1, 2);
+
+    function createButton(name: string, icon: string) {
+      const button = Button.CreateImageOnlyButton(name, icon);
+      button.width = '64px';
+      button.height = '64px';
+      button.background = 'transparent';
+      button.thickness = 0;
+      button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+      button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+      return button;
+    }
+
+    const controlsButton = createButton('control button', controlsIcon);
+    const menuButton = createButton('menu button', menuIcon);
+    const filesButton = createButton('menu button', filesIcon);
+
+    buttonGrid.addControl(controlsButton, 3, 0);
+    buttonGrid.addControl(menuButton, 2, 0);
+    buttonGrid.addControl(filesButton, 1, 0);
+
+    // expand and collapse the menus on click of buttons
+    let _controls = 0;
+    let _menu = 0;
+    let _files = 0;
+
+    const showControls = function () {
+      if (_controls === 0) {
+        _controls = 1;
+        _menu = 0;
+        _files = 0;
+        controlsPanel.isVisible = true;
+        menuPanel.isVisible = false;
+        filesPanel.isVisible = false;
+      } else if (_controls === 1) {
+        controlsPanel.isVisible = false;
+        menuPanel.isVisible = false;
+        filesPanel.isVisible = false;
+        _controls = 0;
+        _menu = 0;
+        _files = 0;
       }
-      return _filemenu;
+      return _controls;
     };
 
-    fileButton.onPointerUpObservable.add(() => {
-      showFileControls();
+    const showMenu = function () {
+      if (_menu === 0) {
+        _menu = 1;
+        _controls = 0;
+        _files = 0;
+        menuPanel.isVisible = true;
+        controlsPanel.isVisible = false;
+        filesPanel.isVisible = false;
+      } else if (_menu === 1) {
+        menuPanel.isVisible = false;
+        controlsPanel.isVisible = false;
+        filesPanel.isVisible = false;
+        _menu = 0;
+        _controls = 0;
+        _files = 0;
+      }
+      return _menu;
+    };
+
+    const showFiles = function () {
+      if (_files === 0) {
+        _files = 1;
+        _controls = 0;
+        _menu = 0;
+        filesPanel.isVisible = true;
+        controlsPanel.isVisible = false;
+        menuPanel.isVisible = false;
+      } else if (_files === 1) {
+        filesPanel.isVisible = false;
+        controlsPanel.isVisible = false;
+        menuPanel.isVisible = false;
+        _files = 0;
+        _controls = 0;
+        _menu = 0;
+      }
+      return _files;
+    };
+
+    controlsButton.onPointerUpObservable.add(() => {
+      showControls();
     });
 
-    const fileStackPanel = new StackPanel('stackPanel');
-    fileStackPanel.width = 1;
-    fileStackPanel.height = '500px';
-    fileStackPanel.background = 'rgba(0,0,0,0.8)';
-    fileStackPanel.setPaddingInPixels(12, 12, 12, 12);
-    fileStackPanel.descendantsOnlyPadding = true;
-    fileStackPanel.isVisible = false;
-    leftPanel.addControl(fileStackPanel, 2, 0);
+    menuButton.onPointerUpObservable.add(() => {
+      showMenu();
+    });
+
+    filesButton.onPointerUpObservable.add(() => {
+      showFiles();
+    });
+
+    // add the controls panel
+    const controlsPanel = new StackPanel('controlsPanel');
+    controlsPanel.height = 1;
+    controlsPanel.background = backgroundColor;
+    controlsPanel.setPaddingInPixels(12, 12, 12, 12);
+    controlsPanel.descendantsOnlyPadding = true;
+    controlsPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    controlsPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    controlsPanel.isVisible = false;
+    mainGrid.addControl(controlsPanel, 4, 1);
+
+    const shortcutsTitle = new TextBlock('inputLabel', 'Shortcuts');
+    shortcutsTitle.fontSize = 18;
+    shortcutsTitle.height = '50px';
+    shortcutsTitle.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(shortcutsTitle);
+
+    const cShortcut = new TextBlock('inputLabel', 'c: toggle between cameras');
+    cShortcut.height = '25px';
+    cShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(cShortcut);
+
+    const bShortcut = new TextBlock('inputLabel', 'b: background color');
+    bShortcut.height = '25px';
+    bShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(bShortcut);
+
+    const arcRotateTitle = new TextBlock('inputLabel', 'arcRotate camera:');
+    arcRotateTitle.fontSize = 18;
+    arcRotateTitle.height = '50px';
+    arcRotateTitle.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(arcRotateTitle);
+
+    const zShortcut = new TextBlock(
+      'inputLabel',
+      'scroll wheel: zoom in and out'
+    );
+    zShortcut.height = '25px';
+    zShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(zShortcut);
+
+    const rShortcut = new TextBlock(
+      'inputLabel',
+      'drag mouse with left button: rotate'
+    );
+    rShortcut.height = '25px';
+    rShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(rShortcut);
+
+    const vShortcut = new TextBlock(
+      'inputLabel',
+      'v: toggle between camera locations'
+    );
+    vShortcut.height = '25px';
+    vShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(vShortcut);
+
+    const freeTitle = new TextBlock('inputLabel', 'free camera:');
+    freeTitle.fontSize = 18;
+    freeTitle.height = '50px';
+    freeTitle.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(freeTitle);
+
+    const rrShortcut = new TextBlock(
+      'inputLabel',
+      'drag mouse with left button: rotate'
+    );
+    rrShortcut.height = '25px';
+    rrShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(rrShortcut);
+
+    const wShortcut = new TextBlock('inputLabel', 'w or up: move forward');
+    wShortcut.height = '25px';
+    wShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(wShortcut);
+
+    const sShortcut = new TextBlock('inputLabel', 's or down: move backward');
+    sShortcut.height = '25px';
+    sShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(sShortcut);
+
+    const eShortcut = new TextBlock('inputLabel', 'e: move up');
+    eShortcut.height = '25px';
+    eShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(eShortcut);
+
+    const qShortcut = new TextBlock('inputLabel', 'q: move down');
+    qShortcut.height = '25px';
+    qShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(qShortcut);
+
+    const aShortcut = new TextBlock('inputLabel', 'a: move to the left');
+    aShortcut.height = '25px';
+    aShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(aShortcut);
+
+    const dShortcut = new TextBlock('inputLabel', 'd: move to the right');
+    dShortcut.height = '25px';
+    dShortcut.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    controlsPanel.addControl(dShortcut);
+
+    // add the menu panel
+    const menuPanel = new SelectionPanel('menuPanel');
+    menuPanel.thickness = 0;
+    menuPanel.background = backgroundColor;
+    menuPanel.color = lightColor;
+    menuPanel.barColor = lightColor;
+    menuPanel.headerColor = lightColor;
+    menuPanel.buttonColor = buttonColor;
+    menuPanel.buttonBackground = lightColor;
+    menuPanel.labelColor = lightColor;
+    menuPanel.setPaddingInPixels(12, 12, 12, 12);
+    menuPanel.descendantsOnlyPadding = true;
+    menuPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    menuPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    menuPanel.isVisible = false;
+    mainGrid.addControl(menuPanel, 4, 1);
+
+    if (model.useStreaming) {
+      // add streaming performance sliders
+      const performanceGroup = new SliderGroup('Performance');
+
+      const updatePointBudget = function (value: number) {
+        model.pointBudget = value;
+      };
+
+      performanceGroup.addSlider(
+        'Point budget',
+        updatePointBudget,
+        ' ',
+        1_00_000,
+        50_000_000,
+        model.pointBudget,
+        (value: number) => {
+          return +value.toFixed(1);
+        }
+      );
+      menuPanel.addGroup(performanceGroup);
+    }
+
+    // add color scheme radio buttons
+    enum ColorScheme {
+      Dark = 0,
+      Light = 1,
+      Blue = 2
+    }
+
+    function setColors(colors: string) {
+      updateSceneColors(scene, colors);
+    }
+
+    const setColor = (but: ColorScheme) => {
+      switch (but) {
+        case ColorScheme.Dark:
+          setColors('dark');
+          break;
+        case ColorScheme.Light:
+          setColors('light');
+          break;
+        case ColorScheme.Blue:
+          setColors('blue');
+          break;
+      }
+    };
+
+    const colorGroup = new RadioGroup('Color scheme');
+    let darkOn = false;
+    let lightOn = false;
+    let blueOn = false;
+    if (model.colorScheme === 'dark') {
+      darkOn = true;
+    }
+    if (model.colorScheme === 'light') {
+      lightOn = true;
+    }
+    if (model.colorScheme === 'blue') {
+      blueOn = true;
+    }
+    colorGroup.addRadio('dark', setColor, darkOn);
+    colorGroup.addRadio('light', setColor, lightOn);
+    colorGroup.addRadio('blue', setColor, blueOn);
+    menuPanel.addGroup(colorGroup);
+
+    // add the model files panel
+    const filesPanel = new StackPanel('filesPanel');
+    filesPanel.width = 1;
+    filesPanel.height = 1;
+    filesPanel.background = backgroundColor;
+    filesPanel.setPaddingInPixels(12, 12, 12, 12);
+    filesPanel.descendantsOnlyPadding = true;
+    filesPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    filesPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    filesPanel.isVisible = false;
+    mainGrid.addControl(filesPanel, 4, 1);
 
     const namespaceLabel = new TextBlock('inputLabel', 'Namespace');
     namespaceLabel.width = 1;
-    namespaceLabel.color = 'white';
     namespaceLabel.height = '30px';
     namespaceLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-    fileStackPanel.addControl(namespaceLabel);
+    filesPanel.addControl(namespaceLabel);
 
     const namespaceInput = new InputText('namespaceInput');
-    namespaceInput.height = '40px';
-    namespaceInput.color = 'white';
+    namespaceInput.height = '30px';
+    namespaceInput.color = lightColor;
     namespaceInput.text = 'TileDB-Inc';
     namespaceInput.placeholderText = 'Namespace';
     namespaceInput.width = 1;
-
-    fileStackPanel.addControl(namespaceInput);
+    filesPanel.addControl(namespaceInput);
 
     const fileLabel = new TextBlock('fileLabel', 'File');
     fileLabel.width = 1;
-    fileLabel.color = 'white';
     fileLabel.height = '30px';
     fileLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-    fileStackPanel.addControl(fileLabel);
+    filesPanel.addControl(fileLabel);
 
     const fileInput = new InputText('fileInput');
-    fileInput.height = '40px';
-    fileInput.color = 'white';
+    fileInput.height = '30px';
+    fileInput.color = lightColor;
     fileInput.text = 'dragon.glb';
     fileInput.placeholderText = 'File';
     fileInput.width = 1;
-
-    fileStackPanel.addControl(fileInput);
+    filesPanel.addControl(fileInput);
 
     const positionGrid = new Grid('positionGrid');
     positionGrid.addColumnDefinition(0.5, false);
@@ -211,25 +474,21 @@ class PointCloudGUI {
 
     const positionXLabel = new TextBlock('positionXLabel', 'Translation X');
     positionXLabel.width = 1;
-    positionXLabel.color = 'white';
     positionXLabel.height = '30px';
     positionXLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 
     const positionYLabel = new TextBlock('positionYLabel', 'Translation Y');
     positionYLabel.width = 1;
-    positionYLabel.color = 'white';
     positionYLabel.height = '30px';
     positionYLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 
     const positionZLabel = new TextBlock('positionZLabel', 'Translation Z');
     positionZLabel.width = 1;
-    positionZLabel.color = 'white';
     positionZLabel.height = '30px';
     positionZLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 
     const scaleLabel = new TextBlock('scaleLabel', 'Scale');
     scaleLabel.width = 1;
-    scaleLabel.color = 'white';
     scaleLabel.height = '30px';
     scaleLabel.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 
@@ -240,28 +499,28 @@ class PointCloudGUI {
 
     const positionXInput = new InputText('positionXInput');
     positionXInput.height = 1;
-    positionXInput.color = 'white';
+    positionXInput.color = lightColor;
     positionXInput.text = '0.000';
     positionXInput.placeholderText = 'Translation X';
     positionXInput.width = 1;
 
     const positionYInput = new InputText('positionYInput');
     positionYInput.height = 1;
-    positionYInput.color = 'white';
+    positionYInput.color = lightColor;
     positionYInput.text = '0.000';
     positionYInput.placeholderText = 'Translation Y';
     positionYInput.width = 1;
 
     const positionZInput = new InputText('positionZInput');
     positionZInput.height = 1;
-    positionZInput.color = 'white';
+    positionZInput.color = lightColor;
     positionZInput.text = '0.000';
     positionZInput.placeholderText = 'Translation Z';
     positionZInput.width = 1;
 
     const scaleInput = new InputText('scaleInput');
     scaleInput.height = 1;
-    scaleInput.color = 'white';
+    scaleInput.color = lightColor;
     scaleInput.text = '1.000';
     scaleInput.placeholderText = 'Scale';
     scaleInput.width = 1;
@@ -271,12 +530,12 @@ class PointCloudGUI {
     positionGrid.addControl(positionZInput, 2, 1);
     positionGrid.addControl(scaleInput, 3, 1);
 
-    fileStackPanel.addControl(positionGrid);
+    filesPanel.addControl(positionGrid);
 
     const loadButton = Button.CreateSimpleButton('loadButton', 'Load Model');
     loadButton.width = 1;
-    loadButton.height = '40px';
-    loadButton.background = 'rgb(120, 150, 30)';
+    loadButton.height = '30px';
+    loadButton.background = buttonColor;
 
     loadButton.onPointerUpObservable.add(() => {
       const config: Record<string, string> = {};
@@ -357,143 +616,7 @@ class PointCloudGUI {
         });
     });
 
-    fileStackPanel.addControl(loadButton);
-
-    const rightPanel = new Grid();
-    rightPanel.width = '250px';
-    rightPanel.setPadding('16px', '16px', '16px', '16px');
-    rightPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    rightPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    rightPanel.addRowDefinition(50, true);
-    rightPanel.addRowDefinition(5, true);
-    rightPanel.addRowDefinition(500, true);
-    this.advancedDynamicTexture.addControl(rightPanel);
-    const button = Button.CreateImageOnlyButton('button', menuIcon);
-    button.width = '48px';
-    button.height = '48px';
-    button.background = 'transparent';
-    button.thickness = 0;
-    button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-
-    rightPanel.addControl(button, 0, 0);
-
-    // expand and collapse the panel menu on click of button
-    let _menu = 0;
-    const showControls = function () {
-      if (_menu === 0) {
-        _menu = 1;
-        controls.isVisible = true;
-      } else if (_menu === 1) {
-        controls.isVisible = false;
-        _menu = 0;
-      }
-      return _menu;
-    };
-
-    button.onPointerUpObservable.add(() => {
-      showControls();
-    });
-
-    function setControlsColors(sceneColors: {
-      backgroundColor: { toHexString: () => string };
-      textColor: string;
-      accentColor: string;
-      secondColor: string;
-    }) {
-      controls.background = sceneColors.backgroundColor.toHexString();
-      controls.color = sceneColors.textColor;
-      controls.barColor = sceneColors.textColor;
-      controls.headerColor = sceneColors.textColor;
-      controls.buttonColor = sceneColors.accentColor;
-      controls.buttonBackground = sceneColors.secondColor;
-      controls.labelColor = sceneColors.textColor;
-    }
-
-    // add the control panel
-    const controls = new SelectionPanel('controlPanel');
-    controls.width = 1;
-    controls.height = 1;
-    controls.thickness = 0;
-    controls.fontSize = 14;
-    controls.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    controls.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    setControlsColors(sceneColors);
-    rightPanel.addControl(controls, 2, 0);
-
-    if (model.useStreaming) {
-      // add streaming performance sliders
-      const performanceGroup = new SliderGroup('Performance');
-
-      const updatePointBudget = function (value: number) {
-        model.pointBudget = value;
-      };
-
-      performanceGroup.addSlider(
-        'Point budget',
-        updatePointBudget,
-        ' ',
-        1_000_000,
-        50_000_000,
-        model.pointBudget,
-        (value: number) => {
-          return +value.toFixed(1);
-        }
-      );
-      controls.addGroup(performanceGroup);
-    }
-
-    // add color scheme radio buttons
-    enum ColorScheme {
-      Dark = 0,
-      Light = 1,
-      Blue = 2
-    }
-
-    function setColors(colors: string) {
-      updateSceneColors(scene, colors);
-      sceneColors = setSceneColors(colors);
-      setControlsColors(sceneColors);
-    }
-
-    const setColor = (but: ColorScheme) => {
-      switch (but) {
-        case ColorScheme.Dark:
-          setColors('dark');
-          break;
-        case ColorScheme.Light:
-          setColors('light');
-          break;
-        case ColorScheme.Blue:
-          setColors('blue');
-          break;
-      }
-    };
-
-    const colorGroup = new RadioGroup('Color scheme');
-    let darkOn = false;
-    let lightOn = false;
-    let blueOn = false;
-    if (model.colorScheme === 'dark') {
-      darkOn = true;
-    }
-    if (model.colorScheme === 'light') {
-      lightOn = true;
-    }
-    if (model.colorScheme === 'blue') {
-      blueOn = true;
-    }
-    colorGroup.addRadio('dark', setColor, darkOn);
-    colorGroup.addRadio('light', setColor, lightOn);
-    colorGroup.addRadio('blue', setColor, blueOn);
-    controls.addGroup(colorGroup);
-
-    // to make sure the menu is collapsed at the start
-    const sceneInit = function () {
-      controls.isVisible = false;
-    };
-
-    sceneInit();
+    filesPanel.addControl(loadButton);
   }
 }
 
