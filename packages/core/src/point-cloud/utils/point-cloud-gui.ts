@@ -21,9 +21,13 @@ import {
 } from '@babylonjs/gui';
 import ArrayModel from '../model/array-model';
 import { setSceneColors, updateSceneColors } from './scene-colors';
+
 import getTileDBClient from '../../utils/getTileDBClient';
 import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
+
+import menuIcon from '../../assets/menu-48.png';
+
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -367,11 +371,7 @@ class PointCloudGUI {
     rightPanel.addRowDefinition(5, true);
     rightPanel.addRowDefinition(500, true);
     this.advancedDynamicTexture.addControl(rightPanel);
-
-    const button = Button.CreateImageOnlyButton(
-      'button',
-      'https://tiledb-viz-demos.s3.amazonaws.com/menu-48.png'
-    );
+    const button = Button.CreateImageOnlyButton('button', menuIcon);
     button.width = '48px';
     button.height = '48px';
     button.background = 'transparent';
