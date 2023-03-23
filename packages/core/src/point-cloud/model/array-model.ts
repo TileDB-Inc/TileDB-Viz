@@ -68,7 +68,7 @@ class ArrayModel {
   octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
   screenSizeLimit = 20;
-  isInitalized = false;
+  isInitialized = false;
   blockQueue!: PriorityQueue;
   static groundName = 'ground';
   renderTargets: RenderTargetTexture[];
@@ -681,8 +681,8 @@ class ArrayModel {
     if (this.useStreaming) {
       this.scene = scene;
       // initialize blocks here
-      if (!this.isInitalized) {
-        this.isInitalized = true;
+      if (!this.isInitialized) {
+        this.isInitialized = true;
         this.calculateBlocks(scene);
       }
       this.fetchPoints(scene);
