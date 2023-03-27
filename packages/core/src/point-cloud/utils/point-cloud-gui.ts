@@ -4,7 +4,8 @@ import {
   Vector3,
   Space,
   ISceneLoaderAsyncResult,
-  Tags
+  Tags,
+  Plane
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -360,18 +361,18 @@ class PointCloudGUI {
       const performanceGroup = new SliderGroup('Performance');
 
       const updatePointBudget = function (value: number) {
-        model.pointBudget = value;
+        model.pointBudget = Math.trunc(value * 4900000 + 100000);
       };
 
       performanceGroup.addSlider(
         'Point budget',
         updatePointBudget,
         ' ',
-        1_00_000,
-        50_000_000,
-        model.pointBudget,
+        0,
+        1,
+        (model.pointBudget - 100000) / 4900000,
         (value: number) => {
-          return +value.toFixed(1);
+          return +Math.trunc(value * 4900000 + 100000).toFixed(1);
         }
       );
       menuPanel.addGroup(performanceGroup);
@@ -419,6 +420,178 @@ class PointCloudGUI {
     colorGroup.addRadio('light', setColor, lightOn);
     colorGroup.addRadio('blue', setColor, blueOn);
     menuPanel.addGroup(colorGroup);
+
+    // add the clipping planes sliders
+    const clippingPlanesGroup = new SliderGroup('Clipping Planes');
+    clippingPlanesGroup.addSlider(
+      'Plane X-Min',
+      (value: number) => {
+        scene.clipPlane = new Plane(
+          1,
+          0,
+          0,
+          (value / 100) *
+            (model.octree.maxPoint.x - model.octree.minPoint.x + 2) +
+            model.octree.minPoint.x -
+            1
+        );
+      },
+      '',
+      0,
+      100,
+      0,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.x - model.octree.minPoint.x + 2) +
+          model.octree.minPoint.x -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    clippingPlanesGroup.addSlider(
+      'Plane X-Max',
+      (value: number) => {
+        scene.clipPlane2 = new Plane(
+          -1,
+          0,
+          0,
+          -(
+            (value / 100) *
+              (model.octree.maxPoint.x - model.octree.minPoint.x + 2) +
+            model.octree.minPoint.x -
+            1
+          )
+        );
+      },
+      '',
+      0,
+      100,
+      100,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.x - model.octree.minPoint.x + 2) +
+          model.octree.minPoint.x -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    clippingPlanesGroup.addSlider(
+      'Plane Y-Min',
+      (value: number) => {
+        scene.clipPlane3 = new Plane(
+          0,
+          -1,
+          0,
+          (value / 100) *
+            (model.octree.maxPoint.y - model.octree.minPoint.y + 2) +
+            model.octree.minPoint.y -
+            1
+        );
+      },
+      '',
+      0,
+      100,
+      0,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.y - model.octree.minPoint.y + 2) +
+          model.octree.minPoint.y -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    clippingPlanesGroup.addSlider(
+      'Plane Y-Max',
+      (value: number) => {
+        scene.clipPlane4 = new Plane(
+          0,
+          1,
+          0,
+          -(
+            (value / 100) *
+              (model.octree.maxPoint.y - model.octree.minPoint.y + 2) +
+            model.octree.minPoint.y -
+            1
+          )
+        );
+      },
+      '',
+      0,
+      100,
+      100,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.y - model.octree.minPoint.y + 2) +
+          model.octree.minPoint.y -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    clippingPlanesGroup.addSlider(
+      'Plane Z-Min',
+      (value: number) => {
+        scene.clipPlane5 = new Plane(
+          0,
+          0,
+          1,
+          (value / 100) *
+            (model.octree.maxPoint.z - model.octree.minPoint.z + 2) +
+            model.octree.minPoint.z -
+            1
+        );
+      },
+      '',
+      0,
+      100,
+      0,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.z - model.octree.minPoint.z + 2) +
+          model.octree.minPoint.z -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    clippingPlanesGroup.addSlider(
+      'Plane Z-Max',
+      (value: number) => {
+        scene.clipPlane6 = new Plane(
+          0,
+          0,
+          -1,
+          -(
+            (value / 100) *
+              (model.octree.maxPoint.z - model.octree.minPoint.z + 2) +
+            model.octree.minPoint.z -
+            1
+          )
+        );
+      },
+      '',
+      0,
+      100,
+      100,
+      (value: number) => {
+        return +(
+          (value / 100) *
+            (model.octree.maxPoint.z - model.octree.minPoint.z + 2) +
+          model.octree.minPoint.z -
+          1
+        ).toFixed(1);
+      }
+    );
+
+    menuPanel.addGroup(clippingPlanesGroup);
 
     // add the model files panel
     const filesPanel = new StackPanel('filesPanel');
