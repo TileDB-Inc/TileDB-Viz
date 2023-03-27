@@ -1,5 +1,6 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
 import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { SparseResult, TransformedResult } from '../model/sparse-result';
 
 import {
   DataRequest,
@@ -9,6 +10,7 @@ import {
   WorkerType
 } from '../model/sparse-result';
 import { MoctreeBlock } from '../octree';
+import buffersToSparseResult from '../utils/buffersToSparseResult';
 
 let namespace = '';
 let groupName = '';
@@ -16,6 +18,8 @@ let arraySchema: ArraySchema;
 let translateX = 0;
 let translateY = 0;
 let translateZ = 0;
+let zScale = 1;
+let rgbMax = 255;
 let bufferSize = 200000000;
 
 let tiledbQuery: TileDBQuery;
@@ -30,6 +34,8 @@ self.onmessage = async (e: MessageEvent) => {
     translateX = o.translateX;
     translateY = o.translateY;
     translateZ = o.translateZ;
+    zScale = o.zScale;
+    rgbMax = o.rgbMax;
     bufferSize = o.bufferSize;
 
     const tiledbClient = new TileDBClient({
@@ -46,14 +52,41 @@ self.onmessage = async (e: MessageEvent) => {
 };
 
 function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
+  // Transform the raw buffers to the position and color arrays to use directly
+  // for the PCS initialization. This operation is perfromed on the the worker to avoid
+  // CPU intensive work on the main thread.
+
+  const result: SparseResult = buffersToSparseResult(rawEntries);
+
+  const entries = {
+    Position: new Float32Array(result.X.length * 3),
+    Color: new Float32Array(result.X.length * 4),
+    GpsTime: result.GpsTime || new Float64Array()
+  } as TransformedResult;
+
+  for (let i = 0; i < result.X.length; ++i) {
+    entries.Position[3 * i] = result.X[i] - translateX;
+    entries.Position[3 * i + 1] = (result.Z[i] - translateY) * zScale;
+    entries.Position[3 * i + 2] = result.Y[i] - translateZ;
+
+    entries.Color[4 * i] = result.Red[i] / rgbMax;
+    entries.Color[4 * i + 1] = result.Green[i] / rgbMax;
+    entries.Color[4 * i + 2] = result.Blue[i] / rgbMax;
+    entries.Color[4 * i + 3] = 1;
+  }
+
   self.postMessage(
     {
       type: WorkerType.data,
       block: block,
-      entries: rawEntries,
+      entries: entries,
       name: self.name
     },
-    Object.values(rawEntries) as any
+    [
+      entries.Position.buffer,
+      entries.Color.buffer,
+      entries.GpsTime.buffer
+    ] as any
   );
 }
 

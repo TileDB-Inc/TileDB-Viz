@@ -11,7 +11,8 @@ import {
   RawTexture,
   Constants,
   Camera,
-  RenderTargetTexture
+  RenderTargetTexture,
+  Mesh
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -20,7 +21,7 @@ import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
 import {
   DataRequest,
   InitialRequest,
-  SparseResult,
+  TransformedResult,
   WorkerType
 } from './sparse-result';
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
@@ -31,6 +32,8 @@ import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
 import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
 import { PointType } from '../materials/plugins/roundPointPlugin';
+import { ThinPointsCloudSystem } from '../meshes/thin-point-cloud';
+import { SparseResult } from './sparse-result';
 
 /**
  * The ArrayModel manages the client octree
@@ -53,7 +56,10 @@ class ArrayModel {
   tiledbEnv?: string;
   pointType: PointType;
   pointSize: number;
-  particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
+  particleSystems: Map<
+    number,
+    SolidParticleSystem | PointsCloudSystem | ThinPointsCloudSystem
+  >;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -124,7 +130,7 @@ class ArrayModel {
   }
 
   private addDebugLabel(
-    pcs: PointsCloudSystem | SolidParticleSystem,
+    pcs: PointsCloudSystem | SolidParticleSystem | ThinPointsCloudSystem,
     text: string
   ) {
     if (pcs && pcs.mesh && this.debugTexture) {
@@ -157,11 +163,7 @@ class ArrayModel {
       return;
     }
 
-    if (
-      block.entries !== undefined &&
-      block.entries.X.length > 0 &&
-      this.scene
-    ) {
+    if (block.entries !== undefined && this.scene) {
       // const debugCoords = decodeMorton(block.mortonNumber);
       // console.log(
       //   block.lod +
@@ -179,28 +181,55 @@ class ArrayModel {
       const rgbMax = this.rgbMax;
       const zScale = this.zScale;
 
-      const numPoints = block.entries.X.length;
+      const numPoints = block.pointCount;
 
-      const pointBuilder = function (particle: Particle, i: number) {
+      const pointBuilderTransformed = function (particle: Particle, i: number) {
+        const entries = block.entries as TransformedResult;
         if (block.entries !== undefined) {
           particle.position.set(
-            block.entries.X[i] - transX,
-            (block.entries.Z[i] - transY) * zScale,
-            block.entries.Y[i] - transZ
+            entries.Position[3 * i],
+            entries.Position[3 * i + 1],
+            entries.Position[3 * i + 2]
           );
 
           if (particle.color) {
             particle.color.set(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax,
+              entries.Color[4 * i],
+              entries.Color[4 * i + 1],
+              entries.Color[4 * i + 2],
               1
             );
           } else {
             particle.color = new Color4(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax
+              entries.Color[4 * i],
+              entries.Color[4 * i + 1],
+              entries.Color[4 * i + 2]
+            );
+          }
+        }
+      };
+
+      const pointBuilder = function (particle: Particle, i: number) {
+        const entries = block.entries as SparseResult;
+        if (block.entries !== undefined) {
+          particle.position.set(
+            entries.X[i] - transX,
+            (entries.Z[i] - transY) * zScale,
+            entries.Y[i] - transZ
+          );
+
+          if (particle.color) {
+            particle.color.set(
+              entries.Red[i] / rgbMax,
+              entries.Green[i] / rgbMax,
+              entries.Blue[i] / rgbMax,
+              1
+            );
+          } else {
+            particle.color = new Color4(
+              entries.Red[i] / rgbMax,
+              entries.Green[i] / rgbMax,
+              entries.Blue[i] / rgbMax
             );
           }
         }
@@ -219,7 +248,13 @@ class ArrayModel {
           this.scene
         );
         sps.computeBoundingBox = true;
-        sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+        if (block.isTransformed) {
+          sps.addShape(box, numPoints, {
+            positionFunction: pointBuilderTransformed
+          });
+        } else {
+          sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+        }
         sps.buildMesh();
         box.dispose();
 
@@ -231,73 +266,59 @@ class ArrayModel {
           this.particleSystems.set(block.mortonNumber, sps);
         }
       } else {
-        const pcs = new PointsCloudSystem(
-          block.mortonNumber.toString(),
-          this.pointSize,
-          this.scene,
-          { updatable: false }
-        );
+        if (block.isTransformed) {
+          const pcs = new ThinPointsCloudSystem(
+            block.mortonNumber.toString(),
+            this.pointSize,
+            this.scene
+          );
 
-        pcs.computeBoundingBox = true;
-        pcs.addPoints(numPoints, pointBuilder);
+          pcs.buildMeshFromBuffer(
+            (block.entries as TransformedResult).Position,
+            (block.entries as TransformedResult).Color
+          );
 
-        pcs.buildMeshAsync().then(() => {
           this.particleSystems.set(block.mortonNumber, pcs);
 
           if (this.debug && this.debugTexture && pcs.mesh) {
             this.addDebugLabel(pcs, block.mortonNumber.toString());
           }
 
-          if (!pcs.mesh || !pcs.mesh.material) {
+          if (!pcs.mesh) {
             throw new Error('Point cloud build failed');
           }
 
-          if (!this.depthMaterial) {
-            this.depthMaterial = new LinearDepthMaterial(
-              pcs.mesh.material,
-              this.pointSize,
-              this.octreeTexture,
-              this.octree.minPoint,
-              this.octree.maxPoint,
-              this.pointType
-            );
-          }
-
-          if (!this.renderTargets[0].renderList) {
-            throw new Error('Render Targer 0 uninitialized');
-          }
-
-          this.renderTargets[0].renderList.push(pcs.mesh);
-          this.renderTargets[0].setMaterialForRendering(
-            pcs.mesh,
-            this.depthMaterial.material
-          );
-
-          if (!this.additiveProximityMaterial) {
-            this.additiveProximityMaterial = new AdditiveProximityMaterial(
-              pcs.mesh.material,
-              1,
-              this.pointSize,
-              this.renderTargets[0],
-              this.octreeTexture,
-              this.octree.minPoint,
-              this.octree.maxPoint,
-              this.pointType
-            );
-          }
-
-          if (!this.renderTargets[1].renderList) {
-            throw new Error('Render Targer 1 uninitialized');
-          }
-
-          this.renderTargets[1].renderList.push(pcs.mesh);
-          this.renderTargets[1].setMaterialForRendering(
-            pcs.mesh,
-            this.additiveProximityMaterial.material
-          );
+          this.assignRenderTargets(pcs.mesh);
 
           this.visible.set(block.mortonNumber, true);
-        });
+        } else {
+          console.log(block);
+          const pcs = new PointsCloudSystem(
+            block.mortonNumber.toString(),
+            this.pointSize,
+            this.scene,
+            { updatable: false }
+          );
+
+          pcs.computeBoundingBox = true;
+          pcs.addPoints(numPoints, pointBuilder);
+
+          pcs.buildMeshAsync().then(() => {
+            this.particleSystems.set(block.mortonNumber, pcs);
+
+            if (this.debug && this.debugTexture && pcs.mesh) {
+              this.addDebugLabel(pcs, block.mortonNumber.toString());
+            }
+
+            if (!pcs.mesh) {
+              throw new Error('Point cloud build failed');
+            }
+
+            this.assignRenderTargets(pcs.mesh);
+
+            this.visible.set(block.mortonNumber, true);
+          });
+        }
       }
     }
   }
@@ -326,6 +347,56 @@ class ArrayModel {
         this.loadSystem(block);
       }
     }
+  }
+
+  private assignRenderTargets(mesh: Mesh): void {
+    if (!mesh.material) {
+      throw new Error('PCS material failed to initialize');
+    }
+
+    if (!this.depthMaterial) {
+      this.depthMaterial = new LinearDepthMaterial(
+        mesh.material,
+        this.pointSize,
+        this.octreeTexture,
+        this.octree.minPoint,
+        this.octree.maxPoint,
+        this.pointType
+      );
+    }
+
+    if (!this.renderTargets[0].renderList) {
+      throw new Error('Render Targer 0 uninitialized');
+    }
+
+    this.renderTargets[0].renderList.push(mesh);
+    this.renderTargets[0].setMaterialForRendering(
+      mesh,
+      this.depthMaterial.material
+    );
+
+    if (!this.additiveProximityMaterial) {
+      this.additiveProximityMaterial = new AdditiveProximityMaterial(
+        mesh.material,
+        1,
+        this.pointSize,
+        this.renderTargets[0],
+        this.octreeTexture,
+        this.octree.minPoint,
+        this.octree.maxPoint,
+        this.pointType
+      );
+    }
+
+    if (!this.renderTargets[1].renderList) {
+      throw new Error('Render Targer 1 uninitialized');
+    }
+
+    this.renderTargets[1].renderList.push(mesh);
+    this.renderTargets[1].setMaterialForRendering(
+      mesh,
+      this.additiveProximityMaterial.material
+    );
   }
 
   public reassignMaterials(renderTargets: RenderTargetTexture[]) {
@@ -388,9 +459,12 @@ class ArrayModel {
         0,
         Moctree.startBlockIndex,
         Vector3.Zero(),
-        Vector3.Zero()
+        Vector3.Zero(),
+        -1,
+        data,
+        false
       );
-      block.entries = data;
+
       this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
       // no need to save entries for LOD 0
@@ -430,6 +504,8 @@ class ArrayModel {
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
           translateZ: this.translationVector.z,
+          zScale: this.zScale,
+          rgbMax: this.rgbMax,
           bufferSize: this.bufferSize
         } as InitialRequest,
         this.loadSystem.bind(this),

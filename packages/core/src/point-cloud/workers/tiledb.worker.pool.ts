@@ -9,7 +9,6 @@ import {
   WorkerType
 } from '../model';
 import { MoctreeBlock } from '../octree';
-import buffersToSparseResult from '../utils/buffersToSparseResult';
 
 class TileDBWorkerPool {
   private poolSize: number;
@@ -46,7 +45,6 @@ class TileDBWorkerPool {
     if (m.type === WorkerType.data) {
       const resp = m as DataResponse;
       let block = resp.block;
-      const { entries } = resp;
 
       // refresh block as it was serialized
       block = new MoctreeBlock(
@@ -55,13 +53,9 @@ class TileDBWorkerPool {
         new Vector3(block.minPoint._x, block.minPoint._y, block.minPoint._z),
         new Vector3(block.maxPoint._x, block.maxPoint._y, block.maxPoint._z),
         block.pointCount,
-        block.entries
+        resp.entries,
+        true
       );
-
-      block.entries = buffersToSparseResult(entries);
-      if (block.entries) {
-        block.pointCount = block.entries?.X.length;
-      }
 
       const queryCacheKey = block.mortonNumber;
       const storeName = `${this.initRequest.namespace}:${this.initRequest.groupName}`;
