@@ -372,7 +372,7 @@ class PointCloudGUI {
         1,
         (model.pointBudget - 100000) / 4900000,
         (value: number) => {
-          return +(Math.trunc(value * 4900000 + 100000)).toFixed(1);
+          return +Math.trunc(value * 4900000 + 100000).toFixed(1);
         }
       );
       menuPanel.addGroup(performanceGroup);
