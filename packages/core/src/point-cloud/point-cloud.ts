@@ -18,7 +18,6 @@ import {
   Tags
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
-import { SparseResult } from './model/sparse-result';
 import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,
@@ -37,6 +36,7 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
+import { SparseResult } from './model/sparse-result';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;

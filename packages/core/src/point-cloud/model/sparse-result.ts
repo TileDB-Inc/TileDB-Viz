@@ -21,6 +21,12 @@ interface SparseResult {
   GpsTime?: Float64Array;
 }
 
+interface TransformedResult {
+  Position: Float32Array;
+  Color: Float32Array;
+  GpsTime?: Float64Array;
+}
+
 export interface SparseResultRaw {
   X: ArrayBuffer;
   Y: ArrayBuffer;
@@ -55,6 +61,8 @@ interface InitialRequest extends WorkerRequest {
   translateX: number;
   translateY: number;
   translateZ: number;
+  zScale: number;
+  rgbMax: number;
   bufferSize: number;
   id?: number;
 }
@@ -65,7 +73,7 @@ interface DataRequest extends WorkerRequest {
 
 interface DataResponse extends WorkerResponse {
   block: MoctreeBlock;
-  entries: SparseResultRaw;
+  entries: TransformedResult;
 }
 
 interface IdleResponse extends WorkerResponse {
@@ -79,6 +87,7 @@ export {
   InitialRequest,
   SparsePoint,
   SparseResult,
+  TransformedResult,
   WorkerRequest,
   WorkerResponse,
   WorkerType
