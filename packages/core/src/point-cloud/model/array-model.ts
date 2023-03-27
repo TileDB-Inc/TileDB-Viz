@@ -72,7 +72,7 @@ class ArrayModel {
   loaded: Map<number, boolean>;
   octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
-  screenSizeLimit = 20;
+  screenSizeLimit = 40;
   isInitialized = false;
   blockQueue!: PriorityQueue;
   static groundName = 'ground';
@@ -266,6 +266,10 @@ class ArrayModel {
         }
       } else {
         if (block.isTransformed) {
+          if ((block.entries as TransformedResult).Position.length === 0) {
+            return;
+          }
+
           const pcs = new ThinPointsCloudSystem(
             block.mortonNumber.toString(),
             this.pointSize,
@@ -287,11 +291,11 @@ class ArrayModel {
             throw new Error('Point cloud build failed');
           }
 
+          pcs.mesh.layerMask = 2;
           this.assignRenderTargets(pcs.mesh);
 
           this.visible.set(block.mortonNumber, true);
         } else {
-          console.log(block);
           const pcs = new PointsCloudSystem(
             block.mortonNumber.toString(),
             this.pointSize,
@@ -312,6 +316,7 @@ class ArrayModel {
             if (!pcs.mesh) {
               throw new Error('Point cloud build failed');
             }
+            pcs.mesh.layerMask = 2;
 
             this.assignRenderTargets(pcs.mesh);
 
