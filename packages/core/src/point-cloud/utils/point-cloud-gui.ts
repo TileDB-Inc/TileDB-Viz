@@ -361,18 +361,18 @@ class PointCloudGUI {
       const performanceGroup = new SliderGroup('Performance');
 
       const updatePointBudget = function (value: number) {
-        model.pointBudget = value;
+        model.pointBudget = Math.trunc(value * 4900000 + 100000);
       };
 
       performanceGroup.addSlider(
         'Point budget',
         updatePointBudget,
         ' ',
-        1_00_000,
-        50_000_000,
-        model.pointBudget,
+        0,
+        1,
+        (model.pointBudget - 100000) / 4900000,
         (value: number) => {
-          return +value.toFixed(1);
+          return +(Math.trunc(value * 4900000 + 100000)).toFixed(1);
         }
       );
       menuPanel.addGroup(performanceGroup);
