@@ -10,7 +10,7 @@ import {
   StandardMaterial
 } from '@babylonjs/core';
 
-export class ThinPointsCloudSystem implements IDisposable {
+export class SimplePointsCloudSystem implements IDisposable {
   /**
    * The PCS name. This name is also given to the underlying mesh.
    */

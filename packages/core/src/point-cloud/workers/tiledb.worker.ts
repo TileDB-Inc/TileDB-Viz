@@ -1,6 +1,5 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
 import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
-import { SparseResult, TransformedResult } from '../model/sparse-result';
 
 import {
   DataRequest,
@@ -11,6 +10,7 @@ import {
 } from '../model/sparse-result';
 import { MoctreeBlock } from '../octree';
 import buffersToSparseResult from '../utils/buffersToSparseResult';
+import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
 let namespace = '';
 let groupName = '';
@@ -56,24 +56,14 @@ function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
   // for the PCS initialization. This operation is perfromed on the the worker to avoid
   // CPU intensive work on the main thread.
 
-  const result: SparseResult = buffersToSparseResult(rawEntries);
-
-  const entries = {
-    Position: new Float32Array(result.X.length * 3),
-    Color: new Float32Array(result.X.length * 4),
-    GpsTime: result.GpsTime || new Float64Array()
-  } as TransformedResult;
-
-  for (let i = 0; i < result.X.length; ++i) {
-    entries.Position[3 * i] = result.X[i] - translateX;
-    entries.Position[3 * i + 1] = (result.Z[i] - translateY) * zScale;
-    entries.Position[3 * i + 2] = result.Y[i] - translateZ;
-
-    entries.Color[4 * i] = result.Red[i] / rgbMax;
-    entries.Color[4 * i + 1] = result.Green[i] / rgbMax;
-    entries.Color[4 * i + 2] = result.Blue[i] / rgbMax;
-    entries.Color[4 * i + 3] = 1;
-  }
+  const entries = buffersToTransformedResult(
+    buffersToSparseResult(rawEntries),
+    translateX,
+    translateY,
+    translateZ,
+    zScale,
+    rgbMax
+  );
 
   self.postMessage(
     {

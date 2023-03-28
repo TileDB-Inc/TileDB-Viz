@@ -1,4 +1,4 @@
-import { SparseResult, SparseResultRaw } from '../model';
+import { SparseResult, SparseResultRaw, TransformedResult } from '../model';
 
 const buffersToSparseResult = (
   res?: SparseResultRaw
@@ -23,3 +23,35 @@ const buffersToSparseResult = (
 };
 
 export default buffersToSparseResult;
+
+export function buffersToTransformedResult(
+  data: SparseResult,
+  translateX: number,
+  translateY: number,
+  translateZ: number,
+  zScale: number,
+  rgbMax: number
+): TransformedResult | undefined {
+  if (!data) {
+    return undefined;
+  }
+
+  const entries: TransformedResult = {
+    Position: new Float32Array(data.X.length * 3),
+    Color: new Float32Array(data.X.length * 4),
+    GpsTime: data.GpsTime || new Float64Array()
+  };
+
+  for (let i = 0; i < data.X.length; ++i) {
+    entries.Position[3 * i] = data.X[i] - translateX;
+    entries.Position[3 * i + 1] = (data.Z[i] - translateY) * zScale;
+    entries.Position[3 * i + 2] = data.Y[i] - translateZ;
+
+    entries.Color[4 * i] = data.Red[i] / rgbMax;
+    entries.Color[4 * i + 1] = data.Green[i] / rgbMax;
+    entries.Color[4 * i + 2] = data.Blue[i] / rgbMax;
+    entries.Color[4 * i + 3] = 1;
+  }
+
+  return entries;
+}

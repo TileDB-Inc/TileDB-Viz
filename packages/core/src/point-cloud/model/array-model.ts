@@ -1,7 +1,6 @@
 import {
   Color4,
   MeshBuilder,
-  PointsCloudSystem,
   Scene,
   SolidParticleSystem,
   StandardMaterial,
@@ -31,8 +30,9 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
 import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
-import { ThinPointsCloudSystem } from '../meshes/thin-point-cloud';
+import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
 import { SparseResult } from './sparse-result';
+import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
 /**
  * The ArrayModel manages the client octree
@@ -55,10 +55,7 @@ class ArrayModel {
   tiledbEnv?: string;
   pointType: string;
   pointSize: number;
-  particleSystems: Map<
-    number,
-    SolidParticleSystem | PointsCloudSystem | ThinPointsCloudSystem
-  >;
+  particleSystems: Map<number, SolidParticleSystem | SimplePointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -119,7 +116,7 @@ class ArrayModel {
 
     this.particleSystems = new Map<
       number,
-      SolidParticleSystem | PointsCloudSystem
+      SolidParticleSystem | SimplePointsCloudSystem
     >();
 
     this.renderTargets = renderTargets;
@@ -129,7 +126,7 @@ class ArrayModel {
   }
 
   private addDebugLabel(
-    pcs: PointsCloudSystem | SolidParticleSystem | ThinPointsCloudSystem,
+    pcs: SolidParticleSystem | SimplePointsCloudSystem,
     text: string
   ) {
     if (pcs && pcs.mesh && this.debugTexture) {
@@ -162,7 +159,11 @@ class ArrayModel {
       return;
     }
 
-    if (block.entries !== undefined && this.scene) {
+    if (this.scene && this.scene.isDisposed) {
+      return;
+    }
+
+    if (block.entries !== undefined && block.entries.Position.length !== 0) {
       // const debugCoords = decodeMorton(block.mortonNumber);
       // console.log(
       //   block.lod +
@@ -173,12 +174,6 @@ class ArrayModel {
       //     ' ' +
       //     debugCoords.y
       // );
-
-      const transX = this.translationVector.x;
-      const transY = this.translationVector.y;
-      const transZ = this.translationVector.z;
-      const rgbMax = this.rgbMax;
-      const zScale = this.zScale;
 
       const numPoints = block.pointCount;
 
@@ -208,32 +203,6 @@ class ArrayModel {
         }
       };
 
-      const pointBuilder = function (particle: Particle, i: number) {
-        const entries = block.entries as SparseResult;
-        if (block.entries !== undefined) {
-          particle.position.set(
-            entries.X[i] - transX,
-            (entries.Z[i] - transY) * zScale,
-            entries.Y[i] - transZ
-          );
-
-          if (particle.color) {
-            particle.color.set(
-              entries.Red[i] / rgbMax,
-              entries.Green[i] / rgbMax,
-              entries.Blue[i] / rgbMax,
-              1
-            );
-          } else {
-            particle.color = new Color4(
-              entries.Red[i] / rgbMax,
-              entries.Green[i] / rgbMax,
-              entries.Blue[i] / rgbMax
-            );
-          }
-        }
-      };
-
       if (this.useSPS) {
         const sps = new SolidParticleSystem(
           block.mortonNumber.toString(),
@@ -247,13 +216,10 @@ class ArrayModel {
           this.scene
         );
         sps.computeBoundingBox = true;
-        if (block.isTransformed) {
-          sps.addShape(box, numPoints, {
-            positionFunction: pointBuilderTransformed
-          });
-        } else {
-          sps.addShape(box, numPoints, { positionFunction: pointBuilder });
-        }
+        sps.addShape(box, numPoints, {
+          positionFunction: pointBuilderTransformed
+        });
+
         sps.buildMesh();
         box.dispose();
 
@@ -265,64 +231,28 @@ class ArrayModel {
           this.particleSystems.set(block.mortonNumber, sps);
         }
       } else {
-        if (block.isTransformed) {
-          if ((block.entries as TransformedResult).Position.length === 0) {
-            return;
-          }
+        const pcs = new SimplePointsCloudSystem(
+          block.mortonNumber.toString(),
+          this.pointSize,
+          this.scene
+        );
 
-          const pcs = new ThinPointsCloudSystem(
-            block.mortonNumber.toString(),
-            this.pointSize,
-            this.scene
-          );
+        pcs.buildMeshFromBuffer(block.entries.Position, block.entries.Color);
 
-          pcs.buildMeshFromBuffer(
-            (block.entries as TransformedResult).Position,
-            (block.entries as TransformedResult).Color
-          );
+        this.particleSystems.set(block.mortonNumber, pcs);
 
-          this.particleSystems.set(block.mortonNumber, pcs);
-
-          if (this.debug && this.debugTexture && pcs.mesh) {
-            this.addDebugLabel(pcs, block.mortonNumber.toString());
-          }
-
-          if (!pcs.mesh) {
-            throw new Error('Point cloud build failed');
-          }
-
-          pcs.mesh.layerMask = 2;
-          this.assignRenderTargets(pcs.mesh);
-
-          this.visible.set(block.mortonNumber, true);
-        } else {
-          const pcs = new PointsCloudSystem(
-            block.mortonNumber.toString(),
-            this.pointSize,
-            this.scene,
-            { updatable: false }
-          );
-
-          pcs.computeBoundingBox = true;
-          pcs.addPoints(numPoints, pointBuilder);
-
-          pcs.buildMeshAsync().then(() => {
-            this.particleSystems.set(block.mortonNumber, pcs);
-
-            if (this.debug && this.debugTexture && pcs.mesh) {
-              this.addDebugLabel(pcs, block.mortonNumber.toString());
-            }
-
-            if (!pcs.mesh) {
-              throw new Error('Point cloud build failed');
-            }
-            pcs.mesh.layerMask = 2;
-
-            this.assignRenderTargets(pcs.mesh);
-
-            this.visible.set(block.mortonNumber, true);
-          });
+        if (this.debug && this.debugTexture && pcs.mesh) {
+          this.addDebugLabel(pcs, block.mortonNumber.toString());
         }
+
+        if (!pcs.mesh) {
+          throw new Error('Point cloud build failed');
+        }
+
+        pcs.mesh.layerMask = 2;
+        this.assignRenderTargets(pcs.mesh);
+
+        this.visible.set(block.mortonNumber, true);
       }
     }
   }
@@ -370,7 +300,7 @@ class ArrayModel {
     }
 
     if (!this.renderTargets[0].renderList) {
-      throw new Error('Render Targer 0 uninitialized');
+      throw new Error('Render Targer 0 uninitialized ');
     }
 
     this.renderTargets[0].renderList.push(mesh);
@@ -465,14 +395,20 @@ class ArrayModel {
         Vector3.Zero(),
         Vector3.Zero(),
         -1,
-        data,
-        false
+        buffersToTransformedResult(
+          data,
+          this.translationVector.x,
+          this.translationVector.y,
+          this.translationVector.z,
+          this.zScale,
+          rgbMax
+        )
       );
+
+      console.log(block);
 
       this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
-      // no need to save entries for LOD 0
-      block.entries = undefined;
     } else {
       // create a ground so we always having picking for panning the scene
       const ground = MeshBuilder.CreateGround(
