@@ -20,6 +20,11 @@ export default {
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 
+let numWorkers: number = navigator.hardwareConcurrency;
+if (process.env.STORYBOOK_NUM_WORKERS) {
+  numWorkers = parseInt(process.env.STORYBOOK_NUM_WORKERS);
+}
+
 const Template = () => (
   <PointCloudVisualization
     data={data as any}
@@ -169,7 +174,7 @@ export const StreamerBristol = () => (
     workerPoolSize={numWorkers}
     pointBudget={4_500_000}
     colorScheme="dark"
-    pointSize={50}
+    pointSize={4}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
     cameraUp={50}
@@ -180,7 +185,7 @@ export const StreamerBristol = () => (
     height={'100vh'}
     useShader={false}
     edlStrength={0.4}
-    pointType={'adaptive_world_size'}
+    pointType={'fixed_screen_size'}
   />
 );
 
