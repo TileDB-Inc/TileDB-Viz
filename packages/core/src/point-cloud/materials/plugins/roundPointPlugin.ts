@@ -13,18 +13,12 @@ import {
   AbstractMesh
 } from '@babylonjs/core';
 
-export enum PointType {
-  FixedScreenSizePoint,
-  FixedWorldSizePoint,
-  AddaptiveWorldSizePoint
-}
-
 export class RoundPointMaterialPlugin extends MaterialPluginBase {
   radius = 1;
   visibilityTexture!: RawTexture;
   minPoint!: Vector3;
   maxPoint!: Vector3;
-  pointType!: PointType;
+  pointType!: string;
 
   get isEnabled() {
     return this._isEnabled;
@@ -45,7 +39,7 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     super(material, 'RoundPoint', 1001, {
       FIXED_SCREEN_SIZE: false,
       FIXED_WORLD_SIZE: false,
-      ADDAPTIVE_WORLD_SIZE: false
+      ADAPTIVE_WORLD_SIZE: false
     });
   }
 
@@ -78,20 +72,20 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
     mesh: AbstractMesh
   ): void {
     switch (this.pointType) {
-      case PointType.FixedScreenSizePoint:
+      case 'fixed_screen_size':
         defines.FIXED_SCREEN_SIZE = true;
         defines.FIXED_WORLD_SIZE = false;
-        defines.ADDAPTIVE_WORLD_SIZE = false;
+        defines.ADAPTIVE_WORLD_SIZE = false;
         break;
-      case PointType.FixedWorldSizePoint:
+      case 'fixed_world_size':
         defines.FIXED_SCREEN_SIZE = false;
         defines.FIXED_WORLD_SIZE = true;
-        defines.ADDAPTIVE_WORLD_SIZE = false;
+        defines.ADAPTIVE_WORLD_SIZE = false;
         break;
-      case PointType.AddaptiveWorldSizePoint:
+      case 'adaptive_world_size':
         defines.FIXED_SCREEN_SIZE = false;
         defines.FIXED_WORLD_SIZE = false;
-        defines.ADDAPTIVE_WORLD_SIZE = true;
+        defines.ADAPTIVE_WORLD_SIZE = true;
         break;
     }
   }
@@ -212,7 +206,7 @@ export class RoundPointMaterialPlugin extends MaterialPluginBase {
             #ifdef FIXED_WORLD_SIZE
               gl_PointSize = (radius * half_height) / (slope * gl_Position.z);
             #endif
-            #ifdef ADDAPTIVE_WORLD_SIZE
+            #ifdef ADAPTIVE_WORLD_SIZE
               gl_PointSize = (radius / pow(2.0, float(getLOD(position))) * half_height) / (slope * gl_Position.z);
             #endif
           `

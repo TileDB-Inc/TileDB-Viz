@@ -25,9 +25,6 @@ import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
 import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
-import menuIcon from '../../assets/menu.png';
-import filesIcon from '../../assets/model.png';
-import controlsIcon from '../../assets/controls.png';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
@@ -156,9 +153,18 @@ class PointCloudGUI {
       return button;
     }
 
-    const controlsButton = createButton('control button', controlsIcon);
-    const menuButton = createButton('menu button', menuIcon);
-    const filesButton = createButton('menu button', filesIcon);
+    const controlsButton = createButton(
+      'control button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/controls.png'
+    );
+    const menuButton = createButton(
+      'menu button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/menu.png'
+    );
+    const filesButton = createButton(
+      'files button',
+      'https://tiledb-viz-demos.s3.amazonaws.com/model.png'
+    );
 
     buttonGrid.addControl(controlsButton, 3, 0);
     buttonGrid.addControl(menuButton, 2, 0);

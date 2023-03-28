@@ -3,7 +3,6 @@ import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
 import getTileDBClient from '../../utils/getTileDBClient';
-import { PointType } from '../materials/plugins/roundPointPlugin';
 import { SparseResult } from '../model';
 import { sortDataArrays } from './arrays';
 
@@ -14,11 +13,10 @@ export interface TileDBPointCloudOptions
    * time: add an interactive time slider
    * classes: add an interactive classes slider
    * topo: add a mapbox base layer
-   * gltf: add gltf meshes
    */
-  mode?: 'time' | 'classes' | 'topo' | 'gltf';
+  mode?: 'time' | 'classes' | 'topo';
   /**
-   * Background color scheme, choose from 'dark', 'light' or 'blue' with
+   * Background color scheme, choose from 'dark' (default), 'light' or 'blue' with
    */
   colorScheme?: string;
   /**
@@ -26,15 +24,11 @@ export interface TileDBPointCloudOptions
    */
   data?: SparseResult;
   /**
-   * Scale the height (z-coordinate values) of all points
+   * Scale the height (z-coordinate values) of all points (default is 1.0)
    */
   zScale?: number;
   /**
-   * Binary blob of a gltf mesh or an array of gltf meshes [mode='gltf']
-   */
-  gltfData?: string;
-  /**
-   * Move the gltf datas along the z-axis to better align with the mapbox base layer [mode='topo']
+   * Move the mapbox layer along the z-axis to better align with the point cloud [mode='topo']
    */
   topoOffset?: number;
   /**
@@ -46,30 +40,19 @@ export interface TileDBPointCloudOptions
    */
   timeOffset?: number;
   /**
-   * Perform clash detection between mesh and point cloud if true
+   *  Source of the data
    */
-  distanceColors?: boolean;
-  /**
-   * Rotate the mesh with [alpha,beta,gamma]
-   */
-  meshRotation?: number[];
-  /**
-   * Shift the mesh with [x,y,z]
-   */
-  meshShift?: number[];
-  /**
-   * Scale the size [x,y,z] of the mesh
-   */
-  meshScale?: number[];
-  /**
-   * gltfData is an array with blobs when true
-   */
-  gltfMulti?: boolean;
   source?: 'dict' | 'cloud';
+  /**
+   * Shift all points by the vector [x,y,z]
+   */
   pointShift?: number[];
+  /**
+   * The maximum RGB value (default is 1.0)
+   */
   rgbMax?: number;
   /**
-   * The min and max values of x, y and z
+   * The bouding box with minimum and maximum values of the X, Y and Z dimensions
    */
   bbox?: { X: number[]; Y: number[]; Z: number[] };
   /**
@@ -101,11 +84,11 @@ export interface TileDBPointCloudOptions
    */
   streaming?: boolean;
   /**
-   * Select point rendering type, 'box' is supported for now
+   * Select point rendering type, choose from 'fixed_screen_size' (default), 'fixed_world_size' or 'adaptive_world_size'
    */
-  pointType?: PointType;
+  pointType?: string;
   /**
-   * Point size
+   * Point size (default is 0.05)
    */
   pointSize?: number;
   /**

@@ -1,9 +1,6 @@
 import { Material, RawTexture, Vector3 } from '@babylonjs/core';
 import { LinearDepthMaterialPlugin } from './plugins/linearDepthPlugin';
-import {
-  RoundPointMaterialPlugin,
-  PointType
-} from './plugins/roundPointPlugin';
+import { RoundPointMaterialPlugin } from './plugins/roundPointPlugin';
 
 export class LinearDepthMaterial {
   public material: any;
@@ -14,7 +11,7 @@ export class LinearDepthMaterial {
     visibilityTexture: RawTexture,
     minPoint: Vector3,
     maxPoint: Vector3,
-    pointType: PointType
+    pointType: string
   ) {
     this.material = material.clone('LinearDepthMaterial');
     this.material.linearDepthMaterialPlugin = new LinearDepthMaterialPlugin(

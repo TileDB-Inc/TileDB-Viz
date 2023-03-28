@@ -4,7 +4,6 @@ import { PointCloudVisualization } from '../PointCloud/PointCloud';
 import data from '../../../../__mocks__/point-cloud-data.json';
 import boulderData from '../../../../__mocks__/boulder.json';
 import autzenData from '../../../../__mocks__/autzen-sample.json';
-import { PointType } from '../../../core/src/point-cloud/materials/plugins/roundPointPlugin';
 
 export default {
   title: 'Visualizations/PointCloudVisualization',
@@ -21,11 +20,6 @@ export default {
 const token = process.env.STORYBOOK_REST_TOKEN;
 const namespace = process.env.STORYBOOK_NAMESPACE;
 
-let numWorkers: number = navigator.hardwareConcurrency;
-if (process.env.STORYBOOK_NUM_WORKERS) {
-  numWorkers = parseInt(process.env.STORYBOOK_NUM_WORKERS);
-}
-
 const Template = () => (
   <PointCloudVisualization
     data={data as any}
@@ -35,7 +29,7 @@ const Template = () => (
     cameraLocation={8}
     width={'100vw'}
     height={'100vh'}
-    pointType={PointType.FixedWorldSpaceSize}
+    pointType={'fixed_world_size'}
   />
 );
 
@@ -64,7 +58,7 @@ export const Boulder = () => (
     cameraZoomOut={[6, 6, 2]}
     cameraLocation={6}
     pointSize={2.5}
-    pointType={PointType.FixedScreenSizePoint}
+    pointType={'fixed_screen_size'}
     width={'100vw'}
     height={'100vh'}
   />
@@ -90,7 +84,7 @@ export const Autzen = () => (
     data={autzenData as any}
     pointSize={3}
     token={token}
-    pointType={PointType.FixedWorldSizePoint}
+    pointType={'fixed_world_size'}
     cameraZoomOut={[2, 2, 2]}
     cameraLocation={2}
     colorScheme="blue"
@@ -151,7 +145,7 @@ export const StreamerAutzen = () => (
     workerPoolSize={numWorkers}
     rgbMax={65535}
     pointBudget={3_500_000}
-    wheelPrecision={0.5}
+    wheelPrecision={0.1}
     pointSize={4}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 4]}
@@ -162,7 +156,7 @@ export const StreamerAutzen = () => (
     height={'100vh'}
     useShader={false}
     edlStrength={0.4}
-    pointType={PointType.FixedScreenSizePoint}
+    pointType={'fixed_screen_size'}
   />
 );
 
@@ -175,18 +169,18 @@ export const StreamerBristol = () => (
     workerPoolSize={numWorkers}
     pointBudget={4_500_000}
     colorScheme="dark"
-    pointSize={24}
+    pointSize={50}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
     cameraUp={50}
-    wheelPrecision={0.5}
+    wheelPrecision={0.2}
     moveSpeed={8}
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
     useShader={false}
     edlStrength={0.4}
-    pointType={PointType.AddaptiveWorldSizePoint}
+    pointType={'adaptive_world_size'}
   />
 );
 
@@ -199,17 +193,17 @@ export const StreamerSantorini = () => (
     workerPoolSize={numWorkers}
     pointBudget={3_000_000}
     colorScheme="dark"
-    pointSize={2}
+    pointSize={6}
     cameraLocation={5}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={200}
-    wheelPrecision={0.5}
-    moveSpeed={4}
+    wheelPrecision={0.2}
+    moveSpeed={6}
     rgbMax={255}
     width={'100vw'}
     height={'100vh'}
     useShader={false}
     edlStrength={0.4}
-    pointType={PointType.FixedWorldSizePoint}
+    pointType={'fixed_screen_size'}
   />
 );

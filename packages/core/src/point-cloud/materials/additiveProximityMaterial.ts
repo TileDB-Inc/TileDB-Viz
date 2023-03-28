@@ -6,10 +6,7 @@ import {
   Vector3
 } from '@babylonjs/core';
 import { AdditiveProximityMaterialPlugin } from './plugins/additiveProximityPlugin';
-import {
-  RoundPointMaterialPlugin,
-  PointType
-} from './plugins/roundPointPlugin';
+import { RoundPointMaterialPlugin } from './plugins/roundPointPlugin';
 
 export class AdditiveProximityMaterial {
   public material: any;
@@ -22,7 +19,7 @@ export class AdditiveProximityMaterial {
     visibilityTexture: RawTexture,
     minPoint: Vector3,
     maxPoint: Vector3,
-    pointType: PointType
+    pointType: string
   ) {
     this.material = baseMaterial.clone('AdditiveProximityMaterial');
 
