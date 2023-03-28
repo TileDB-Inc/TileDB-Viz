@@ -93,6 +93,9 @@ export class ThinPointsCloudSystem implements IDisposable {
 
     const mesh = new Mesh(this.name, this._scene);
     vertexData.applyToMesh(mesh, false);
+    mesh.isPickable = true;
+    mesh.thinInstanceEnablePicking = true;
+
     this.mesh = mesh;
 
     let mat = material;

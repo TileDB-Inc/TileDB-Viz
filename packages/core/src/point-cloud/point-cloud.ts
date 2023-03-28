@@ -18,6 +18,7 @@ import {
   Tags
 } from '@babylonjs/core';
 import { TileDBVisualization } from '../base';
+import { SparseResult } from './model/sparse-result';
 import ArrayModel from './model/array-model';
 import {
   getArrayMetadata,
@@ -36,7 +37,6 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
-import { SparseResult } from './model/sparse-result';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -313,7 +313,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       let isPanning = false;
 
       // register for onPointerDown as we need the keyboard state as well
-      scene.onPointerDown = evt => {
+      scene.onPointerDown = (evt, pickResult) => {
         if (evt.ctrlKey || evt.shiftKey) {
           const pickResult = scene.pick(scene.pointerX, scene.pointerY);
           if (pickResult) {
@@ -326,6 +326,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             plane = Plane.FromPositionAndNormal(pickOrigin, normal);
             this.cameras[0].detachControl();
             isPanning = true;
+          }
+        } else {
+          if (pickResult.hit) {
+            const p = pickResult.pickedPoint;
+            console.log(p);
           }
         }
       };
