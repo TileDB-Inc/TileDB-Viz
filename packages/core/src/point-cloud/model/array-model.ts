@@ -30,7 +30,6 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
 import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
-import { PointType } from '../materials/plugins/roundPointPlugin';
 
 /**
  * The ArrayModel manages the client octree
@@ -51,7 +50,7 @@ class ArrayModel {
   maxLevel?: number;
   token?: string;
   tiledbEnv?: string;
-  pointType: PointType;
+  pointType: string;
   pointSize: number;
   particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
@@ -86,7 +85,7 @@ class ArrayModel {
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
-    this.pointType = options.pointType || PointType.FixedScreenSizePoint;
+    this.pointType = options.pointType || 'fixed_screen_size';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
     this.edlStrength = options.edlStrength || 4.0;
@@ -367,7 +366,7 @@ class ArrayModel {
   ) {
     this.basePointSize = 50;
     this.scene = scene;
-    this.rgbMax = rgbMax || 65535;
+    this.rgbMax = rgbMax || 1.0;
     this.maxLevel = nLevels || 1;
     this.arraySchema = arraySchema;
 

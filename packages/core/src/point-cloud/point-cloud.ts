@@ -466,7 +466,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
         for (const mesh of scene.getMeshesByTags('Imported')) {
           if (!mesh || !mesh.material) {
-            throw new Error('Import mesh meaterial is null');
+            throw new Error('Import mesh material is null');
           }
 
           const depthMaterial: any = mesh.material.clone('DepthMaterial');
