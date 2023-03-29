@@ -130,7 +130,7 @@ export const AutzenBbox = () => (
     namespace={namespace}
     arrayName="autzen_classified_tiledb"
     bbox={bbox}
-    pointSize={10}
+    pointSize={9}
     colorScheme="light"
     cameraUp={25}
     cameraZoomOut={[2, 2, 2]}
@@ -198,7 +198,7 @@ export const StreamerSantorini = () => (
     workerPoolSize={numWorkers}
     pointBudget={3_000_000}
     colorScheme="dark"
-    pointSize={6}
+    pointSize={5}
     cameraLocation={5}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={200}
