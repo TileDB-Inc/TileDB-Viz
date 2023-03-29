@@ -91,7 +91,7 @@ class ArrayModel {
     this.pointType = options.pointType || 'fixed_screen_size';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
-    this.edlStrength = options.edlStrength || 4.0;
+    this.edlStrength = options.edlStrength || 0.4;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
@@ -168,17 +168,6 @@ class ArrayModel {
       this.scene &&
       block.entries.Position.length !== 0
     ) {
-      // const debugCoords = decodeMorton(block.mortonNumber);
-      // console.log(
-      //   block.lod +
-      //     ' ' +
-      //     debugCoords.x +
-      //     ' ' +
-      //     debugCoords.z +
-      //     ' ' +
-      //     debugCoords.y
-      // );
-
       const numPoints = block.pointCount;
 
       const pointBuilderTransformed = function (particle: Particle, i: number) {
