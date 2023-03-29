@@ -50,6 +50,8 @@ export function setCameraLight(
     scene
   );
 
+  camera0.layerMask = 1;
+
   if (wheelPrecision > 0) {
     camera0.wheelPrecision = wheelPrecision;
   }
@@ -61,6 +63,7 @@ export function setCameraLight(
   const camera1 = new FreeCamera('Free', centreFreeWorld, scene);
   camera1.minZ = camera0.minZ;
   camera1.maxZ = camera0.maxZ;
+  camera1.layerMask = 1;
 
   if (moveSpeed > 0) {
     camera1.speed = moveSpeed;

@@ -7,6 +7,7 @@ import {
   Moctree,
   MoctreeBlock
 } from './moctree';
+import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
 describe('moctree tests', () => {
   test('morton ordering', () => {
@@ -176,7 +177,7 @@ describe('moctree tests', () => {
       Vector3.Zero(),
       new Vector3(1, 1, 1),
       0,
-      entries
+      buffersToTransformedResult(entries, 1, 1, 1, 1, 255)
     );
 
     expect(block.entries).toBeDefined();

@@ -1,5 +1,5 @@
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { SparseResult } from '../model';
+import { TransformedResult } from '../model';
 
 // Morton encode from http://johnsietsma.com/2019/12/05/morton-order-introduction/ and https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 // If we need more octants than supported by 32 bit then we can combine octrees
@@ -83,7 +83,8 @@ class MoctreeBlock {
   maxPoint: Vector3;
   boundingInfo: BoundingInfo;
   pointCount = 0;
-  entries?: SparseResult;
+  entries?: TransformedResult;
+  isTransformed = false;
 
   constructor(
     public lod: number,
@@ -91,13 +92,13 @@ class MoctreeBlock {
     minPoint: Vector3,
     maxPoint: Vector3,
     pointCount = -1,
-    entries?: SparseResult
+    entries?: TransformedResult
   ) {
     this.minPoint = minPoint;
     this.maxPoint = maxPoint;
     if (entries) {
       this.entries = entries;
-      this.pointCount = this.entries.X.length;
+      this.pointCount = this.entries.Position.length / 3;
     }
 
     if (pointCount > -1) {

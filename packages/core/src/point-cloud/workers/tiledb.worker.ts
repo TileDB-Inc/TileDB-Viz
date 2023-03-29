@@ -9,6 +9,8 @@ import {
   WorkerType
 } from '../model/sparse-result';
 import { MoctreeBlock } from '../octree';
+import buffersToSparseResult from '../utils/buffersToSparseResult';
+import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
 let namespace = '';
 let groupName = '';
@@ -16,6 +18,8 @@ let arraySchema: ArraySchema;
 let translateX = 0;
 let translateY = 0;
 let translateZ = 0;
+let zScale = 1;
+let rgbMax = 255;
 let bufferSize = 200000000;
 
 let tiledbQuery: TileDBQuery;
@@ -30,6 +34,8 @@ self.onmessage = async (e: MessageEvent) => {
     translateX = o.translateX;
     translateY = o.translateY;
     translateZ = o.translateZ;
+    zScale = o.zScale;
+    rgbMax = o.rgbMax;
     bufferSize = o.bufferSize;
 
     const tiledbClient = new TileDBClient({
@@ -46,14 +52,31 @@ self.onmessage = async (e: MessageEvent) => {
 };
 
 function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
+  // Transform the raw buffers to the position and color arrays to use directly
+  // for the PCS initialization. This operation is perfromed on the the worker to avoid
+  // CPU intensive work on the main thread.
+
+  const entries = buffersToTransformedResult(
+    buffersToSparseResult(rawEntries),
+    translateX,
+    translateY,
+    translateZ,
+    zScale,
+    rgbMax
+  );
+
   self.postMessage(
     {
       type: WorkerType.data,
       block: block,
-      entries: rawEntries,
+      entries: entries,
       name: self.name
     },
-    Object.values(rawEntries) as any
+    [
+      entries.Position.buffer,
+      entries.Color.buffer,
+      entries.GpsTime.buffer
+    ] as any
   );
 }
 

@@ -1,7 +1,6 @@
 import {
   Color4,
   MeshBuilder,
-  PointsCloudSystem,
   Scene,
   SolidParticleSystem,
   StandardMaterial,
@@ -11,7 +10,8 @@ import {
   RawTexture,
   Constants,
   Camera,
-  RenderTargetTexture
+  RenderTargetTexture,
+  Mesh
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -20,7 +20,7 @@ import { encodeMorton, Moctree, MoctreeBlock } from '../octree';
 import {
   DataRequest,
   InitialRequest,
-  SparseResult,
+  TransformedResult,
   WorkerType
 } from './sparse-result';
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
@@ -30,6 +30,9 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
 import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
+import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
+import { SparseResult } from './sparse-result';
+import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
 /**
  * The ArrayModel manages the client octree
@@ -52,7 +55,7 @@ class ArrayModel {
   tiledbEnv?: string;
   pointType: string;
   pointSize: number;
-  particleSystems: Map<number, SolidParticleSystem | PointsCloudSystem>;
+  particleSystems: Map<number, SolidParticleSystem | SimplePointsCloudSystem>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -66,7 +69,7 @@ class ArrayModel {
   loaded: Map<number, boolean>;
   octreeTexture!: RawTexture;
   pending: MoctreeBlock[];
-  screenSizeLimit = 20;
+  screenSizeLimit = 40;
   isInitialized = false;
   blockQueue!: PriorityQueue;
   static groundName = 'ground';
@@ -88,7 +91,7 @@ class ArrayModel {
     this.pointType = options.pointType || 'fixed_screen_size';
     this.pointSize = options.pointSize || 0.05;
     this.zScale = options.zScale || 1;
-    this.edlStrength = options.edlStrength || 4.0;
+    this.edlStrength = options.edlStrength || 0.4;
     this.edlRadius = options.edlRadius || 1.4;
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
@@ -113,7 +116,7 @@ class ArrayModel {
 
     this.particleSystems = new Map<
       number,
-      SolidParticleSystem | PointsCloudSystem
+      SolidParticleSystem | SimplePointsCloudSystem
     >();
 
     this.renderTargets = renderTargets;
@@ -123,7 +126,7 @@ class ArrayModel {
   }
 
   private addDebugLabel(
-    pcs: PointsCloudSystem | SolidParticleSystem,
+    pcs: SolidParticleSystem | SimplePointsCloudSystem,
     text: string
   ) {
     if (pcs && pcs.mesh && this.debugTexture) {
@@ -156,50 +159,38 @@ class ArrayModel {
       return;
     }
 
+    if (this.scene && this.scene.isDisposed) {
+      return;
+    }
+
     if (
       block.entries !== undefined &&
-      block.entries.X.length > 0 &&
-      this.scene
+      this.scene &&
+      block.entries.Position.length !== 0
     ) {
-      // const debugCoords = decodeMorton(block.mortonNumber);
-      // console.log(
-      //   block.lod +
-      //     ' ' +
-      //     debugCoords.x +
-      //     ' ' +
-      //     debugCoords.z +
-      //     ' ' +
-      //     debugCoords.y
-      // );
+      const numPoints = block.pointCount;
 
-      const transX = this.translationVector.x;
-      const transY = this.translationVector.y;
-      const transZ = this.translationVector.z;
-      const rgbMax = this.rgbMax;
-      const zScale = this.zScale;
-
-      const numPoints = block.entries.X.length;
-
-      const pointBuilder = function (particle: Particle, i: number) {
+      const pointBuilderTransformed = function (particle: Particle, i: number) {
+        const entries = block.entries as TransformedResult;
         if (block.entries !== undefined) {
           particle.position.set(
-            block.entries.X[i] - transX,
-            (block.entries.Z[i] - transY) * zScale,
-            block.entries.Y[i] - transZ
+            entries.Position[3 * i],
+            entries.Position[3 * i + 1],
+            entries.Position[3 * i + 2]
           );
 
           if (particle.color) {
             particle.color.set(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax,
+              entries.Color[4 * i],
+              entries.Color[4 * i + 1],
+              entries.Color[4 * i + 2],
               1
             );
           } else {
             particle.color = new Color4(
-              block.entries.Red[i] / rgbMax,
-              block.entries.Green[i] / rgbMax,
-              block.entries.Blue[i] / rgbMax
+              entries.Color[4 * i],
+              entries.Color[4 * i + 1],
+              entries.Color[4 * i + 2]
             );
           }
         }
@@ -218,7 +209,10 @@ class ArrayModel {
           this.scene
         );
         sps.computeBoundingBox = true;
-        sps.addShape(box, numPoints, { positionFunction: pointBuilder });
+        sps.addShape(box, numPoints, {
+          positionFunction: pointBuilderTransformed
+        });
+
         sps.buildMesh();
         box.dispose();
 
@@ -230,73 +224,28 @@ class ArrayModel {
           this.particleSystems.set(block.mortonNumber, sps);
         }
       } else {
-        const pcs = new PointsCloudSystem(
+        const pcs = new SimplePointsCloudSystem(
           block.mortonNumber.toString(),
           this.pointSize,
-          this.scene,
-          { updatable: false }
+          this.scene
         );
 
-        pcs.computeBoundingBox = true;
-        pcs.addPoints(numPoints, pointBuilder);
+        pcs.buildMeshFromBuffer(block.entries.Position, block.entries.Color);
 
-        pcs.buildMeshAsync().then(() => {
-          this.particleSystems.set(block.mortonNumber, pcs);
+        this.particleSystems.set(block.mortonNumber, pcs);
 
-          if (this.debug && this.debugTexture && pcs.mesh) {
-            this.addDebugLabel(pcs, block.mortonNumber.toString());
-          }
+        if (this.debug && this.debugTexture && pcs.mesh) {
+          this.addDebugLabel(pcs, block.mortonNumber.toString());
+        }
 
-          if (!pcs.mesh || !pcs.mesh.material) {
-            throw new Error('Point cloud build failed');
-          }
+        if (!pcs.mesh) {
+          throw new Error('Point cloud build failed');
+        }
 
-          if (!this.depthMaterial) {
-            this.depthMaterial = new LinearDepthMaterial(
-              pcs.mesh.material,
-              this.pointSize,
-              this.octreeTexture,
-              this.octree.minPoint,
-              this.octree.maxPoint,
-              this.pointType
-            );
-          }
+        pcs.mesh.layerMask = 2;
+        this.assignRenderTargets(pcs.mesh);
 
-          if (!this.renderTargets[0].renderList) {
-            throw new Error('Render Targer 0 uninitialized');
-          }
-
-          this.renderTargets[0].renderList.push(pcs.mesh);
-          this.renderTargets[0].setMaterialForRendering(
-            pcs.mesh,
-            this.depthMaterial.material
-          );
-
-          if (!this.additiveProximityMaterial) {
-            this.additiveProximityMaterial = new AdditiveProximityMaterial(
-              pcs.mesh.material,
-              1,
-              this.pointSize,
-              this.renderTargets[0],
-              this.octreeTexture,
-              this.octree.minPoint,
-              this.octree.maxPoint,
-              this.pointType
-            );
-          }
-
-          if (!this.renderTargets[1].renderList) {
-            throw new Error('Render Targer 1 uninitialized');
-          }
-
-          this.renderTargets[1].renderList.push(pcs.mesh);
-          this.renderTargets[1].setMaterialForRendering(
-            pcs.mesh,
-            this.additiveProximityMaterial.material
-          );
-
-          this.visible.set(block.mortonNumber, true);
-        });
+        this.visible.set(block.mortonNumber, true);
       }
     }
   }
@@ -325,6 +274,56 @@ class ArrayModel {
         this.loadSystem(block);
       }
     }
+  }
+
+  private assignRenderTargets(mesh: Mesh): void {
+    if (!mesh.material) {
+      throw new Error('PCS material failed to initialize');
+    }
+
+    if (!this.depthMaterial) {
+      this.depthMaterial = new LinearDepthMaterial(
+        mesh.material,
+        this.pointSize,
+        this.octreeTexture,
+        this.octree.minPoint,
+        this.octree.maxPoint,
+        this.pointType
+      );
+    }
+
+    if (!this.renderTargets[0].renderList) {
+      throw new Error('Render Targer 0 uninitialized ');
+    }
+
+    this.renderTargets[0].renderList.push(mesh);
+    this.renderTargets[0].setMaterialForRendering(
+      mesh,
+      this.depthMaterial.material
+    );
+
+    if (!this.additiveProximityMaterial) {
+      this.additiveProximityMaterial = new AdditiveProximityMaterial(
+        mesh.material,
+        1,
+        this.pointSize,
+        this.renderTargets[0],
+        this.octreeTexture,
+        this.octree.minPoint,
+        this.octree.maxPoint,
+        this.pointType
+      );
+    }
+
+    if (!this.renderTargets[1].renderList) {
+      throw new Error('Render Targer 1 uninitialized');
+    }
+
+    this.renderTargets[1].renderList.push(mesh);
+    this.renderTargets[1].setMaterialForRendering(
+      mesh,
+      this.additiveProximityMaterial.material
+    );
   }
 
   public reassignMaterials(renderTargets: RenderTargetTexture[]) {
@@ -387,13 +386,20 @@ class ArrayModel {
         0,
         Moctree.startBlockIndex,
         Vector3.Zero(),
-        Vector3.Zero()
+        Vector3.Zero(),
+        -1,
+        buffersToTransformedResult(
+          data,
+          this.translationVector.x,
+          this.translationVector.y,
+          this.translationVector.z,
+          this.zScale,
+          this.rgbMax
+        )
       );
-      block.entries = data;
+
       this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
-      // no need to save entries for LOD 0
-      block.entries = undefined;
     } else {
       // create a ground so we always having picking for panning the scene
       const ground = MeshBuilder.CreateGround(
@@ -429,6 +435,8 @@ class ArrayModel {
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
           translateZ: this.translationVector.z,
+          zScale: this.zScale,
+          rgbMax: this.rgbMax,
           bufferSize: this.bufferSize
         } as InitialRequest,
         this.loadSystem.bind(this),
