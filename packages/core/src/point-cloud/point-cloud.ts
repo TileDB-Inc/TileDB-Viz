@@ -37,6 +37,7 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
+import HtmlGui from './utils/htmlGui/htmlGui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -299,7 +300,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           this.engine
         );
       }
-
+      new HtmlGui();
       // add interactive GUI
       this.gui = new PointCloudGUI(this.scene);
       if (this.gui.advancedDynamicTexture.layer !== null) {

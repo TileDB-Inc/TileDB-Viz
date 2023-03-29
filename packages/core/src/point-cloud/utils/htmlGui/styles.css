@@ -1,0 +1,40 @@
+.tdb-button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background-position: center;
+  background-size: cover;
+  background-color: transparent;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.tdb-button:hover {
+  cursor: pointer;
+}
+
+.tdb-panel {
+  background-color: rgba(0,0,0, .8);
+  position: absolute;
+  top: 20px;
+  left: 80px;
+  height: calc(100% - 100px);
+  display: none;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.tdb-show {
+  display: block;
+}
+
+.tdb-input {
+  margin-bottom: 15px;
+}
+
+.tdb-input label {
+  color: #fff;
+  margin-right: 4px;
+}
