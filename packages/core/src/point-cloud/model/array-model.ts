@@ -163,7 +163,11 @@ class ArrayModel {
       return;
     }
 
-    if (block.entries !== undefined && block.entries.Position.length !== 0) {
+    if (
+      block.entries !== undefined &&
+      this.scene &&
+      block.entries.Position.length !== 0
+    ) {
       // const debugCoords = decodeMorton(block.mortonNumber);
       // console.log(
       //   block.lod +
@@ -401,11 +405,9 @@ class ArrayModel {
           this.translationVector.y,
           this.translationVector.z,
           this.zScale,
-          rgbMax
+          this.rgbMax
         )
       );
-
-      console.log(block);
 
       this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
