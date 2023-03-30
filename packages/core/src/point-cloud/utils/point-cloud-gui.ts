@@ -118,6 +118,23 @@ class PointCloudGUI {
     const lightColor = '#FFF';
     const buttonColor = '#0077FF';
 
+    const button9 = document.createElement('button');
+    button9.style.top = '100px';
+    button9.style.right = '30px';
+    button9.textContent = 'click';
+    button9.style.width = '100px';
+    button9.style.height = '100px';
+
+    //button9.setAttribute = ('id', 'but');
+    button9.style.position = 'absolute';
+    button9.style.color = 'black';
+
+    document.body.appendChild(button9);
+
+    button9.addEventListener('click', () => {
+      button9.style.color = 'red';
+    });
+
     const mainGrid = new Grid();
     mainGrid.setPadding('16px', '16px', '16px', '16px');
     mainGrid.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
