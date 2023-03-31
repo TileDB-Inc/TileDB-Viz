@@ -74,7 +74,7 @@ export class TileDBVisualization {
   }
 
   protected async createScene(): Promise<Scene> {
-    const scene = new Scene(this.engine as Engine);
+    const scene = new Scene(this.engine as Engine, { useClonedMeshMap: true });
 
     if (this.inspector) {
       scene.debugLayer.show({

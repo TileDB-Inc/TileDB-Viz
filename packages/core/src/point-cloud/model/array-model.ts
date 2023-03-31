@@ -229,8 +229,13 @@ class ArrayModel {
           this.pointSize,
           this.scene
         );
-
-        pcs.buildMeshFromBuffer(block.entries.Position, block.entries.Color);
+        console.log(this.depthMaterial);
+        pcs.buildMeshFromBuffer(
+          block.entries.Position,
+          block.entries.Color,
+          undefined,
+          this.depthMaterial === undefined ? null : this.depthMaterial.material
+        );
 
         this.particleSystems.set(block.mortonNumber, pcs);
 
