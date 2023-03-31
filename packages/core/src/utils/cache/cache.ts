@@ -1,7 +1,7 @@
 import { openDB } from 'idb/with-async-ittr';
 
 const DB_NAME = 'TILEDB_VIZ_CACHE';
-let DB_VERSION = 1;
+let DB_VERSION = 3;
 const INDEX_NAME = 'timestamp';
 
 const getCacheDB = async (storeName: string) => {
