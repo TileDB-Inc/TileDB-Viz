@@ -1,0 +1,29 @@
+# Build files
+packages/**/lib
+
+# Test coverage
+packages/**/coverage
+
+# node_modules
+node_modules
+packages/**/node_modules
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.cjs
+
+# Typescript
+**/*.tsbuildinfo
+
+# Vscode
+.vscode
+
+# Parcel
+.parcel-cache
+
+# MacOS
+.DS_Store
+**/.DS_Store

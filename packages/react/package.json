@@ -1,0 +1,54 @@
+{
+  "name": "@tiledb-inc/viz-react",
+  "version": "0.0.1",
+  "description": "React port of @tiledb-inc/viz-core",
+  "source": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "module": "lib/module.js",
+  "files": [
+    "lib/**/*"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
+  },
+  "author": {
+    "name": "TileDB",
+    "email": "support@tiledb.com"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "packageManager": "yarn@3.2.3",
+  "scripts": {
+    "build": "yarn g:parcel build",
+    "storybook": "yarn start-storybook -p 6006",
+    "build-storybook": "build-storybook",
+    "lint": "yarn g:eslint './src/**/*.{ts,tsx}'",
+    "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
+  },
+  "dependencies": {
+    "@tiledb-inc/viz-core": "workspace:^",
+    "classnames": "^2.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@mdx-js/react": "^1.6.22",
+    "@storybook/addon-actions": "^6.5.12",
+    "@storybook/addon-docs": "^6.5.12",
+    "@storybook/addon-essentials": "^6.5.12",
+    "@storybook/addon-interactions": "^6.5.12",
+    "@storybook/addon-links": "^6.5.12",
+    "@storybook/builder-webpack5": "^6.5.12",
+    "@storybook/manager-webpack5": "^6.5.12",
+    "@storybook/react": "^6.5.12",
+    "@storybook/testing-library": "^0.0.13",
+    "@types/node": "^18.11.18",
+    "@types/react": "^18.0.17",
+    "node-polyfill-webpack-plugin": "^2.0.1",
+    "webpack": "^5.74.0"
+  }
+}
