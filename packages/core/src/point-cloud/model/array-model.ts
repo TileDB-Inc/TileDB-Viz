@@ -229,7 +229,7 @@ class ArrayModel {
           this.pointSize,
           this.scene
         );
-        console.log(this.depthMaterial);
+
         pcs.buildMeshFromBuffer(
           block.entries.Position,
           block.entries.Color,
