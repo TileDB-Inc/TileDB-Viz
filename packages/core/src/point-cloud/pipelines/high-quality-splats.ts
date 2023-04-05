@@ -195,6 +195,8 @@ export class SPSHighQualitySplats {
       activeCamera
     );
 
+    this.postProcess.enablePixelPerfectMode = true;
+
     this.renderTargets[0].activeCamera = activeCamera;
     this.renderTargets[1].activeCamera = activeCamera;
     this.renderTargets[2].activeCamera = activeCamera;

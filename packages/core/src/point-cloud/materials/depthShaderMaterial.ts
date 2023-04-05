@@ -1,9 +1,10 @@
 import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
-import { CameraOptions } from '../utils/camera-utils';
 
 export function PointCloudDepthMaterial(
   scene: Scene,
-  cameraOptions: CameraOptions,
+  nearPlane: number,
+  farPlane: number,
+  fov: number,
   pointSize: number,
   pointType: string
 ): ShaderMaterial {
@@ -95,9 +96,9 @@ export function PointCloudDepthMaterial(
     {
       gl_Position = worldViewProjection * vec4(position, 1.0);
 
-      linearDepth = (gl_Position.w + ${cameraOptions.nearPlane.toFixed(
+      linearDepth = (gl_Position.w + ${nearPlane.toFixed(
         1
-      )}) / ${cameraOptions.farPlane.toFixed(1)};
+      )}) / ${farPlane.toFixed(1)};
 
       float originalDepth = gl_Position.w;
       float adjustedDepth = originalDepth + ${blendDistance.toFixed(1)};
@@ -116,12 +117,12 @@ export function PointCloudDepthMaterial(
       #endif
       #ifdef fixed_world_size
         gl_PointSize = (pointSize * half_height) / (${Math.tan(
-          cameraOptions.fov / 2
+          fov / 2
         )} * gl_Position.w);
       #endif
       #ifdef adaptive_world_size
         gl_PointSize = (pointSize / pow(2.0, float(getLOD(position))) * half_height) / (${Math.tan(
-          cameraOptions.fov / 2
+          fov / 2
         )} * gl_Position.w);
       #endif
     }

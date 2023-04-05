@@ -32,7 +32,6 @@ import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
 import { SparseResult } from './sparse-result';
 import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 import { PointCloudDepthMaterial } from '../materials/depthShaderMaterial';
-import { CameraOptions } from '../utils/camera-utils';
 import { PointCloudAdditiveColorMaterial } from '../materials/additiveColorShaderMaterial';
 
 /**
@@ -80,13 +79,11 @@ class ArrayModel {
   additiveColorMaterial!: ShaderMaterial;
   basePointSize = 1;
   visible: Map<number, boolean>;
-  cameraOptions: CameraOptions;
 
   constructor(
     scene: Scene,
     options: TileDBPointCloudOptions,
-    renderTargets: RenderTargetTexture[],
-    cameraOptions: CameraOptions
+    renderTargets: RenderTargetTexture[]
   ) {
     this.scene = scene;
 
@@ -130,7 +127,6 @@ class ArrayModel {
     this.loaded = new Map<number, boolean>();
     this.visible = new Map<number, boolean>();
     this.pending = [];
-    this.cameraOptions = cameraOptions;
 
     this.octreeTextureData = new Uint8Array(400);
     this.octreeTexture = new RawTexture(
@@ -146,14 +142,16 @@ class ArrayModel {
 
     this.depthMaterial = PointCloudDepthMaterial(
       this.scene,
-      this.cameraOptions,
+      options.cameraNearPlane || 1,
+      options.cameraFarPlane || 10000,
+      options.cameraFOV || 0.8,
       this.pointSize,
       this.pointType
     );
 
     this.additiveColorMaterial = PointCloudAdditiveColorMaterial(
       this.scene,
-      this.cameraOptions,
+      options.cameraFOV || 0.8,
       this.pointSize,
       this.pointType
     );

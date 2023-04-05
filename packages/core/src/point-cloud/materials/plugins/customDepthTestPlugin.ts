@@ -74,8 +74,8 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
       uniformBuffer.updateFloat('nearPlane', activeCamera.minZ);
       uniformBuffer.updateFloat('farPlane', activeCamera.maxZ);
 
-      uniformBuffer.updateFloat('width', engine._gl.canvas.width);
-      uniformBuffer.updateFloat('height', engine._gl.canvas.height);
+      uniformBuffer.updateFloat('width', engine.getRenderWidth());
+      uniformBuffer.updateFloat('height', engine.getRenderHeight());
 
       uniformBuffer.setTexture('linearDepthTexture', this.linearDepthTexture);
     }
@@ -92,7 +92,7 @@ export class CustomDepthTestMaterialPlugin extends MaterialPluginBase {
                 varying float vDepthMetric;
               `,
           CUSTOM_VERTEX_MAIN_END: `
-                vDepthMetric = (gl_Position.z + nearPlane) / farPlane;
+                vDepthMetric = (gl_Position.w + nearPlane + 10.0) / farPlane;
               `
         }
       : {

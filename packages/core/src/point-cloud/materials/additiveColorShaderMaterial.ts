@@ -1,9 +1,7 @@
 import { Scene, Effect, ShaderMaterial, Constants } from '@babylonjs/core';
-import { CameraOptions } from '../utils/camera-utils';
-
 export function PointCloudAdditiveColorMaterial(
   scene: Scene,
-  cameraOptions: CameraOptions,
+  fov: number,
   pointSize: number,
   pointType: string
 ): ShaderMaterial {
@@ -103,12 +101,12 @@ export function PointCloudAdditiveColorMaterial(
       #endif
       #ifdef fixed_world_size
         gl_PointSize = (pointSize * half_height) / (${Math.tan(
-          cameraOptions.fov / 2
+          fov / 2
         )} * gl_Position.w);
       #endif
       #ifdef adaptive_world_size
         gl_PointSize = (pointSize / pow(2.0, float(getLOD(position))) * half_height) / (${Math.tan(
-          cameraOptions.fov / 2
+          fov / 2
         )} * gl_Position.w);
       #endif
 

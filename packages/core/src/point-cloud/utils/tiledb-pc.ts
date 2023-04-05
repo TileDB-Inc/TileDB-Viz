@@ -104,6 +104,18 @@ export interface TileDBPointCloudOptions
    */
   cameraUp?: number;
   /**
+   * The near clipping plane
+   */
+  cameraNearPlane?: number;
+  /**
+   * The far clipping plane
+   */
+  cameraFarPlane?: number;
+  /**
+   * The camera field of view in radians
+   */
+  cameraFOV?: number;
+  /**
    * EDL shader strength
    */
   edlStrength?: number;

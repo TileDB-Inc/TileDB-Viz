@@ -9,20 +9,13 @@ import {
 } from '@babylonjs/core';
 import { TileDBPointCloudOptions } from './tiledb-pc';
 
-export interface CameraOptions {
-  nearPlane: number;
-  farPlane: number;
-  fov: number;
-}
-
 export function setCameraLight(
   scene: Scene,
   options: TileDBPointCloudOptions,
   conformingBounds: Array<number>,
   translationVector: Vector3,
   moveSpeed: number,
-  wheelPrecision: number,
-  cameraOptions: CameraOptions
+  wheelPrecision: number
 ) {
   const cameraZoomOut = options.cameraZoomOut || [1, 1, 1];
   const cameraLocation = options.cameraLocation || 1;
@@ -65,9 +58,9 @@ export function setCameraLight(
 
   camera0.setTarget(centreWorld);
   camera0.setPosition(cameraPosition);
-  camera0.minZ = cameraOptions.nearPlane;
-  camera0.maxZ = cameraOptions.farPlane;
-  camera0.fov = cameraOptions.fov;
+  camera0.minZ = options.cameraNearPlane || 1;
+  camera0.maxZ = options.cameraFarPlane || 10000;
+  camera0.fov = options.cameraFOV || 0.8;
 
   // freeCamera
   const camera1 = new FreeCamera('Free', centreFreeWorld, scene);
