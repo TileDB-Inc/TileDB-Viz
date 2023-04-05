@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core';
+import { Plane, Scene } from '@babylonjs/core';
 import ArrayModel from '../../model/array-model';
 import { updateSceneColors } from '../scene-colors';
 
@@ -41,6 +41,22 @@ const stylesString = `
   color: #fff;
   margin-bottom: 15px;
   margin-right: 4px;
+  font-size: 12px;
+}
+
+.tdb-input h3 {
+  font-size: 16px;
+  height: 16px;
+}
+
+.tdb-input label {
+  width: 100%;
+  height: 20px;
+}
+
+.tdb-input input {
+  width: 100%;
+  height: 16px;
 }
 
 .slider {
@@ -68,6 +84,7 @@ const stylesString = `
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 8px;
+  font-size: 12px;
 }
 
 .tdb-radio-label input {
@@ -78,6 +95,20 @@ const stylesString = `
 
 .tdb-fieldset {
   border: none;
+}
+
+.model-button {
+  background-color: #0077FF;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  width: 100%;
 }
 `;
 
@@ -96,10 +127,6 @@ class pointCloudGUI {
   controlsPanel?: HTMLElement;
   scene: Scene;
   model: ArrayModel;
-
-  //** TO DO **
-  //how to move buttons to bottom left or right?
-  //how to add a text block/title and style it?
 
   constructor(scene: Scene, model: ArrayModel) {
     this.scene = scene;
@@ -201,65 +228,172 @@ class MenuInput implements HtmlClass {
     wrapper.classList.add('tdb-input');
 
     if (model.useStreaming) {
-      const sliderWrapper = document.createElement('div');
+      const performanceSliderWrapper = document.createElement('div');
 
-      const title = document.createElement('h3');
-      const label = document.createElement('label');
+      const performanceTitle = document.createElement('h3');
       const hr1 = document.createElement('hr');
-      title.textContent = 'Performance';
+      performanceTitle.textContent = 'Performance';
 
-      const slider = document.createElement('input');
-      slider.setAttribute('type', 'range');
-      slider.setAttribute('class', 'slider');
-      slider.setAttribute('min', '500000');
-      slider.setAttribute('max', '10000000');
-      slider.setAttribute('value', model.pointBudget.toString());
+      const pointBudgetSlider = new Slider(
+        'Point budget',
+        '500000',
+        '10000000',
+        model,
+        scene
+      );
 
-      const output = document.getElementById('pointCount');
-      console.log(output);
+      performanceSliderWrapper.appendChild(performanceTitle);
+      performanceSliderWrapper.appendChild(pointBudgetSlider.content);
+      performanceSliderWrapper.appendChild(hr1);
 
-      label.innerHTML = `Point budget: ${slider.value}`;
-
-      slider.onchange = event => {
-        label.innerHTML = `Point budget: ${slider.value}`;
-        model.pointBudget = Number(slider.value);
-      };
-
-      sliderWrapper.appendChild(title);
-      sliderWrapper.appendChild(label);
-      sliderWrapper.appendChild(slider);
-      sliderWrapper.appendChild(hr1);
-
-      wrapper.appendChild(sliderWrapper);
+      wrapper.appendChild(performanceSliderWrapper);
     }
 
-    const title2 = document.createElement('h3');
+    const clippingPlanesTitle = document.createElement('h3');
+    const hr3 = document.createElement('hr');
+    clippingPlanesTitle.textContent = 'Clipping planes';
+
+    const xMinSlider = new Slider(
+      'Xmin',
+      (model.octree.minPoint.x - 1).toString(),
+      (model.octree.maxPoint.x + 1).toString(),
+      model,
+      scene
+    );
+
+    const xMaxSlider = new Slider(
+      'Xmax',
+      (model.octree.minPoint.x - 1).toString(),
+      (model.octree.maxPoint.x + 1).toString(),
+      model,
+      scene
+    );
+
+    const yMinSlider = new Slider(
+      'Ymin',
+      (model.octree.minPoint.y - 1).toString(),
+      (model.octree.maxPoint.y + 1).toString(),
+      model,
+      scene
+    );
+
+    const yMaxSlider = new Slider(
+      'Ymax',
+      (model.octree.minPoint.y - 1).toString(),
+      (model.octree.maxPoint.y + 1).toString(),
+      model,
+      scene
+    );
+
+    const zMinSlider = new Slider(
+      'Zmin',
+      (model.octree.minPoint.z - 1).toString(),
+      (model.octree.maxPoint.z + 1).toString(),
+      model,
+      scene
+    );
+
+    const zMaxSlider = new Slider(
+      'Zmax',
+      (model.octree.minPoint.z - 1).toString(),
+      (model.octree.maxPoint.z + 1).toString(),
+      model,
+      scene
+    );
+
+    wrapper.appendChild(clippingPlanesTitle);
+    wrapper.appendChild(xMinSlider.content);
+    wrapper.appendChild(xMaxSlider.content);
+    wrapper.appendChild(yMinSlider.content);
+    wrapper.appendChild(yMaxSlider.content);
+    wrapper.appendChild(zMinSlider.content);
+    wrapper.appendChild(zMaxSlider.content);
+    wrapper.appendChild(hr3);
+
+    const colorSchemeTitle = document.createElement('h3');
     const hr2 = document.createElement('hr');
-    title2.textContent = 'ColorScheme';
+    colorSchemeTitle.textContent = 'Color scheme';
 
     function setColors(colors: string) {
       updateSceneColors(scene, colors);
     }
 
-    const radioGroup = new RadioGroup({
-      listener: (colorScheme: string) => {
-        setColors(colorScheme);
-        console.log(`Selected Color Scheme is: ${colorScheme}`);
-      },
-      name: 'colors',
-      values: ['dark', 'light', 'blue']
-    });
+    const colorScheme = model.colorScheme;
+    if (colorScheme) {
+      const colorSchemeRadioGroup = new RadioGroup({
+        listener: (colorScheme: string) => {
+          setColors(colorScheme);
+          //console.log(`Selected Color Scheme is: ${colorScheme}`);
+        },
+        name: 'colors',
+        values: ['dark', 'light', 'blue'],
+        colorScheme
+      });
 
-    wrapper.appendChild(title2);
-    wrapper.appendChild(radioGroup.content);
-    wrapper.appendChild(hr2);
+      wrapper.appendChild(colorSchemeTitle);
+      wrapper.appendChild(colorSchemeRadioGroup.content);
+      wrapper.appendChild(hr2);
+    }
 
-    const title3 = document.createElement('h3');
-    const hr3 = document.createElement('hr');
-    title3.textContent = 'Clipping planes';
+    this.content = wrapper;
+  }
+}
 
-    wrapper.appendChild(title3);
-    wrapper.appendChild(hr3);
+class Slider implements HtmlClass {
+  content: HTMLElement;
+  constructor(
+    labelText: string,
+    minValue: string,
+    maxValue: string,
+    model: ArrayModel,
+    scene: Scene
+  ) {
+    const wrapper = document.createElement('div');
+    const slider = document.createElement('input');
+    slider.setAttribute('type', 'range');
+    slider.setAttribute('class', 'slider');
+    slider.setAttribute('min', minValue);
+    slider.setAttribute('max', maxValue);
+    if (labelText === 'Point budget') {
+      slider.setAttribute('value', model.pointBudget.toString());
+    } else if (labelText === 'Xmin') {
+      slider.setAttribute('value', (model.octree.minPoint.x - 1).toString());
+    } else if (labelText === 'Xmax') {
+      slider.setAttribute('value', (model.octree.maxPoint.x + 1).toString());
+    } else if (labelText === 'Ymin') {
+      slider.setAttribute('value', (model.octree.minPoint.y - 1).toString());
+    } else if (labelText === 'Ymax') {
+      slider.setAttribute('value', (model.octree.maxPoint.y + 1).toString());
+    } else if (labelText === 'Zmin') {
+      slider.setAttribute('value', (model.octree.minPoint.z - 1).toString());
+    } else if (labelText === 'Zmax') {
+      slider.setAttribute('value', (model.octree.maxPoint.z + 1).toString());
+    }
+
+    const label = document.createElement('label');
+    label.innerHTML = `${labelText}: ${Number(slider.value).toFixed(1)}`;
+
+    slider.onchange = event => {
+      label.innerHTML = `${labelText}: ${Number(slider.value).toFixed(1)}`;
+      if (labelText === 'Point budget') {
+        model.pointBudget = Number(slider.value);
+      } else if (labelText === 'Xmin') {
+        scene.clipPlane = new Plane(1, 0, 0, Number(slider.value));
+      } else if (labelText === 'Xmax') {
+        scene.clipPlane = new Plane(-1, 0, 0, -Number(slider.value));
+      } else if (labelText === 'Ymin') {
+        scene.clipPlane = new Plane(0, -1, 0, Number(slider.value));
+      } else if (labelText === 'Ymax') {
+        scene.clipPlane = new Plane(0, 1, 0, -Number(slider.value));
+      } else if (labelText === 'Zmin') {
+        scene.clipPlane = new Plane(0, 0, 1, Number(slider.value));
+      } else if (labelText === 'Zmax') {
+        scene.clipPlane = new Plane(0, 0, -1, -Number(slider.value));
+      }
+    };
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(slider);
 
     this.content = wrapper;
   }
@@ -271,7 +405,8 @@ class RadioGroup implements HtmlClass {
   constructor(options: {
     name: string;
     values: string[];
-    listener: (value: any) => void;
+    colorScheme: string;
+    listener: (value: string) => void;
   }) {
     const wrapper = document.createElement('fieldset');
     wrapper.classList.add('tdb-fieldset');
@@ -326,13 +461,57 @@ class ModelInput implements HtmlClass {
   constructor() {
     const wrapper = document.createElement('div');
     wrapper.classList.add('tdb-input');
-    const label = document.createElement('label');
-    const input = document.createElement('input');
+    const modelTitle = document.createElement('h3');
+    modelTitle.textContent = 'Load models';
 
-    label.textContent = 'Namespace';
-    input.value = 'TileDB';
-    wrapper.appendChild(label);
-    wrapper.appendChild(input);
+    const nameSpaceLabel = document.createElement('label');
+    const nameSpaceInput = document.createElement('input');
+    nameSpaceLabel.textContent = 'Namespace';
+    nameSpaceInput.value = 'TileDB';
+
+    const fileLabel = document.createElement('label');
+    const fileInput = document.createElement('input');
+    fileLabel.textContent = 'File';
+    fileInput.value = 'dragon.glb';
+
+    const transXLabel = document.createElement('label');
+    const transXInput = document.createElement('input');
+    transXLabel.textContent = 'Translation X';
+    transXInput.value = '0.00';
+
+    const transYLabel = document.createElement('label');
+    const transYInput = document.createElement('input');
+    transYLabel.textContent = 'Translation Y';
+    transYInput.value = '0.00';
+
+    const transZLabel = document.createElement('label');
+    const transZInput = document.createElement('input');
+    transZLabel.textContent = 'Translation Z';
+    transZInput.value = '0.00';
+
+    const scaleLabel = document.createElement('label');
+    const scaleInput = document.createElement('input');
+    scaleLabel.textContent = 'Scale';
+    scaleInput.value = '1.00';
+
+    const button = document.createElement('button');
+    button.classList.add('model-button');
+    button.value = 'Load model';
+
+    wrapper.appendChild(modelTitle);
+    wrapper.appendChild(nameSpaceLabel);
+    wrapper.appendChild(nameSpaceInput);
+    wrapper.appendChild(fileLabel);
+    wrapper.appendChild(fileInput);
+    wrapper.appendChild(transXLabel);
+    wrapper.appendChild(transXInput);
+    wrapper.appendChild(transYLabel);
+    wrapper.appendChild(transYInput);
+    wrapper.appendChild(transZLabel);
+    wrapper.appendChild(transZInput);
+    wrapper.appendChild(scaleLabel);
+    wrapper.appendChild(scaleInput);
+    wrapper.appendChild(button);
     this.content = wrapper;
   }
 }
