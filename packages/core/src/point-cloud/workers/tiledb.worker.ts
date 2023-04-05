@@ -72,11 +72,7 @@ function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
       entries: entries,
       name: self.name
     },
-    [
-      entries.Position.buffer,
-      entries.Color.buffer,
-      entries.GpsTime.buffer
-    ] as any
+    [entries.Position.buffer, entries.Color.buffer] as any
   );
 }
 
@@ -87,6 +83,8 @@ async function fetchData(block: MoctreeBlock) {
     [block.minPoint._z + translateZ, block.maxPoint._z + translateZ], // Y is Z,
     [block.minPoint._y + translateY, block.maxPoint._y + translateY]
   ];
+
+  console.log(ranges);
 
   const queryData = {
     layout: Layout.Unordered,

@@ -59,12 +59,30 @@ export class SPSHighQualitySplats {
       },
       this.scene,
       {
-        generateDepthBuffer: true,
+        generateDepthBuffer: false,
         format: Constants.TEXTUREFORMAT_RGBA,
         type: Constants.TEXTURETYPE_FLOAT
       }
     );
     additiveColorRenderTarget.clearColor = new Color4(0.0, 0.0, 0.0, 0.0);
+
+    if (
+      !depthRenderTarget.renderTarget ||
+      !additiveColorRenderTarget.renderTarget
+    ) {
+      throw new Error('Render target initialization failed');
+    }
+
+    depthRenderTarget.renderTarget._shareDepth(
+      additiveColorRenderTarget.renderTarget
+    );
+
+    additiveColorRenderTarget.skipInitialClear = true;
+    additiveColorRenderTarget.onClearObservable.add(() => {
+      this.scene
+        .getEngine()
+        .clear(additiveColorRenderTarget.clearColor, true, false, false);
+    });
 
     this.scene.customRenderTargets.push(depthRenderTarget);
     this.scene.customRenderTargets.push(depthMeshRenderTarget);
@@ -213,8 +231,8 @@ export class SPSHighQualitySplats {
   }
 
   resize(): void {
-    this.width = this.scene.getEngine()._gl.canvas.width;
-    this.height = this.scene.getEngine()._gl.canvas.height;
+    this.width = this.scene.getEngine().getRenderWidth();
+    this.height = this.scene.getEngine().getRenderWidth();
 
     this.renderTargets[0].resize({ height: this.height, width: this.width });
     this.renderTargets[1].resize({ height: this.height, width: this.width });

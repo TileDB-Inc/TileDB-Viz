@@ -1,29 +1,30 @@
-import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
+import { Scene, Effect, ShaderMaterial, Constants } from '@babylonjs/core';
 import { CameraOptions } from '../utils/camera-utils';
 
-export function PointCloudDepthMaterial(
+export function PointCloudAdditiveColorMaterial(
   scene: Scene,
   cameraOptions: CameraOptions,
   pointSize: number,
   pointType: string
 ): ShaderMaterial {
-  const blendDistance = 10;
-
-  Effect.ShadersStore['PointCloudDepthVertexShader'] = `
+  Effect.ShadersStore['PointCloudAdditiveColorVertexShader'] = `
     precision highp float;
+    precision highp int;
 
     #include<clipPlaneVertexDeclaration>
 
     in vec3 position;
+    in vec4 color;
 
     uniform mat4 worldViewProjection;
-    uniform mat4 worldView;
-    uniform mat4 projection;
     uniform mat4 world;
+
     uniform float pointSize;
     uniform float half_height;
     uniform vec3 minPoint;
     uniform vec3 maxPoint;
+
+    flat out vec3 vColor;
 
     uniform highp usampler2D visibilityTexture;
 
@@ -89,27 +90,13 @@ export function PointCloudDepthMaterial(
       return 10;
     }
 
-    flat out float linearDepth;
-
     void main(void)
     {
       gl_Position = worldViewProjection * vec4(position, 1.0);
 
-      linearDepth = (gl_Position.w + ${cameraOptions.nearPlane.toFixed(
-        1
-      )}) / ${cameraOptions.farPlane.toFixed(1)};
-
-      float originalDepth = gl_Position.w;
-      float adjustedDepth = originalDepth + ${blendDistance.toFixed(1)};
-      float adjust = adjustedDepth / originalDepth;
-
-      vec4 wvPosition = worldView * vec4(position, 1.0);
-      wvPosition.xyz = wvPosition.xyz * adjust;
-
-      gl_Position = projection * wvPosition;
+      vColor = color.rgb;
 
       vec4 worldPos = world * vec4(position, 1.0);
-      #include<clipPlaneVertex>
 
       #ifdef fixed_screen_size
         gl_PointSize = pointSize;
@@ -124,15 +111,17 @@ export function PointCloudDepthMaterial(
           cameraOptions.fov / 2
         )} * gl_Position.w);
       #endif
+
+      #include<clipPlaneVertex>
     }
   `;
 
-  Effect.ShadersStore['PointCloudDepthFragmentShader'] = `
+  Effect.ShadersStore['PointCloudAdditiveColorFragmentShader'] = `
     precision highp float;
 
     #include<clipPlaneFragmentDeclaration>
 
-    flat in float linearDepth;
+    flat in vec3 vColor;
 
     void main(void)
     {
@@ -140,29 +129,33 @@ export function PointCloudDepthMaterial(
 
       vec2 coords = gl_PointCoord.xy - vec2(0.5);
 
-      if (coords.x * coords.x + coords.y * coords.y > 0.25)
+      float distance = coords.x * coords.x + coords.y * coords.y;
+
+      if (distance > 0.25)
       {
         discard;
       }
 
-      glFragColor = vec4(linearDepth, 0.0, 0.0, 1.0);
+      distance = distance * 4.0;
+      float distance_square = 1.0 - distance * distance;
+      float weight = distance_square * distance_square;
+
+      glFragColor = vec4(vColor * weight, weight);
     }
   `;
 
   const material = new ShaderMaterial(
-    'PointCloudDepthShader',
+    'PointCloudAdditiveColorShader',
     scene,
     {
-      vertex: 'PointCloudDepth',
-      fragment: 'PointCloudDepth'
+      vertex: 'PointCloudAdditiveColor',
+      fragment: 'PointCloudAdditiveColor'
     },
     {
-      attributes: ['position'],
+      attributes: ['position', 'color'],
       uniforms: [
-        'world',
-        'worldView',
         'worldViewProjection',
-        'projection',
+        'world',
         'pointSize',
         'half_height',
         'minPoint',
@@ -170,12 +163,15 @@ export function PointCloudDepthMaterial(
       ],
       samplers: ['visibilityTexture'],
       defines: [pointType],
-      useClipPlane: true
+      useClipPlane: true,
+      needAlphaBlending: true
     }
   );
 
+  material.disableDepthWrite = true;
   material.pointsCloud = true;
   material.pointSize = pointSize;
+  material.alphaMode = Constants.ALPHA_ONEONE_ONEONE;
 
   material.setFloat('pointSize', pointSize);
   material.setFloat('half_height', scene.getEngine().getRenderHeight() / 2);

@@ -3,7 +3,6 @@ import {
   MeshBuilder,
   Scene,
   SolidParticleSystem,
-  StandardMaterial,
   Vector3,
   Particle,
   Frustum,
@@ -11,7 +10,8 @@ import {
   Constants,
   Camera,
   RenderTargetTexture,
-  Mesh
+  Mesh,
+  ShaderMaterial
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -28,11 +28,12 @@ import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
-import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
-import { AdditiveProximityMaterial } from '../materials/additiveProximityMaterial';
 import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
 import { SparseResult } from './sparse-result';
 import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
+import { PointCloudDepthMaterial } from '../materials/depthShaderMaterial';
+import { CameraOptions } from '../utils/camera-utils';
+import { PointCloudAdditiveColorMaterial } from '../materials/additiveColorShaderMaterial';
 
 /**
  * The ArrayModel manages the client octree
@@ -63,26 +64,32 @@ class ArrayModel {
   useShader = false;
   useStreaming = false;
   useSPS = false;
-  scene?: Scene;
+  scene: Scene;
   poolSize: number;
   debugTexture?: AdvancedDynamicTexture;
   loaded: Map<number, boolean>;
   octreeTexture!: RawTexture;
+  octreeTextureData: Uint8Array;
   pending: MoctreeBlock[];
   screenSizeLimit = 40;
   isInitialized = false;
   blockQueue!: PriorityQueue;
   static groundName = 'ground';
   renderTargets: RenderTargetTexture[];
-  depthMaterial!: LinearDepthMaterial;
-  additiveProximityMaterial!: AdditiveProximityMaterial;
+  depthMaterial!: ShaderMaterial;
+  additiveColorMaterial!: ShaderMaterial;
   basePointSize = 1;
   visible: Map<number, boolean>;
+  cameraOptions: CameraOptions;
 
   constructor(
+    scene: Scene,
     options: TileDBPointCloudOptions,
-    renderTargets: RenderTargetTexture[]
+    renderTargets: RenderTargetTexture[],
+    cameraOptions: CameraOptions
   ) {
+    this.scene = scene;
+
     this.groupName = options.groupName;
     this.namespace = options.namespace;
     this.token = options.token;
@@ -123,6 +130,39 @@ class ArrayModel {
     this.loaded = new Map<number, boolean>();
     this.visible = new Map<number, boolean>();
     this.pending = [];
+    this.cameraOptions = cameraOptions;
+
+    this.octreeTextureData = new Uint8Array(400);
+    this.octreeTexture = new RawTexture(
+      this.octreeTextureData,
+      200,
+      1,
+      Constants.TEXTUREFORMAT_RG_INTEGER,
+      this.scene,
+      false,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE
+    );
+
+    this.depthMaterial = PointCloudDepthMaterial(
+      this.scene,
+      this.cameraOptions,
+      this.pointSize,
+      this.pointType
+    );
+
+    this.additiveColorMaterial = PointCloudAdditiveColorMaterial(
+      this.scene,
+      this.cameraOptions,
+      this.pointSize,
+      this.pointType
+    );
+
+    this.depthMaterial.setTexture('visibilityTexture', this.octreeTexture);
+    this.additiveColorMaterial.setTexture(
+      'visibilityTexture',
+      this.octreeTexture
+    );
   }
 
   private addDebugLabel(
@@ -234,7 +274,7 @@ class ArrayModel {
           block.entries.Position,
           block.entries.Color,
           undefined,
-          this.depthMaterial === undefined ? null : this.depthMaterial.material
+          this.depthMaterial
         );
 
         this.particleSystems.set(block.mortonNumber, pcs);
@@ -282,52 +322,20 @@ class ArrayModel {
   }
 
   private assignRenderTargets(mesh: Mesh): void {
-    if (!mesh.material) {
-      throw new Error('PCS material failed to initialize');
-    }
-
-    if (!this.depthMaterial) {
-      this.depthMaterial = new LinearDepthMaterial(
-        mesh.material,
-        this.pointSize,
-        this.octreeTexture,
-        this.octree.minPoint,
-        this.octree.maxPoint,
-        this.pointType
-      );
-    }
-
-    if (!this.renderTargets[0].renderList) {
-      throw new Error('Render Targer 0 uninitialized ');
+    if (
+      !this.renderTargets[0].renderList ||
+      !this.renderTargets[1].renderList
+    ) {
+      throw new Error('Render Targets uninitialized');
     }
 
     this.renderTargets[0].renderList.push(mesh);
-    this.renderTargets[0].setMaterialForRendering(
-      mesh,
-      this.depthMaterial.material
-    );
-
-    if (!this.additiveProximityMaterial) {
-      this.additiveProximityMaterial = new AdditiveProximityMaterial(
-        mesh.material,
-        1,
-        this.pointSize,
-        this.renderTargets[0],
-        this.octreeTexture,
-        this.octree.minPoint,
-        this.octree.maxPoint,
-        this.pointType
-      );
-    }
-
-    if (!this.renderTargets[1].renderList) {
-      throw new Error('Render Targer 1 uninitialized');
-    }
+    this.renderTargets[0].setMaterialForRendering(mesh, this.depthMaterial);
 
     this.renderTargets[1].renderList.push(mesh);
     this.renderTargets[1].setMaterialForRendering(
       mesh,
-      this.additiveProximityMaterial.material
+      this.additiveColorMaterial
     );
   }
 
@@ -336,26 +344,25 @@ class ArrayModel {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const [_1, pcs] of this.particleSystems) {
-      if (!pcs.mesh || !pcs.mesh.material) {
+      if (!pcs.mesh) {
         throw new Error('Point cloud build failed');
       }
 
       //this.renderTargets[0].renderList.push(pcs.mesh);
       this.renderTargets[0].setMaterialForRendering(
         pcs.mesh,
-        this.depthMaterial.material
+        this.depthMaterial
       );
 
       //this.renderTargets[1].renderList.push(pcs.mesh);
       this.renderTargets[1].setMaterialForRendering(
         pcs.mesh,
-        this.additiveProximityMaterial.material
+        this.additiveColorMaterial
       );
     }
   }
 
   public async init(
-    scene: Scene,
     xmin: number,
     xmax: number,
     ymin: number,
@@ -369,7 +376,6 @@ class ArrayModel {
     data?: SparseResult
   ) {
     this.basePointSize = 50;
-    this.scene = scene;
     this.rgbMax = rgbMax || 1.0;
     this.maxLevel = nLevels || 1;
     this.arraySchema = arraySchema;
@@ -383,6 +389,12 @@ class ArrayModel {
       new Vector3(spanX, zmax - zmin, spanY),
       this.maxLevel
     );
+
+    this.depthMaterial.setVector3('minPoint', this.octree.minPoint);
+    this.depthMaterial.setVector3('maxPoint', this.octree.maxPoint);
+
+    this.additiveColorMaterial.setVector3('minPoint', this.octree.minPoint);
+    this.additiveColorMaterial.setVector3('maxPoint', this.octree.maxPoint);
 
     // maintain compatibility with directly loading data
     if (data) {
@@ -406,29 +418,6 @@ class ArrayModel {
       this.loaded.set(block.mortonNumber, true);
       this.loadSystem(block);
     } else {
-      // create a ground so we always having picking for panning the scene
-      const ground = MeshBuilder.CreateGround(
-        ArrayModel.groundName,
-        {
-          width: 2 * spanX,
-          height: 2 * spanY
-        },
-        scene
-      );
-
-      ground.position = new Vector3(
-        0,
-        conformingBounds[4] - this.translationVector.y,
-        0
-      );
-
-      ground.isVisible = true;
-      // make the ground transparent and pickable
-      const mat = new StandardMaterial('groundMaterial', scene);
-      mat.alpha = 0;
-      ground.material = mat;
-      ground.isPickable = true;
-
       this.workerPool = new TileDBWorkerPool(
         {
           type: WorkerType.init,
@@ -448,11 +437,10 @@ class ArrayModel {
         this.poolSize
       );
 
-      scene.onBeforeRenderObservable.add((scene: Scene) => {
+      this.scene.onBeforeRenderObservable.add((scene: Scene) => {
         this.beforeRender(scene);
       });
     }
-    return scene;
   }
 
   public async fetchPoints(scene: Scene) {
@@ -639,7 +627,7 @@ class ArrayModel {
   private calculateOctreeTexture(): void {
     const keys = Array.from(this.visible.keys()).sort((a, b) => a - b);
 
-    const textureData: Uint8Array = new Uint8Array(400);
+    this.octreeTextureData.fill(0);
     let counter = 0;
 
     for (const key of keys) {
@@ -656,37 +644,21 @@ class ArrayModel {
           continue;
         }
 
-        if (textureData[2 * counter] === 0) {
+        if (this.octreeTextureData[2 * counter] === 0) {
           // This is the first child so we need to find its index
           // in the keys array relatice to the current index
-          textureData[2 * counter + 1] =
+          this.octreeTextureData[2 * counter + 1] =
             keys.indexOf(code, counter + 1) - counter;
         }
 
-        textureData[2 * counter] = textureData[2 * counter] | (1 << i);
+        this.octreeTextureData[2 * counter] =
+          this.octreeTextureData[2 * counter] | (1 << i);
       }
 
       ++counter;
     }
 
-    if (this.octreeTexture) {
-      this.octreeTexture.update(textureData);
-    } else {
-      if (!this.scene) {
-        throw new Error('Scene is unitilialized');
-      }
-
-      this.octreeTexture = new RawTexture(
-        textureData,
-        200,
-        1,
-        Constants.TEXTUREFORMAT_RG_INTEGER,
-        this.scene,
-        false,
-        false,
-        Constants.TEXTURE_NEAREST_SAMPLINGMODE
-      );
-    }
+    this.octreeTexture.update(this.octreeTextureData);
   }
 
   public beforeRender(scene: Scene) {

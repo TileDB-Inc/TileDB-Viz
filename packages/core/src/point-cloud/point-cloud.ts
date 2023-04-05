@@ -37,6 +37,7 @@ import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
 import { SparseResult } from './model/sparse-result';
+import { CameraOptions } from './utils/camera-utils';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -202,13 +203,24 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
       this.attachKeys();
 
+      const cameraOptions = {
+        nearPlane: 1,
+        farPlane: 10000,
+        fov: 0.8
+      } as CameraOptions;
+
       this.pipeline = new SPSHighQualitySplats(this.scene);
       if (!this.options.useSPS) {
         this.renderTargets = this.pipeline.initializeRTTs();
       }
 
       // initialize ParticleSystem
-      this.model = new ArrayModel(this.options, this.renderTargets);
+      this.model = new ArrayModel(
+        this.scene,
+        this.options,
+        this.renderTargets,
+        cameraOptions
+      );
 
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
@@ -226,7 +238,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         ];
 
         await this.model.init(
-          this.scene,
           octreeBounds[0],
           octreeBounds[3],
           octreeBounds[1],
@@ -252,7 +263,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             pcData.zmax
           ];
           await this.model.init(
-            this.scene,
             pcData.xmin,
             pcData.xmax,
             pcData.ymin,
@@ -279,7 +289,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.conformingBounds,
         this.model.translationVector,
         this.moveSpeed,
-        this.wheelPrecision
+        this.wheelPrecision,
+        cameraOptions
       );
 
       if (!this.options.useSPS) {

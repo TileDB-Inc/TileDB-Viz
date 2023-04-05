@@ -151,7 +151,7 @@ export const StreamerAutzen = () => (
     rgbMax={65535}
     pointBudget={3_500_000}
     wheelPrecision={0.1}
-    pointSize={4}
+    pointSize={3}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={25}
@@ -165,6 +165,30 @@ export const StreamerAutzen = () => (
   />
 );
 
+export const StreamerAutzen2 = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={'margriet-tiledb'}
+    groupName={'autzen'}
+    workerPoolSize={numWorkers}
+    rgbMax={255}
+    pointBudget={3_500_000}
+    wheelPrecision={0.1}
+    pointSize={3}
+    cameraLocation={8}
+    cameraZoomOut={[1, 1, 4]}
+    cameraUp={25}
+    moveSpeed={4}
+    colorScheme="dark"
+    width={'100vw'}
+    height={'100vh'}
+    useShader={false}
+    edlStrength={0.4}
+    pointType={'adaptive_world_size'}
+  />
+);
+
 export const StreamerBristol = () => (
   <PointCloudVisualization
     streaming={true}
@@ -172,9 +196,9 @@ export const StreamerBristol = () => (
     namespace={namespace}
     groupName={'bristol'}
     workerPoolSize={numWorkers}
-    pointBudget={4_500_000}
+    pointBudget={3_500_000}
     colorScheme="dark"
-    pointSize={4}
+    pointSize={3}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
     cameraUp={50}
@@ -198,7 +222,7 @@ export const StreamerSantorini = () => (
     workerPoolSize={numWorkers}
     pointBudget={3_000_000}
     colorScheme="dark"
-    pointSize={5}
+    pointSize={3}
     cameraLocation={5}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={200}
