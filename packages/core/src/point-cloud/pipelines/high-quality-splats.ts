@@ -232,10 +232,21 @@ export class SPSHighQualitySplats {
 
   resize(): void {
     this.width = this.scene.getEngine().getRenderWidth();
-    this.height = this.scene.getEngine().getRenderWidth();
+    this.height = this.scene.getEngine().getRenderHeight();
 
     this.renderTargets[0].resize({ height: this.height, width: this.width });
     this.renderTargets[1].resize({ height: this.height, width: this.width });
     this.renderTargets[2].resize({ height: this.height, width: this.width });
+
+    if (
+      !this.renderTargets[0].renderTarget ||
+      !this.renderTargets[1].renderTarget
+    ) {
+      throw new Error('Render target initialization failed');
+    }
+
+    this.renderTargets[0].renderTarget._shareDepth(
+      this.renderTargets[1].renderTarget
+    );
   }
 }

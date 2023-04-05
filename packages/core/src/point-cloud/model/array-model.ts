@@ -339,29 +339,6 @@ class ArrayModel {
     );
   }
 
-  public reassignMaterials(renderTargets: RenderTargetTexture[]) {
-    this.renderTargets = renderTargets;
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const [_1, pcs] of this.particleSystems) {
-      if (!pcs.mesh) {
-        throw new Error('Point cloud build failed');
-      }
-
-      //this.renderTargets[0].renderList.push(pcs.mesh);
-      this.renderTargets[0].setMaterialForRendering(
-        pcs.mesh,
-        this.depthMaterial
-      );
-
-      //this.renderTargets[1].renderList.push(pcs.mesh);
-      this.renderTargets[1].setMaterialForRendering(
-        pcs.mesh,
-        this.additiveColorMaterial
-      );
-    }
-  }
-
   public async init(
     xmin: number,
     xmax: number,
@@ -659,6 +636,38 @@ class ArrayModel {
     }
 
     this.octreeTexture.update(this.octreeTextureData);
+  }
+
+  public onResize(renderTargets: RenderTargetTexture[]) {
+    this.depthMaterial.setFloat(
+      'half_height',
+      this.scene.getEngine().getRenderHeight() / 2
+    );
+    this.additiveColorMaterial.setFloat(
+      'half_height',
+      this.scene.getEngine().getRenderHeight() / 2
+    );
+
+    this.renderTargets = renderTargets;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_1, pcs] of this.particleSystems) {
+      if (!pcs.mesh) {
+        throw new Error('Point cloud build failed');
+      }
+
+      //this.renderTargets[0].renderList.push(pcs.mesh);
+      this.renderTargets[0].setMaterialForRendering(
+        pcs.mesh,
+        this.depthMaterial
+      );
+
+      //this.renderTargets[1].renderList.push(pcs.mesh);
+      this.renderTargets[1].setMaterialForRendering(
+        pcs.mesh,
+        this.additiveColorMaterial
+      );
+    }
   }
 
   public beforeRender(scene: Scene) {

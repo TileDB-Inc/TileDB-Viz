@@ -473,7 +473,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       const model = this.model;
       this.engine.onResizeObservable.add(() => {
         pipeline.resize();
-        model.reassignMaterials(pipeline.renderTargets);
+        model.onResize(pipeline.renderTargets);
 
         for (const mesh of scene.getMeshesByTags('Imported')) {
           if (!mesh || !mesh.material) {
