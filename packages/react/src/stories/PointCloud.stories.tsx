@@ -146,12 +146,36 @@ export const StreamerAutzen = () => (
     streaming={true}
     token={token}
     namespace={namespace}
+    groupName={'autzen-potree'}
+    workerPoolSize={numWorkers}
+    rgbMax={255}
+    pointBudget={3_500_000}
+    wheelPrecision={0.1}
+    pointSize={3}
+    cameraLocation={8}
+    cameraZoomOut={[1, 1, 4]}
+    cameraUp={25}
+    moveSpeed={4}
+    colorScheme="dark"
+    width={'100vw'}
+    height={'100vh'}
+    useShader={false}
+    edlStrength={0.4}
+    pointType={'fixed_screen_size'}
+  />
+);
+
+export const StreamerAutzenClassified = () => (
+  <PointCloudVisualization
+    streaming={true}
+    token={token}
+    namespace={namespace}
     groupName={'autzen-classified'}
     workerPoolSize={numWorkers}
     rgbMax={65535}
     pointBudget={3_500_000}
     wheelPrecision={0.1}
-    pointSize={4}
+    pointSize={3}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={25}
