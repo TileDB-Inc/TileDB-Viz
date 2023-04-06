@@ -113,7 +113,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 this.options.cameraLocation
               );
               this.cameras[this.activeCamera].position = cameraPosition;
-              this.model.calculateBlocks(this.scene);
+              this.model.calculateBlocks();
             }
           }
 
@@ -138,7 +138,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 this.engine
               );
             }
-            this.model.calculateBlocks(this.scene);
+            this.model.calculateBlocks();
             this.pipeline.setActiveCamera();
           }
 
@@ -147,7 +147,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             case 'ArrowDown':
             case 'ArrowLeft':
             case 'ArrowRight':
-              this.model.calculateBlocks(this.scene);
+              this.model.calculateBlocks();
               break;
           }
 
@@ -334,14 +334,14 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             const event = eventData.event as IWheelEvent;
             const delta = event.deltaY;
             if (delta) {
-              this.model.calculateBlocks(scene);
+              this.model.calculateBlocks();
             }
             break;
           }
           case PointerEventTypes.POINTERUP: {
             isPanning = false;
             this.cameras[0].attachControl(true, true);
-            this.model.calculateBlocks(scene);
+            this.model.calculateBlocks();
             break;
           }
           case PointerEventTypes.POINTERMOVE: {

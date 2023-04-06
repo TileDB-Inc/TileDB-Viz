@@ -197,15 +197,11 @@ class ArrayModel {
       return;
     }
 
-    if (this.scene && this.scene.isDisposed) {
+    if (this.scene.isDisposed) {
       return;
     }
 
-    if (
-      block.entries !== undefined &&
-      this.scene &&
-      block.entries.Position.length !== 0
-    ) {
+    if (block.entries !== undefined && block.entries.Position.length !== 0) {
       const numPoints = block.pointCount;
 
       const pointBuilderTransformed = function (particle: Particle, i: number) {
@@ -418,9 +414,9 @@ class ArrayModel {
     }
   }
 
-  public async fetchPoints(scene: Scene) {
+  public async fetchPoints() {
     if (this.workerPool?.isReady()) {
-      const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+      const activeCamera: Camera | undefined = this.scene.activeCameras?.find(
         (camera: Camera) => {
           return !camera.name.startsWith('GUI');
         }
@@ -501,9 +497,9 @@ class ArrayModel {
     });
   }
 
-  public calculateBlocks(scene: Scene) {
+  public calculateBlocks() {
     // Find the active camera of the scene
-    const activeCamera: Camera | undefined = this.scene?.activeCameras?.find(
+    const activeCamera: Camera | undefined = this.scene.activeCameras?.find(
       (camera: Camera) => {
         return !camera.name.startsWith('GUI');
       }
@@ -518,7 +514,7 @@ class ArrayModel {
     const planes = Frustum.GetPlanes(activeCamera.getTransformationMatrix());
 
     const slope = Math.tan(activeCamera.fov / 2);
-    const height = scene.getEngine()._gl.canvas.height / 2;
+    const height = this.scene.getEngine().getRenderHeight() / 2;
     if (!this.blockQueue) {
       this.blockQueue = new PriorityQueue(this.octree.blocklist.size);
     } else {
@@ -674,9 +670,9 @@ class ArrayModel {
       // initialize blocks here
       if (!this.isInitialized) {
         this.isInitialized = true;
-        this.calculateBlocks(scene);
+        this.calculateBlocks();
       }
-      this.fetchPoints(scene);
+      this.fetchPoints();
       this.calculateOctreeTexture();
     }
   }

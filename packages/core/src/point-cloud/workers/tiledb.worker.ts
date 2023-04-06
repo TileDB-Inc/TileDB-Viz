@@ -84,8 +84,6 @@ async function fetchData(block: MoctreeBlock) {
     [block.minPoint._y + translateY, block.maxPoint._y + translateY]
   ];
 
-  console.log(ranges);
-
   const queryData = {
     layout: Layout.Unordered,
     ranges: ranges,
