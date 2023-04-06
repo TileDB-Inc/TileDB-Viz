@@ -38,6 +38,7 @@ import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTe
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
 import { SparseResult } from './model/sparse-result';
 import getArrayRegistrationTimestamp from '../utils/getArrayRegistrationTimestamp';
+import pointCloudGUI from './utils/point-cloud-html-gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -308,11 +309,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       // add interactive GUI
-      this.gui = new PointCloudGUI(this.scene);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-      await this.gui.init(this.scene, this.model);
+      new pointCloudGUI(this.scene, this.model);
 
       // add panning control
       let plane: Plane;
