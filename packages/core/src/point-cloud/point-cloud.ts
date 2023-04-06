@@ -37,6 +37,7 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
 import { MeshDepthMaterial } from './materials/depthShaderMaterial';
+import pointCloudGUI from './utils/point-cloud-html-gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -312,11 +313,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       // add interactive GUI
-      this.gui = new PointCloudGUI(this.scene, this.depthMaterial);
-      if (this.gui.advancedDynamicTexture.layer !== null) {
-        this.gui.advancedDynamicTexture.layer.layerMask = 0x10000000;
-      }
-      await this.gui.init(this.scene, this.model);
+      new pointCloudGUI(this.scene, this.model);
 
       // add panning control
       let plane: Plane;
