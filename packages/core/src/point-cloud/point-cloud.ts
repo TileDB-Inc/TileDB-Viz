@@ -34,7 +34,6 @@ import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
-import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
 import { SparseResult } from './model/sparse-result';
 
@@ -396,8 +395,12 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       ) => {
         SceneLoader.ImportMeshAsync('', '', file, scene).then(
           (result: ISceneLoaderAsyncResult) => {
-            for (const mesh of result.meshes) {
+            for (const mesh of result.meshes[0].getChildMeshes()) {
               if (mesh.material) {
+                mesh.setParent(null);
+                mesh.enableDistantPicking = true;
+                mesh.renderingGroupId = 1;
+
                 const depthMaterial: any = mesh.material.clone('DepthMaterial');
 
                 if (!depthMaterial) {
@@ -408,40 +411,27 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                   new LinearDepthMaterialPlugin(depthMaterial);
                 depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
 
-                if (!this.renderTargets[2].renderList) {
-                  throw new Error('Render target 2 is uninitialized');
+                if (!this.renderTargets[0].renderList) {
+                  throw new Error('Render target 0 is uninitialized');
                 }
 
-                this.renderTargets[2].renderList.push(mesh);
-                this.renderTargets[2].setMaterialForRendering(
+                this.renderTargets[0].renderList.push(mesh);
+                this.renderTargets[0].setMaterialForRendering(
                   mesh,
                   depthMaterial
                 );
-
-                const defaultMaterial: any =
-                  mesh.material.clone('defaultMaterial');
-                if (!defaultMaterial) {
-                  throw new Error('Import mesh meaterial is null');
-                }
-                defaultMaterial.customDepthTestMaterialPlugin =
-                  new CustomDepthTestMaterialPlugin(defaultMaterial);
-                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
-                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
-                  this.renderTargets[0];
 
                 if (!this.renderTargets[1].renderList) {
                   throw new Error('Render target 1 is uninitialized');
                 }
 
                 this.renderTargets[1].renderList.push(mesh);
-                this.renderTargets[1].setMaterialForRendering(
-                  mesh,
-                  defaultMaterial
-                );
 
                 Tags.AddTagsTo(mesh, 'Imported');
               }
             }
+
+            result.meshes[0].dispose();
           }
         );
         return true;
@@ -477,27 +467,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             new LinearDepthMaterialPlugin(depthMaterial);
           depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
 
-          if (!this.renderTargets[2].renderList) {
-            throw new Error('Render target 2 is uninitialized');
+          if (!this.renderTargets[0].renderList) {
+            throw new Error('Render target 0 is uninitialized');
           }
 
-          this.renderTargets[2].setMaterialForRendering(mesh, depthMaterial);
-
-          const defaultMaterial: any = mesh.material.clone('defaultMaterial');
-          if (!defaultMaterial) {
-            throw new Error('Import mesh meaterial is null');
-          }
-          defaultMaterial.customDepthTestMaterialPlugin =
-            new CustomDepthTestMaterialPlugin(defaultMaterial);
-          defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
-          defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
-            this.renderTargets[0];
-
-          if (!this.renderTargets[1].renderList) {
-            throw new Error('Render target 1 is uninitialized');
-          }
-
-          this.renderTargets[1].setMaterialForRendering(mesh, defaultMaterial);
+          this.renderTargets[0].setMaterialForRendering(mesh, depthMaterial);
         }
       });
 

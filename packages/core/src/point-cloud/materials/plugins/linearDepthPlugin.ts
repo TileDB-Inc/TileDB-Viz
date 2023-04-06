@@ -67,7 +67,7 @@ export class LinearDepthMaterialPlugin extends MaterialPluginBase {
               varying float vDepthMetric;
           `,
           CUSTOM_VERTEX_MAIN_END: `
-              vDepthMetric = (gl_Position.z + nearPlane) / farPlane;
+              vDepthMetric = (gl_Position.w + nearPlane) / farPlane;
           `
         }
       : {

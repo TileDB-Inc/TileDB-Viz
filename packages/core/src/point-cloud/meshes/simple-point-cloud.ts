@@ -94,6 +94,7 @@ export class SimplePointsCloudSystem implements IDisposable {
     const mesh = new Mesh(this.name, this._scene);
     vertexData.applyToMesh(mesh, false);
     this.mesh = mesh;
+    this.mesh.isPickable = false;
 
     let mat = material;
 
@@ -104,7 +105,7 @@ export class SimplePointsCloudSystem implements IDisposable {
       (<StandardMaterial>mat).pointsCloud = true;
       (<StandardMaterial>mat).pointSize = this._size;
     }
-    mesh.material = mat;
+    this.mesh.material = mat;
   }
 
   public dispose(): void {

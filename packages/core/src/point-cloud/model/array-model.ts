@@ -650,13 +650,11 @@ class ArrayModel {
         throw new Error('Point cloud build failed');
       }
 
-      //this.renderTargets[0].renderList.push(pcs.mesh);
       this.renderTargets[0].setMaterialForRendering(
         pcs.mesh,
         this.depthMaterial
       );
 
-      //this.renderTargets[1].renderList.push(pcs.mesh);
       this.renderTargets[1].setMaterialForRendering(
         pcs.mesh,
         this.additiveColorMaterial

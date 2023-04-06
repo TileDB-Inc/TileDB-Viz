@@ -35,21 +35,7 @@ export class SPSHighQualitySplats {
       }
     );
     depthRenderTarget.clearColor = new Color4(1.0, 0.0, 0.0, 0.0);
-
-    const depthMeshRenderTarget = new RenderTargetTexture(
-      'LinearDepthMeshRenderTarget',
-      {
-        width: this.scene.getEngine()._gl.canvas.width,
-        height: this.scene.getEngine()._gl.canvas.height
-      },
-      this.scene,
-      {
-        generateDepthBuffer: true,
-        format: Constants.TEXTUREFORMAT_R,
-        type: Constants.TEXTURETYPE_FLOAT
-      }
-    );
-    depthMeshRenderTarget.clearColor = new Color4(1.0, 0.0, 0.0, 0.0);
+    depthRenderTarget.setRenderingAutoClearDepthStencil(1, false);
 
     const additiveColorRenderTarget = new RenderTargetTexture(
       'additiveColorRenderTarget',
@@ -65,6 +51,7 @@ export class SPSHighQualitySplats {
       }
     );
     additiveColorRenderTarget.clearColor = new Color4(0.0, 0.0, 0.0, 0.0);
+    additiveColorRenderTarget.setRenderingAutoClearDepthStencil(1, false);
 
     if (
       !depthRenderTarget.renderTarget ||
@@ -85,20 +72,11 @@ export class SPSHighQualitySplats {
     });
 
     this.scene.customRenderTargets.push(depthRenderTarget);
-    this.scene.customRenderTargets.push(depthMeshRenderTarget);
     this.scene.customRenderTargets.push(additiveColorRenderTarget);
 
-    this.renderTargets.push(
-      depthRenderTarget,
-      additiveColorRenderTarget,
-      depthMeshRenderTarget
-    );
+    this.renderTargets.push(depthRenderTarget, additiveColorRenderTarget);
 
-    return [
-      depthRenderTarget,
-      additiveColorRenderTarget,
-      depthMeshRenderTarget
-    ];
+    return [depthRenderTarget, additiveColorRenderTarget];
   }
 
   initializePostProcess(options: TileDBPointCloudOptions) {
@@ -138,7 +116,7 @@ export class SPSHighQualitySplats {
         //uniform mat4 uProj;
         uniform sampler2D uEDLDepth;
         uniform sampler2D additiveTexture;
-        uniform sampler2D meshDepthTexture;
+
         float response(float depth) {
             vec2 uvRadius = radius / vec2(screenWidth, screenHeight);
             float sum = 0.0;
@@ -159,23 +137,20 @@ export class SPSHighQualitySplats {
         }
         void main(void)
         {
-            float pointClouddepth = texture2D(uEDLDepth, vUV).r;
-            float meshDepth = texture2D(meshDepthTexture, vUV).r;
+          float depth = texture2D(uEDLDepth, vUV).r;
+          vec4 cEDL = texture2D(additiveTexture, vUV);
+          depth = (depth == 1.0) ? 0.0 : depth;
+          float res = response(depth);
+          float shade = exp(-res * 300.0 * edlStrength);
 
-            float depth = min(pointClouddepth, meshDepth);
-            vec4 cEDL = texture2D(additiveTexture, vUV);
-            depth = (depth == 1.0) ? 0.0 : depth;
-            float res = response(depth);
-            float shade = exp(-res * 300.0 * edlStrength);
-
-            if (depth == 0.0)
-            {
-              gl_FragColor = vec4(clearColor.rgb * shade, 1.0);
-            }
-            else
-            {
-              gl_FragColor = vec4((cEDL.rgb / cEDL.a) * shade, 1.0);
-            }
+          if (depth == 0.0)
+          {
+            gl_FragColor = vec4(clearColor.rgb * shade, 1.0);
+          }
+          else
+          {
+            gl_FragColor = vec4((cEDL.rgb / cEDL.a) * shade, 1.0);
+          }
         }
         `;
 
@@ -190,7 +165,7 @@ export class SPSHighQualitySplats {
         'radius',
         'clearColor'
       ],
-      ['uEDLDepth', 'additiveTexture', 'meshDepthTexture'],
+      ['uEDLDepth', 'additiveTexture'],
       1.0,
       activeCamera
     );
@@ -199,7 +174,6 @@ export class SPSHighQualitySplats {
 
     this.renderTargets[0].activeCamera = activeCamera;
     this.renderTargets[1].activeCamera = activeCamera;
-    this.renderTargets[2].activeCamera = activeCamera;
 
     this.postProcess.onApply = (effect: Effect) => {
       effect.setFloat('screenWidth', this.width);
@@ -209,7 +183,6 @@ export class SPSHighQualitySplats {
       effect.setFloat('radius', edlRadius);
       effect.setTexture('uEDLDepth', this.renderTargets[0]);
       effect.setTexture('additiveTexture', this.renderTargets[1]);
-      effect.setTexture('meshDepthTexture', this.renderTargets[2]);
       effect.setColor4('clearColor', this.scene.clearColor, 1.0);
     };
   }
@@ -227,7 +200,6 @@ export class SPSHighQualitySplats {
 
     this.renderTargets[0].activeCamera = activeCamera;
     this.renderTargets[1].activeCamera = activeCamera;
-    this.renderTargets[2].activeCamera = activeCamera;
 
     activeCamera.attachPostProcess(this.postProcess);
   }
@@ -238,7 +210,6 @@ export class SPSHighQualitySplats {
 
     this.renderTargets[0].resize({ height: this.height, width: this.width });
     this.renderTargets[1].resize({ height: this.height, width: this.width });
-    this.renderTargets[2].resize({ height: this.height, width: this.width });
 
     if (
       !this.renderTargets[0].renderTarget ||
