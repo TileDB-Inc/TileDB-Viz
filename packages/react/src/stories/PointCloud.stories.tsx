@@ -165,30 +165,6 @@ export const StreamerAutzen = () => (
   />
 );
 
-export const StreamerAutzen2 = () => (
-  <PointCloudVisualization
-    streaming={true}
-    token={token}
-    namespace={'margriet-tiledb'}
-    groupName={'autzen'}
-    workerPoolSize={numWorkers}
-    rgbMax={255}
-    pointBudget={3_500_000}
-    wheelPrecision={0.1}
-    pointSize={3}
-    cameraLocation={8}
-    cameraZoomOut={[1, 1, 4]}
-    cameraUp={25}
-    moveSpeed={4}
-    colorScheme="dark"
-    width={'100vw'}
-    height={'100vh'}
-    useShader={false}
-    edlStrength={0.4}
-    pointType={'adaptive_world_size'}
-  />
-);
-
 export const StreamerBristol = () => (
   <PointCloudVisualization
     streaming={true}

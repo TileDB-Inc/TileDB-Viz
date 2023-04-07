@@ -753,7 +753,6 @@ class PointCloudGUI {
               mesh.enableDistantPicking = true;
 
               mesh.renderingGroupId = 1;
-              console.log(mesh.material);
 
               if (
                 !model.renderTargets[0].renderList ||

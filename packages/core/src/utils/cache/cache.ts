@@ -23,11 +23,6 @@ const getCacheDB = async (storeName: string) => {
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       for (let i = 0; i < DATA_MODEL_VERSION; ++i) {
-        console.log(
-          `${storeName + '_' + i} - ${db.objectStoreNames.contains(
-            storeName + '_' + i
-          )}`
-        );
         if (db.objectStoreNames.contains(storeName + '_' + i)) {
           db.deleteObjectStore(storeName + '_' + i);
         }

@@ -409,8 +409,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 mesh.enableDistantPicking = true;
                 mesh.renderingGroupId = 1;
 
-                console.log(mesh.material);
-
                 if (!this.renderTargets[0].renderList) {
                   throw new Error('Render target 0 is uninitialized');
                 }
@@ -436,8 +434,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         );
         return true;
       }).bind(this);
-
-      console.log(this.depthMaterial);
 
       filesInput.reload = function () {
         // do nothing.
