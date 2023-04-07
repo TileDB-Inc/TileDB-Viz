@@ -21,6 +21,7 @@ export function PointCloudDepthMaterial(
     uniform mat4 worldView;
     uniform mat4 projection;
     uniform mat4 world;
+    uniform mat4 viewProjection;
     uniform float pointSize;
     uniform float half_height;
     uniform vec3 minPoint;
@@ -94,12 +95,15 @@ export function PointCloudDepthMaterial(
 
     void main(void)
     {
-      gl_Position = worldViewProjection * vec4(position, 1.0);
+      vec4 worldPos = world * vec4(position, 1.0);
+      gl_Position = viewProjection * worldPos;
 
-      linearDepth = (gl_Position.w + ${nearPlane.toFixed(
+      //linearDepth = (gl_Position.w + ${nearPlane.toFixed(
         1
       )}) / ${farPlane.toFixed(1)};
-
+      linearDepth = gl_Position.w / (${farPlane.toFixed(
+        1
+      )} - ${nearPlane.toFixed(1)});
       float originalDepth = gl_Position.w;
       float adjustedDepth = originalDepth + ${blendDistance.toFixed(1)};
       float adjust = adjustedDepth / originalDepth;
@@ -109,7 +113,6 @@ export function PointCloudDepthMaterial(
 
       gl_Position = projection * wvPosition;
 
-      vec4 worldPos = world * vec4(position, 1.0);
       #include<clipPlaneVertex>
 
       #ifdef fixed_screen_size
@@ -164,6 +167,7 @@ export function PointCloudDepthMaterial(
         'worldView',
         'worldViewProjection',
         'projection',
+        'viewProjection',
         'pointSize',
         'half_height',
         'minPoint',
@@ -180,6 +184,69 @@ export function PointCloudDepthMaterial(
 
   material.setFloat('pointSize', pointSize);
   material.setFloat('half_height', scene.getEngine().getRenderHeight() / 2);
+
+  return material;
+}
+
+export function MeshDepthMaterial(
+  scene: Scene,
+  nearPlane: number,
+  farPlane: number
+): ShaderMaterial {
+  Effect.ShadersStore['MeshDepthVertexShader'] = `
+    precision highp float;
+
+    #include<clipPlaneVertexDeclaration>
+
+    in vec3 position;
+
+    uniform mat4 worldViewProjection;
+    uniform mat4 world;
+    uniform mat4 viewProjection;
+
+    out float linearDepth;
+
+    void main(void)
+    {
+      vec4 worldPos = world * vec4(position, 1.0);
+      gl_Position = viewProjection * worldPos;
+
+      linearDepth = gl_Position.w / (${farPlane.toFixed(
+        1
+      )} - ${nearPlane.toFixed(1)});
+
+      #include<clipPlaneVertex>
+    }
+  `;
+
+  Effect.ShadersStore['MeshDepthFragmentShader'] = `
+    precision highp float;
+
+    #include<clipPlaneFragmentDeclaration>
+
+    in float linearDepth;
+
+    void main(void)
+    {
+      #include<clipPlaneFragment>
+
+      glFragColor = vec4(linearDepth, 0.0, 0.0, 1.0);
+    }
+  `;
+
+  const material = new ShaderMaterial(
+    'MeshDepthShader',
+    scene,
+    {
+      vertex: 'MeshDepth',
+      fragment: 'MeshDepth'
+    },
+    {
+      attributes: ['position'],
+      uniforms: ['world', 'worldViewProjection', 'viewProjection'],
+      useClipPlane: true
+    }
+  );
 
   return material;
 }

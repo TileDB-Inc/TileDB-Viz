@@ -130,6 +130,7 @@ export class SPSHighQualitySplats {
                 sum += 100.0;
                 }else{
                 sum += max(0.0, log2(depth) - log2(neighbourDepth));
+                //sum += max(0.0, depth - neighbourDepth);
                 }
             }
             }
@@ -151,6 +152,8 @@ export class SPSHighQualitySplats {
           {
             gl_FragColor = vec4((cEDL.rgb / cEDL.a) * shade, 1.0);
           }
+
+          // gl_FragColor = vec4(vec3(depth), 1.0);
         }
         `;
 

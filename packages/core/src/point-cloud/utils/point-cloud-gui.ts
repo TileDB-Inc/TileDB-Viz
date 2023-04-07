@@ -4,7 +4,8 @@ import {
   Vector3,
   ISceneLoaderAsyncResult,
   Tags,
-  Plane
+  Plane,
+  ShaderMaterial
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -22,17 +23,19 @@ import {
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
-import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
+  private depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, depthMaterial: ShaderMaterial) {
     this.advancedDynamicTexture = AdvancedDynamicTexture.CreateFullscreenUI(
       'PC-UI',
       true,
       scene
     );
+
+    this.depthMaterial = depthMaterial;
   }
 
   createConfirmationDialog(
@@ -750,34 +753,24 @@ class PointCloudGUI {
               mesh.enableDistantPicking = true;
 
               mesh.renderingGroupId = 1;
+              console.log(mesh.material);
 
-              if (mesh.material) {
-                const depthMaterial: any = mesh.material.clone('DepthMaterial');
-                if (!depthMaterial) {
-                  throw new Error('Imported mesh material is null');
-                }
-
-                if (
-                  !model.renderTargets[0].renderList ||
-                  !model.renderTargets[1].renderList
-                ) {
-                  throw new Error('Render targets are uninitialized');
-                }
-
-                depthMaterial.lineraDepthMaterialPlugin =
-                  new LinearDepthMaterialPlugin(depthMaterial);
-                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
-
-                model.renderTargets[0].renderList.push(mesh);
-                model.renderTargets[0].setMaterialForRendering(
-                  mesh,
-                  depthMaterial
-                );
-
-                model.renderTargets[1].renderList.push(mesh);
-
-                Tags.AddTagsTo(mesh, 'Imported');
+              if (
+                !model.renderTargets[0].renderList ||
+                !model.renderTargets[1].renderList
+              ) {
+                throw new Error('Render targets are uninitialized');
               }
+
+              model.renderTargets[0].renderList.push(mesh);
+              model.renderTargets[0].setMaterialForRendering(
+                mesh,
+                this.depthMaterial
+              );
+
+              model.renderTargets[1].renderList.push(mesh);
+
+              Tags.AddTagsTo(mesh, 'Imported');
             }
 
             result.meshes[0].dispose();
