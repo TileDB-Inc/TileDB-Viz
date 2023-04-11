@@ -644,8 +644,7 @@ class ArrayModel {
 
     this.renderTargets = renderTargets;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const [_1, pcs] of this.particleSystems) {
+    for (const [, pcs] of this.particleSystems) {
       if (!pcs.mesh) {
         throw new Error('Point cloud build failed');
       }
