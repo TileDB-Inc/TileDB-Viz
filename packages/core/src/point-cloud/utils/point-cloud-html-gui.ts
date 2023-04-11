@@ -1,19 +1,30 @@
-import { Plane, Scene } from '@babylonjs/core';
+import {
+  Scene,
+  SceneLoader,
+  Vector3,
+  Space,
+  ISceneLoaderAsyncResult,
+  Tags,
+  Plane
+} from '@babylonjs/core';
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
+import getTileDBClient from '../../utils/getTileDBClient';
+import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
+import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 
 const stylesString = `
 .tdb-button {
-  width: 64px;
-  height: 64px;
+  width: 4em;
+  height: 4em;
   border-radius: 50%;
   border: none;
   background-position: center;
   background-size: cover;
   background-color: transparent;
   position: absolute;
-  bottom: 40px;
-  right: 20px;
+  bottom: 2.5em;
+  right: 1.25em;
 }
 
 .tdb-button:hover {
@@ -23,13 +34,14 @@ const stylesString = `
 .tdb-panel {
   background-color: #494949CC;
   position: absolute;
-  bottom: 40px;
-  right: 90px;
-  width: 300px;
-  height: calc(100% - 100px);
+  bottom: 2.5em;
+  right: 5.625em;
+  width: 18.75em;
+  height: 80vh; 
   display: none;
-  padding: 16px;
-  border-radius: 8px;
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow: auto;
   font-family: Inter, sans-serif;
 }
 
@@ -39,30 +51,31 @@ const stylesString = `
 
 .tdb-input {
   color: #fff;
-  margin-bottom: 15px;
-  margin-right: 4px;
-  font-size: 12px;
+  margin-bottom: 1em;
+  margin-right: 0.25em;
+  font-size: 0.75em;
 }
 
 .tdb-input h3 {
-  font-size: 16px;
-  height: 16px;
+  font-size: 1em;
+  height: 1em;
 }
 
 .tdb-input label {
   width: 100%;
-  height: 20px;
+  height: 1.75em;
 }
 
 .tdb-input input {
   width: 100%;
-  height: 16px;
+  height: 1.75em;
+  border-radius: 0.25em; 
 }
 
 .slider {
   width: 100%;
-  height: 12px;
-  border-radius: 8px; 
+  height: 1.75em;
+  border-radius: 0.25em; 
   background: #FFF;
   outline: none;
   opacity: 1.0;
@@ -71,10 +84,6 @@ const stylesString = `
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%; 
-  background: #0077FF;
   cursor: pointer;
 }
 
@@ -83,14 +92,14 @@ const stylesString = `
   flex-direction: row-reverse;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-bottom: 0.5em;
+  font-size: 1em;
 }
 
 .tdb-radio-label input {
-  margin: 0 8px 0 0;
-  height: 18px;
-  width: 18px;
+  margin: 0 0.5em 0 0;
+  height: 1.125em;
+  width: 1.125em;
 }
 
 .tdb-fieldset {
@@ -100,13 +109,13 @@ const stylesString = `
 .model-button {
   background-color: #0077FF;
   border: none;
-  color: white;
-  padding: 15px 32px;
+  border-radius: 0.25em;
+  color: #fff;
+  padding: 1em;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
+  font-size: 1em;
   cursor: pointer;
   width: 100%;
 }
@@ -120,7 +129,7 @@ interface HtmlClass {
   content: HTMLElement;
 }
 
-class pointCloudGUI {
+class PointCloudGUI {
   rootDiv: HTMLDivElement;
   menuPanel?: HTMLElement;
   modelPanel?: HTMLElement;
@@ -134,7 +143,7 @@ class pointCloudGUI {
     this.rootDiv = document.getElementById('tdb-viz-wrapper') as HTMLDivElement;
 
     const menuButton = this.createButton();
-    menuButton.style.bottom = '168px';
+    menuButton.style.bottom = '10.5em';
     menuButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/menu.png")';
     menuButton.onclick = () => {
@@ -144,8 +153,7 @@ class pointCloudGUI {
     };
 
     const modelButton = this.createButton();
-    //modelButton.style.top = '84px';
-    modelButton.style.bottom = '104px';
+    modelButton.style.bottom = '6.5em';
     modelButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/model.png")';
     modelButton.onclick = () => {
@@ -155,7 +163,6 @@ class pointCloudGUI {
     };
 
     const controlsButton = this.createButton();
-    //controlsButton.style.top = '148px';
     controlsButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/controls.png")';
     controlsButton.onclick = () => {
@@ -192,7 +199,7 @@ class pointCloudGUI {
     modelPanel.content.id = id;
     this.modelPanel = modelPanel.content;
 
-    const child = new ModelInput();
+    const child = new ModelInput(this.scene, this.model);
     modelPanel.addContent(child);
   }
 
@@ -203,22 +210,6 @@ class pointCloudGUI {
 
     const child = new ControlsInput();
     controlsPanel.addContent(child);
-  }
-}
-
-class Panel implements HtmlClass {
-  content: HTMLElement;
-
-  constructor(parent: HTMLDivElement) {
-    const panel = document.createElement('div');
-    this.content = panel;
-    panel.classList.add('tdb-panel');
-
-    parent.appendChild(panel);
-  }
-
-  addContent(children: HtmlClass) {
-    this.content.appendChild(children.content);
   }
 }
 
@@ -235,19 +226,17 @@ class MenuInput implements HtmlClass {
       const performanceTitle = document.createElement('h3');
       const hr1 = document.createElement('hr');
       performanceTitle.textContent = 'Performance';
-
+      performanceSliderWrapper.appendChild(performanceTitle);
       const pointBudgetSlider = new Slider(
         'Point budget',
-        '500000',
+        '100000',
         '10000000',
         model,
         scene
       );
 
-      performanceSliderWrapper.appendChild(performanceTitle);
       performanceSliderWrapper.appendChild(pointBudgetSlider.content);
       performanceSliderWrapper.appendChild(hr1);
-
       wrapper.appendChild(performanceSliderWrapper);
     }
 
@@ -325,7 +314,6 @@ class MenuInput implements HtmlClass {
       const colorSchemeRadioGroup = new RadioGroup({
         listener: (colorScheme: string) => {
           setColors(colorScheme);
-          //console.log(`Selected Color Scheme is: ${colorScheme}`);
         },
         name: 'colors',
         values: ['dark', 'light', 'blue'],
@@ -338,6 +326,229 @@ class MenuInput implements HtmlClass {
     }
 
     this.content = wrapper;
+  }
+}
+
+class ModelInput implements HtmlClass {
+  content: HTMLElement;
+
+  constructor(scene: Scene, model: ArrayModel) {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('tdb-input');
+    const modelTitle = document.createElement('h3');
+    modelTitle.textContent = 'Load models';
+
+    const nameSpaceLabel = document.createElement('label');
+    const nameSpaceInput = document.createElement('input');
+    nameSpaceLabel.textContent = 'Namespace';
+    nameSpaceInput.value = 'TileDB';
+
+    const fileLabel = document.createElement('label');
+    const fileInput = document.createElement('input');
+    fileLabel.textContent = 'File';
+    fileInput.value = 'dragon.glb';
+
+    const transXLabel = document.createElement('label');
+    const transXInput = document.createElement('input');
+    transXLabel.textContent = 'Translation X';
+    transXInput.value = '0.00';
+
+    const transYLabel = document.createElement('label');
+    const transYInput = document.createElement('input');
+    transYLabel.textContent = 'Translation Y';
+    transYInput.value = '0.00';
+
+    const transZLabel = document.createElement('label');
+    const transZInput = document.createElement('input');
+    transZLabel.textContent = 'Translation Z';
+    transZInput.value = '0.00';
+
+    const scaleLabel = document.createElement('label');
+    const scaleInput = document.createElement('input');
+    scaleLabel.textContent = 'Scale';
+    scaleInput.value = '1.00';
+
+    const modelButton = document.createElement('button');
+    modelButton.classList.add('model-button');
+    modelButton.value = 'Load model';
+
+    modelButton.onclick = () => {
+      console.log(nameSpaceInput.value);
+      console.log(fileInput.value);
+
+      const config: Record<string, string> = {};
+      config.apiKey = model.token as string;
+
+      const client = getTileDBClient(config);
+
+      client
+        .getFileContents(nameSpaceInput.value, fileInput.value)
+        .then((response: { buffer: ArrayBuffer; originalFileName: string }) => {
+          const filetype = '.' + response.originalFileName.split('.').pop();
+
+          SceneLoader.ImportMeshAsync(
+            '',
+            '',
+            new File(
+              [response.buffer.slice(0, response.buffer.byteLength - 1)],
+              response.originalFileName
+            ),
+            scene,
+            null,
+            filetype
+          ).then((result: ISceneLoaderAsyncResult) => {
+            const x = parseFloat(transXInput.value.replace('.', ','));
+            const y = parseFloat(transYInput.value.replace('.', ','));
+            const z = parseFloat(transZInput.value.replace('.', ','));
+
+            const scale = parseFloat(scaleInput.value.replace('.', ','));
+
+            result.meshes[0].scaling = new Vector3(scale, scale, scale);
+            result.meshes[0].translate(new Vector3(x, y, z), 1, Space.WORLD);
+
+            for (const mesh of result.meshes) {
+              if (mesh.material) {
+                const depthMaterial: any = mesh.material.clone('DepthMaterial');
+                if (!depthMaterial) {
+                  throw new Error('Imported mesh material is null');
+                }
+
+                depthMaterial.lineraDepthMaterialPlugin =
+                  new LinearDepthMaterialPlugin(depthMaterial);
+                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+
+                if (!model.renderTargets[2].renderList) {
+                  throw new Error('Render target 2 is uninitialized');
+                }
+
+                model.renderTargets[2].renderList.push(mesh);
+                model.renderTargets[2].setMaterialForRendering(
+                  mesh,
+                  depthMaterial
+                );
+
+                const defaultMaterial: any =
+                  mesh.material.clone('defaultMaterial');
+                if (!defaultMaterial) {
+                  throw new Error('Imported mesh material is null');
+                }
+                defaultMaterial.customDepthTestMaterialPlugin =
+                  new CustomDepthTestMaterialPlugin(defaultMaterial);
+                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
+                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
+                  model.renderTargets[0];
+
+                if (!model.renderTargets[1].renderList) {
+                  throw new Error('Render target 1 is uninitialized');
+                }
+                model.renderTargets[1].renderList.push(mesh);
+                model.renderTargets[1].setMaterialForRendering(
+                  mesh,
+                  defaultMaterial
+                );
+
+                Tags.AddTagsTo(mesh, 'Imported');
+              }
+            }
+          });
+        });
+    };
+
+    wrapper.appendChild(modelTitle);
+    wrapper.appendChild(nameSpaceLabel);
+    wrapper.appendChild(nameSpaceInput);
+    wrapper.appendChild(fileLabel);
+    wrapper.appendChild(fileInput);
+    wrapper.appendChild(transXLabel);
+    wrapper.appendChild(transXInput);
+    wrapper.appendChild(transYLabel);
+    wrapper.appendChild(transYInput);
+    wrapper.appendChild(transZLabel);
+    wrapper.appendChild(transZInput);
+    wrapper.appendChild(scaleLabel);
+    wrapper.appendChild(scaleInput);
+    wrapper.appendChild(modelButton);
+    this.content = wrapper;
+  }
+}
+
+class ControlsInput implements HtmlClass {
+  content: HTMLElement;
+
+  constructor() {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('tdb-input');
+    const title = document.createElement('h3');
+    const sc1 = document.createElement('p');
+    const sc2 = document.createElement('p');
+    const hr1 = document.createElement('hr');
+    const title2 = document.createElement('h3');
+    const sc3 = document.createElement('p');
+    const sc4 = document.createElement('p');
+    const sc5 = document.createElement('p');
+    const hr2 = document.createElement('hr');
+    const title3 = document.createElement('h3');
+    const sc6 = document.createElement('p');
+    const sc7 = document.createElement('p');
+    const sc8 = document.createElement('p');
+    const sc9 = document.createElement('p');
+    const sc10 = document.createElement('p');
+    const sc11 = document.createElement('p');
+    const sc12 = document.createElement('p');
+
+    title.textContent = 'Control shortcuts';
+    sc1.textContent = 'c: toggle between cameras';
+    sc2.textContent = 'b: background color';
+
+    title2.textContent = 'arcRotate camera';
+    sc3.textContent = 'scroll wheel: zoom in and out';
+    sc4.textContent = 'drag mouse with left button: rotate';
+    sc5.textContent = 'v: toggle between camera locations';
+
+    title3.textContent = 'free camera';
+    sc6.textContent = 'drag mouse with left button: rotate';
+    sc7.textContent = 'w or up: move forward';
+    sc8.textContent = 's or down: move backward';
+    sc9.textContent = 'e: move up';
+    sc10.textContent = 'q: move down';
+    sc11.textContent = 'a or left: move to the left';
+    sc12.textContent = 'd or right: move to the right';
+
+    wrapper.appendChild(title);
+    wrapper.appendChild(sc1);
+    wrapper.appendChild(sc2);
+    wrapper.appendChild(hr1);
+    wrapper.appendChild(title2);
+    wrapper.appendChild(sc3);
+    wrapper.appendChild(sc4);
+    wrapper.appendChild(sc5);
+    wrapper.appendChild(hr2);
+    wrapper.appendChild(title3);
+    wrapper.appendChild(sc6);
+    wrapper.appendChild(sc7);
+    wrapper.appendChild(sc8);
+    wrapper.appendChild(sc9);
+    wrapper.appendChild(sc10);
+    wrapper.appendChild(sc11);
+    wrapper.appendChild(sc12);
+
+    this.content = wrapper;
+  }
+}
+
+class Panel implements HtmlClass {
+  content: HTMLElement;
+
+  constructor(parent: HTMLDivElement) {
+    const panel = document.createElement('div');
+    this.content = panel;
+    panel.classList.add('tdb-panel');
+
+    parent.appendChild(panel);
+  }
+
+  addContent(children: HtmlClass) {
+    this.content.appendChild(children.content);
   }
 }
 
@@ -358,6 +569,8 @@ class Slider implements HtmlClass {
     slider.setAttribute('max', maxValue);
     if (labelText === 'Point budget') {
       slider.setAttribute('value', model.pointBudget.toString());
+    } else if (labelText === 'Point size') {
+      slider.setAttribute('value', model.pointSize.toString());
     } else if (labelText === 'Xmin') {
       slider.setAttribute('value', (model.octree.minPoint.x - 1).toString());
     } else if (labelText === 'Xmax') {
@@ -457,129 +670,4 @@ class RadioInput implements HtmlClass {
   }
 }
 
-class ModelInput implements HtmlClass {
-  content: HTMLElement;
-
-  constructor() {
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('tdb-input');
-    const modelTitle = document.createElement('h3');
-    modelTitle.textContent = 'Load models';
-
-    const nameSpaceLabel = document.createElement('label');
-    const nameSpaceInput = document.createElement('input');
-    nameSpaceLabel.textContent = 'Namespace';
-    nameSpaceInput.value = 'TileDB';
-
-    const fileLabel = document.createElement('label');
-    const fileInput = document.createElement('input');
-    fileLabel.textContent = 'File';
-    fileInput.value = 'dragon.glb';
-
-    const transXLabel = document.createElement('label');
-    const transXInput = document.createElement('input');
-    transXLabel.textContent = 'Translation X';
-    transXInput.value = '0.00';
-
-    const transYLabel = document.createElement('label');
-    const transYInput = document.createElement('input');
-    transYLabel.textContent = 'Translation Y';
-    transYInput.value = '0.00';
-
-    const transZLabel = document.createElement('label');
-    const transZInput = document.createElement('input');
-    transZLabel.textContent = 'Translation Z';
-    transZInput.value = '0.00';
-
-    const scaleLabel = document.createElement('label');
-    const scaleInput = document.createElement('input');
-    scaleLabel.textContent = 'Scale';
-    scaleInput.value = '1.00';
-
-    const button = document.createElement('button');
-    button.classList.add('model-button');
-    button.value = 'Load model';
-
-    wrapper.appendChild(modelTitle);
-    wrapper.appendChild(nameSpaceLabel);
-    wrapper.appendChild(nameSpaceInput);
-    wrapper.appendChild(fileLabel);
-    wrapper.appendChild(fileInput);
-    wrapper.appendChild(transXLabel);
-    wrapper.appendChild(transXInput);
-    wrapper.appendChild(transYLabel);
-    wrapper.appendChild(transYInput);
-    wrapper.appendChild(transZLabel);
-    wrapper.appendChild(transZInput);
-    wrapper.appendChild(scaleLabel);
-    wrapper.appendChild(scaleInput);
-    wrapper.appendChild(button);
-    this.content = wrapper;
-  }
-}
-
-class ControlsInput implements HtmlClass {
-  content: HTMLElement;
-
-  constructor() {
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('tdb-input');
-    const title = document.createElement('h3');
-    const sc1 = document.createElement('p');
-    const sc2 = document.createElement('p');
-    const hr1 = document.createElement('hr');
-    const title2 = document.createElement('h3');
-    const sc3 = document.createElement('p');
-    const sc4 = document.createElement('p');
-    const sc5 = document.createElement('p');
-    const hr2 = document.createElement('hr');
-    const title3 = document.createElement('h3');
-    const sc6 = document.createElement('p');
-    const sc7 = document.createElement('p');
-    const sc8 = document.createElement('p');
-    const sc9 = document.createElement('p');
-    const sc10 = document.createElement('p');
-    const sc11 = document.createElement('p');
-    const sc12 = document.createElement('p');
-
-    title.textContent = 'Control shortcuts';
-    sc1.textContent = 'c: toggle between cameras';
-    sc2.textContent = 'b: background color';
-
-    title2.textContent = 'arcRotate camera';
-    sc3.textContent = 'scroll wheel: zoom in and out';
-    sc4.textContent = 'drag mouse with left button: rotate';
-    sc5.textContent = 'v: toggle between camera locations';
-
-    title3.textContent = 'free camera';
-    sc6.textContent = 'drag mouse with left button: rotate';
-    sc7.textContent = 'w or up: move forward';
-    sc8.textContent = 's or down: move backward';
-    sc9.textContent = 'e: move up';
-    sc10.textContent = 'q: move down';
-    sc11.textContent = 'a or left: move to the left';
-    sc12.textContent = 'd or right: move to the right';
-
-    wrapper.appendChild(title);
-    wrapper.appendChild(sc1);
-    wrapper.appendChild(sc2);
-    wrapper.appendChild(hr1);
-    wrapper.appendChild(title2);
-    wrapper.appendChild(sc3);
-    wrapper.appendChild(sc4);
-    wrapper.appendChild(sc5);
-    wrapper.appendChild(hr2);
-    wrapper.appendChild(title3);
-    wrapper.appendChild(sc6);
-    wrapper.appendChild(sc7);
-    wrapper.appendChild(sc8);
-    wrapper.appendChild(sc9);
-    wrapper.appendChild(sc10);
-    wrapper.appendChild(sc11);
-    wrapper.appendChild(sc12);
-
-    this.content = wrapper;
-  }
-}
-
-export default pointCloudGUI;
+export default PointCloudGUI;

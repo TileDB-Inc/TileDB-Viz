@@ -21,6 +21,7 @@ import {
 import { TileDBVisualization } from '../base';
 import ArrayModel from './model/array-model';
 import {
+  CacheGUI,
   getArrayMetadata,
   getArraySchema,
   getPointCloud,
@@ -37,7 +38,6 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
 import { MeshDepthMaterial } from './materials/depthShaderMaterial';
-import pointCloudGUI from './utils/point-cloud-html-gui';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -46,7 +46,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   >();
   private options: TileDBPointCloudOptions;
   private model!: ArrayModel;
-  private gui!: PointCloudGUI;
+  private gui!: CacheGUI;
   private conformingBounds!: number[];
   private activeCamera!: number;
   private arraySchema!: ArraySchema;
@@ -202,6 +202,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
 
+      this.gui = new CacheGUI(this.scene);
+
       this.attachKeys();
 
       this.pipeline = new SPSHighQualitySplats(this.scene);
@@ -313,7 +315,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       // add interactive GUI
-      new pointCloudGUI(this.scene, this.model);
+      new PointCloudGUI(this.scene, this.model);
 
       // add panning control
       let plane: Plane;
