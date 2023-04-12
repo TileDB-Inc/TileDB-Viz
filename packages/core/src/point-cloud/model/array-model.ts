@@ -25,7 +25,7 @@ import {
 } from './sparse-result';
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
-import { getQueryDataFromCache } from '../../utils/cache';
+import { clearCache, getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
@@ -33,6 +33,7 @@ import { AdditiveProximityMaterial } from '../materials/additiveProximityMateria
 import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
 import { SparseResult } from './sparse-result';
 import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
+import isMockTreeBlock from '../../utils/isMockTreeBlock';
 
 /**
  * The ArrayModel manages the client octree
@@ -266,13 +267,21 @@ class ArrayModel {
           storeName,
           queryCacheKey
         );
-        if (dataFromCache) {
+
+        if (dataFromCache && isMockTreeBlock(dataFromCache)) {
           this.loadSystem(dataFromCache);
         } else {
           this.workerPool?.postMessage({
             type: WorkerType.data,
             block: block
           } as DataRequest);
+          /**
+           * If there was data but not correct structure
+           * we invalidate the cache.
+           */
+          if (dataFromCache) {
+            await clearCache(storeName);
+          }
         }
       } else {
         // already have data

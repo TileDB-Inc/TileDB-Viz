@@ -29,7 +29,10 @@ const getCacheDB = async (storeName: string) => {
   });
 };
 
-export const getQueryDataFromCache = async (storeName: string, key: number) => {
+export const getQueryDataFromCache = async (
+  storeName: string,
+  key: number
+): Promise<any> => {
   const db = await getCacheDB(storeName);
   const value = await db.get(storeName, key);
   return value;
