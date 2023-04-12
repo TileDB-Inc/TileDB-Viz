@@ -31,18 +31,34 @@ const getCacheDB = async (storeName: string) => {
 
 export const getQueryDataFromCache = async (storeName: string, key: number) => {
   const db = await getCacheDB(storeName);
+
   const value = await db.get(storeName, key);
   return value;
+};
+
+export const invalidateKeys = async (storeName: string, bound: number) => {
+  const db = await getCacheDB(storeName);
+  const tx = db.transaction(storeName, 'readwrite');
+  const index = tx.store.index(INDEX_NAME);
+  for await (const cursor of index.iterate(
+    IDBKeyRange.upperBound(bound, true)
+  )) {
+    await cursor.delete();
+  }
 };
 
 export const writeToCache = async (
   storeName: string,
   key: number,
-  data: any
+  data: any,
+  indexTimestamp = Date.now()
 ) => {
   const db = await getCacheDB(storeName);
-  const now = Date.now();
-  await db.put(storeName, Object.assign(data, { __timestamp: now }), key);
+  await db.put(
+    storeName,
+    Object.assign(data, { __timestamp: indexTimestamp }),
+    key
+  );
 };
 
 export const clearCache = async (storeName: string) => {

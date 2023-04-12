@@ -12,6 +12,7 @@ import { MoctreeBlock } from '../octree';
 
 class TileDBWorkerPool {
   private poolSize: number;
+  private indexTimestamp: number;
   private workers: Worker[] = [];
   private callbackFn: (block: MoctreeBlock) => void;
   private mapStatus: Map<string, boolean>;
@@ -21,12 +22,14 @@ class TileDBWorkerPool {
   constructor(
     initRequest: InitialRequest,
     callbackFn: (block: MoctreeBlock) => void,
-    poolSize: number
+    poolSize: number,
+    indexTimestamp: number
   ) {
     this.poolSize = poolSize || 5;
     this.callbackFn = callbackFn;
     this.mapStatus = new Map<string, boolean>();
     this.initRequest = initRequest;
+    this.indexTimestamp = indexTimestamp;
 
     for (let w = 0; w < this.poolSize; w++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
@@ -59,7 +62,7 @@ class TileDBWorkerPool {
       const queryCacheKey = block.mortonNumber;
       const storeName = `${this.initRequest.namespace}:${this.initRequest.groupName}`;
       this.callbackFn(block);
-      await writeToCache(storeName, queryCacheKey, block);
+      await writeToCache(storeName, queryCacheKey, block, this.indexTimestamp);
     } else if (m.type === WorkerType.idle) {
       const idleMessage = m as IdleResponse;
       if (this.messageQueue.length > 0) {
