@@ -37,6 +37,7 @@ import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { CustomDepthTestMaterialPlugin } from './materials/plugins/customDepthTestPlugin';
 import { LinearDepthMaterialPlugin } from './materials/plugins/linearDepthPlugin';
 import { SparseResult } from './model/sparse-result';
+import getArrayRegistrationTimestamp from '../utils/getArrayRegistrationTimestamp';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -206,9 +207,15 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       if (!this.options.useSPS) {
         this.renderTargets = this.pipeline.initializeRTTs();
       }
-
+      let timestamp;
+      if (this.options.groupName && this.options.namespace) {
+        timestamp = await getArrayRegistrationTimestamp(
+          this.options.namespace,
+          this.options.groupName + '_0'
+        );
+      }
       // initialize ParticleSystem
-      this.model = new ArrayModel(this.options, this.renderTargets);
+      this.model = new ArrayModel(this.options, this.renderTargets, timestamp);
 
       if (this.options.streaming) {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =

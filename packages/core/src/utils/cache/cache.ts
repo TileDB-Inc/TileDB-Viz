@@ -46,15 +46,19 @@ export const invalidateKeys = async (storeName: string, bound: number) => {
     await cursor.delete();
   }
 };
-// invalidateKeys('TileDB-Inc:autzen-classified', 1681293670742);
+
 export const writeToCache = async (
   storeName: string,
   key: number,
-  data: any
+  data: any,
+  indexTimestamp = Date.now()
 ) => {
   const db = await getCacheDB(storeName);
-  const now = Date.now();
-  await db.put(storeName, Object.assign(data, { __timestamp: now }), key);
+  await db.put(
+    storeName,
+    Object.assign(data, { __timestamp: indexTimestamp }),
+    key
+  );
 };
 
 export const clearCache = async (storeName: string) => {
