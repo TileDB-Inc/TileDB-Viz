@@ -49,11 +49,29 @@ const stylesString = `
   display: block;
 }
 
+.tdb-input-wrapper {
+  color: #fff;
+  font-size: 12px;
+  position: relative;
+}
+
 .tdb-input {
   color: #fff;
   margin-bottom: 1em;
   margin-right: 0.25em;
   font-size: 0.75em;
+}
+
+.tdb-input--full {
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 8px;
 }
 
 .tdb-input h3 {
@@ -109,15 +127,16 @@ const stylesString = `
 .tdb-model-button {
   background-color: #0077FF;
   border: none;
-  border-radius: 0.25em;
+  border-radius: 6px;
   color: #fff;
-  padding: 1em;
+  padding: 12px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 1em;
+  font-size: 14px;
   cursor: pointer;
   width: 100%;
+  margin-top: 8px;
 }
 `;
 
@@ -336,12 +355,13 @@ class ModelInput implements HtmlClass {
 
   constructor(scene: Scene, model: ArrayModel) {
     const wrapper = document.createElement('div');
-    wrapper.classList.add('tdb-input');
+    wrapper.classList.add('tdb-input-wrapper');
     const modelTitle = document.createElement('h3');
     modelTitle.textContent = 'Load models';
 
     const nameSpaceLabel = document.createElement('label');
     const nameSpaceInput = document.createElement('input');
+    nameSpaceInput.classList.add('tdb-input--full');
     nameSpaceLabel.textContent = 'Namespace';
     nameSpaceInput.value = 'TileDB';
 
@@ -349,30 +369,35 @@ class ModelInput implements HtmlClass {
     const fileInput = document.createElement('input');
     fileLabel.textContent = 'File';
     fileInput.value = 'dragon.glb';
+    fileInput.classList.add('tdb-input--full');
 
     const transXLabel = document.createElement('label');
     const transXInput = document.createElement('input');
     transXLabel.textContent = 'Translation X';
     transXInput.value = '0.00';
+    transXInput.classList.add('tdb-input--full');
 
     const transYLabel = document.createElement('label');
     const transYInput = document.createElement('input');
     transYLabel.textContent = 'Translation Y';
     transYInput.value = '0.00';
+    transYInput.classList.add('tdb-input--full');
 
     const transZLabel = document.createElement('label');
     const transZInput = document.createElement('input');
     transZLabel.textContent = 'Translation Z';
     transZInput.value = '0.00';
+    transZInput.classList.add('tdb-input--full');
 
     const scaleLabel = document.createElement('label');
     const scaleInput = document.createElement('input');
     scaleLabel.textContent = 'Scale';
     scaleInput.value = '1.00';
+    scaleInput.classList.add('tdb-input--full');
 
     const modelButton = document.createElement('button');
     modelButton.classList.add('tdb-model-button');
-    modelButton.value = 'Load model';
+    modelButton.textContent = 'Load model';
 
     modelButton.onclick = () => {
       console.log(nameSpaceInput.value);
