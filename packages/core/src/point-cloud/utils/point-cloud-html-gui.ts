@@ -72,7 +72,7 @@ const stylesString = `
   border-radius: 0.25em; 
 }
 
-.slider {
+.tdb-slider {
   width: 100%;
   height: 1.75em;
   border-radius: 0.25em; 
@@ -81,7 +81,7 @@ const stylesString = `
   opacity: 1.0;
 }
 
-.slider::-webkit-slider-thumb {
+.tdb-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   cursor: pointer;
@@ -106,7 +106,7 @@ const stylesString = `
   border: none;
 }
 
-.model-button {
+.tdb-model-button {
   background-color: #0077FF;
   border: none;
   border-radius: 0.25em;
@@ -310,8 +310,10 @@ class MenuInput implements HtmlClass {
     }
 
     const colorScheme = model.colorScheme;
+
     if (colorScheme) {
       const colorSchemeRadioGroup = new RadioGroup({
+        initialValue: colorScheme,
         listener: (colorScheme: string) => {
           setColors(colorScheme);
         },
@@ -369,7 +371,7 @@ class ModelInput implements HtmlClass {
     scaleInput.value = '1.00';
 
     const modelButton = document.createElement('button');
-    modelButton.classList.add('model-button');
+    modelButton.classList.add('tdb-model-button');
     modelButton.value = 'Load model';
 
     modelButton.onclick = () => {
@@ -564,7 +566,7 @@ class Slider implements HtmlClass {
     const wrapper = document.createElement('div');
     const slider = document.createElement('input');
     slider.setAttribute('type', 'range');
-    slider.setAttribute('class', 'slider');
+    slider.setAttribute('class', 'tdb-slider');
     slider.setAttribute('min', minValue);
     slider.setAttribute('max', maxValue);
     if (labelText === 'Point budget') {
@@ -621,6 +623,7 @@ class RadioGroup implements HtmlClass {
     name: string;
     values: string[];
     colorScheme: string;
+    initialValue?: string;
     listener: (value: string) => void;
   }) {
     const wrapper = document.createElement('fieldset');
@@ -633,6 +636,7 @@ class RadioGroup implements HtmlClass {
         id: val,
         label: `${val.charAt(0).toUpperCase()}${val.slice(1)}`,
         name,
+        checked: val === options.initialValue,
         listener: (e: any) => {
           listener(e.target.id);
         }
@@ -650,6 +654,7 @@ class RadioInput implements HtmlClass {
     name: string;
     label: string;
     id: string;
+    checked?: boolean;
     listener?: (e: Event) => void;
   }) {
     const label = document.createElement('label');
@@ -659,7 +664,9 @@ class RadioInput implements HtmlClass {
     input.type = 'radio';
     input.name = options.name;
     input.id = options.id;
-
+    if (options.checked) {
+      input.setAttribute('checked', 'true');
+    }
     if (options.listener) {
       input.onchange = options.listener;
     }
