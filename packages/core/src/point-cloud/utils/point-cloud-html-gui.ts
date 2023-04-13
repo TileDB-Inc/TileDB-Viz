@@ -508,6 +508,7 @@ class ControlsInput implements HtmlClass {
     const title = document.createElement('h3');
     const sc1 = document.createElement('p');
     const sc2 = document.createElement('p');
+    const sc2b = document.createElement('p');
     const hr1 = document.createElement('hr');
     const title2 = document.createElement('h3');
     const sc3 = document.createElement('p');
@@ -526,6 +527,7 @@ class ControlsInput implements HtmlClass {
     title.textContent = 'Control shortcuts';
     sc1.textContent = 'c: toggle between cameras';
     sc2.textContent = 'b: background color';
+    sc2b.textContent = 'backspace or delete: clear cache';
 
     title2.textContent = 'arcRotate camera';
     sc3.textContent = 'scroll wheel: zoom in and out';
@@ -544,6 +546,7 @@ class ControlsInput implements HtmlClass {
     wrapper.appendChild(title);
     wrapper.appendChild(sc1);
     wrapper.appendChild(sc2);
+    wrapper.appendChild(sc2b);
     wrapper.appendChild(hr1);
     wrapper.appendChild(title2);
     wrapper.appendChild(sc3);
