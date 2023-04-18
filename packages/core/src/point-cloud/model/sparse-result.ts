@@ -8,7 +8,6 @@ interface SparsePoint {
   red: number;
   green: number;
   blue: number;
-  gpsTime?: number;
 }
 
 interface SparseResult {
@@ -18,13 +17,11 @@ interface SparseResult {
   Red: Uint16Array;
   Green: Uint16Array;
   Blue: Uint16Array;
-  GpsTime?: Float64Array;
 }
 
 interface TransformedResult {
   Position: Float32Array;
   Color: Float32Array;
-  GpsTime?: Float64Array;
 }
 
 export interface SparseResultRaw {
@@ -34,7 +31,6 @@ export interface SparseResultRaw {
   Red: ArrayBuffer;
   Green: ArrayBuffer;
   Blue: ArrayBuffer;
-  GpsTime?: ArrayBuffer;
 }
 
 enum WorkerType {

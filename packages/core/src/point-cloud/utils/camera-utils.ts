@@ -58,6 +58,9 @@ export function setCameraLight(
 
   camera0.setTarget(centreWorld);
   camera0.setPosition(cameraPosition);
+  camera0.minZ = options.cameraNearPlane || 1;
+  camera0.maxZ = options.cameraFarPlane || 10000;
+  camera0.fov = options.cameraFOV || 0.8;
 
   // freeCamera
   const camera1 = new FreeCamera('Free', centreFreeWorld, scene);

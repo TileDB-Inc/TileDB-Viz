@@ -2,10 +2,10 @@ import {
   Scene,
   SceneLoader,
   Vector3,
-  Space,
   ISceneLoaderAsyncResult,
   Tags,
-  Plane
+  Plane,
+  ShaderMaterial
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -23,18 +23,19 @@ import {
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
-import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
-import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 
 class PointCloudGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
+  private depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, depthMaterial: ShaderMaterial) {
     this.advancedDynamicTexture = AdvancedDynamicTexture.CreateFullscreenUI(
       'PC-UI',
       true,
       scene
     );
+
+    this.depthMaterial = depthMaterial;
   }
 
   createConfirmationDialog(
@@ -744,53 +745,34 @@ class PointCloudGUI {
 
             const scale = parseFloat(scaleInput.text.replace('.', ','));
 
-            result.meshes[0].scaling = new Vector3(scale, scale, scale);
-            result.meshes[0].translate(new Vector3(x, y, z), 1, Space.WORLD);
+            for (const mesh of result.meshes[0].getChildMeshes()) {
+              mesh.setParent(null);
 
-            for (const mesh of result.meshes) {
-              if (mesh.material) {
-                const depthMaterial: any = mesh.material.clone('DepthMaterial');
-                if (!depthMaterial) {
-                  throw new Error('Imported mesh material is null');
-                }
+              mesh.scaling = new Vector3(scale, scale, scale);
+              mesh.position = new Vector3(x, y, z);
+              mesh.enableDistantPicking = true;
 
-                depthMaterial.lineraDepthMaterialPlugin =
-                  new LinearDepthMaterialPlugin(depthMaterial);
-                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+              mesh.renderingGroupId = 1;
 
-                if (!model.renderTargets[2].renderList) {
-                  throw new Error('Render target 2 is uninitialized');
-                }
-
-                model.renderTargets[2].renderList.push(mesh);
-                model.renderTargets[2].setMaterialForRendering(
-                  mesh,
-                  depthMaterial
-                );
-
-                const defaultMaterial: any =
-                  mesh.material.clone('defaultMaterial');
-                if (!defaultMaterial) {
-                  throw new Error('Imported mesh material is null');
-                }
-                defaultMaterial.customDepthTestMaterialPlugin =
-                  new CustomDepthTestMaterialPlugin(defaultMaterial);
-                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
-                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
-                  model.renderTargets[0];
-
-                if (!model.renderTargets[1].renderList) {
-                  throw new Error('Render target 1 is uninitialized');
-                }
-                model.renderTargets[1].renderList.push(mesh);
-                model.renderTargets[1].setMaterialForRendering(
-                  mesh,
-                  defaultMaterial
-                );
-
-                Tags.AddTagsTo(mesh, 'Imported');
+              if (
+                !model.renderTargets[0].renderList ||
+                !model.renderTargets[1].renderList
+              ) {
+                throw new Error('Render targets are uninitialized');
               }
+
+              model.renderTargets[0].renderList.push(mesh);
+              model.renderTargets[0].setMaterialForRendering(
+                mesh,
+                this.depthMaterial
+              );
+
+              model.renderTargets[1].renderList.push(mesh);
+
+              Tags.AddTagsTo(mesh, 'Imported');
             }
+
+            result.meshes[0].dispose();
           });
         });
     });

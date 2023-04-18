@@ -16,9 +16,6 @@ const buffersToSparseResult = (
     Blue: new Uint16Array(res.Blue)
   };
 
-  if (res.GpsTime) {
-    result.GpsTime = new Float64Array(res.GpsTime);
-  }
   return result;
 };
 
@@ -38,8 +35,7 @@ export function buffersToTransformedResult(
 
   const entries: TransformedResult = {
     Position: new Float32Array(data.X.length * 3),
-    Color: new Float32Array(data.X.length * 4),
-    GpsTime: data.GpsTime || new Float64Array()
+    Color: new Float32Array(data.X.length * 4)
   };
 
   for (let i = 0; i < data.X.length; ++i) {

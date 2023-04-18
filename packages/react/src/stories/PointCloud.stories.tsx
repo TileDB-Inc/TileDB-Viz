@@ -151,7 +151,7 @@ export const StreamerAutzen = () => (
     rgbMax={65535}
     pointBudget={3_500_000}
     wheelPrecision={0.1}
-    pointSize={4}
+    pointSize={3}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={25}
@@ -172,9 +172,9 @@ export const StreamerBristol = () => (
     namespace={namespace}
     groupName={'bristol'}
     workerPoolSize={numWorkers}
-    pointBudget={4_500_000}
+    pointBudget={3_500_000}
     colorScheme="dark"
-    pointSize={4}
+    pointSize={3}
     cameraLocation={8}
     cameraZoomOut={[1, 1, 2]}
     cameraUp={50}
@@ -198,7 +198,7 @@ export const StreamerSantorini = () => (
     workerPoolSize={numWorkers}
     pointBudget={3_000_000}
     colorScheme="dark"
-    pointSize={5}
+    pointSize={3}
     cameraLocation={5}
     cameraZoomOut={[1, 1, 4]}
     cameraUp={200}

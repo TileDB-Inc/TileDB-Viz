@@ -72,11 +72,7 @@ function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
       entries: entries,
       name: self.name
     },
-    [
-      entries.Position.buffer,
-      entries.Color.buffer,
-      entries.GpsTime.buffer
-    ] as any
+    [entries.Position.buffer, entries.Color.buffer] as any
   );
 }
 
