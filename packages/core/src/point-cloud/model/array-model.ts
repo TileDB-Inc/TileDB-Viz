@@ -25,7 +25,7 @@ import {
 } from './sparse-result';
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
-import { clearCache, getQueryDataFromCache } from '../../utils/cache';
+import { getQueryDataFromCache } from '../../utils/cache';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { PriorityQueue } from '../utils/priority-queue';
 import { LinearDepthMaterial } from '../materials/linearDepthMaterial';
@@ -78,12 +78,10 @@ class ArrayModel {
   additiveProximityMaterial!: AdditiveProximityMaterial;
   basePointSize = 1;
   visible: Map<number, boolean>;
-  registrationTimestamp?: number;
 
   constructor(
     options: TileDBPointCloudOptions,
-    renderTargets: RenderTargetTexture[],
-    timestamp?: number
+    renderTargets: RenderTargetTexture[]
   ) {
     this.groupName = options.groupName;
     this.namespace = options.namespace;
@@ -98,7 +96,6 @@ class ArrayModel {
     this.edlNeighbours = options.edlNeighbours || 8;
     this.colorScheme = options.colorScheme || 'dark';
     this.pointBudget = options.pointBudget || 500_000;
-    this.registrationTimestamp = timestamp;
 
     if (options.useShader === true) {
       this.useShader = true;
@@ -264,24 +261,11 @@ class ArrayModel {
       if (!this.particleSystems.has(block.mortonNumber)) {
         const queryCacheKey = block.mortonNumber;
         const storeName = `${this.namespace}:${this.groupName}`;
-
         // check indexeddb cache
-        let dataFromCache = await getQueryDataFromCache(
+        const dataFromCache = await getQueryDataFromCache(
           storeName,
           queryCacheKey
         );
-
-        /**
-         * If the index saved doesn't match the array's registration timestamp
-         * we clear cache and unset dataFromCache in order to fetch new data.
-         */
-        if (
-          dataFromCache &&
-          dataFromCache.__timestamp !== this.registrationTimestamp
-        ) {
-          await clearCache(storeName);
-          dataFromCache = undefined;
-        }
         if (dataFromCache) {
           this.loadSystem(dataFromCache);
         } else {
@@ -461,8 +445,7 @@ class ArrayModel {
           bufferSize: this.bufferSize
         } as InitialRequest,
         this.loadSystem.bind(this),
-        this.poolSize,
-        this.registrationTimestamp as number
+        this.poolSize
       );
 
       scene.onBeforeRenderObservable.add((scene: Scene) => {
