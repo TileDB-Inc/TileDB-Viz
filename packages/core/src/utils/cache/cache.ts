@@ -37,9 +37,13 @@ const getCacheDB = async (storeName: string) => {
 };
 
 export const getQueryDataFromCache = async (storeName: string, key: number) => {
-  const db = await getCacheDB(storeName);
-  const value = await db.get(storeName + '_' + DATA_MODEL_VERSION, key);
-  return value;
+  try {
+    const db = await getCacheDB(storeName);
+    const value = await db.get(storeName + '_' + DATA_MODEL_VERSION, key);
+    return value;
+  } catch (e) {
+    return undefined;
+  }
 };
 
 export const writeToCache = async (
@@ -47,13 +51,17 @@ export const writeToCache = async (
   key: number,
   data: any
 ) => {
-  const db = await getCacheDB(storeName);
-  const now = Date.now();
-  await db.put(
-    storeName + '_' + DATA_MODEL_VERSION,
-    Object.assign(data, { __timestamp: now }),
-    key
-  );
+  try {
+    const db = await getCacheDB(storeName);
+    const now = Date.now();
+    await db.put(
+      storeName + '_' + DATA_MODEL_VERSION,
+      Object.assign(data, { __timestamp: now }),
+      key
+    );
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const clearCache = async (storeName: string) => {
