@@ -2,16 +2,14 @@ import {
   Scene,
   SceneLoader,
   Vector3,
-  Space,
   ISceneLoaderAsyncResult,
   Tags,
-  Plane
+  Plane,
+  ShaderMaterial
 } from '@babylonjs/core';
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
-import { CustomDepthTestMaterialPlugin } from '../materials/plugins/customDepthTestPlugin';
-import { LinearDepthMaterialPlugin } from '../materials/plugins/linearDepthPlugin';
 
 const stylesString = `
 .tdb-button {
@@ -155,10 +153,12 @@ class PointCloudGUI {
   controlsPanel?: HTMLElement;
   scene: Scene;
   model: ArrayModel;
+  depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene, model: ArrayModel) {
+  constructor(scene: Scene, model: ArrayModel, depthMaterial: ShaderMaterial) {
     this.scene = scene;
     this.model = model;
+    this.depthMaterial = depthMaterial;
     this.rootDiv = document.getElementById('tdb-viz-wrapper') as HTMLDivElement;
 
     const menuButton = this.createButton();
@@ -218,7 +218,7 @@ class PointCloudGUI {
     modelPanel.content.id = id;
     this.modelPanel = modelPanel.content;
 
-    const child = new ModelInput(this.scene, this.model);
+    const child = new ModelInput(this.scene, this.model, this.depthMaterial);
     modelPanel.addContent(child);
   }
 
@@ -352,8 +352,11 @@ class MenuInput implements HtmlClass {
 
 class ModelInput implements HtmlClass {
   content: HTMLElement;
+  private depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene, model: ArrayModel) {
+  constructor(scene: Scene, model: ArrayModel, depthMaterial: ShaderMaterial) {
+    this.depthMaterial = depthMaterial;
+
     const wrapper = document.createElement('div');
     wrapper.classList.add('tdb-input-wrapper');
     const modelTitle = document.createElement('h3');
@@ -363,12 +366,12 @@ class ModelInput implements HtmlClass {
     const nameSpaceInput = document.createElement('input');
     nameSpaceInput.classList.add('tdb-input--full');
     nameSpaceLabel.textContent = 'Namespace';
-    nameSpaceInput.value = 'TileDB';
+    nameSpaceInput.value = 'TileDB-Inc';
 
     const fileLabel = document.createElement('label');
     const fileInput = document.createElement('input');
-    fileLabel.textContent = 'File';
-    fileInput.value = 'dragon.glb';
+    fileLabel.textContent = 'File array';
+    fileInput.value = 'arrayName';
     fileInput.classList.add('tdb-input--full');
 
     const transXLabel = document.createElement('label');
@@ -400,9 +403,6 @@ class ModelInput implements HtmlClass {
     modelButton.textContent = 'Load model';
 
     modelButton.onclick = () => {
-      console.log(nameSpaceInput.value);
-      console.log(fileInput.value);
-
       const config: Record<string, string> = {};
       config.apiKey = model.token as string;
 
@@ -430,53 +430,34 @@ class ModelInput implements HtmlClass {
 
             const scale = parseFloat(scaleInput.value.replace('.', ','));
 
-            result.meshes[0].scaling = new Vector3(scale, scale, scale);
-            result.meshes[0].translate(new Vector3(x, y, z), 1, Space.WORLD);
+            for (const mesh of result.meshes[0].getChildMeshes()) {
+              mesh.setParent(null);
 
-            for (const mesh of result.meshes) {
-              if (mesh.material) {
-                const depthMaterial: any = mesh.material.clone('DepthMaterial');
-                if (!depthMaterial) {
-                  throw new Error('Imported mesh material is null');
-                }
+              mesh.scaling = new Vector3(scale, scale, scale);
+              mesh.position = new Vector3(x, y, z);
+              mesh.enableDistantPicking = true;
 
-                depthMaterial.lineraDepthMaterialPlugin =
-                  new LinearDepthMaterialPlugin(depthMaterial);
-                depthMaterial.lineraDepthMaterialPlugin.isEnabled = true;
+              mesh.renderingGroupId = 1;
 
-                if (!model.renderTargets[2].renderList) {
-                  throw new Error('Render target 2 is uninitialized');
-                }
-
-                model.renderTargets[2].renderList.push(mesh);
-                model.renderTargets[2].setMaterialForRendering(
-                  mesh,
-                  depthMaterial
-                );
-
-                const defaultMaterial: any =
-                  mesh.material.clone('defaultMaterial');
-                if (!defaultMaterial) {
-                  throw new Error('Imported mesh material is null');
-                }
-                defaultMaterial.customDepthTestMaterialPlugin =
-                  new CustomDepthTestMaterialPlugin(defaultMaterial);
-                defaultMaterial.customDepthTestMaterialPlugin.isEnabled = true;
-                defaultMaterial.customDepthTestMaterialPlugin.linearDepthTexture =
-                  model.renderTargets[0];
-
-                if (!model.renderTargets[1].renderList) {
-                  throw new Error('Render target 1 is uninitialized');
-                }
-                model.renderTargets[1].renderList.push(mesh);
-                model.renderTargets[1].setMaterialForRendering(
-                  mesh,
-                  defaultMaterial
-                );
-
-                Tags.AddTagsTo(mesh, 'Imported');
+              if (
+                !model.renderTargets[0].renderList ||
+                !model.renderTargets[1].renderList
+              ) {
+                throw new Error('Render targets are uninitialized');
               }
+
+              model.renderTargets[0].renderList.push(mesh);
+              model.renderTargets[0].setMaterialForRendering(
+                mesh,
+                this.depthMaterial
+              );
+
+              model.renderTargets[1].renderList.push(mesh);
+
+              Tags.AddTagsTo(mesh, 'Imported');
             }
+
+            result.meshes[0].dispose();
           });
         });
     };
@@ -523,18 +504,23 @@ class ControlsInput implements HtmlClass {
     const sc10 = document.createElement('p');
     const sc11 = document.createElement('p');
     const sc12 = document.createElement('p');
+    const hr3 = document.createElement('hr');
+    const title4 = document.createElement('h3');
+    const sc13 = document.createElement('p');
+    const sc14 = document.createElement('p');
+    const sc15 = document.createElement('p');
 
     title.textContent = 'Control shortcuts';
     sc1.textContent = 'c: toggle between cameras';
     sc2.textContent = 'b: background color';
     sc2b.textContent = 'backspace or delete: clear cache';
 
-    title2.textContent = 'arcRotate camera';
+    title2.textContent = 'Arc Rotate camera';
     sc3.textContent = 'scroll wheel: zoom in and out';
     sc4.textContent = 'drag mouse with left button: rotate';
     sc5.textContent = 'v: toggle between camera locations';
 
-    title3.textContent = 'free camera';
+    title3.textContent = 'Free camera';
     sc6.textContent = 'drag mouse with left button: rotate';
     sc7.textContent = 'w or up: move forward';
     sc8.textContent = 's or down: move backward';
@@ -542,6 +528,11 @@ class ControlsInput implements HtmlClass {
     sc10.textContent = 'q: move down';
     sc11.textContent = 'a or left: move to the left';
     sc12.textContent = 'd or right: move to the right';
+
+    title4.textContent = 'Model gizmo';
+    sc13.textContent = '1: position';
+    sc14.textContent = '2: scale';
+    sc15.textContent = '3: rotate';
 
     wrapper.appendChild(title);
     wrapper.appendChild(sc1);
@@ -561,6 +552,11 @@ class ControlsInput implements HtmlClass {
     wrapper.appendChild(sc10);
     wrapper.appendChild(sc11);
     wrapper.appendChild(sc12);
+    wrapper.appendChild(hr3);
+    wrapper.appendChild(title4);
+    wrapper.appendChild(sc13);
+    wrapper.appendChild(sc14);
+    wrapper.appendChild(sc15);
 
     this.content = wrapper;
   }

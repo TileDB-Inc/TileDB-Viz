@@ -315,7 +315,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       }
 
       // add interactive GUI
-      new PointCloudGUI(this.scene, this.model);
+      new PointCloudGUI(this.scene, this.model, this.depthMaterial);
 
       // add panning control
       let plane: Plane;

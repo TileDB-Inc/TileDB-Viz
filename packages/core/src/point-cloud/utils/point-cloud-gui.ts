@@ -10,16 +10,13 @@ import {
 
 class CacheGUI {
   advancedDynamicTexture: AdvancedDynamicTexture;
-  private depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene, depthMaterial: ShaderMaterial) {
+  constructor(scene: Scene) {
     this.advancedDynamicTexture = AdvancedDynamicTexture.CreateFullscreenUI(
       'PC-UI',
       true,
       scene
     );
-
-    this.depthMaterial = depthMaterial;
   }
 
   createConfirmationDialog(
