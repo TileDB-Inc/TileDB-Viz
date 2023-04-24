@@ -268,14 +268,16 @@ class ArrayModel {
           block.entries.Position,
           block.entries.Color,
           undefined,
-          this.depthMaterial
+          this.additiveColorMaterial
         );
 
         this.particleSystems.set(block.mortonNumber, pcs);
 
-        if (this.debug && this.debugTexture && pcs.mesh) {
-          this.addDebugLabel(pcs, block.mortonNumber.toString());
-        }
+        // if (this.debug && this.debugTexture && pcs.mesh) {
+        //   this.addDebugLabel(pcs, block.mortonNumber.toString());
+        // }
+
+        //pcs.mesh.showBoundingBox = true;
 
         if (!pcs.mesh) {
           throw new Error('Point cloud build failed');

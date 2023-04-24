@@ -127,12 +127,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             } else if (this.activeCamera === 1) {
               this.activeCamera = 0;
             }
-            this.scene.activeCameras = [
-              this.cameras[this.activeCamera],
-              this.cameras[this.activeCamera + 2]
-            ];
+            this.scene.activeCameras = [this.cameras[this.activeCamera]];
             this.scene.activeCameras[0].attachControl(false);
-            this.scene.activeCameras[1].attachControl(false);
             if (this.model.particleMaterial) {
               this.model.particleMaterial.setShader(
                 this.scene,
@@ -143,6 +139,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             }
             this.model.calculateBlocks();
             this.pipeline.setActiveCamera();
+            this.gizmoManager.utilityLayer.setRenderCamera(
+              this.cameras[this.activeCamera]
+            );
           }
 
           switch (kbInfo.event.key) {

@@ -80,13 +80,7 @@ export class SPSHighQualitySplats {
   }
 
   initializePostProcess(options: TileDBPointCloudOptions) {
-    const activeCamera: Camera | undefined = this.scene.activeCameras?.find(
-      (camera: Camera) => {
-        return !camera.name.startsWith('GUI');
-      }
-    );
-
-    if (activeCamera === undefined) {
+    if (this.scene.activeCamera === undefined) {
       throw new Error('Scene does not have an active camera');
     }
 
@@ -153,7 +147,7 @@ export class SPSHighQualitySplats {
             gl_FragColor = vec4((cEDL.rgb / cEDL.a) * shade, 1.0);
           }
 
-          // gl_FragColor = vec4(vec3(depth), 1.0);
+          // gl_FragColor = vec4(cEDL.rgb, 1.0);
         }
         `;
 
@@ -170,13 +164,13 @@ export class SPSHighQualitySplats {
       ],
       ['uEDLDepth', 'additiveTexture'],
       1.0,
-      activeCamera
+      this.scene.activeCamera
     );
 
     this.postProcess.enablePixelPerfectMode = true;
 
-    this.renderTargets[0].activeCamera = activeCamera;
-    this.renderTargets[1].activeCamera = activeCamera;
+    this.renderTargets[0].activeCamera = this.scene.activeCamera;
+    this.renderTargets[1].activeCamera = this.scene.activeCamera;
 
     this.postProcess.onApply = (effect: Effect) => {
       effect.setFloat('screenWidth', this.width);

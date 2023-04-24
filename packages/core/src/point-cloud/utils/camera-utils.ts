@@ -82,34 +82,13 @@ export function setCameraLight(
   camera1.keysUpward.push(69); // E
   camera1.keysDownward.push(81); // Q
 
-  // arcRotate GUI camera
-  const camera2 = new ArcRotateCamera(
-    'GUI ArcRotate',
-    Math.PI / 3,
-    Math.PI / 4.5,
-    25,
-    Vector3.Zero(),
-    scene
-  );
-  camera2.layerMask = 0x10000000;
-
-  camera2.setTarget(centreWorld);
-  camera2.setPosition(cameraPosition);
-
-  // freeCamera GUI
-  const camera3 = new FreeCamera('GUI Free', centreFreeWorld, scene);
-  camera3.minZ = camera2.minZ;
-  camera3.maxZ = camera2.maxZ;
-  camera3.layerMask = 0x10000000;
-
   const cameras: Array<ArcRotateCamera | FreeCamera> = new Array<
     ArcRotateCamera | FreeCamera
   >();
-  cameras.push(camera0, camera1, camera2, camera3);
+  cameras.push(camera0, camera1);
 
   cameras[0].attachControl(false);
-  cameras[2].attachControl(false);
-  scene.activeCameras = [cameras[0], cameras[2]];
+  scene.activeCameras = [cameras[0]];
 
   // add general lights
   const cameraLight: HemisphericLight = new HemisphericLight(
