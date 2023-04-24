@@ -87,14 +87,18 @@ export class TileDBVisualization {
 
   render(): void {
     const canvas = document.createElement('canvas');
+    const wrapperDiv = document.createElement('div');
+    wrapperDiv.id = 'tdb-viz-wrapper';
+    wrapperDiv.style.position = 'relative';
     canvas.style.width = this.width;
     canvas.style.height = this.height;
     this.canvas = canvas;
     this.canvas.setAttribute('width', this.width);
     this.canvas.setAttribute('height', this.height);
     pubSub.subscribe(RERENDER_EVT, this.rerenderCanvas);
+    wrapperDiv.appendChild(this.canvas);
 
-    this.rootElement.appendChild(this.canvas);
+    this.rootElement.appendChild(wrapperDiv);
 
     this.engine = new Engine(this.canvas, true);
 
