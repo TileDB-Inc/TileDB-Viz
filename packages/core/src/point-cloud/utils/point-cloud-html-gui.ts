@@ -136,6 +136,45 @@ const stylesString = `
   width: 100%;
   margin-top: 8px;
 }
+
+.tdb-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  max-width: 200px;
+  background-color: #fff;
+  height: 155px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+.tdb-modal__buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tdb-modal__button {
+  border-radius: 6px;
+  border: 1px solid #333;
+  padding: 12px;
+  flex-basis: 50%;
+  background-color: transparent;
+  white-space: nowrap;
+}
+
+.tdb-modal__button:hover {
+  cursor: pointer;
+}
+
+.tdb-modal__button--active {
+  background-color: #0070f0;
+  border: none;
+  color: #fff;
+}
 `;
 
 const styleElement = document.createElement('style');
@@ -702,3 +741,62 @@ class RadioInput implements HtmlClass {
 }
 
 export default PointCloudGUI;
+
+export class ConfirmationBox {
+  parentElement: HTMLDivElement;
+  rootElement: HTMLDivElement;
+  callback: () => void;
+  id?: string;
+
+  constructor(options: {
+    parentElement: HTMLDivElement;
+    callback: () => void;
+    id?: string;
+  }) {
+    this.parentElement = options.parentElement;
+    this.callback = options.callback;
+    const rootElement = document.createElement('div');
+    this.rootElement = rootElement;
+    if (options.id) {
+      // If element already exists, just return
+      if (document.getElementById(options.id)) {
+        return;
+      }
+      this.id = options.id;
+      rootElement.setAttribute('id', this.id);
+    }
+    this.parentElement.appendChild(rootElement);
+    this.createMarkup();
+    this.attachListeners();
+  }
+
+  destroy() {
+    this.rootElement.remove();
+  }
+
+  attachListeners() {
+    document
+      .getElementById('tdb-confirm-btn')
+      ?.addEventListener('click', () => {
+        this.callback();
+        this.destroy();
+      });
+
+    document
+      .getElementById('tdb-cancel-btn')
+      ?.addEventListener('click', this.destroy.bind(this));
+  }
+
+  createMarkup() {
+    this.rootElement.innerHTML = `
+    <div class="tdb-modal">
+      <h4 class="tdb-modal__title">Clear cache</h4>
+      <p class="tdb-modal__description">Are you sure you want to delete the array's cache?</p>
+      <div class="tdb-modal__buttons">
+        <button id="tdb-confirm-btn" class="tdb-modal__button tdb-modal__button--active">Clear cache</button>
+        <button id="tdb-cancel-btn" class="tdb-modal__button">Cancel</button>
+      </div>
+    </div>
+    `;
+  }
+}

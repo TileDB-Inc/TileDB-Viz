@@ -1,3 +1,4 @@
+import { ConfirmationBox } from './utils/point-cloud-html-gui';
 import {
   ArcRotateCamera,
   FreeCamera,
@@ -21,7 +22,6 @@ import {
 import { TileDBVisualization } from '../base';
 import ArrayModel from './model/array-model';
 import {
-  CacheGUI,
   getArrayMetadata,
   getArraySchema,
   getPointCloud,
@@ -46,7 +46,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   >();
   private options: TileDBPointCloudOptions;
   private model!: ArrayModel;
-  private gui!: CacheGUI;
   private conformingBounds!: number[];
   private activeCamera!: number;
   private arraySchema!: ArraySchema;
@@ -83,18 +82,20 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             kbInfo.event.code === 'Delete' ||
             kbInfo.event.code === 'Backspace'
           ) {
-            this.gui?.createConfirmationDialog(
-              this.scene,
-              "Are you sure you want to delete the array's cache?",
-              'Clear cache',
-              () => {
-                if (this.options.namespace && this.options.groupName) {
-                  const storeName = `${this.options.namespace}:${this.options.groupName}`;
+            const clearIndexedDB = () => {
+              if (this.options.namespace && this.options.groupName) {
+                const storeName = `${this.options.namespace}:${this.options.groupName}`;
 
-                  clearCache(storeName);
-                }
+                clearCache(storeName);
               }
-            );
+            };
+            new ConfirmationBox({
+              id: 'tdb-clear-cache-box',
+              callback: clearIndexedDB,
+              parentElement: document.getElementById(
+                'tdb-viz-wrapper'
+              ) as HTMLDivElement
+            });
           }
 
           // toggle through arcRotate camera locations with 'v'
@@ -201,8 +202,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
-
-      this.gui = new CacheGUI(this.scene);
 
       this.attachKeys();
 
