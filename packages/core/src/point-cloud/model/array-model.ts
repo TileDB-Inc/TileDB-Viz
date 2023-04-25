@@ -1,5 +1,6 @@
 import {
   Color4,
+  Color3,
   MeshBuilder,
   Scene,
   SolidParticleSystem,
@@ -11,7 +12,9 @@ import {
   Camera,
   RenderTargetTexture,
   Mesh,
-  ShaderMaterial
+  ShaderMaterial,
+  Observer,
+  Nullable
 } from '@babylonjs/core';
 
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -56,6 +59,7 @@ class ArrayModel {
   pointType: string;
   pointSize: number;
   particleSystems: Map<number, SolidParticleSystem | SimplePointsCloudSystem>;
+  boundingBoxes: Map<number, Mesh>;
   workerPool?: TileDBWorkerPool;
   colorScheme?: string;
   debug = false;
@@ -79,6 +83,8 @@ class ArrayModel {
   additiveColorMaterial!: ShaderMaterial;
   basePointSize = 1;
   visible: Map<number, boolean>;
+  renderBoundingBoxObserver: Nullable<Observer<Scene>> = null;
+  showBBox = false;
 
   constructor(
     scene: Scene,
@@ -122,6 +128,8 @@ class ArrayModel {
       number,
       SolidParticleSystem | SimplePointsCloudSystem
     >();
+
+    this.boundingBoxes = new Map<number, Mesh>();
 
     this.renderTargets = renderTargets;
     this.loaded = new Map<number, boolean>();
@@ -186,6 +194,36 @@ class ArrayModel {
 
       rect.linkWithMesh(pcs.mesh);
       rect.linkOffsetY = -50;
+    }
+  }
+
+  public toggleBoundingBox(enable: boolean) {
+    this.showBBox = enable;
+
+    if (this.useSPS) {
+      for (const sps of this.particleSystems.values()) {
+        if (!sps.mesh) {
+          continue;
+        }
+
+        sps.mesh.showBoundingBox = enable;
+      }
+    } else {
+      if (enable) {
+        this.renderBoundingBoxObserver = this.scene.onAfterRenderObservable.add(
+          () => {
+            for (const bbox of this.boundingBoxes.values()) {
+              bbox.render(bbox.subMeshes[0], false);
+            }
+          }
+        );
+      } else {
+        if (this.renderBoundingBoxObserver) {
+          this.scene.onAfterRenderObservable.remove(
+            this.renderBoundingBoxObserver
+          );
+        }
+      }
     }
   }
 
@@ -254,9 +292,8 @@ class ArrayModel {
           this.addDebugLabel(sps, block.mortonNumber.toString());
         }
 
-        if (block.mortonNumber !== Moctree.startBlockIndex) {
-          this.particleSystems.set(block.mortonNumber, sps);
-        }
+        sps.mesh.showBoundingBox = this.showBBox;
+        this.particleSystems.set(block.mortonNumber, sps);
       } else {
         const pcs = new SimplePointsCloudSystem(
           block.mortonNumber.toString(),
@@ -273,11 +310,9 @@ class ArrayModel {
 
         this.particleSystems.set(block.mortonNumber, pcs);
 
-        // if (this.debug && this.debugTexture && pcs.mesh) {
-        //   this.addDebugLabel(pcs, block.mortonNumber.toString());
-        // }
-
-        //pcs.mesh.showBoundingBox = true;
+        if (this.debug && this.debugTexture && pcs.mesh) {
+          this.addDebugLabel(pcs, block.mortonNumber.toString());
+        }
 
         if (!pcs.mesh) {
           throw new Error('Point cloud build failed');
@@ -285,8 +320,55 @@ class ArrayModel {
 
         pcs.mesh.layerMask = 2;
         this.assignRenderTargets(pcs.mesh);
-
         this.visible.set(block.mortonNumber, true);
+
+        const part1 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[0],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[2],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[7],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[4],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[0]
+        ];
+        const part2 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[3],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[5],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[1],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[6],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[3]
+        ];
+        const part3 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[0],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[3]
+        ];
+        const part4 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[2],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[5]
+        ];
+        const part5 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[7],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[1]
+        ];
+        const part6 = [
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[4],
+          pcs.mesh.getBoundingInfo().boundingBox.vectorsWorld[6]
+        ];
+        const options = {
+          lines: [part1, part2, part3, part4, part5, part6],
+          updatable: false,
+          useVertexAlpha: false
+        };
+
+        const lines = MeshBuilder.CreateLineSystem(
+          'lineSystem',
+          options,
+          this.scene
+        );
+        lines.color = new Color3(1, 1, 0);
+        lines.layerMask = 2;
+        lines.material.depthFunction = Constants.ALWAYS;
+        lines.material.disableDepthWrite = true;
+
+        this.boundingBoxes.set(block.mortonNumber, lines);
       }
     }
   }
@@ -454,6 +536,7 @@ class ArrayModel {
       if (p) {
         p.dispose();
         this.particleSystems.delete(key);
+        this.boundingBoxes.delete(key);
         this.visible.delete(key);
       }
     }

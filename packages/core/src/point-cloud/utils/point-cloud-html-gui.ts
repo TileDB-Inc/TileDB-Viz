@@ -29,6 +29,59 @@ const stylesString = `
   cursor: pointer;
 }
 
+.tdb-switch {
+  position: relative;
+  display: inline-block;
+  width: 2rem !important;
+  height: 1rem !important;
+}
+
+.tdb-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tdb-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 2rem;
+}
+
+.tdb-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 0.5rem;
+  width: 0.5rem;
+  left: 0.25rem;
+  bottom: 0.25rem;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.tdb-checkbox:checked + .tdb-toggle-slider {
+  background-color: #2196F3;
+}
+
+.tdb-checkbox:focus + .tdb-toggle-slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+.tdb-checkbox:checked + .tdb-toggle-slider:before {
+  -webkit-transform: translateX(1rem);
+  -ms-transform: translateX(1rem);
+  transform: translateX(1rem);
+}
+
 .tdb-panel {
   background-color: #494949CC;
   position: absolute;
@@ -41,6 +94,16 @@ const stylesString = `
   border-radius: 0.5em;
   overflow: auto;
   font-family: Inter, sans-serif;
+}
+
+.tdb-toggle-wrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+.tdb-toggle-label {
+  margin: 0;
+  padding-left: 0.5rem;
 }
 
 .tdb-show {
@@ -385,6 +448,22 @@ class MenuInput implements HtmlClass {
       wrapper.appendChild(hr2);
     }
 
+    const miscellaneousTitle = document.createElement('h3');
+    const hr4 = document.createElement('hr');
+    miscellaneousTitle.textContent = 'Miscellaneous';
+
+    const bbox_switch = new ToggleSwitch({
+      name: 'bbox',
+      label: 'Show bounding box',
+      id: 'bb',
+      initialValue: false,
+      listener: (value: boolean) => model.toggleBoundingBox(value)
+    });
+
+    wrapper.appendChild(miscellaneousTitle);
+    wrapper.appendChild(bbox_switch.content);
+    wrapper.appendChild(hr4);
+
     this.content = wrapper;
   }
 }
@@ -707,6 +786,54 @@ class RadioGroup implements HtmlClass {
 
       wrapper.appendChild(radio.content);
     });
+  }
+}
+
+class ToggleSwitch implements HtmlClass {
+  content: HTMLElement;
+
+  constructor(options: {
+    name: string;
+    label: string;
+    id: string;
+    initialValue: boolean;
+    listener: (value: boolean) => void;
+  }) {
+    const div = document.createElement('div');
+    div.classList.add('tdb-toggle-wrapper');
+
+    const label = document.createElement('label');
+    label.classList.add('tdb-switch');
+    const input = document.createElement('input');
+    input.classList.add('tdb-checkbox');
+
+    input.type = 'checkbox';
+    input.name = options.name;
+    input.id = options.id;
+
+    if (options.initialValue) {
+      input.setAttribute('checked', 'true');
+    }
+    input.onchange = (evt: Event) => {
+      if (evt.target instanceof HTMLInputElement) {
+        options.listener(evt.target.checked);
+      }
+    };
+
+    const span = document.createElement('span');
+    span.classList.add('tdb-toggle-slider');
+
+    label.appendChild(input);
+    label.appendChild(span);
+
+    const description = document.createElement('p');
+    description.textContent = options.label;
+    description.classList.add('tdb-toggle-label');
+
+    div.appendChild(label);
+    div.appendChild(description);
+
+    this.content = div;
   }
 }
 
