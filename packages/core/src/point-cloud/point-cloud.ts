@@ -53,6 +53,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private renderTargets: RenderTargetTexture[] = [];
   private pipeline!: SPSHighQualitySplats;
   private depthMaterial!: ShaderMaterial;
+  private arcCameraRadius = 25;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -456,6 +457,19 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             mesh,
             this.depthMaterial
           );
+        }
+      });
+
+      this.scene.onBeforeRenderObservable.add(() => {
+        let ratio = 1;
+        if (
+          this.arcCameraRadius !== scene.activeCamera.radius &&
+          scene.activeCamera instanceof ArcRotateCamera
+        ) {
+          ratio = this.arcCameraRadius / scene.activeCamera.radius;
+          this.arcCameraRadius = scene.activeCamera.radius;
+
+          scene.activeCamera.panningSensibility *= ratio;
         }
       });
 
