@@ -468,7 +468,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           const ratio = this.arcCameraRadius / scene.activeCamera.radius;
           this.arcCameraRadius = scene.activeCamera.radius;
 
-          scene.activeCamera.panningSensibility *= ratio;
+          scene.activeCamera.panningSensibility *= ratio * 0.996;
         }
       });
 
