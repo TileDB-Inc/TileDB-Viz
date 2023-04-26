@@ -461,12 +461,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       });
 
       this.scene.onBeforeRenderObservable.add(() => {
-        let ratio = 1;
         if (
-          this.arcCameraRadius !== scene.activeCamera.radius &&
-          scene.activeCamera instanceof ArcRotateCamera
+          scene.activeCamera instanceof ArcRotateCamera &&
+          this.arcCameraRadius !== scene.activeCamera.radius
         ) {
-          ratio = this.arcCameraRadius / scene.activeCamera.radius;
+          const ratio = this.arcCameraRadius / scene.activeCamera.radius;
           this.arcCameraRadius = scene.activeCamera.radius;
 
           scene.activeCamera.panningSensibility *= ratio;
