@@ -53,6 +53,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private renderTargets: RenderTargetTexture[] = [];
   private pipeline!: SPSHighQualitySplats;
   private depthMaterial!: ShaderMaterial;
+  private arcCameraRadius = 25;
 
   constructor(options: TileDBPointCloudOptions) {
     super(options);
@@ -127,12 +128,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             } else if (this.activeCamera === 1) {
               this.activeCamera = 0;
             }
-            this.scene.activeCameras = [
-              this.cameras[this.activeCamera],
-              this.cameras[this.activeCamera + 2]
-            ];
+            this.scene.activeCameras = [this.cameras[this.activeCamera]];
             this.scene.activeCameras[0].attachControl(false);
-            this.scene.activeCameras[1].attachControl(false);
             if (this.model.particleMaterial) {
               this.model.particleMaterial.setShader(
                 this.scene,
@@ -143,6 +140,9 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             }
             this.model.calculateBlocks();
             this.pipeline.setActiveCamera();
+            this.gizmoManager.utilityLayer.setRenderCamera(
+              this.cameras[this.activeCamera]
+            );
           }
 
           switch (kbInfo.event.key) {
@@ -457,6 +457,18 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             mesh,
             this.depthMaterial
           );
+        }
+      });
+
+      this.scene.onBeforeRenderObservable.add(() => {
+        if (
+          scene.activeCamera instanceof ArcRotateCamera &&
+          this.arcCameraRadius !== scene.activeCamera.radius
+        ) {
+          const ratio = this.arcCameraRadius / scene.activeCamera.radius;
+          this.arcCameraRadius = scene.activeCamera.radius;
+
+          scene.activeCamera.panningSensibility *= ratio * 0.996;
         }
       });
 
