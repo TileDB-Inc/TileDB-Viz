@@ -13,16 +13,16 @@ import getTileDBClient from '../../utils/getTileDBClient';
 
 const stylesString = `
 .tdb-button {
-  width: 4em;
-  height: 4em;
+  width: 53px;
+  height: 53px;
   border-radius: 50%;
   border: none;
   background-position: center;
   background-size: cover;
   background-color: transparent;
   position: absolute;
-  bottom: 2.5em;
-  right: 1.25em;
+  bottom: 33px;
+  right: 16px;
 }
 
 .tdb-button:hover {
@@ -32,8 +32,8 @@ const stylesString = `
 .tdb-switch {
   position: relative;
   display: inline-block;
-  width: 2rem !important;
-  height: 1rem !important;
+  width: 32px !important;
+  height: 16px !important;
 }
 
 .tdb-switch input {
@@ -52,16 +52,16 @@ const stylesString = `
   background-color: #ccc;
   -webkit-transition: .4s;
   transition: .4s;
-  border-radius: 2rem;
+  border-radius: 32px;
 }
 
 .tdb-toggle-slider:before {
   position: absolute;
   content: "";
-  height: 0.5rem;
-  width: 0.5rem;
-  left: 0.25rem;
-  bottom: 0.25rem;
+  height: 8px;
+  width: 8px;
+  left: 4px;
+  bottom: 4px;
   background-color: white;
   -webkit-transition: .4s;
   transition: .4s;
@@ -85,13 +85,13 @@ const stylesString = `
 .tdb-panel {
   background-color: #494949CC;
   position: absolute;
-  bottom: 2.5em;
-  right: 5.625em;
-  width: 18.75em;
+  bottom: 33px;
+  right: 75px;
+  width: 240px;
   height: 80vh; 
   display: none;
   padding: 1em;
-  border-radius: 0.5em;
+  border-radius: 6px;
   overflow: auto;
   font-family: Inter, sans-serif;
 }
@@ -119,8 +119,8 @@ const stylesString = `
 .tdb-input {
   color: #fff;
   margin-bottom: 1em;
-  margin-right: 0.25em;
-  font-size: 0.75em;
+  margin-right: 4px;
+  font-size: 10px;
 }
 
 .tdb-input--full {
@@ -136,25 +136,25 @@ const stylesString = `
 }
 
 .tdb-input h3 {
-  font-size: 1em;
-  height: 1em;
+  font-size: 14px;
+  height: 14px;
 }
 
 .tdb-input label {
   width: 100%;
-  height: 1.75em;
+  height: 24px;
 }
 
 .tdb-input input {
   width: 100%;
-  height: 1.75em;
-  border-radius: 0.25em; 
+  height: 24px;
+  border-radius: 4px; 
 }
 
 .tdb-slider {
   width: 100%;
-  height: 1.75em;
-  border-radius: 0.25em; 
+  height: 24px;
+  border-radius: 4px; 
   background: #FFF;
   outline: none;
   opacity: 1.0;
@@ -171,14 +171,14 @@ const stylesString = `
   flex-direction: row-reverse;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 0.5em;
+  margin-bottom: 7px;
   font-size: 1em;
 }
 
 .tdb-radio-label input {
-  margin: 0 0.5em 0 0;
-  height: 1.125em;
-  width: 1.125em;
+  margin: 0 7px 0 0;
+  height: 15px;
+  width: 15px;
 }
 
 .tdb-fieldset {
@@ -264,7 +264,7 @@ class PointCloudGUI {
     this.rootDiv = document.getElementById('tdb-viz-wrapper') as HTMLDivElement;
 
     const menuButton = this.createButton();
-    menuButton.style.bottom = '10.5em';
+    menuButton.style.bottom = '139px';
     menuButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/menu.png")';
     menuButton.onclick = () => {
@@ -274,7 +274,7 @@ class PointCloudGUI {
     };
 
     const modelButton = this.createButton();
-    modelButton.style.bottom = '6.5em';
+    modelButton.style.bottom = '86px';
     modelButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/model.png")';
     modelButton.onclick = () => {
