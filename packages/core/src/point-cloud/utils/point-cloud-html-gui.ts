@@ -166,6 +166,14 @@ const stylesString = `
   cursor: pointer;
 }
 
+.tdb-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 40px;
+  height: 18px;
+  border: none;
+  border-radius: 12px;
+}
+
 .tdb-radio-label {
   display: flex;
   flex-direction: row-reverse;
