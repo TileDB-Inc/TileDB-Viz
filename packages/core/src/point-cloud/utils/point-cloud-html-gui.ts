@@ -257,19 +257,36 @@ interface HtmlClass {
 }
 
 class PointCloudGUI {
-  rootDiv: HTMLDivElement;
+  rootDiv?: HTMLDivElement;
   menuPanel?: HTMLElement;
   modelPanel?: HTMLElement;
   controlsPanel?: HTMLElement;
+  rootElement?: HTMLElement;
   scene: Scene;
   model: ArrayModel;
   depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene, model: ArrayModel, depthMaterial: ShaderMaterial) {
+  constructor(
+    scene: Scene,
+    model: ArrayModel,
+    depthMaterial: ShaderMaterial,
+    rootElement: HTMLElement
+  ) {
     this.scene = scene;
     this.model = model;
     this.depthMaterial = depthMaterial;
-    this.rootDiv = document.getElementById('tdb-viz-wrapper') as HTMLDivElement;
+    this.rootElement = rootElement;
+
+    for (const childElement of rootElement.children) {
+      if (childElement.id === 'tdb-viz-wrapper') {
+        this.rootDiv = childElement as HTMLDivElement;
+      }
+    }
+
+    if (!this.rootDiv) {
+      console.error('GUI can not be initiated rootElement was not found');
+      return;
+    }
 
     const menuButton = this.createButton();
     menuButton.style.bottom = '139px';
@@ -309,13 +326,13 @@ class PointCloudGUI {
     const button = document.createElement('button');
     button.classList.add('tdb-button');
 
-    this.rootDiv.appendChild(button);
+    this.rootDiv!.appendChild(button);
 
     return button;
   }
 
   createMenuPanel(id: string) {
-    const menuPanel = new Panel(this.rootDiv);
+    const menuPanel = new Panel(this.rootDiv as HTMLDivElement);
     menuPanel.content.id = id;
     this.menuPanel = menuPanel.content;
 
@@ -324,7 +341,7 @@ class PointCloudGUI {
   }
 
   createModelPanel(id: string) {
-    const modelPanel = new Panel(this.rootDiv);
+    const modelPanel = new Panel(this.rootDiv as HTMLDivElement);
     modelPanel.content.id = id;
     this.modelPanel = modelPanel.content;
 
@@ -333,7 +350,7 @@ class PointCloudGUI {
   }
 
   createControlsPanel(id: string) {
-    const controlsPanel = new Panel(this.rootDiv);
+    const controlsPanel = new Panel(this.rootDiv as HTMLDivElement);
     controlsPanel.content.id = id;
     this.controlsPanel = controlsPanel.content;
 
