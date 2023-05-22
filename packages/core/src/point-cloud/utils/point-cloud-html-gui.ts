@@ -13,16 +13,18 @@ import getTileDBClient from '../../utils/getTileDBClient';
 
 const stylesString = `
 .tdb-button {
-  width: 53px;
   height: 53px;
-  border-radius: 50%;
-  border: none;
   background-position: center;
   background-size: cover;
   background-color: transparent;
-  position: absolute;
+  border: none;
+  border-radius: 50%;
   bottom: 33px;
+  box-sizing: border-box;
+  padding: 0;
+  position: absolute;
   right: 16px;
+  width: 53px;
 }
 
 .tdb-button:hover {
@@ -87,13 +89,13 @@ const stylesString = `
   position: absolute;
   bottom: 33px;
   right: 75px;
-  width: 240px;
-  height: 80vh; 
+  min-height: 540px;
   display: none;
   padding: 1em;
   border-radius: 6px;
   overflow: auto;
   font-family: Inter, sans-serif;
+  width: 240px;
 }
 
 .tdb-toggle-wrapper {
@@ -196,6 +198,7 @@ const stylesString = `
 .tdb-model-button {
   background-color: #0077FF;
   border: none;
+  box-sizing: border-box;
   border-radius: 6px;
   color: #fff;
   padding: 12px;
