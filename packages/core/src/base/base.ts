@@ -87,7 +87,7 @@ export class TileDBVisualization {
 
   render(): void {
     const canvas = document.createElement('canvas');
-    let wrapperDiv = document.getElementById('tdb-viz-wrapper');
+    let wrapperDiv = this.rootElement.firstChild as HTMLElement | null;
 
     if (!wrapperDiv) {
       wrapperDiv = document.createElement('div');

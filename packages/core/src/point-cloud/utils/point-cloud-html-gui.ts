@@ -13,16 +13,18 @@ import getTileDBClient from '../../utils/getTileDBClient';
 
 const stylesString = `
 .tdb-button {
-  width: 53px;
   height: 53px;
-  border-radius: 50%;
-  border: none;
   background-position: center;
   background-size: cover;
   background-color: transparent;
-  position: absolute;
+  border: none;
+  border-radius: 50%;
   bottom: 33px;
+  box-sizing: border-box;
+  padding: 0;
+  position: absolute;
   right: 16px;
+  width: 53px;
 }
 
 .tdb-button:hover {
@@ -87,13 +89,13 @@ const stylesString = `
   position: absolute;
   bottom: 33px;
   right: 75px;
-  width: 240px;
-  height: 80vh; 
+  min-height: 540px;
   display: none;
   padding: 1em;
   border-radius: 6px;
   overflow: auto;
   font-family: Inter, sans-serif;
+  width: 240px;
 }
 
 .tdb-toggle-wrapper {
@@ -196,6 +198,7 @@ const stylesString = `
 .tdb-model-button {
   background-color: #0077FF;
   border: none;
+  box-sizing: border-box;
   border-radius: 6px;
   color: #fff;
   padding: 12px;
@@ -257,19 +260,36 @@ interface HtmlClass {
 }
 
 class PointCloudGUI {
-  rootDiv: HTMLDivElement;
+  rootDiv?: HTMLDivElement;
   menuPanel?: HTMLElement;
   modelPanel?: HTMLElement;
   controlsPanel?: HTMLElement;
+  rootElement?: HTMLElement;
   scene: Scene;
   model: ArrayModel;
   depthMaterial: ShaderMaterial;
 
-  constructor(scene: Scene, model: ArrayModel, depthMaterial: ShaderMaterial) {
+  constructor(
+    scene: Scene,
+    model: ArrayModel,
+    depthMaterial: ShaderMaterial,
+    rootElement: HTMLElement
+  ) {
     this.scene = scene;
     this.model = model;
     this.depthMaterial = depthMaterial;
-    this.rootDiv = document.getElementById('tdb-viz-wrapper') as HTMLDivElement;
+    this.rootElement = rootElement;
+
+    for (const childElement of rootElement.children) {
+      if (childElement.id === 'tdb-viz-wrapper') {
+        this.rootDiv = childElement as HTMLDivElement;
+      }
+    }
+
+    if (!this.rootDiv) {
+      console.error('GUI can not be initiated rootElement was not found');
+      return;
+    }
 
     const menuButton = this.createButton();
     menuButton.style.bottom = '139px';
@@ -309,13 +329,13 @@ class PointCloudGUI {
     const button = document.createElement('button');
     button.classList.add('tdb-button');
 
-    this.rootDiv.appendChild(button);
+    this.rootDiv!.appendChild(button);
 
     return button;
   }
 
   createMenuPanel(id: string) {
-    const menuPanel = new Panel(this.rootDiv);
+    const menuPanel = new Panel(this.rootDiv as HTMLDivElement);
     menuPanel.content.id = id;
     this.menuPanel = menuPanel.content;
 
@@ -324,7 +344,7 @@ class PointCloudGUI {
   }
 
   createModelPanel(id: string) {
-    const modelPanel = new Panel(this.rootDiv);
+    const modelPanel = new Panel(this.rootDiv as HTMLDivElement);
     modelPanel.content.id = id;
     this.modelPanel = modelPanel.content;
 
@@ -333,7 +353,7 @@ class PointCloudGUI {
   }
 
   createControlsPanel(id: string) {
-    const controlsPanel = new Panel(this.rootDiv);
+    const controlsPanel = new Panel(this.rootDiv as HTMLDivElement);
     controlsPanel.content.id = id;
     this.controlsPanel = controlsPanel.content;
 
