@@ -154,7 +154,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
               break;
           }
 
-          // toggl between background colors
+          // toggle between background colors
           if (kbInfo.event.key === 'b') {
             if (this.model.colorScheme === 'dark') {
               this.model.colorScheme = 'light';
