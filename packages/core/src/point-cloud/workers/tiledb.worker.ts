@@ -57,12 +57,12 @@ function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
   // CPU intensive work on the main thread.
 
   const entries = buffersToTransformedResult(
-    buffersToSparseResult(rawEntries),
     translateX,
     translateY,
     translateZ,
     zScale,
-    rgbMax
+    rgbMax,
+    buffersToSparseResult(rawEntries)
   );
 
   self.postMessage(
@@ -72,7 +72,7 @@ function returnData(block: MoctreeBlock, rawEntries: SparseResultRaw) {
       entries: entries,
       name: self.name
     },
-    [entries.Position.buffer, entries.Color.buffer] as any
+    [entries?.Position.buffer, entries?.Color.buffer] as any
   );
 }
 

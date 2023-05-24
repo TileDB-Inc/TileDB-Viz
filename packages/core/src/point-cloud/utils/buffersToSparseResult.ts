@@ -22,12 +22,12 @@ const buffersToSparseResult = (
 export default buffersToSparseResult;
 
 export function buffersToTransformedResult(
-  data: SparseResult,
   translateX: number,
   translateY: number,
   translateZ: number,
   zScale: number,
-  rgbMax: number
+  rgbMax: number,
+  data?: SparseResult
 ): TransformedResult | undefined {
   if (!data) {
     return undefined;
