@@ -318,7 +318,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         this.scene,
         this.model,
         this.depthMaterial,
-        this.rootElement
+        this.rootElement,
+        this.height
       );
 
       // add panning control
