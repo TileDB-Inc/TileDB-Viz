@@ -461,12 +461,12 @@ class ArrayModel {
         Vector3.Zero(),
         -1,
         buffersToTransformedResult(
-          data,
           this.translationVector.x,
           this.translationVector.y,
           this.translationVector.z,
           this.zScale,
-          this.rgbMax
+          this.rgbMax,
+          data
         )
       );
 

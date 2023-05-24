@@ -177,7 +177,7 @@ describe('moctree tests', () => {
       Vector3.Zero(),
       new Vector3(1, 1, 1),
       0,
-      buffersToTransformedResult(entries, 1, 1, 1, 1, 255)
+      buffersToTransformedResult(1, 1, 1, 1, 255, entries)
     );
 
     expect(block.entries).toBeDefined();
