@@ -10,6 +10,7 @@ import {
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
+import addUnitToDimension from './addUnitToDimension/addUnitToDimension';
 
 const stylesString = `
 .tdb-button {
@@ -87,9 +88,10 @@ const stylesString = `
 .tdb-panel {
   background-color: #494949CC;
   position: absolute;
+  box-sizing: border-box;
   bottom: 33px;
   right: 75px;
-  min-height: 540px;
+  height: 540px;
   display: none;
   padding: 1em;
   border-radius: 6px;
@@ -268,17 +270,20 @@ class PointCloudGUI {
   scene: Scene;
   model: ArrayModel;
   depthMaterial: ShaderMaterial;
+  height?: string;
 
   constructor(
     scene: Scene,
     model: ArrayModel,
     depthMaterial: ShaderMaterial,
-    rootElement: HTMLElement
+    rootElement: HTMLElement,
+    height?: string
   ) {
     this.scene = scene;
     this.model = model;
     this.depthMaterial = depthMaterial;
     this.rootElement = rootElement;
+    this.height = height;
 
     for (const childElement of rootElement.children) {
       if (childElement.id === 'tdb-viz-wrapper') {
@@ -323,6 +328,15 @@ class PointCloudGUI {
     this.createMenuPanel('menuPanel');
     this.createModelPanel('modelPanel');
     this.createControlsPanel('controlsPanel');
+
+    if (this.height) {
+      const maxHeightCSSProp = `calc(${addUnitToDimension(
+        this.height
+      )} - 33px)`;
+      this.modelPanel!.style.maxHeight = maxHeightCSSProp;
+      this.menuPanel!.style.maxHeight = maxHeightCSSProp;
+      this.controlsPanel!.style.maxHeight = maxHeightCSSProp;
+    }
   }
 
   createButton() {
