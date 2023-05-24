@@ -93,7 +93,11 @@ export class TileDBVisualization {
       wrapperDiv = document.createElement('div');
       wrapperDiv.id = 'tdb-viz-wrapper';
       wrapperDiv.style.position = 'relative';
-      wrapperDiv.style.width = '100%';
+      if (this.width) {
+        wrapperDiv.style.width = this.width;
+      } else {
+        wrapperDiv.style.width = '100%';
+      }
     }
     canvas.style.width = this.width;
     canvas.style.height = this.height;

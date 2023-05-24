@@ -329,7 +329,7 @@ class PointCloudGUI {
     const button = document.createElement('button');
     button.classList.add('tdb-button');
 
-    this.rootDiv!.appendChild(button);
+    this.rootDiv?.appendChild(button);
 
     return button;
   }
