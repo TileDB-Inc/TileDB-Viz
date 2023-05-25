@@ -2,50 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/modules.html</loc>
-    <lastmod>2023-05-24T10:13:14.847Z</lastmod>
+    <lastmod>2023-05-25T09:15:03.451Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBImageVisualization.html</loc>
-    <lastmod>2023-05-24T10:13:15.719Z</lastmod>
+    <lastmod>2023-05-25T09:15:04.391Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBMBRSVisualization.html</loc>
-    <lastmod>2023-05-24T10:13:16.183Z</lastmod>
+    <lastmod>2023-05-25T09:15:04.927Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBPointCloudVisualization.html</loc>
-    <lastmod>2023-05-24T10:13:16.667Z</lastmod>
+    <lastmod>2023-05-25T09:15:05.499Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/classes/TileDBVisualization.html</loc>
-    <lastmod>2023-05-24T10:13:17.031Z</lastmod>
+    <lastmod>2023-05-25T09:15:05.931Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBVisualizationBaseOptions.html</loc>
-    <lastmod>2023-05-24T10:13:17.335Z</lastmod>
+    <lastmod>2023-05-25T09:15:06.247Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBMBRSVisualizationOptions.html</loc>
-    <lastmod>2023-05-24T10:13:17.663Z</lastmod>
+    <lastmod>2023-05-25T09:15:06.615Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBPointCloudOptions.html</loc>
-    <lastmod>2023-05-24T10:13:18.167Z</lastmod>
+    <lastmod>2023-05-25T09:15:07.183Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/typedocs/interfaces/TileDBImageVisualizationOptions.html</loc>
-    <lastmod>2023-05-24T10:13:18.479Z</lastmod>
+    <lastmod>2023-05-25T09:15:07.539Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/core/overview.html</loc>
-    <lastmod>2023-05-24T10:13:18.783Z</lastmod>
+    <lastmod>2023-05-25T09:15:07.863Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/react/overview.html</loc>
-    <lastmod>2023-05-24T10:13:19.043Z</lastmod>
+    <lastmod>2023-05-25T09:15:08.135Z</lastmod>
   </url>
   <url>
     <loc>https://tiledb-inc.github.io/tiledb-quarto-template/index.html</loc>
-    <lastmod>2023-05-24T10:13:19.319Z</lastmod>
+    <lastmod>2023-05-25T09:15:08.423Z</lastmod>
   </url>
 </urlset>
