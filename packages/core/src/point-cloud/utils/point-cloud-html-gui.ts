@@ -91,7 +91,7 @@ const stylesString = `
   box-sizing: border-box;
   bottom: 33px;
   right: 75px;
-  height: 540px;
+  height: 545px;
   display: none;
   padding: 1em;
   border-radius: 6px;
