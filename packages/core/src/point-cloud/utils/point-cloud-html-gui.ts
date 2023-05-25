@@ -91,7 +91,7 @@ const stylesString = `
   box-sizing: border-box;
   bottom: 33px;
   right: 75px;
-  height: 540px;
+  height: 545px;
   display: none;
   padding: 1em;
   border-radius: 6px;
@@ -297,7 +297,8 @@ class PointCloudGUI {
     }
 
     const menuButton = this.createButton();
-    menuButton.style.bottom = '139px';
+    //menuButton.style.bottom = '139px';
+    menuButton.style.bottom = '86px';
     menuButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/menu.png")';
     menuButton.onclick = () => {
@@ -306,15 +307,15 @@ class PointCloudGUI {
       this.menuPanel?.classList.toggle('tdb-show');
     };
 
-    const modelButton = this.createButton();
-    modelButton.style.bottom = '86px';
-    modelButton.style.backgroundImage =
-      'url("https://tiledb-viz-demos.s3.amazonaws.com/model.png")';
-    modelButton.onclick = () => {
-      this.menuPanel?.classList.remove('tdb-show');
-      this.controlsPanel?.classList.remove('tdb-show');
-      this.modelPanel?.classList.toggle('tdb-show');
-    };
+    // const modelButton = this.createButton();
+    // modelButton.style.bottom = '86px';
+    // modelButton.style.backgroundImage =
+    //   'url("https://tiledb-viz-demos.s3.amazonaws.com/model.png")';
+    // modelButton.onclick = () => {
+    //   this.menuPanel?.classList.remove('tdb-show');
+    //   this.controlsPanel?.classList.remove('tdb-show');
+    //   this.modelPanel?.classList.toggle('tdb-show');
+    // };
 
     const controlsButton = this.createButton();
     controlsButton.style.backgroundImage =
@@ -326,14 +327,14 @@ class PointCloudGUI {
     };
 
     this.createMenuPanel('menuPanel');
-    this.createModelPanel('modelPanel');
+    //this.createModelPanel('modelPanel');
     this.createControlsPanel('controlsPanel');
 
     if (this.height) {
       const maxHeightCSSProp = `calc(${addUnitToDimension(
         this.height
       )} - 33px)`;
-      this.modelPanel!.style.maxHeight = maxHeightCSSProp;
+      //this.modelPanel!.style.maxHeight = maxHeightCSSProp;
       this.menuPanel!.style.maxHeight = maxHeightCSSProp;
       this.controlsPanel!.style.maxHeight = maxHeightCSSProp;
     }
@@ -665,10 +666,6 @@ class ControlsInput implements HtmlClass {
     const sc11 = document.createElement('p');
     const sc12 = document.createElement('p');
     const hr3 = document.createElement('hr');
-    const title4 = document.createElement('h3');
-    const sc13 = document.createElement('p');
-    const sc14 = document.createElement('p');
-    const sc15 = document.createElement('p');
 
     title.textContent = 'Control shortcuts';
     sc1.textContent = 'c: toggle between cameras';
@@ -689,11 +686,6 @@ class ControlsInput implements HtmlClass {
     sc11.textContent = 'a or left: move to the left';
     sc12.textContent = 'd or right: move to the right';
 
-    title4.textContent = 'Model gizmo';
-    sc13.textContent = '1: position';
-    sc14.textContent = '2: scale';
-    sc15.textContent = '3: rotate';
-
     wrapper.appendChild(title);
     wrapper.appendChild(sc1);
     wrapper.appendChild(sc2);
@@ -713,10 +705,6 @@ class ControlsInput implements HtmlClass {
     wrapper.appendChild(sc11);
     wrapper.appendChild(sc12);
     wrapper.appendChild(hr3);
-    wrapper.appendChild(title4);
-    wrapper.appendChild(sc13);
-    wrapper.appendChild(sc14);
-    wrapper.appendChild(sc15);
 
     this.content = wrapper;
   }
