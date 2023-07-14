@@ -1,0 +1,15 @@
+.BioImageViewer-ToggleMenu {
+    background-color: var(--bioimg-background-primary);
+    box-shadow: var(--bioimg-shadow-small);
+    padding: 8px;
+    border-radius: 6px;
+    border: 0;
+    position: absolute;
+    right: 16px;
+    top: 16px;
+  
+    &::hover {
+      cursor: pointer;
+    }
+  }
+  

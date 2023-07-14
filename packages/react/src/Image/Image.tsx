@@ -48,9 +48,9 @@ export const ImageVisualization: React.FC<
   }, [props]);
 
   return (
-    <div
-      ref={rootDivElementRef}
-      className={classNames('TDB-Viz TDB-Viz--image', className)}
-    />
+      <div
+        ref={rootDivElementRef}
+        className={classNames('TDB-Viz TDB-Viz--image', className)}
+      />
   );
 };

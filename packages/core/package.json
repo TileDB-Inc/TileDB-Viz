@@ -41,6 +41,7 @@
     "@tiledb-inc/tiledb-cloud": "1.0.12-beta.1",
     "babylonjs-gui": "^5.42.0",
     "babylonjs-materials": "^5.42.0",
+    "earcut": "^2.2.4",
     "idb": "^7.0.2"
   },
   "devDependencies": {
