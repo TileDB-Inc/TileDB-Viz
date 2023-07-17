@@ -1,14 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, LibraryFormats } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { transform } from 'esbuild';
-// import pkg from './package.json';
-
-
-// import dts from 'vite-plugin-dts';
-
-// export default defineConfig({
-//   plugins: [
-//     dts({ insertTypesEntry: true }),
+import dts from 'vite-plugin-dts';
 
 const bundleComponents = process.env.BUNDLE_COMPONENTS ?? true;
 
@@ -16,13 +9,13 @@ const PACKAGE_NAME = `viz-components`
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  root: './packages/lib/',
+  // root: './src',
   build: {
-    outDir: '../../dist/lib',
+    outDir: './dist',
     emptyOutDir: true,
     lib: {
-      entry: './index.ts',
-      formats: bundleComponents ? ['es', 'esm', 'umd'] as any : ['es'],
+      entry: './src/index.ts',
+      formats: bundleComponents ? ['es', 'esm', 'umd'] as LibraryFormats[] : ['es'],
       name: PACKAGE_NAME,
       fileName: (format) => ({
         es: `${PACKAGE_NAME}.js`,
@@ -39,14 +32,12 @@ export default defineConfig({
     }
   },
   plugins: [
+    dts({ insertTypesEntry: true, copyDtsFiles: true, outDir: './dist' }),
     svelte({
       exclude: /\.wc\.svelte$/ as any,
       compilerOptions: {
         customElement: true
       }
-    }),
-    svelte({
-      include: /\.wc\.svelte$/ as any,
     }),
     minifyEs()
   ]

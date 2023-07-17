@@ -3,8 +3,9 @@
   "version": "0.0.1",
   "description": "A base template for building a shareable web components library with Vite + Svelte",
   "type": "module",
-  "module": "dist/lib/viz-components.js",
-  "main": "dist/lib/viz-components.umd.js",
+  "types": "dist/viz-components.d.ts",
+  "module": "dist/viz-components.js",
+  "main": "dist/viz-components.umd.js",
   "scripts": {
     "start": "npm run dev -s",
     "dev": "vite --config vite.demo.config.ts",
@@ -23,7 +24,8 @@
     "svelte-preprocess": "^5.0.1",
     "tslib": "^2.4.0",
     "typescript": "^4.6.4",
-    "vite": "^4.0.4"
+    "vite": "^4.0.4",
+    "vite-plugin-dts": "^3.3.1"
   },
   "files": [
     "dist/lib"
