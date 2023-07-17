@@ -24,7 +24,7 @@
   "packageManager": "yarn@3.2.3",
   "scripts": {
     "build": "yarn g:parcel build",
-    "storybook": "yarn start-storybook -p 6006",
+    "storybook": "yarn start-storybook -p 6006 --loglevel verbose",
     "build-storybook": "build-storybook",
     "lint": "yarn g:eslint './src/**/*.{ts,tsx}'",
     "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
