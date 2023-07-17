@@ -4,8 +4,10 @@
   "type": "module",
   "packageManager": "yarn@3.2.3",
   "module": "dist/components.js",
+  "types": "./dist/main.d.ts",
+  "main": "dist/components.js",
   "files": [
-    "dist"
+    "dist/**/*"
   ],
   "scripts": {
     "dev": "vite",
@@ -20,6 +22,7 @@
     "svelte-check": "^3.4.4",
     "svelte-preprocess": "^5.0.4",
     "tslib": "^2.6.0",
-    "vite": "^4.4.0"
+    "vite": "^4.4.0",
+    "vite-plugin-dts": "^3.3.1"
   }
 }
