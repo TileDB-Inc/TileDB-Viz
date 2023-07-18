@@ -11,6 +11,9 @@ import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import getTileDBClient from '../../utils/getTileDBClient';
 import addUnitToDimension from './addUnitToDimension/addUnitToDimension';
+import * as _ from '@tiledb-inc/viz-components';
+
+console.log(`Hackish way on the road to HTR ${_}`);
 
 const stylesString = `
 .tdb-button {
@@ -296,8 +299,16 @@ class PointCloudGUI {
       return;
     }
 
+    const ui = document.createElement('div');
+    ui.innerHTML = `<floating-button bottom="86px" id="menu" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/menu.png"></floating-button>
+      <floating-button id="kb" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/controls.png"></floating-button>
+      <menu-panel><p>yohooohooooooo</p></menu-panel>
+      `;
+
+    this.rootElement.appendChild(ui);
+
     const menuButton = this.createButton();
-    //menuButton.style.bottom = '139px';
+
     menuButton.style.bottom = '86px';
     menuButton.style.backgroundImage =
       'url("https://tiledb-viz-demos.s3.amazonaws.com/menu.png")';

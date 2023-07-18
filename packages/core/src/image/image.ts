@@ -9,9 +9,7 @@ import {
   Texture
 } from '@babylonjs/core';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
-import * as CustomComponents from '@tiledb-inc/viz-components';
 
-console.log(CustomComponents);
 export interface TileDBImageVisualizationOptions
   extends TileDBVisualizationBaseOptions {
   /**
