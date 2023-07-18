@@ -9,8 +9,9 @@ import {
   Texture
 } from '@babylonjs/core';
 import { TileDBVisualization, TileDBVisualizationBaseOptions } from '../base';
-import { CustomComponent } from '@tiledb-inc/viz-components';
-console.log(CustomComponent);
+import * as CustomComponents from '@tiledb-inc/viz-components';
+
+console.log(CustomComponents);
 export interface TileDBImageVisualizationOptions
   extends TileDBVisualizationBaseOptions {
   /**
@@ -32,8 +33,7 @@ export class TileDBImageVisualization extends TileDBVisualization {
     this.xyBbox = options.xyBbox;
     const div = document.createElement('div');
     div.innerHTML = '<cool-card title="Hello from innerHTML"></cool-card>';
-    // const comp = document.createElement('cool-card');
-    // comp.setAttribute('title', 'This is a custom component');
+
     this.rootElement.appendChild(div);
   }
 
