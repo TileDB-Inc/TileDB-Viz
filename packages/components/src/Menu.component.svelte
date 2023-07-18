@@ -2,18 +2,18 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  let id;
+  export let id;
 
-  let visible = true;
+  let visible = false;
 
-  function toggleVissible() {
-    console.log('toggling');
-    visible = !visible;
+  function toggleVissible(e) {
+    if (e.detail?.id === id) {
+      visible = !visible;
+    }
   }
 
   onMount(() => {
     const CUSTOM_EVENT = 'floating-button::click';
-    console.log('MOUNT');
     window.addEventListener(CUSTOM_EVENT, toggleVissible, {
       capture: true
     });

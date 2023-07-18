@@ -29,10 +29,6 @@ export class TileDBImageVisualization extends TileDBVisualization {
     super(options);
     this.data = options.data;
     this.xyBbox = options.xyBbox;
-    const div = document.createElement('div');
-    div.innerHTML = '<cool-card title="Hello from innerHTML"></cool-card>';
-
-    this.rootElement.appendChild(div);
   }
 
   protected async createScene(): Promise<Scene> {
