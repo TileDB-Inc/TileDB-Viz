@@ -1,4 +1,3 @@
-import { ConfirmationBox } from './utils/point-cloud-html-gui';
 import {
   ArcRotateCamera,
   FreeCamera,
@@ -73,6 +72,16 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   }
 
   attachKeys() {
+    const clearIndexedDB = () => {
+      if (this.options.namespace && this.options.groupName) {
+        const storeName = `${this.options.namespace}:${this.options.groupName}`;
+
+        clearCache(storeName);
+      }
+    };
+    window.addEventListener('confirmation-box::accept', clearIndexedDB, {
+      capture: true
+    });
     this.scene.onKeyboardObservable.add(kbInfo => {
       switch (kbInfo.type) {
         case KeyboardEventTypes.KEYDOWN:
@@ -83,21 +92,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             kbInfo.event.code === 'Delete' ||
             kbInfo.event.code === 'Backspace'
           ) {
-            const clearIndexedDB = () => {
-              if (this.options.namespace && this.options.groupName) {
-                const storeName = `${this.options.namespace}:${this.options.groupName}`;
-
-                clearCache(storeName);
-              }
-            };
-            console.log('fdsafsdafsda');
-            new ConfirmationBox({
-              id: 'tdb-clear-cache-box',
-              callback: clearIndexedDB,
-              parentElement: document.getElementById(
-                'tdb-viz-wrapper'
-              ) as HTMLDivElement
-            });
+            window.dispatchEvent(
+              new CustomEvent('confirmation-box::show', {
+                bubbles: true
+              })
+            );
           }
 
           // toggle through arcRotate camera locations with 'v'

@@ -126,6 +126,7 @@ class PointCloudGUI {
 <menu-panel id="kb">
   <div class="tdb-text"><h3>Control shortcuts</h3><p>c: toggle between cameras</p><p>b: background color</p><p>backspace or delete: clear cache</p><hr><h3>Arc Rotate camera</h3><p>scroll wheel: zoom in and out</p><p>drag mouse with left button: rotate</p><p>v: toggle between camera locations</p><hr><h3>Free camera</h3><p>drag mouse with left button: rotate</p><p>w or up: move forward</p><p>s or down: move backward</p><p>e: move up</p><p>q: move down</p><p>a or left: move to the left</p><p>d or right: move to the right</p><hr></div>
 </menu-panel>
+<confirmation-box></confirmation-box>
       `;
 
     window.addEventListener(
@@ -186,62 +187,3 @@ class PointCloudGUI {
 }
 
 export default PointCloudGUI;
-
-export class ConfirmationBox {
-  parentElement: HTMLDivElement;
-  rootElement: HTMLDivElement;
-  callback: () => void;
-  id?: string;
-
-  constructor(options: {
-    parentElement: HTMLDivElement;
-    callback: () => void;
-    id?: string;
-  }) {
-    this.parentElement = options.parentElement;
-    this.callback = options.callback;
-    const rootElement = document.createElement('div');
-    this.rootElement = rootElement;
-    if (options.id) {
-      // If element already exists, just return
-      if (document.getElementById(options.id)) {
-        return;
-      }
-      this.id = options.id;
-      rootElement.setAttribute('id', this.id);
-    }
-    this.parentElement.appendChild(rootElement);
-    this.createMarkup();
-    this.attachListeners();
-  }
-
-  destroy() {
-    this.rootElement.remove();
-  }
-
-  attachListeners() {
-    document
-      .getElementById('tdb-confirm-btn')
-      ?.addEventListener('click', () => {
-        this.callback();
-        this.destroy();
-      });
-
-    document
-      .getElementById('tdb-cancel-btn')
-      ?.addEventListener('click', this.destroy.bind(this));
-  }
-
-  createMarkup() {
-    this.rootElement.innerHTML = `
-    <div class="tdb-modal">
-      <h4 class="tdb-modal__title">Clear cache</h4>
-      <p class="tdb-modal__description">Are you sure you want to delete the array's cache?</p>
-      <div class="tdb-modal__buttons">
-        <button id="tdb-confirm-btn" class="tdb-modal__button tdb-modal__button--active">Clear cache</button>
-        <button id="tdb-cancel-btn" class="tdb-modal__button">Cancel</button>
-      </div>
-    </div>
-    `;
-  }
-}
