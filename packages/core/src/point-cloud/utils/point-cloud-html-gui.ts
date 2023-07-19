@@ -324,54 +324,61 @@ class PointCloudGUI {
 
     const ui = document.createElement('div');
     ui.innerHTML = `
-      <floating-button bottom="86px" id="menu" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/menu.png"></floating-button>
-      <floating-button id="kb" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/controls.png"></floating-button>
-      <menu-panel id="menu">
-      ${
-        model.useStreaming &&
-        `
-      <h3 class="tdb-text">Performance</h3>
-      <tdb-slider id="${SliderValues.perf}" label="Point budget" min="100000" max="10000000" value="${model.pointBudget}"></tdb-slider>
-      <hr class="tdb-hr" />
-      `
-      }
-        <h3 class="tdb-text">Clipping planes</h3>
-        <tdb-slider id="${SliderValues.xmin}" label="Xmin" min="${
+<floating-button bottom="86px" id="menu" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/menu.png"></floating-button>
+<floating-button id="kb" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/controls.png"></floating-button>
+<menu-panel id="menu">
+  ${
+    model.useStreaming &&
+    `
+  <h3 class="tdb-text">Performance</h3>
+  <tdb-slider id="${SliderValues.perf}" label="Point budget" min="100000" max="10000000" value="${model.pointBudget}"></tdb-slider>
+  <hr class="tdb-hr" />
+  `
+  }
+  <h3 class="tdb-text">Clipping planes</h3>
+  <tdb-slider id="${SliderValues.xmin}" label="Xmin" min="${
       model.octree.minPoint.x - 1
     }" max="${model.octree.maxPoint.x - 1}" value="${
       model.octree.minPoint.x - 1
     }"></tdb-slider>
-    <tdb-slider id="${SliderValues.xmax}" label="Xmax" min="${
+<tdb-slider id="${SliderValues.xmax}" label="Xmax" min="${
       model.octree.minPoint.x - 1
     }" max="${model.octree.maxPoint.x - 1}" value="${
       model.octree.maxPoint.x + 1
     }"></tdb-slider>
-    <tdb-slider id="${SliderValues.ymin}" label="Ymin" min="${
+<tdb-slider id="${SliderValues.ymin}" label="Ymin" min="${
       model.octree.minPoint.y - 1
     }" max="${model.octree.maxPoint.y + 1}" value="${
       model.octree.minPoint.y - 1
     }"></tdb-slider>
-    <tdb-slider id="${SliderValues.ymax}" label="Ymax" min="${
+<tdb-slider id="${SliderValues.ymax}" label="Ymax" min="${
       model.octree.minPoint.y - 1
     }" max="${model.octree.maxPoint.y + 1}" value="${
       model.octree.maxPoint.y + 1
     }"></tdb-slider>
-    <tdb-slider id="${SliderValues.zmin}" label="Zmin" min="${
+<tdb-slider id="${SliderValues.zmin}" label="Zmin" min="${
       model.octree.minPoint.z - 1
     }" max="${model.octree.maxPoint.z + 1}" value="${
       model.octree.minPoint.z - 1
     }"></tdb-slider>
-    <tdb-slider id="${SliderValues.zmax}" label="Zmax" min="${
+<tdb-slider id="${SliderValues.zmax}" label="Zmax" min="${
       model.octree.minPoint.z - 1
     }" max="${model.octree.maxPoint.z + 1}" value="${
       model.octree.maxPoint.z + 1
     }"></tdb-slider>
-    <hr class="tdb-hr" />
-    <h3 class="tdb-text">Color scheme</h3>
-      </menu-panel>
-      <menu-panel id="kb">
-        <div class="tdb-text"><h3>Control shortcuts</h3><p>c: toggle between cameras</p><p>b: background color</p><p>backspace or delete: clear cache</p><hr><h3>Arc Rotate camera</h3><p>scroll wheel: zoom in and out</p><p>drag mouse with left button: rotate</p><p>v: toggle between camera locations</p><hr><h3>Free camera</h3><p>drag mouse with left button: rotate</p><p>w or up: move forward</p><p>s or down: move backward</p><p>e: move up</p><p>q: move down</p><p>a or left: move to the left</p><p>d or right: move to the right</p><hr></div>
-      </menu-panel>
+<hr class="tdb-hr" />
+<h3 class="tdb-text">Color scheme</h3>
+${
+  model.colorScheme &&
+  `
+<radio-group name="colors" values="dark,light,blue" initialvalue="${model.colorScheme}" />
+`
+}
+
+</menu-panel>
+<menu-panel id="kb">
+  <div class="tdb-text"><h3>Control shortcuts</h3><p>c: toggle between cameras</p><p>b: background color</p><p>backspace or delete: clear cache</p><hr><h3>Arc Rotate camera</h3><p>scroll wheel: zoom in and out</p><p>drag mouse with left button: rotate</p><p>v: toggle between camera locations</p><hr><h3>Free camera</h3><p>drag mouse with left button: rotate</p><p>w or up: move forward</p><p>s or down: move backward</p><p>e: move up</p><p>q: move down</p><p>a or left: move to the left</p><p>d or right: move to the right</p><hr></div>
+</menu-panel>
       `;
 
     window.addEventListener(
@@ -395,6 +402,19 @@ class PointCloudGUI {
         } else if (id === String(SliderValues.perf)) {
           model.pointBudget = value;
         }
+      },
+      {
+        capture: true
+      }
+    );
+
+    window.addEventListener(
+      'radio-group::change',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ value: string }>;
+        const { value: colorScheme } = customEvent.detail;
+
+        updateSceneColors(scene, colorScheme);
       },
       {
         capture: true

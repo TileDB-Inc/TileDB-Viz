@@ -1,7 +1,6 @@
 <svelte:options tag="tdb-slider" />
 
 <script>
-  import { onMount, onDestroy } from 'svelte';
   export let id,
     label = '',
     value,
