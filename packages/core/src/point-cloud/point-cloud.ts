@@ -90,6 +90,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
                 clearCache(storeName);
               }
             };
+            console.log('fdsafsdafsda');
             new ConfirmationBox({
               id: 'tdb-clear-cache-box',
               callback: clearIndexedDB,

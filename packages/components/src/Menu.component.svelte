@@ -37,7 +37,7 @@
     box-sizing: border-box;
     bottom: 33px;
     right: 75px;
-    height: 545px;
+    height: 600px;
     padding: 1em;
     border-radius: 6px;
     max-height: calc(100vh - 33px);
