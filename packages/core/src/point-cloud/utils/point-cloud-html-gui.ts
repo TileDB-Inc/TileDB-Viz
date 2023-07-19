@@ -1,9 +1,7 @@
 import { Scene, Plane, ShaderMaterial } from '@babylonjs/core';
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
-import * as _ from '@tiledb-inc/viz-components';
-
-console.log(`Hackish way on the road to HTR ${_}`);
+import '@tiledb-inc/viz-components';
 
 const stylesString = `
 .tdb-text {
