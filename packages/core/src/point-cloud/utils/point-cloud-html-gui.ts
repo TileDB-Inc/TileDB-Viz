@@ -328,12 +328,13 @@ class PointCloudGUI {
 <floating-button id="kb" backgroundimage="https://tiledb-viz-demos.s3.amazonaws.com/controls.png"></floating-button>
 <menu-panel id="menu">
   ${
-    model.useStreaming &&
-    `
+    model.useStreaming
+      ? `
   <h3 class="tdb-text">Performance</h3>
   <tdb-slider id="${SliderValues.perf}" label="Point budget" min="100000" max="10000000" value="${model.pointBudget}"></tdb-slider>
   <hr class="tdb-hr" />
   `
+      : ''
   }
   <h3 class="tdb-text">Clipping planes</h3>
   <tdb-slider id="${SliderValues.xmin}" label="Xmin" min="${
@@ -368,13 +369,12 @@ class PointCloudGUI {
     }"></tdb-slider>
 <hr class="tdb-hr" />
 <h3 class="tdb-text">Color scheme</h3>
-${
-  model.colorScheme &&
-  `
-<radio-group name="colors" values="dark,light,blue" initialvalue="${model.colorScheme}" />
-`
-}
-
+<radio-group name="colors" values="dark,light,blue" initialvalue="${
+      model.colorScheme
+    }"></radio-group>
+<hr class="tdb-hr" />
+<h3 class="tdb-text">Miscellaneous</h3>
+<toggle-input name="bbox" label="Show bounding box" id="bb" value="false" />
 </menu-panel>
 <menu-panel id="kb">
   <div class="tdb-text"><h3>Control shortcuts</h3><p>c: toggle between cameras</p><p>b: background color</p><p>backspace or delete: clear cache</p><hr><h3>Arc Rotate camera</h3><p>scroll wheel: zoom in and out</p><p>drag mouse with left button: rotate</p><p>v: toggle between camera locations</p><hr><h3>Free camera</h3><p>drag mouse with left button: rotate</p><p>w or up: move forward</p><p>s or down: move backward</p><p>e: move up</p><p>q: move down</p><p>a or left: move to the left</p><p>d or right: move to the right</p><hr></div>
@@ -415,6 +415,19 @@ ${
         const { value: colorScheme } = customEvent.detail;
 
         updateSceneColors(scene, colorScheme);
+      },
+      {
+        capture: true
+      }
+    );
+
+    window.addEventListener(
+      'toggle-input::change',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ value: boolean }>;
+        const { value } = customEvent.detail;
+
+        model.toggleBoundingBox(value);
       },
       {
         capture: true
