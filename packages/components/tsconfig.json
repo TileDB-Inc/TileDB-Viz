@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Svelte",
+  "_version": "5.0.0",
+  "compilerOptions": {
+    "moduleResolution": "node16",
+    "target": "es2017",
+    
+    /**
+      To have warnings/errors of the Svelte compiler at the correct position,
+      enable source maps by default.
+     */
+    "sourceMap": true,
+
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    /**
+     * Typecheck JS in `.svelte` and `.js` files by default.
+     * Disable checkJs if you'd like to use dynamic types in JS.
+     * Note that setting allowJs false does not prevent the use
+     * of JS in `.svelte` files.
+     */
+    "allowJs": true,
+    "checkJs": false,
+    "isolatedModules": true
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

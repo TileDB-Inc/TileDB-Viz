@@ -22,5 +22,5 @@
     "entryPoints": ["packages/core/src/index.ts"],
     "out": "quarto/typedocs"
   },
-  "include": ["./packages/**/src", "./__mocks__/**/*.json"]
+  "include": ["./packages/**/src", "./__mocks__/**/*.json", "./packages/**/vite.config.ts", "packages/**/*.svelte"]
 }
