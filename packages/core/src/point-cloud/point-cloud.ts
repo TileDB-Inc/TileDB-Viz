@@ -37,6 +37,7 @@ import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
 import { MeshDepthMaterial } from './materials/depthShaderMaterial';
+import { Events } from '@tiledb-inc/viz-components';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -79,7 +80,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         clearCache(storeName);
       }
     };
-    window.addEventListener('confirmation-box::accept', clearIndexedDB, {
+    window.addEventListener(Events.CONFIRM_BOX_ACCEPT, clearIndexedDB, {
       capture: true
     });
     this.scene.onKeyboardObservable.add(kbInfo => {
