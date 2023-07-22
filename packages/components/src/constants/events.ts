@@ -4,7 +4,8 @@ enum Events {
   SLIDER_CHANGE = 'tdb-slider::change',
   CONFIRM_BOX_ACCEPT = 'confirmation-box::accept',
   CONFIRM_BOX_SHOW = 'confirmation-box::show',
-  FLOATING_BUTTON_CLICK = 'floating-button::click'
+  FLOATING_BUTTON_CLICK = 'floating-button::click',
+  DUAL_SLIDER_CHANGE = 'dual-slider::change'
 }
 
 export default Events;
