@@ -1,0 +1,49 @@
+.BioImageViewer-ControlPanel {
+    font-family: Inter, Arial, "sans-serif";
+  
+    &__title {
+      font-style: normal;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 24px;
+      color: var(--bioimg-text-primary);
+      display: flex;
+      align-items: center;
+      margin: 0;
+      justify-content: space-between;
+  
+      svg {
+        margin-right: 10px;
+      }
+  
+      div {
+        display: flex;
+        align-items: center;
+      }
+    }
+  
+    &__toggle {
+      cursor: pointer;
+  
+      svg {
+        margin: 0;
+      }
+    }
+  
+    &__list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+  
+      overflow: hidden;
+      transition: 0.8s max-height
+    }
+  
+    &__item {
+      margin-bottom: 8px;
+  
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }

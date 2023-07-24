@@ -1,14 +1,17 @@
 import { FreeCamera, Scene, Vector3 } from '@babylonjs/core';
-export function setupCamera(scene: Scene, initialZoom: number) {
-  const camera = new FreeCamera('Free', new Vector3(0, 100, 0), scene);
+export function setupCamera(
+  scene: Scene,
+  initialZoom: number,
+  position: Vector3
+) {
+  const camera = new FreeCamera('Free', position, scene);
 
   scene.activeCamera = camera;
 
-  scene.activeCamera.upVector = new Vector3(0, 0, 1);
+  scene.activeCamera.upVector = new Vector3(0, 0, -1);
   scene.activeCamera.attachControl(false);
-  scene.activeCamera.target = Vector3.Zero();
+  scene.activeCamera.target = new Vector3(position.x, 0, position.z);
   scene.activeCamera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
-  scene.activeCamera.speed = 0.1;
   scene.activeCamera.inputs.attached.mouse.detachControl();
 
   resizeOrtographicCameraViewport(scene, initialZoom);

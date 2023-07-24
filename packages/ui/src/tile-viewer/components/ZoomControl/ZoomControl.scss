@@ -1,0 +1,46 @@
+.ImageViewer-ZoomControl {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+  
+    &__label {
+      font-family: Inter, Arial, "sans-serif";
+      flex: 1;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--bioimg-text-primary);
+      line-height: 20px;
+      width: 56px;
+      text-align: center;
+      margin: 0;
+      white-space: nowrap;
+    }
+  
+    &__button {
+      background: no-repeat;
+      border: none;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+  
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  
+    .ImageViewer-Section__container {
+      display: flex;
+      gap: 8px;
+    }
+  
+    &__group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      flex: 1;
+      border-radius: 8px;
+      box-shadow: var(--bioimg-shadow-small);
+      margin: 2px;
+    }
+  }

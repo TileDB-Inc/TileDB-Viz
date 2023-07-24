@@ -15,7 +15,16 @@ module.exports = {
   ],
   "framework": "@storybook/react",
   webpackFinal: (config) => {
-    config.plugins.push(new NodePolyfillPlugin())
+    const sassLoaderRule = {
+      test: /\.s[ac]ss$/i,
+      use: [
+        "style-loader",
+        "css-loader",
+        "sass-loader",
+      ],
+    };
+    config.plugins.push(new NodePolyfillPlugin());
+    config.module.rules.push(sassLoaderRule);
 
     return config
   }

@@ -41,12 +41,17 @@
     "@tiledb-inc/tiledb-cloud": "1.0.12-beta.1",
     "babylonjs-gui": "^5.42.0",
     "babylonjs-materials": "^5.42.0",
-    "earcut": "^2.2.4",
-    "idb": "^7.0.2"
+    "idb": "^7.0.2",
+    "react": "^18",
+    "react-color": "^2.19.3",
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@babel/core": "^7.12.0",
     "@babel/preset-env": "^7.18.10",
-    "@babel/preset-typescript": "^7.18.6"
+    "@babel/preset-typescript": "^7.18.6",
+    "@types/react": "^18",
+    "@types/react-color": "^3.0.6",
+    "@types/react-dom": "^18"
   }
 }

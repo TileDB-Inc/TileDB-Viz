@@ -85,16 +85,16 @@ export const clearCache = async (storeName: string) => {
 //   db.close();
 // };
 
-// export const getTileCount = async (storeNames: string[]) => {
-//   const db = await openDB(DB_NAME);
-//   const filterObjectStores = storeNames.map(x => `${x}_${DATA_MODEL_VERSION}`);
-//   const counts = await Promise.all(
-//     Array.from(db.objectStoreNames)
-//       .filter(x => filterObjectStores.includes(x))
-//       .map(x => db.count(x))
-//   );
+export const getTileCount = async (storeNames: string[]) => {
+  const db = await openDB(DB_NAME);
+  const filterObjectStores = storeNames.map(x => `${x}_${DATA_MODEL_VERSION}`);
+  const counts = await Promise.all(
+    Array.from(db.objectStoreNames)
+      .filter(x => filterObjectStores.includes(x))
+      .map(x => db.count(x))
+  );
 
-//   db.close();
+  db.close();
 
-//   return counts.reduce((partialSum, a) => partialSum + a, 0);
-// };
+  return counts.reduce((partialSum, a) => partialSum + a, 0);
+};

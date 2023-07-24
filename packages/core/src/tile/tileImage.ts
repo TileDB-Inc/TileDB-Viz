@@ -1,44 +1,51 @@
 import { TileDBVisualization } from '../base';
 import {
   Scene,
+  Vector2,
   Vector3,
+  Vector4,
   PointerInfo,
   KeyboardEventTypes,
   PointerEventTypes
 } from '@babylonjs/core';
 import {
-  Attribute,
-  Dimension,
-  LevelRecord,
-  Metadata,
-  TileDBTileImageOptions
+  ChannelUpdateEvent,
+  TileDBTileImageOptions,
+  TileViewerEvents,
+  ZoomEvent
 } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import ImageModel from './model/image-model';
 import getTileDBClient from '../utils/getTileDBClient';
-import { getAssetMetadata } from './utils/metadata-utils';
 import { Tileset } from './model/tileset';
+import { Channel } from './types';
+import { range } from './utils/helpers';
+import { Attribute } from '../types';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene: Scene;
   private model: ImageModel;
   private options: TileDBTileImageOptions;
+  private channelMapping: number[];
+  private intensityRanges: number[];
+  private colors: number[];
   private tileset: Tileset;
+  private attribute: Attribute;
+  private baseWidth: number;
+  private baseHeight: number;
 
   private pointerDownStartPosition: Vector3;
   private zoom: number;
-
-  private levels: LevelRecord[];
-  private metadata: Metadata;
-  private attributes: Attribute[];
-  private extraDimensions: Dimension[];
+  private renderOptionsDirty: boolean;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
 
     this.options = options;
+    this.renderOptionsDirty = true;
     this.pointerDownStartPosition = null;
     this.zoom = 0.25;
+    this.attribute = this.options.attributes.filter(x => x.visible)[0];
 
     if (options.token || options.tiledbEnv) {
       getTileDBClient({
@@ -46,6 +53,14 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
     }
+    this.baseWidth =
+      this.options.levels[0].dimensions[
+        this.options.levels[0].axes.indexOf('X')
+      ];
+    this.baseHeight =
+      this.options.levels[0].dimensions[
+        this.options.levels[0].axes.indexOf('Y')
+      ];
   }
 
   attachKeys() {
@@ -68,22 +83,54 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
+      this.initializeViewerState();
       this.model = new ImageModel(scene, this.options);
 
-      setupCamera(this.scene, this.zoom);
+      setupCamera(
+        this.scene,
+        this.zoom,
+        new Vector3(this.baseWidth / 2, -100, this.baseHeight / 2)
+      );
       this.setupCameraMovement();
 
-      [this.metadata, this.attributes, this.extraDimensions, this.levels] =
-        await getAssetMetadata(this.options);
-      this.tileset = new Tileset(this.levels, 1024, scene);
+      this.tileset = new Tileset(
+        this.options.levels,
+        this.options.dimensions,
+        this.attribute,
+        1024,
+        this.options.namespace,
+        this.options.token,
+        '',
+        scene
+      );
 
-      this.engine.onResizeObservable.add(() => {
+      this.scene.getEngine().onResizeObservable.add(() => {
         this.resizeViewport();
       });
 
+      this.setupEventListeners();
+
       this.scene.onBeforeRenderObservable.add(() => {
+        if (this.renderOptionsDirty) {
+          this.renderOptionsDirty = false;
+          this.generateChannelMapping();
+          this.tileset.updateTileOptions(
+            this.channelMapping,
+            this.intensityRanges,
+            this.colors
+          );
+        }
+
         this.fetchTiles();
+
+        //console.log(this.scene.getEngine()._uniformBuffers.length);
       });
+
+      this.scene.onDisposeObservable.add(() => {
+        this.cleanupEventListeners();
+      });
+
+      //scene.debugLayer.show();
 
       return scene;
     });
@@ -99,6 +146,17 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   private resizeViewport() {
     resizeOrtographicCameraViewport(this.scene, this.zoom);
+  }
+
+  private generateChannelMapping() {
+    let visibleCounter = 0;
+    for (let index = 0; index < this.channelMapping.length; ++index) {
+      if (this.channelMapping[index] == -1) {
+        continue;
+      }
+
+      this.channelMapping[index] = visibleCounter++;
+    }
   }
 
   private setupCameraMovement() {
@@ -126,7 +184,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
               this.pointerDownStartPosition
             );
             this.scene.activeCamera.position.addInPlace(
-              positionDifference.multiplyByFloats(-1, 0, 1)
+              positionDifference.multiplyByFloats(-1, 0, -1)
             );
 
             this.pointerDownStartPosition = pointerCurrentPosition;
@@ -138,7 +196,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
             Math.max(
               -2,
               Math.min(
-                this.levels.length,
+                this.options.levels.length,
                 Math.log2(this.zoom) + pointerInfo.event.deltaY / 1500
               )
             );
@@ -146,6 +204,70 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
           break;
       }
     });
+  }
+
+  private setupEventListeners() {
+    window.addEventListener(
+      TileViewerEvents.CHANNEL_UPDATE,
+      e => this.onChannelUpdate(e),
+      { capture: true }
+    );
+    window.addEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e), {
+      capture: true
+    });
+  }
+
+  private cleanupEventListeners() {
+    window.removeEventListener(
+      TileViewerEvents.CHANNEL_UPDATE,
+      e => this.onChannelUpdate(e),
+      { capture: true }
+    );
+    window.removeEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e), {
+      capture: true
+    });
+  }
+
+  private initializeViewerState() {
+    const selectedAttribute = this.options.attributes.filter(
+      item => item.visible
+    )[0].name;
+
+    this.channelMapping = range(
+      0,
+      this.options.metadata.channels.get(selectedAttribute)?.length ?? 0
+    );
+    this.intensityRanges =
+      this.options.metadata.channels
+        .get(selectedAttribute)
+        ?.map((x: Channel) => [x.min, x.intensity, 0, 0])
+        .flat() ?? [];
+    this.colors =
+      this.options.metadata.channels
+        .get(selectedAttribute)
+        ?.map((x: Channel) =>
+          x.color.map(item => Math.min(Math.max(item / 255, 0), 1))
+        )
+        .flat() ?? [];
+  }
+
+  private onZoom(e: CustomEvent<ZoomEvent>) {
+    this.zoom = 2 ** e.detail.zoom;
+    resizeOrtographicCameraViewport(this.scene, this.zoom);
+  }
+
+  private onChannelUpdate(e: CustomEvent<ChannelUpdateEvent>) {
+    const index = e.detail.channelIndex;
+
+    this.channelMapping[index] = e.detail.visible ? index : -1;
+    this.intensityRanges[4 * index + 1] = e.detail.intensity;
+    this.colors.splice(
+      4 * index,
+      4,
+      ...e.detail.color.map(item => Math.min(Math.max(item / 255, 0), 1))
+    );
+
+    this.renderOptionsDirty = true;
   }
 }
 

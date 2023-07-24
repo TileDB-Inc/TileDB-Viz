@@ -49,6 +49,8 @@ export class TileDBVisualization {
     this.inspector = options.inspector || false;
     this.rootElement = options.rootElement;
 
+    console.log(this.width, this.height, options);
+
     pubSub.removeAllListeners(RERENDER_EVT);
   }
 
@@ -118,7 +120,11 @@ export class TileDBVisualization {
     this.resizeCanvas();
 
     // window resize event handler
-    window.addEventListener('resize', () => {
+    // window.addEventListener('resize', () => {
+    //   this.engine?.resize();
+    // });
+
+    wrapperDiv.addEventListener('resize', () => {
       this.engine?.resize();
     });
 

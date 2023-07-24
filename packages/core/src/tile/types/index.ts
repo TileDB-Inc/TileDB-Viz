@@ -1,12 +1,37 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
+import { Attribute, Dimension, AssetMetadata } from '../../types';
+
+export enum TileViewerEvents {
+  ZOOM = 'zoomEvent',
+  CHANNEL_UPDATE = 'channelUpdateEvent',
+  MIMIMAP_UPDATE = 'minimapUpdateEvent'
+}
+
+export interface MinimapUpdateEvent {
+  visible: boolean;
+}
+
+export interface ChannelUpdateEvent {
+  channelIndex: number;
+  intensity: number;
+  visible: boolean;
+  color: number[];
+}
+
+export interface ZoomEvent {
+  zoom: number;
+}
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   assetID: string;
-  rootGroup: string;
   token: string;
   tiledbEnv?: string;
+  metadata: ImageMetadata;
+  attributes: Attribute[];
+  dimensions: Dimension[];
+  levels: LevelRecord[];
 }
 
 export interface Channel {
@@ -21,32 +46,6 @@ export interface Channel {
   emissionWavelengthUnit?: string;
 }
 
-export interface Attribute {
-  name: string;
-  type: string;
-  visible: boolean;
-}
-
-export interface Dimension {
-  name: string;
-  value: number;
-  min: number;
-  max: number;
-}
-
-export interface Metadata {
-  channels: Map<string, Channel[]>;
-  physicalSizeX?: number;
-  physicalSizeY?: number;
-  physicalSizeZ?: number;
-  physicalSizeXUnit?: string;
-  physicalSizeYUnit?: string;
-  physicalSizeZUnit?: string;
-  timeIncrement?: number;
-  timeIncrementUnit?: string;
-  axes: Array<AxesMetadata>;
-}
-
 export interface AxesMetadata {
   originalShape: number[];
   originalAxes: string[];
@@ -58,9 +57,8 @@ export interface AxesMetadata {
 }
 
 export interface QueryMessage {
-  index: { x: number; y: number; z: number };
+  index: number[];
   tileSize: number;
-  channels: number;
   levelRecord: LevelRecord;
   namespace: string;
   channelRanges: number[];
@@ -83,10 +81,6 @@ export interface LevelRecord {
   axesMapping: Map<string, Array<string>>;
 }
 
-export interface AssetMetadata {
-  dataset_type: string;
-}
-
 export interface BiomedicalAssetMetadata extends AssetMetadata {
   fmt_version: number;
   metadata?: string;
@@ -98,6 +92,19 @@ export interface BiomedicalAssetMetadata extends AssetMetadata {
 
 export interface RasterAssetMetadata extends AssetMetadata {
   metadata: string;
+}
+
+export interface ImageMetadata extends AssetMetadata {
+  channels: Map<string, Channel[]>;
+  physicalSizeX?: number;
+  physicalSizeY?: number;
+  physicalSizeZ?: number;
+  physicalSizeXUnit?: string;
+  physicalSizeYUnit?: string;
+  physicalSizeZUnit?: string;
+  timeIncrement?: number;
+  timeIncrementUnit?: string;
+  axes: Array<AxesMetadata>;
 }
 
 // Fallback support types for fmt_version 1 groups
@@ -135,7 +142,7 @@ export const types = {
   uint8: {
     bytes: Uint8Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,
-    type: Constants.TEXTURETYPE_BYTE,
+    type: Constants.TEXTURETYPE_UNSIGNED_BYTE,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'usampler2DArray',
     create: function (size: number) {

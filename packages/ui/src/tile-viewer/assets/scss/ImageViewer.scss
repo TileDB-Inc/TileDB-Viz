@@ -1,0 +1,76 @@
+@import "./design-tokens";
+
+.ImageViewer {
+    &__container {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    &__main {
+        width: 100%;
+        position: relative;
+    }
+
+    &__controls {
+        position: absolute;
+        top: 70px;
+        right: 16px;
+        z-index: 1;
+        max-height: 80vh;
+        overflow-y: overlay;
+        padding: 6px;
+        padding-right: 0;
+    }
+
+    &__minimap {
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        border: 1px solid gray;
+        width: 160px;
+        height: 90px;
+    }
+
+    &__scalebar {
+        position: absolute;
+        left: 20px;
+        bottom: 60px;
+        width: calc(var(--scalebar-length) * 1px);
+        height: 10px;
+        background: linear-gradient(to right, white 50%, black 50%);
+        border: 1px solid black;
+        box-sizing: border-box;
+
+        &__text {
+            width: calc(var(--scalebar-length) * 1px);
+            height: 15px;
+            margin: 0;
+            box-sizing: border-box;
+            left: -1px;
+            position: absolute;
+            text-align: center;
+            top: 10px;
+            font-family: Inter, Arial, "sans-serif";
+            font-weight: 500;
+            font-size: 14px;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.96);
+        }
+    }
+
+    &__sidebarContainer {
+        width: 360px;
+        transform: translateX(0);
+        height: 100%;
+        display: flex;
+        
+        &--hidden {
+            width: 0;
+            transform: translateX(30px);
+        }
+    }
+
+}

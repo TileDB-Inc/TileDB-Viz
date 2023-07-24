@@ -1,0 +1,43 @@
+.BIV-Tooltip {
+    position: relative;
+  
+    &:hover {
+      .BIV-Tooltip__content {
+        opacity: 1;
+      }
+    }
+  
+    &__content {
+      background-color: rgba(51, 63, 85, 1);
+      box-shadow: var(--bioimg-shadow-small);
+      font-family: Inter, Arial, 'sans-serif';
+      color: #fff;
+      border-radius: 4px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      position: absolute;
+      transition: opacity 0.2s ease-in-out;
+      opacity: 0;
+      bottom: -50px;
+      transform: translateX(-50%);
+      font-size: 12px;
+      line-height: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+      left: 50%;
+      pointer-events: none;
+  
+      &::before {
+        content: '';
+        width: 0;
+        height: 0;
+        position: absolute;
+        top: -10px;
+        border: 10px solid transparent;
+        border-top: 0;
+        border-bottom: 10px solid rgba(51, 63, 85, 1);
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+  }

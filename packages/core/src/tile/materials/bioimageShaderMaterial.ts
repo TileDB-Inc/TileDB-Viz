@@ -1,6 +1,7 @@
 import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
 
 export function BioimageShaderMaterial(
+  name: string,
   scene: Scene,
   samplerType: string,
   channelCount: number
@@ -27,35 +28,36 @@ export function BioimageShaderMaterial(
   `;
 
   Effect.ShadersStore['BioimageFragmentShader'] = `
-    //precision highp ${samplerType};
+    precision highp ${samplerType};
     precision highp float;
     precision highp int;
+
+    layout(std140) uniform tileOptions {
+      ivec4 channelMapping[${channelCount.toFixed(0)}];
+      vec4 ranges[${channelCount.toFixed(0)}]; 
+      vec4 colors[${channelCount.toFixed(0)}];
+    };
     
-    // uniform ${samplerType} texture_arr;
-    // uniform int channelMapping[${channelCount.toFixed(0)}];
-    // uniform vec4 colors[${channelCount.toFixed(0)}];
-    // uniform vec2 ranges[${channelCount.toFixed(0)}]; 
+    uniform ${samplerType} texture_arr;
 
     in vec2 vTexCoord;
 
     void main() {
-        // vec4 color = vec4(0);
-        
-        // for (int i = 0; i < ${channelCount.toFixed(0)}; ++i)
-        // {
-        //     if (channelMapping[i] == -1) continue;
-        //     float intensity = float(texture(texture_arr, vec3(vTexCoord.xy, channelMapping[i])).r);
-        //     color += colors[i] * clamp((intensity - ranges[i].x) / (ranges[i].y - ranges[i].x + 0.01), 0.0, 1.0);
-        // }
-        
-        // glFragColor = vec4(color.rgb, 1.0);
-
-        glFragColor = vec4(vTexCoord, 0.0, 1.0);
+      vec4 color = vec4(0.0);
+      
+      for (int i = 0; i < ${channelCount.toFixed(0)}; ++i)
+      {
+        if (channelMapping[i].r == -1) continue;
+        float intensity = float(texture(texture_arr, vec3(vTexCoord.xy, channelMapping[i].r)).r);
+        color += colors[i] * clamp((intensity - ranges[i].x) / (ranges[i].y - ranges[i].x + 0.01), 0.0, 1.0);
+      }
+      
+      glFragColor = vec4(color.rgb, 1.0);
     }
   `;
 
   const material = new ShaderMaterial(
-    'BioimageShader',
+    name,
     scene,
     {
       vertex: 'Bioimage',
@@ -63,8 +65,13 @@ export function BioimageShaderMaterial(
     },
     {
       attributes: ['position', 'uv'],
-      uniforms: ['world', 'worldViewProjection', 'viewProjection'],
-      useClipPlane: true
+      uniforms: [
+        'world',
+        'worldViewProjection',
+        'viewProjection',
+        'texture_arr'
+      ],
+      uniformBuffers: ['tileOptions']
     }
   );
 

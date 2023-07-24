@@ -1,0 +1,64 @@
+/**
+ * This file includes all CSS Variables
+ *
+ * Use "Tokens" and not plain colors in order to support light & dark mode
+ *
+ * There is a data attribute in <body> which tells the app which theme to use
+ * [data-theme='light'] or [data-theme='dark']
+ */
+
+ :root {
+    --color-scheme: light; // for scrollbars
+
+    /** Background **/
+    --bioimg-background-primary: hsla(200deg, 33%, 98%, 1);
+    --bioimg-background-secondary: hsla(200deg, 15%, 98%, 1);
+    --bioimg-surface-primary: hsla(0deg, 0%, 100%, 1);
+    --bioimg-surface-secondary: hsla(200deg, 33%, 98%, 1);
+    
+    /** Box shadow **/
+    --bioimg-shadow-small: 0 1px 3px rgba(0, 0, 0, 0.16);
+    --bioimg-shadow-medium: 0 2px 10px rgba(0, 0, 0, 0.16);
+
+    /** Text **/
+    --bioimg-text-primary: hsla(0deg, 0%, 0%, 0.87);
+    --bioimg-text-tertiary: hsla(0deg, 0%, 0%, 0.49);
+    --bioimg-text-disabled: hsla(0deg, 0%, 0%, 0.38);
+
+    /** border colors **/
+    --bioimg-border: hsla(212deg, 18%, 84%, 1);
+
+    --bioimg-border-disabled: hsla(0deg, 0%, 90%, 1);
+  }
+  
+  /*
+   * Dark mode tokens
+   */
+  [data-theme="dark"] {
+    --color-scheme: dark; // for scrollbars
+
+    
+    /** Background **/
+    --bioimg-background-secondary: hsla(206deg, 16%, 11%, 1);
+    --bioimg-background-primary: hsla(206deg, 16%, 29%, 1);
+    --bioimg-surface-primary: hsla(206deg, 16%, 18%, 1);
+    --bioimg-surface-secondary: hsla(206deg, 16%, 25%, 1);
+
+    /** Box shadow **/
+    --bioimg-shadow-small: none;
+    --bioimg-shadow-medium: none;
+
+    /** Text **/
+    --bioimg-text-primary: hsla(0deg, 0%, 100%, 1);
+    --bioimg-text-tertiary: hsla(0deg, 0%, 0%, 0.49);
+    --bioimg-text-disabled: hsla(0deg, 0%, 100%, 0.38);
+
+    /** border colors **/
+    --bioimg-border: hsla(210deg, 10%, 36%, 1);
+    --bioimg-border-disabled: hsla(205deg, 8%, 28%, 1);
+  
+    ::selection {
+      background-color: #365273;
+    }
+  }
+  

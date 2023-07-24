@@ -1,20 +1,20 @@
 import React from 'react';
 import {
   TileDBTileImageOptions,
-  TileDBTileImageVisualization
+  TileImageViewer
 } from '@tiledb-inc/viz-core';
+import { createViewer } from '@tiledb-inc/viz-ui';
 import classnames from 'classnames';
-import ToggleMenu from './components/ToggleMenu';
 
 export interface TileImageVisualization
   extends Omit<TileDBTileImageOptions, 'rootElement'> {
   className?: string;
 }
 
-export const TileImageVisualization: React.FC<TileDBTileImageVisualization> = props => {
+export const TileImageVisualization: React.FC<TileImageViewer> = (props: TileImageViewer) => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBTileImageVisualization>();
+  const instanceRef = React.useRef<TileImageVisualization>();
 
   React.useEffect(() => {
     if (instanceRef.current) {
@@ -27,38 +27,17 @@ export const TileImageVisualization: React.FC<TileDBTileImageVisualization> = pr
       /**
        * Create visualization instance
        */
-      instanceRef.current = new TileDBTileImageVisualization({
+      instanceRef.current = new createViewer({
         ...rest,
         rootElement: rootDivElementRef.current
       });
-
-      /**
-       * Render canvas
-       */
-      instanceRef.current?.render();
-
-      /**
-       * Destroy canvas on unmount
-       */
-      return () => {
-        instanceRef.current?.destroy();
-      };
     }
   }, [props]);
 
   return (
-    <div className="BioImageViewer__container">
-      <div className="BioImageViewer__main">
-        <div ref={rootDivElementRef}
-          className={classnames('TDB-Viz TDB-Viz--tiles', className)}
-        />y
-        <ToggleMenu
-          toggleSidebarVisibility={() => {
-            toggleSidebarVisibility(v => !v);
-          }}
-          active={isSidebarVisible}
-        />
-      </div>
-    </div>
+    <div
+      ref={rootDivElementRef}
+      className={classnames('TDB-Viz TDB-Viz--point-tile', className)}
+    />
   );
 };

@@ -1,0 +1,37 @@
+.ImageViewer-CacheControls {
+    &__container {
+      display: flex;
+      gap: 8px;
+    }
+      &__group {
+        display: flex;
+        border-radius: 8px;
+        border: 1px solid var(--bioimg-border-disabled);
+        align-items: center;
+        padding: 4px;
+      }
+    
+      &__label {
+        white-space: nowrap;
+        font-family: Inter, Arial, "sans-serif";
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--bioimg-text-primary);
+        line-height: 20px;
+        text-align: center;
+        margin: 0;
+        padding: 0px 8px;
+      }
+    
+      &__button {
+        background: no-repeat;
+        border: none;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+    
+        &:hover {
+          cursor: pointer;
+        }
+      }
+    }

@@ -6,8 +6,8 @@ import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 
 self.onmessage = async function (event: MessageEvent<QueryMessage>) {
   const config = {
-    apiKey: event.data.token,
-    basePath: event.data.basePath
+    apiKey: event.data.token
+    //basePath: event.data.basePath
   };
   const queryClient = new client(config);
 
@@ -17,8 +17,7 @@ self.onmessage = async function (event: MessageEvent<QueryMessage>) {
     event.data.levelRecord.dimensions[event.data.levelRecord.axes.indexOf('Y')];
 
   const downsample = event.data.levelRecord.downsample;
-  const tile_x = event.data.index.x;
-  const tile_y = event.data.index.y;
+  const [tile_x, tile_y] = event.data.index;
   const tilesize = event.data.tileSize;
   const format = event.data.attribute.type.toLowerCase();
   const extraDimensionsIdentifier =
