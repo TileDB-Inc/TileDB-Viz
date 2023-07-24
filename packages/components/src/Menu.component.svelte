@@ -2,6 +2,8 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import events from './constants/events';
+
   export let id;
 
   let visible = false;
@@ -15,7 +17,8 @@
   }
 
   onMount(() => {
-    const CUSTOM_EVENT = 'floating-button::click';
+    const CUSTOM_EVENT = events.FLOATING_BUTTON_CLICK;
+
     window.addEventListener(CUSTOM_EVENT, toggleVissible, {
       capture: true
     });

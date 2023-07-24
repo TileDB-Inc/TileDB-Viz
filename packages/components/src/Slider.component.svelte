@@ -1,6 +1,8 @@
 <svelte:options tag="tdb-slider" />
 
 <script>
+  import events from './constants/events';
+
   export let id,
     label = '',
     value,
@@ -11,7 +13,7 @@
 
   function onChange(event) {
     window.dispatchEvent(
-      new CustomEvent('tdb-slider::change', {
+      new CustomEvent(events.SLIDER_CHANGE, {
         bubbles: true,
         detail: {
           id,

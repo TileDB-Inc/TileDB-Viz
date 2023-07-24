@@ -2,6 +2,7 @@ import { Scene, Plane, ShaderMaterial } from '@babylonjs/core';
 import ArrayModel from '../model/array-model';
 import { updateSceneColors } from './scene-colors';
 import '@tiledb-inc/viz-components';
+import { Events } from '@tiledb-inc/viz-components';
 
 const stylesString = `
 .tdb-text {
@@ -128,7 +129,7 @@ class PointCloudGUI {
       `;
 
     window.addEventListener(
-      'tdb-slider::change',
+      Events.SLIDER_CHANGE,
       (e: Event) => {
         const customEvent = e as CustomEvent<{ value: number; id: string }>;
         const { value, id } = customEvent.detail;
@@ -155,7 +156,7 @@ class PointCloudGUI {
     );
 
     window.addEventListener(
-      'radio-group::change',
+      Events.RADIO_GROUP_CHANGE,
       (e: Event) => {
         const customEvent = e as CustomEvent<{ value: string }>;
         const { value: colorScheme } = customEvent.detail;
@@ -168,7 +169,7 @@ class PointCloudGUI {
     );
 
     window.addEventListener(
-      'toggle-input::change',
+      Events.TOGGLE_INPUT_CHANGE,
       (e: Event) => {
         const customEvent = e as CustomEvent<{ value: boolean }>;
         const { value } = customEvent.detail;

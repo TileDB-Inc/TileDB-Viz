@@ -2,6 +2,7 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import events from './constants/events';
 
   let visible = false;
 
@@ -13,14 +14,14 @@
     hideModal();
 
     window.dispatchEvent(
-      new CustomEvent('confirmation-box::accept', {
+      new CustomEvent(events.CONFIRM_BOX_ACCEPT, {
         bubbles: true
       })
     );
   }
 
   onMount(() => {
-    const CUSTOM_EVENT = 'confirmation-box::show';
+    const CUSTOM_EVENT = events.CONFIRM_BOX_SHOW;
     window.addEventListener(
       CUSTOM_EVENT,
       () => {

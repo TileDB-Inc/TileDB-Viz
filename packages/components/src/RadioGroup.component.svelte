@@ -2,6 +2,7 @@
 
 <script>
   import capitalize from './utils/capitalize';
+  import events from './constants/events';
 
   export let values = '',
     initialvalue,
@@ -12,7 +13,7 @@
 
   function onChange(event) {
     window.dispatchEvent(
-      new CustomEvent('radio-group::change', {
+      new CustomEvent(events.RADIO_GROUP_CHANGE, {
         bubbles: true,
         detail: {
           value: event.currentTarget.value
