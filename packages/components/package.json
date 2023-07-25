@@ -19,6 +19,7 @@
     "@tsconfig/svelte": "^3.0.0",
     "esbuild": "^0.18.13",
     "svelte": "^3.52.0",
+    "svelte-awesome-color-picker": "^2.4.6",
     "svelte-check": "^3.0.3",
     "svelte-preprocess": "^5.0.1",
     "tslib": "^2.4.0",
