@@ -169,7 +169,7 @@ export function getBiomedicalMetadata(
     }
   }
 
-  imageMetadata.channels.forEach((value: Channel[], _: string) => {
+  imageMetadata.channels.forEach((value: Channel[]) => {
     value.map((item: Channel) => {
       item.intensity = item.max;
       item.color = Object.values(item.color);

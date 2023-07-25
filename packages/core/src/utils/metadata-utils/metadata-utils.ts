@@ -40,7 +40,7 @@ export async function getAssetMetadata(
     return {
       name: value.name,
       type: value.type as string,
-      visible: index == 0 ? true : false
+      visible: index === 0 ? true : false
     } as Attribute;
   });
 

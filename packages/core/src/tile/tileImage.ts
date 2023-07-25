@@ -1,12 +1,10 @@
 import { TileDBVisualization } from '../base';
 import {
   Scene,
-  Vector2,
   Vector3,
-  Vector4,
   PointerInfo,
-  KeyboardEventTypes,
-  PointerEventTypes
+  PointerEventTypes,
+  Nullable
 } from '@babylonjs/core';
 import {
   ChannelUpdateEvent,
@@ -15,7 +13,6 @@ import {
   ZoomEvent
 } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
-import ImageModel from './model/image-model';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
 import { Channel, LevelRecord, ImageMetadata } from './types';
@@ -24,21 +21,20 @@ import { Attribute, Dimension } from '../types';
 import { getAssetMetadata } from '../utils/metadata-utils';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
-  private scene: Scene;
-  private model: ImageModel;
+  private scene!: Scene;
   private options: TileDBTileImageOptions;
-  private channelMapping: number[];
-  private intensityRanges: number[];
-  private colors: number[];
-  private tileset: Tileset;
-  private baseWidth: number;
-  private baseHeight: number;
-  private metadata: ImageMetadata;
-  private attributes: Attribute[];
-  private dimensions: Dimension[];
-  private levels: LevelRecord[];
+  private channelMapping!: number[];
+  private intensityRanges!: number[];
+  private colors!: number[];
+  private tileset!: Tileset;
+  private baseWidth!: number;
+  private baseHeight!: number;
+  private metadata!: ImageMetadata;
+  private attributes!: Attribute[];
+  private dimensions!: Dimension[];
+  private levels!: LevelRecord[];
 
-  private pointerDownStartPosition: Vector3;
+  private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
   private renderOptionsDirty: boolean;
 
@@ -60,19 +56,19 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
-
-      [this.metadata, this.attributes, this.dimensions, this.levels] = await getAssetMetadata({token: this.options.token, tiledbEnv: this.options.tiledbEnv, namespace: this.options.namespace, assetID: this.options.assetID}) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
+      [this.metadata, this.attributes, this.dimensions, this.levels] =
+        (await getAssetMetadata({
+          token: this.options.token,
+          tiledbEnv: this.options.tiledbEnv,
+          namespace: this.options.namespace,
+          assetID: this.options.assetID
+        })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
       this.baseWidth =
-      this.levels[0].dimensions[
-        this.levels[0].axes.indexOf('X')
-      ];
-    this.baseHeight =
-      this.levels[0].dimensions[
-        this.levels[0].axes.indexOf('Y')
-      ];
+        this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
+      this.baseHeight =
+        this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
       this.scene = scene;
       this.initializeViewerState();
-      this.model = new ImageModel(scene, this.options);
 
       setupCamera(
         this.scene,
@@ -126,7 +122,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   private fetchTiles() {
     this.tileset.calculateVisibleTiles(
-      this.scene.activeCamera,
+      this.scene.activeCamera!,
       Math.log2(this.zoom)
     );
     this.tileset.evict();
@@ -139,7 +135,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private generateChannelMapping() {
     let visibleCounter = 0;
     for (let index = 0; index < this.channelMapping.length; ++index) {
-      if (this.channelMapping[index] == -1) {
+      if (this.channelMapping[index] === -1) {
         continue;
       }
 
@@ -171,7 +167,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
             const positionDifference = pointerCurrentPosition.subtract(
               this.pointerDownStartPosition
             );
-            this.scene.activeCamera.position.addInPlace(
+            this.scene.activeCamera!.position.addInPlace(
               positionDifference.multiplyByFloats(-1, 0, -1)
             );
 
@@ -185,7 +181,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
               -2,
               Math.min(
                 this.levels.length,
-                Math.log2(this.zoom) + pointerInfo.event.deltaY / 1500
+                Math.log2(this.zoom) +
+                  (pointerInfo.event as WheelEvent).deltaY / 1500
               )
             );
           resizeOrtographicCameraViewport(this.scene, this.zoom);
@@ -197,10 +194,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private setupEventListeners() {
     window.addEventListener(
       TileViewerEvents.CHANNEL_UPDATE,
-      e => this.onChannelUpdate(e),
+      e => this.onChannelUpdate(e as any),
       { capture: true }
     );
-    window.addEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e), {
+    window.addEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e as any), {
       capture: true
     });
   }
@@ -208,18 +205,21 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private cleanupEventListeners() {
     window.removeEventListener(
       TileViewerEvents.CHANNEL_UPDATE,
-      e => this.onChannelUpdate(e),
+      e => this.onChannelUpdate(e as any),
       { capture: true }
     );
-    window.removeEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e), {
-      capture: true
-    });
+    window.removeEventListener(
+      TileViewerEvents.ZOOM,
+      e => this.onZoom(e as any),
+      {
+        capture: true
+      }
+    );
   }
 
   private initializeViewerState() {
-    const selectedAttribute = this.attributes.filter(
-      item => item.visible
-    )[0].name;
+    const selectedAttribute = this.attributes.filter(item => item.visible)[0]
+      .name;
 
     this.channelMapping = range(
       0,

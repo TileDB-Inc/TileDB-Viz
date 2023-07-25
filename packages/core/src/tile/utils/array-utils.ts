@@ -167,7 +167,7 @@ export function sliceRanges(
   originalAxes: Array<string>,
   storedAxes: Array<string>,
   dimensionMap: Map<string, string[]>,
-  calculatedRanges: Map<any, any>,
+  calculatedRanges: Map<string, number[]>,
   arrayExtends: Array<number>,
   arrayOffset: Array<number>
 ): [Array<Array<number> | Array<Array<number>>>, number] {
@@ -179,7 +179,7 @@ export function sliceRanges(
 
     if (value.length === 1) {
       const [subrange, subsize] = packRange(
-        calculatedRanges.get(value[0]).map(index => index + arrayOffset[idx])
+        calculatedRanges.get(value[0])!.map(index => index + arrayOffset[idx])
       );
 
       ranges.push(subrange);
@@ -218,7 +218,7 @@ export function sliceRanges(
       for (const axis of value) {
         const sliceLengths: Array<number> = [];
         const sliceStarts: Array<number> = [];
-        const range = calculatedRanges.get(axis);
+        const range = calculatedRanges.get(axis) ?? [];
 
         for (let index = 0; index < range.length; index += 2) {
           sliceLengths.push(range[index + 1] - range[index] + 1);

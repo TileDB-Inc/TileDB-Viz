@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "module": "es2020",
+    "module": "es2022",
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": true,
@@ -16,7 +16,7 @@
     "strict": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
-    "target": "es2020"
+    "target": "es2022"
   },
   "typedocOptions": {
     "entryPoints": ["packages/core/src/index.ts"],

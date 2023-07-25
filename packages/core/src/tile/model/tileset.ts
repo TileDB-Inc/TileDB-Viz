@@ -15,7 +15,7 @@ import { BioimageMinimapShaderMaterial } from '../materials/bioimageMinimapMater
 
 export class Tileset {
   public tiles: Map<string, Tile>;
-  public minimap: Minimap;
+  public minimap!: Minimap;
   private levels: LevelRecord[];
   private dimensions: Dimension[];
   private attribute: Attribute;
@@ -79,7 +79,7 @@ export class Tileset {
       this.minimap.load(this.channelRanges, this.channelMapping);
     }
 
-    for (const [_, value] of this.tiles.entries()) {
+    for (const [, value] of this.tiles.entries()) {
       value.canEvict = true;
     }
 
@@ -190,7 +190,7 @@ export class Tileset {
     colors: number[]
   ) {
     const needDataUpdate =
-      this.channelMapping.toString() != channelMapping.toString();
+      this.channelMapping.toString() !== channelMapping.toString();
 
     if (needDataUpdate) {
       this.channelMapping = [...channelMapping];
@@ -246,7 +246,7 @@ export class Tileset {
     let range: number[] = [];
     this.channelRanges = [];
     for (let index = 0; index < this.channelMapping.length; ++index) {
-      if (this.channelMapping[index] == -1) {
+      if (this.channelMapping[index] === -1) {
         continue;
       }
 
@@ -275,7 +275,7 @@ export class Tile {
   private scene: Scene;
   private vertexData: VertexData;
   private tileOptions: UniformBuffer;
-  private worker: Worker;
+  private worker!: Worker;
 
   private namespace: string;
   private token: string;
@@ -445,7 +445,7 @@ export class Minimap {
   private scene: Scene;
   private vertexData: VertexData;
   private tileOptions: UniformBuffer;
-  private worker: Worker;
+  private worker!: Worker;
 
   private namespace: string;
   private token: string;
