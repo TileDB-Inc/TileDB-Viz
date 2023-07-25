@@ -9,7 +9,6 @@
     name;
 
   $: valuesArr = values.split(',');
-  console.log(initialvalue);
 
   function onChange(event) {
     window.dispatchEvent(

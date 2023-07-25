@@ -23,16 +23,6 @@ const styleElement = document.createElement('style');
 styleElement.textContent = stylesString;
 document.head.appendChild(styleElement);
 
-enum SliderValues {
-  xmin = 'xmin',
-  xmax = 'xmax',
-  ymin = 'ymin',
-  ymax = 'ymax',
-  zmin = 'zmin',
-  zmax = 'zmax',
-  perf = 'perf'
-}
-
 class PointCloudGUI {
   rootDiv?: HTMLDivElement;
   menuPanel?: HTMLElement;
@@ -77,42 +67,24 @@ class PointCloudGUI {
     model.useStreaming
       ? `
   <h3 class="tdb-text">Performance</h3>
-  <tdb-slider id="${SliderValues.perf}" label="Point budget" min="100000" max="10000000" value="${model.pointBudget}"></tdb-slider>
+  <tdb-slider id="perf" label="Point budget" min="100000" max="10000000" value="${model.pointBudget}"></tdb-slider>
   <hr class="tdb-hr" />
   `
       : ''
   }
   <h3 class="tdb-text">Clipping planes</h3>
-  <tdb-slider id="${SliderValues.xmin}" label="Xmin" min="${
-      model.octree.minPoint.x - 1
-    }" max="${model.octree.maxPoint.x - 1}" value="${
-      model.octree.minPoint.x - 1
-    }"></tdb-slider>
-<tdb-slider id="${SliderValues.xmax}" label="Xmax" min="${
-      model.octree.minPoint.x - 1
-    }" max="${model.octree.maxPoint.x - 1}" value="${
+  <dual-slider label="X" id="x" min="${model.octree.minPoint.x - 1}" max="${
       model.octree.maxPoint.x + 1
-    }"></tdb-slider>
-<tdb-slider id="${SliderValues.ymin}" label="Ymin" min="${
-      model.octree.minPoint.y - 1
-    }" max="${model.octree.maxPoint.y + 1}" value="${
-      model.octree.minPoint.y - 1
-    }"></tdb-slider>
-<tdb-slider id="${SliderValues.ymax}" label="Ymax" min="${
-      model.octree.minPoint.y - 1
-    }" max="${model.octree.maxPoint.y + 1}" value="${
+    }"></dual-slider>
+
+    <dual-slider label="Y" id="y" min="${model.octree.minPoint.y - 1}" max="${
       model.octree.maxPoint.y + 1
-    }"></tdb-slider>
-<tdb-slider id="${SliderValues.zmin}" label="Zmin" min="${
-      model.octree.minPoint.z - 1
-    }" max="${model.octree.maxPoint.z + 1}" value="${
-      model.octree.minPoint.z - 1
-    }"></tdb-slider>
-<tdb-slider id="${SliderValues.zmax}" label="Zmax" min="${
-      model.octree.minPoint.z - 1
-    }" max="${model.octree.maxPoint.z + 1}" value="${
+    }" ></dual-slider>
+
+    <dual-slider label="Z" id="z" min="${model.octree.minPoint.z - 1}" max="${
       model.octree.maxPoint.z + 1
-    }"></tdb-slider>
+    }"></dual-slider>
+
 <hr class="tdb-hr" />
 <h3 class="tdb-text">Color scheme</h3>
 <radio-group name="colors" values="dark,light,blue" initialvalue="${
@@ -129,24 +101,46 @@ class PointCloudGUI {
       `;
 
     window.addEventListener(
+      Events.DUAL_SLIDER_CHANGE,
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ values: number[]; id: string }>;
+        const { values, id } = customEvent.detail;
+
+        if (id === 'x') {
+          const [min, max] = values;
+          const plane1 = new Plane(1, 0, 0, min);
+          const plane2 = new Plane(-1, 0, 0, -max);
+
+          scene.clipPlane = plane1;
+          scene.clipPlane2 = plane2;
+        } else if (id === 'y') {
+          const [min, max] = values;
+          const plane1 = new Plane(0, -1, 0, min);
+          const plane2 = new Plane(0, 1, 0, -max);
+
+          scene.clipPlane3 = plane1;
+          scene.clipPlane4 = plane2;
+        } else if (id === 'z') {
+          const [min, max] = values;
+          const plane1 = new Plane(0, 0, 1, min);
+          const plane2 = new Plane(0, 0, -1, -max);
+
+          scene.clipPlane5 = plane1;
+          scene.clipPlane6 = plane2;
+        }
+      },
+      {
+        capture: true
+      }
+    );
+
+    window.addEventListener(
       Events.SLIDER_CHANGE,
       (e: Event) => {
         const customEvent = e as CustomEvent<{ value: number; id: string }>;
         const { value, id } = customEvent.detail;
 
-        if (id === String(SliderValues.xmin)) {
-          scene.clipPlane = new Plane(1, 0, 0, value);
-        } else if (id === String(SliderValues.xmax)) {
-          scene.clipPlane = new Plane(-1, 0, 0, -value);
-        } else if (id === String(SliderValues.ymin)) {
-          scene.clipPlane = new Plane(0, -1, 0, value);
-        } else if (id === String(SliderValues.ymax)) {
-          scene.clipPlane = new Plane(0, 1, 0, -value);
-        } else if (id === String(SliderValues.zmin)) {
-          scene.clipPlane = new Plane(0, 0, 1, value);
-        } else if (id === String(SliderValues.zmax)) {
-          scene.clipPlane = new Plane(0, 0, -1, -value);
-        } else if (id === String(SliderValues.perf)) {
+        if (id === 'perf') {
           model.pointBudget = value;
         }
       },
