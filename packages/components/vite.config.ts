@@ -45,7 +45,7 @@ export default defineConfig({
       },
       preprocess: preprocess({
         scss: {
-            prependData: `@use './src/assets/_design-tokens.scss';`
+            prependData: `@import './src/assets/_design-tokens.scss';`
         }
       })
     }),

@@ -19,6 +19,7 @@ import { Channel, LevelRecord, ImageMetadata } from './types';
 import { range } from './utils/helpers';
 import { Attribute, Dimension } from '../types';
 import { getAssetMetadata } from '../utils/metadata-utils';
+import TileImageGUI from './utils/gui-utils';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -93,6 +94,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       });
 
       this.setupEventListeners();
+
+      new TileImageGUI(this.scene, this.rootElement, this.height);
 
       this.scene.onBeforeRenderObservable.add(() => {
         if (this.renderOptionsDirty) {
