@@ -4,19 +4,14 @@ import {
   Vector3,
   PointerInfo,
   PointerEventTypes,
-  Nullable
+  Nullable,
+  FreeCamera
 } from '@babylonjs/core';
-import {
-  ChannelUpdateEvent,
-  TileDBTileImageOptions,
-  TileViewerEvents,
-  ZoomEvent
-} from './types';
+import { TileDBTileImageOptions, TileViewerEvents, ZoomEvent } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
-import { Channel, LevelRecord, ImageMetadata } from './types';
-import { range } from './utils/helpers';
+import { LevelRecord, ImageMetadata } from './types';
 import { Attribute, Dimension } from '../types';
 import { getAssetMetadata } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
@@ -24,9 +19,6 @@ import TileImageGUI from './utils/gui-utils';
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
-  private channelMapping!: number[];
-  private intensityRanges!: number[];
-  private colors!: number[];
   private tileset!: Tileset;
   private baseWidth!: number;
   private baseHeight!: number;
@@ -34,16 +26,15 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private attributes!: Attribute[];
   private dimensions!: Dimension[];
   private levels!: LevelRecord[];
+  private camera!: FreeCamera;
 
   private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
-  private renderOptionsDirty: boolean;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
 
     this.options = options;
-    this.renderOptionsDirty = true;
     this.pointerDownStartPosition = null;
     this.zoom = 0.25;
 
@@ -69,7 +60,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.baseHeight =
         this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
       this.scene = scene;
-      this.initializeViewerState();
 
       setupCamera(
         this.scene,
@@ -78,10 +68,17 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       );
       this.setupCameraMovement();
 
+      if (this.scene.activeCamera === null) {
+        throw new Error('Failed to initialize camera');
+      }
+
+      this.camera = this.scene.activeCamera as FreeCamera;
+
       this.tileset = new Tileset(
         this.levels,
         this.dimensions,
-        this.attributes.filter(x => x.visible)[0],
+        this.metadata.channels,
+        this.attributes,
         1024,
         this.options.namespace,
         this.options.token,
@@ -95,19 +92,16 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
       this.setupEventListeners();
 
-      new TileImageGUI(this.scene, this.rootElement, this.height);
+      new TileImageGUI(
+        this.scene,
+        this.tileset,
+        this.rootElement,
+        this.height,
+        this.metadata.channels.get('intensity') ?? [],
+        this.dimensions
+      );
 
       this.scene.onBeforeRenderObservable.add(() => {
-        if (this.renderOptionsDirty) {
-          this.renderOptionsDirty = false;
-          this.generateChannelMapping();
-          this.tileset.updateTileOptions(
-            this.channelMapping,
-            this.intensityRanges,
-            this.colors
-          );
-        }
-
         this.fetchTiles();
 
         //console.log(this.scene.getEngine()._uniformBuffers.length);
@@ -124,26 +118,12 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    this.tileset.calculateVisibleTiles(
-      this.scene.activeCamera!,
-      Math.log2(this.zoom)
-    );
+    this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
     this.tileset.evict();
   }
 
   private resizeViewport() {
     resizeOrtographicCameraViewport(this.scene, this.zoom);
-  }
-
-  private generateChannelMapping() {
-    let visibleCounter = 0;
-    for (let index = 0; index < this.channelMapping.length; ++index) {
-      if (this.channelMapping[index] === -1) {
-        continue;
-      }
-
-      this.channelMapping[index] = visibleCounter++;
-    }
   }
 
   private setupCameraMovement() {
@@ -170,7 +150,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
             const positionDifference = pointerCurrentPosition.subtract(
               this.pointerDownStartPosition
             );
-            this.scene.activeCamera!.position.addInPlace(
+            this.camera.position.addInPlace(
               positionDifference.multiplyByFloats(-1, 0, -1)
             );
 
@@ -195,22 +175,12 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private setupEventListeners() {
-    window.addEventListener(
-      TileViewerEvents.CHANNEL_UPDATE,
-      e => this.onChannelUpdate(e as any),
-      { capture: true }
-    );
     window.addEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e as any), {
       capture: true
     });
   }
 
   private cleanupEventListeners() {
-    window.removeEventListener(
-      TileViewerEvents.CHANNEL_UPDATE,
-      e => this.onChannelUpdate(e as any),
-      { capture: true }
-    );
     window.removeEventListener(
       TileViewerEvents.ZOOM,
       e => this.onZoom(e as any),
@@ -220,45 +190,9 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     );
   }
 
-  private initializeViewerState() {
-    const selectedAttribute = this.attributes.filter(item => item.visible)[0]
-      .name;
-
-    this.channelMapping = range(
-      0,
-      this.metadata.channels.get(selectedAttribute)?.length ?? 0
-    );
-    this.intensityRanges =
-      this.metadata.channels
-        .get(selectedAttribute)
-        ?.map((x: Channel) => [x.min, x.intensity, 0, 0])
-        .flat() ?? [];
-    this.colors =
-      this.metadata.channels
-        .get(selectedAttribute)
-        ?.map((x: Channel) =>
-          x.color.map(item => Math.min(Math.max(item / 255, 0), 1))
-        )
-        .flat() ?? [];
-  }
-
   private onZoom(e: CustomEvent<ZoomEvent>) {
     this.zoom = 2 ** e.detail.zoom;
     resizeOrtographicCameraViewport(this.scene, this.zoom);
-  }
-
-  private onChannelUpdate(e: CustomEvent<ChannelUpdateEvent>) {
-    const index = e.detail.channelIndex;
-
-    this.channelMapping[index] = e.detail.visible ? index : -1;
-    this.intensityRanges[4 * index + 1] = e.detail.intensity;
-    this.colors.splice(
-      4 * index,
-      4,
-      ...e.detail.color.map(item => Math.min(Math.max(item / 255, 0), 1))
-    );
-
-    this.renderOptionsDirty = true;
   }
 }
 

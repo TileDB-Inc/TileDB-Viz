@@ -4,9 +4,8 @@
   import Section from './Section.component.svelte';
 </script>
 
-<div class="Viewer-ZoomControl">
-  <section-menu>
-    <div slot="header">
+  <section-menu id={'zoom-control'} class="Viewer-ZoomControl">
+    <div slot="header" class="Viewer-ZoomControl__title">
       <svg
         width="24"
         height="24"
@@ -87,12 +86,33 @@
       </div>
     </div>
   </section-menu>
-</div>
 
 <style lang="scss">
   .Viewer-ZoomControl {
     align-items: center;
     gap: 8px;
+    font-family: Inter, Arial, 'sans-serif';
+
+    &__title {
+      font-style: normal;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 24px;
+      color: var(--viewer-text-primary);
+      display: flex;
+      align-items: center;
+      margin: 0;
+      justify-content: space-between;
+
+      svg {
+        margin-right: 10px;
+      }
+
+      div {
+        display: flex;
+        align-items: center;
+      }
+    }
   
     &__label {
       font-family: Inter, Arial, "sans-serif";

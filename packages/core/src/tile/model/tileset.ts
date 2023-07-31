@@ -1,4 +1,4 @@
-import { LevelRecord, types } from '../types';
+import { Channel, LevelRecord, TypedArray, types } from '../types';
 import {
   Mesh,
   VertexData,
@@ -12,13 +12,15 @@ import {
 import { BioimageShaderMaterial } from '../materials/bioimageShaderMaterial';
 import { Attribute, Dimension } from '../../types';
 import { BioimageMinimapShaderMaterial } from '../materials/bioimageMinimapMaterial';
+import { range } from '../utils/helpers';
 
 export class Tileset {
   public tiles: Map<string, Tile>;
   public minimap!: Minimap;
   private levels: LevelRecord[];
   private dimensions: Dimension[];
-  private attribute: Attribute;
+  private channels: Map<string, Channel[]>;
+  private attributes: Attribute[];
   private tileSize: number;
   private baseWidth: number;
   private baseHeight: number;
@@ -28,13 +30,17 @@ export class Tileset {
   private namespace: string;
   private tileOptions: UniformBuffer;
 
-  private channelMapping: number[] = [];
   private channelRanges: number[] = [];
+  private channelMapping: Int32Array;
+  private intensityRanges: Float32Array;
+  private colors: Float32Array;
+  private selectedAttribute: Attribute;
 
   constructor(
     levels: LevelRecord[],
     dimensions: Dimension[],
-    attribute: Attribute,
+    channels: Map<string, Channel[]>,
+    attributes: Attribute[],
     tileSize: number,
     namespace: string,
     token: string,
@@ -43,19 +49,60 @@ export class Tileset {
   ) {
     this.levels = levels;
     this.dimensions = dimensions;
-    this.attribute = attribute;
+    this.channels = channels;
+    this.attributes = attributes;
     this.tileSize = tileSize;
     this.namespace = namespace;
     this.token = token;
     this.basePath = basePath;
     this.tiles = new Map<string, Tile>();
     this.scene = scene;
-    this.tileOptions = new UniformBuffer(scene.getEngine());
 
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
+
+    this.selectedAttribute = this.attributes.filter(item => item.visible)[0];
+
+    this.channelRanges = [
+      0,
+      (this.channels.get(this.selectedAttribute.name)?.length ?? 0) - 1
+    ];
+    this.channelMapping = new Int32Array(
+      range(0, this.channels.get(this.selectedAttribute.name)?.length ?? 0)
+        .map(x => [x, 0, 0, 0])
+        .flat()
+    );
+    this.intensityRanges = new Float32Array(
+      this.channels
+        .get(this.selectedAttribute.name)
+        ?.map((x: Channel) => [x.min, x.intensity, 0, 0])
+        .flat() ?? []
+    );
+    this.colors = new Float32Array(
+      this.channels
+        .get(this.selectedAttribute.name)
+        ?.map((x: Channel) =>
+          x.color.map(item => Math.min(Math.max(item / 255, 0), 1))
+        )
+        .flat() ?? []
+    );
+
+    this.tileOptions = new UniformBuffer(scene.getEngine());
+    this.tileOptions.addUniform(
+      'channelMapping',
+      4,
+      this.channelMapping.length / 4
+    );
+    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
+    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
+
+    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+    this.tileOptions.updateFloatArray('colors', this.colors);
+
+    this.tileOptions.update();
   }
 
   public calculateVisibleTiles(camera: Camera, zoom: number) {
@@ -65,7 +112,7 @@ export class Tileset {
         [0, 0, this.baseWidth, this.baseHeight],
         this.levels[0],
         this.dimensions,
-        this.attribute,
+        this.selectedAttribute,
         Math.max(this.baseWidth, this.baseHeight),
         this.tileOptions,
         this.namespace,
@@ -76,7 +123,7 @@ export class Tileset {
     }
 
     if (!this.minimap.isLoaded && !this.minimap.isPending) {
-      this.minimap.load(this.channelRanges, this.channelMapping);
+      this.minimap.load(this.channelRanges);
     }
 
     for (const [, value] of this.tiles.entries()) {
@@ -132,7 +179,13 @@ export class Tileset {
         const tileIndex = `${x}_${y}_${integerZoom}`;
 
         if (this.tiles.has(tileIndex)) {
-          const tile = this.tiles.get(tileIndex)!;
+          const tile = this.tiles.get(tileIndex);
+
+          if (tile === undefined) {
+            throw new Error(
+              `Unexpected tile requested. Tile index: ${tileIndex}`
+            );
+          }
 
           tile.canEvict = false;
         } else {
@@ -141,7 +194,7 @@ export class Tileset {
             [0, 0, this.baseWidth, this.baseHeight],
             this.levels[integerZoom],
             this.dimensions,
-            this.attribute,
+            this.selectedAttribute,
             this.tileSize,
             this.tileOptions,
             this.namespace,
@@ -150,13 +203,13 @@ export class Tileset {
             this.scene
           );
 
-          tile.load(this.channelRanges, this.channelMapping);
+          tile.load(this.channelRanges);
           this.tiles.set(tileIndex, tile);
         }
       }
     }
 
-    for (const [_, value] of this.tiles.entries()) {
+    for (const [, value] of this.tiles.entries()) {
       if (value.canEvict) {
         for (const child of getChildren(value.index)) {
           const childIndex = `${child[0]}_${child[1]}_${child[2]}`;
@@ -184,69 +237,50 @@ export class Tileset {
     }
   }
 
-  public updateTileOptions(
-    channelMapping: number[],
-    intensityRanges: number[],
-    colors: number[]
+  public updateChannelIntensity(index: number, value: number) {
+    this.intensityRanges[4 * index + 1] = value;
+
+    this.tileOptions.updateFloatArray(
+      'ranges',
+      new Float32Array(this.intensityRanges)
+    );
+    this.tileOptions.update();
+  }
+
+  public updateChannelColor(
+    index: number,
+    color: { r: number; g: number; b: number }
   ) {
-    const needDataUpdate =
-      this.channelMapping.toString() !== channelMapping.toString();
+    this.colors[4 * index] = color.r / 255;
+    this.colors[4 * index + 1] = color.g / 255;
+    this.colors[4 * index + 2] = color.b / 255;
 
-    if (needDataUpdate) {
-      this.channelMapping = [...channelMapping];
-      this.generateChannelMapping();
+    this.tileOptions.updateFloatArray('colors', new Float32Array(this.colors));
+    this.tileOptions.update();
+  }
 
-      this.tileOptions = new UniformBuffer(
-        this.scene.getEngine(),
-        undefined,
-        true
+  public updateChannelVisibility(index: number, visible: boolean) {
+    this.channelMapping[4 * index] = visible ? index : -1;
+    this.calculateChannelMapping();
+    this.calculateChannelRanges();
+
+    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.update();
+
+    for (const tile of this.tiles.values()) {
+      tile.updateTileOptionsAndData(this.channelRanges, this.tileOptions);
+      this.minimap.updateTileOptionsAndData(
+        this.channelRanges,
+        this.tileOptions
       );
-
-      // Pad everything to 16 bytes (thanks std140)
-
-      this.tileOptions.addUniform('channelMapping', 4, channelMapping.length);
-      this.tileOptions.addUniform('ranges', 4, channelMapping.length);
-      this.tileOptions.addUniform('colors', 4, channelMapping.length);
-
-      this.tileOptions.updateIntArray(
-        'channelMapping',
-        new Int32Array(channelMapping.map(x => [x, 0, 0, 0]).flat())
-      );
-      this.tileOptions.updateFloatArray(
-        'ranges',
-        new Float32Array(intensityRanges)
-      );
-      this.tileOptions.updateFloatArray('colors', new Float32Array(colors));
-
-      this.tileOptions.update();
-
-      for (const tile of this.tiles.values()) {
-        tile.updateTileOptionsAndData(
-          this.channelRanges,
-          this.channelMapping,
-          this.tileOptions
-        );
-        this.minimap.updateTileOptionsAndData(
-          this.channelRanges,
-          this.channelMapping,
-          this.tileOptions
-        );
-      }
-    } else {
-      this.tileOptions.updateFloatArray(
-        'ranges',
-        new Float32Array(intensityRanges)
-      );
-      this.tileOptions.updateFloatArray('colors', new Float32Array(colors));
-      this.tileOptions.update();
     }
   }
 
-  private generateChannelMapping() {
+  private calculateChannelRanges() {
     let range: number[] = [];
     this.channelRanges = [];
-    for (let index = 0; index < this.channelMapping.length; ++index) {
-      if (this.channelMapping[index] === -1) {
+    for (let index = 0; index < this.channelMapping.length / 4; ++index) {
+      if (this.channelMapping[4 * index] === -1) {
         continue;
       }
 
@@ -262,6 +296,17 @@ export class Tileset {
       }
     }
     this.channelRanges.push(range[0], range.at(-1) as number);
+  }
+
+  private calculateChannelMapping() {
+    let visibleCounter = 0;
+    for (let index = 0; index < this.channelMapping.length / 4; ++index) {
+      if (this.channelMapping[4 * index] === -1) {
+        continue;
+      }
+
+      this.channelMapping[4 * index] = visibleCounter++;
+    }
   }
 }
 
@@ -345,7 +390,6 @@ export class Tile {
 
   public updateTileOptionsAndData(
     channelRanges: number[],
-    channelMapping: number[],
     tileOptions: UniformBuffer
   ) {
     if (!this.isLoaded) {
@@ -353,10 +397,10 @@ export class Tile {
     }
 
     this.tileOptions = tileOptions;
-    this.load(channelRanges, channelMapping);
+    this.load(channelRanges);
   }
 
-  public load(channelRanges: number[], channelMapping: number[]) {
+  public load(channelRanges: number[]) {
     const data = {
       index: this.index,
       tileSize: this.tileSize,
@@ -364,7 +408,6 @@ export class Tile {
       namespace: this.namespace,
       attribute: this.attribute,
       channelRanges: channelRanges,
-      channelMapping: channelMapping,
       dimensions: this.dimensions,
       token: this.token,
       basePath: this.basePath
@@ -381,7 +424,12 @@ export class Tile {
       this.worker.terminate();
       this.isLoaded = true;
       this.isPending = false;
-      const [data, width, height, channels] = Object.values(event.data);
+      const [data, width, height, channels] = Object.values(event.data) as [
+        TypedArray,
+        number,
+        number,
+        number
+      ];
       const dtype = this.attribute.type.toLowerCase();
 
       const intensityTexture = new RawTexture2DArray(
@@ -490,7 +538,6 @@ export class Minimap {
 
   public updateTileOptionsAndData(
     channelRanges: number[],
-    channelMapping: number[],
     tileOptions: UniformBuffer
   ) {
     if (!this.isLoaded) {
@@ -498,10 +545,10 @@ export class Minimap {
     }
 
     this.tileOptions = tileOptions;
-    this.load(channelRanges, channelMapping);
+    this.load(channelRanges);
   }
 
-  public load(channelRanges: number[], channelMapping: number[]) {
+  public load(channelRanges: number[]) {
     const data = {
       index: [0, 0, 0],
       tileSize: this.tileSize,
@@ -509,7 +556,6 @@ export class Minimap {
       namespace: this.namespace,
       attribute: this.attribute,
       channelRanges: channelRanges,
-      channelMapping: channelMapping,
       dimensions: this.dimensions,
       token: this.token,
       basePath: this.basePath
@@ -526,7 +572,12 @@ export class Minimap {
       this.worker.terminate();
       this.isLoaded = true;
       this.isPending = false;
-      const [data, width, height, channels] = Object.values(event.data);
+      const [data, width, height, channels] = Object.values(event.data) as [
+        TypedArray,
+        number,
+        number,
+        number
+      ];
       const dtype = this.attribute.type.toLowerCase();
 
       const intensityTexture = new RawTexture2DArray(

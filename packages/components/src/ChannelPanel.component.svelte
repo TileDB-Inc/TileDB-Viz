@@ -3,19 +3,41 @@
 <script>
   import Section from './Section.component.svelte';
   import Sliderr from './Sliderr.component.svelte';
-
-  let rgb = {
-    r: 23,
-    g: 188,
-    b: 194,
-    a: 1
-  };
+  import { rgbToHex, hexToRgb } from './utils/capitalize';
+  import events from './constants/events';
 
   export let channels = '[]';
+  $: visibility = JSON.parse(channels).map(x => x.visible);
+
+  function onColorChange(event, id) {
+    window.dispatchEvent(
+      new CustomEvent(events.COLOR_CHANGE, {
+        bubbles: true,
+        detail: {
+          id,
+          value: hexToRgb(event.target.value)
+        }
+      })
+    );
+  }
+
+  function onVisibilityChange(event, index) {
+    visibility[index] = !visibility[index];
+
+    window.dispatchEvent(
+      new CustomEvent(events.TOGGLE_INPUT_CHANGE, {
+        bubbles: true,
+        detail: {
+          id: `c_${index}`,
+          value: visibility[index]
+        }
+      })
+    );
+  }
 </script>
 
-<section-menu>
-  <div slot="header">
+<section-menu id={'channel-panel'} class="Viewer-ControlPanel">
+  <div slot="header" class="Viewer-ControlPanel__title">
     <svg
       width="20"
       height="20"
@@ -45,12 +67,12 @@
     Channel Blending
   </div>
   <ul class="Viewer-ControlPanel__list" slot="content">
-    {#each JSON.parse(channels) as channel}
+    {#each JSON.parse(channels) as channel, index}
       <li class="Viewer-ControlPanel__item">
         <div class="Viewer-ControlPanel__options">
-          <input type="color" />
-          <div class="Viewer-ControlPanel__icon-wrapper">
-            {#if true}
+          <input type="color" value="{rgbToHex(channel.color[0], channel.color[1], channel.color[2])}" on:input={(e) => onColorChange(e, `c_${index}`)}/>
+          <div class="Viewer-ControlPanel__icon-wrapper" on:click={(e) => onVisibilityChange(e, index)}>
+            {#if visibility[index]}
               <svg
                 class="Viewer-ControlPanel__icon"
                 width="48"
@@ -67,7 +89,7 @@
               </svg>
             {:else}
               <svg
-                class="Viewer-Slider__icon"
+                class="Viewer-ControlPanel__icon"
                 width="48"
                 height="48"
                 viewBox="0 0 48 48"
@@ -84,11 +106,12 @@
           </div>
         </div>
         <slider-menu
-            id={channel}
-            label={channel}
-            value={200}
-            min={0}
-            max={255}
+            class="Viewer-ControlPanel__slider"
+            id={`c_${index}`}
+            label={channel.name}
+            value={channel.intensity}
+            min={channel.min}
+            max={channel.max}
           />
       </li>
     {/each}
@@ -142,6 +165,10 @@
       svg {
         margin: 0;
       }
+    }
+
+    &__slider {
+      width: 100%;
     }
 
     &__list {

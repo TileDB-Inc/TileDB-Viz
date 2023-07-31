@@ -8,8 +8,6 @@
   export let value = 255;
   export let min = 0;
   export let max = 255;
-
-console.log(id, label, value, min, max);
     
 
   $: valueRounded = Number(value).toFixed(2);
@@ -44,6 +42,7 @@ console.log(id, label, value, min, max);
     bind:value={value}
     min={Number(min)}
     max={Number(max)}
+    on:input={onChange}
   />
 </div>
 
@@ -52,7 +51,6 @@ console.log(id, label, value, min, max);
     background-color: var(--viewer-background-primary);
     border-radius: 12px;
     padding: 12px 12px 20px;
-    width: 300px;
     font-family: Inter, Arial, 'sans-serif';
   
     &__text {

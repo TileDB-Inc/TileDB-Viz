@@ -179,7 +179,9 @@ export function sliceRanges(
 
     if (value.length === 1) {
       const [subrange, subsize] = packRange(
-        calculatedRanges.get(value[0])!.map(index => index + arrayOffset[idx])
+        (calculatedRanges.get(value[0]) ?? []).map(
+          index => index + arrayOffset[idx]
+        )
       );
 
       ranges.push(subrange);

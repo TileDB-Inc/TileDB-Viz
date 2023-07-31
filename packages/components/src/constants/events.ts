@@ -6,7 +6,8 @@ enum Events {
   CONFIRM_BOX_SHOW = 'confirmation-box::show',
   FLOATING_BUTTON_CLICK = 'floating-button::click',
   DUAL_SLIDER_CHANGE = 'dual-slider::change',
-  MENU_HEADER_VISIBILITY_TOGGLE = 'header-visibility::change'
+  MENU_HEADER_VISIBILITY_TOGGLE = 'menu-visibility::change',
+  COLOR_CHANGE = 'color-input::change'
 }
 
 export default Events;
