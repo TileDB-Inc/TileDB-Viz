@@ -9,6 +9,7 @@ self.onmessage = async function (event: MessageEvent<QueryMessage>) {
     apiKey: event.data.token
     //basePath: event.data.basePath
   };
+
   const queryClient = new client(config);
 
   const levelWidth =

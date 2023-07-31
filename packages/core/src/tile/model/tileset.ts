@@ -268,12 +268,34 @@ export class Tileset {
     this.tileOptions.update();
 
     for (const tile of this.tiles.values()) {
-      tile.updateTileOptionsAndData(this.channelRanges, this.tileOptions);
-      this.minimap.updateTileOptionsAndData(
+      tile.updateTileOptionsAndData(
         this.channelRanges,
+        this.dimensions,
         this.tileOptions
       );
     }
+    this.minimap.updateTileOptionsAndData(
+      this.channelRanges,
+      this.dimensions,
+      this.tileOptions
+    );
+  }
+
+  public updateExtraDimensions(index: number, value: number) {
+    this.dimensions[index].value = value;
+
+    for (const tile of this.tiles.values()) {
+      tile.updateTileOptionsAndData(
+        this.channelRanges,
+        this.dimensions,
+        this.tileOptions
+      );
+    }
+    this.minimap.updateTileOptionsAndData(
+      this.channelRanges,
+      this.dimensions,
+      this.tileOptions
+    );
   }
 
   private calculateChannelRanges() {
@@ -390,12 +412,14 @@ export class Tile {
 
   public updateTileOptionsAndData(
     channelRanges: number[],
+    dimensions: Dimension[],
     tileOptions: UniformBuffer
   ) {
     if (!this.isLoaded) {
       this.worker.terminate();
     }
 
+    this.dimensions = dimensions;
     this.tileOptions = tileOptions;
     this.load(channelRanges);
   }
@@ -538,12 +562,14 @@ export class Minimap {
 
   public updateTileOptionsAndData(
     channelRanges: number[],
+    dimensions: Dimension[],
     tileOptions: UniformBuffer
   ) {
     if (!this.isLoaded) {
       this.worker.terminate();
     }
 
+    this.dimensions = dimensions;
     this.tileOptions = tileOptions;
     this.load(channelRanges);
   }

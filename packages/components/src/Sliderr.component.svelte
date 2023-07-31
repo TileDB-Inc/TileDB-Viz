@@ -6,6 +6,7 @@
   export let id;
   export let label = '';
   export let value = 255;
+  export let step = 0.1;
   export let min = 0;
   export let max = 255;
     
@@ -38,7 +39,7 @@
     {id}
     class="Viewer-Slider__range"
     type="range"
-    step={0.1}
+    step={Number(step)}
     bind:value={value}
     min={Number(min)}
     max={Number(max)}

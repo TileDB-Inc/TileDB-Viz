@@ -33,6 +33,7 @@
           value={dimension.value}
           min={dimension.min}
           max={dimension.max}
+          step={1}
         />
       </li>
     {/each}

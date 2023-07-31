@@ -45,15 +45,16 @@ class TileImageGUI {
 
     const uiWrapper = document.createElement('div');
     uiWrapper.className;
+
     uiWrapper.innerHTML = `
     <sidebar-menu>
       <zoom-control>
       </zoom-control>
       <cache-control>
       </cache-control>
-      <channel-panel channels=${JSON.stringify(channels)}>
+      <channel-panel channels='${JSON.stringify(channels)}'>
       </channel-panel>
-      <dimension-panel dimensions=${JSON.stringify(dimensions)}>
+      <dimension-panel dimensions='${JSON.stringify(dimensions)}'>
       </dimension-panel>
       <group-panel>
       </group-panel>
@@ -71,6 +72,15 @@ class TileImageGUI {
               const channelIndex = Number(customEvent.detail.id.substring(2));
               tileset.updateChannelIntensity(
                 channelIndex,
+                Number(customEvent.detail.value)
+              );
+            }
+            break;
+          case 'd':
+            {
+              const dimensionIndex = Number(customEvent.detail.id.substring(2));
+              tileset.updateExtraDimensions(
+                dimensionIndex,
                 Number(customEvent.detail.value)
               );
             }

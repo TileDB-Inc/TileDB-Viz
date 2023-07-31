@@ -92,6 +92,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
       this.setupEventListeners();
 
+      console.log(this.metadata.channels.get('intensity'), this.dimensions);
+
       new TileImageGUI(
         this.scene,
         this.tileset,

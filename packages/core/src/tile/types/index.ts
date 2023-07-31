@@ -145,6 +145,16 @@ export const types = {
       return new Uint8Array(size);
     }
   },
+  int8: {
+    bytes: Int8Array.BYTES_PER_ELEMENT,
+    format: Constants.TEXTUREFORMAT_RED_INTEGER,
+    type: Constants.TEXTURETYPE_BYTE,
+    filtering: Texture.NEAREST_SAMPLINGMODE,
+    samplerType: 'isampler2DArray',
+    create: function (size: number) {
+      return new Int8Array(size);
+    }
+  },
   uint16: {
     bytes: Uint16Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,

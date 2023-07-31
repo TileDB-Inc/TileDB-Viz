@@ -2,7 +2,6 @@
 
 <script>
   import Header from './Header.component.svelte';
-  import { accordion } from './utils/animation-helpers';
   import events from './constants/events';
   import { onMount, onDestroy } from 'svelte';
 
