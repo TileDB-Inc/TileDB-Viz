@@ -2,27 +2,6 @@ import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
 import { Attribute, Dimension, AssetMetadata } from '../../types';
 
-export enum TileViewerEvents {
-  ZOOM = 'zoomEvent',
-  CHANNEL_UPDATE = 'channelUpdateEvent',
-  MIMIMAP_UPDATE = 'minimapUpdateEvent'
-}
-
-export interface MinimapUpdateEvent {
-  visible: boolean;
-}
-
-export interface ChannelUpdateEvent {
-  channelIndex: number;
-  intensity: number;
-  visible: boolean;
-  color: number[];
-}
-
-export interface ZoomEvent {
-  zoom: number;
-}
-
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   assetID: string;

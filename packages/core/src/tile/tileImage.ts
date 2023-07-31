@@ -7,7 +7,7 @@ import {
   Nullable,
   FreeCamera
 } from '@babylonjs/core';
-import { TileDBTileImageOptions, TileViewerEvents, ZoomEvent } from './types';
+import { TileDBTileImageOptions } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
@@ -15,6 +15,7 @@ import { LevelRecord, ImageMetadata } from './types';
 import { Attribute, Dimension } from '../types';
 import { getAssetMetadata } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
+import { Events } from '@tiledb-inc/viz-components';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -90,8 +91,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.resizeViewport();
       });
 
-      this.setupEventListeners();
-
       console.log(this.metadata.channels.get('intensity'), this.dimensions);
 
       new TileImageGUI(
@@ -100,17 +99,14 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.rootElement,
         this.height,
         this.metadata.channels.get('intensity') ?? [],
-        this.dimensions
+        this.dimensions,
+        (step: number) => this.onZoom(step)
       );
 
       this.scene.onBeforeRenderObservable.add(() => {
         this.fetchTiles();
 
         //console.log(this.scene.getEngine()._uniformBuffers.length);
-      });
-
-      this.scene.onDisposeObservable.add(() => {
-        this.cleanupEventListeners();
       });
 
       //scene.debugLayer.show();
@@ -160,41 +156,28 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
           }
           break;
         case PointerEventTypes.POINTERWHEEL:
-          this.zoom =
-            2 **
-            Math.max(
-              -2,
-              Math.min(
-                this.levels.length,
-                Math.log2(this.zoom) +
-                  (pointerInfo.event as WheelEvent).deltaY / 1500
-              )
-            );
-          resizeOrtographicCameraViewport(this.scene, this.zoom);
+          this.onZoom((pointerInfo.event as WheelEvent).deltaY / 1500);
           break;
       }
     });
   }
 
-  private setupEventListeners() {
-    window.addEventListener(TileViewerEvents.ZOOM, e => this.onZoom(e as any), {
-      capture: true
-    });
-  }
+  private onZoom(step: number) {
+    this.zoom = this.zoom =
+      2 **
+      Math.max(-2, Math.min(this.levels.length, Math.log2(this.zoom) + step));
 
-  private cleanupEventListeners() {
-    window.removeEventListener(
-      TileViewerEvents.ZOOM,
-      e => this.onZoom(e as any),
-      {
-        capture: true
-      }
-    );
-  }
-
-  private onZoom(e: CustomEvent<ZoomEvent>) {
-    this.zoom = 2 ** e.detail.zoom;
     resizeOrtographicCameraViewport(this.scene, this.zoom);
+
+    window.dispatchEvent(
+      new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+        bubbles: true,
+        detail: {
+          type: 'ZOOM_INFO',
+          zoom: Math.log2(this.zoom)
+        }
+      })
+    );
   }
 }
 

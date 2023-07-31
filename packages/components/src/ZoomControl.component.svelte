@@ -2,6 +2,45 @@
 
 <script>
   import Section from './Section.component.svelte';
+  import {pprintZoom} from './utils/capitalize';
+  import { onMount, onDestroy } from 'svelte';
+  import events from './constants/events';
+
+  export let zoom = 0;
+
+  function zoomInfoUpdate(e) {
+    if (e.detail.type === 'ZOOM_INFO')
+    {
+      zoom = e.detail.zoom;
+    }
+  }
+
+  function onClick(id) {
+    window.dispatchEvent(
+      new CustomEvent(events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          id
+        }
+      })
+    );
+  }
+
+  onMount(() => {
+    window.addEventListener(
+      events.ENGINE_INFO_UPDATE,
+      zoomInfoUpdate,
+      {
+        capture: true
+      }
+    );
+  });
+
+  onDestroy(() => {
+    window.removeEventListener(events.ENGINE_INFO_UPDATE, zoomInfoUpdate, {
+      capture: true
+    });
+  });
 </script>
 
   <section-menu id={'zoom-control'} class="Viewer-ZoomControl">
@@ -22,7 +61,7 @@
     </div>
     <div class="Viewer-ZoomControl__content" slot="content">
       <div class="Viewer-ZoomControl__group">
-        <button class="Viewer-ZoomControl__button">
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_plus')}>
           <svg
             width="20"
             height="20"
@@ -37,7 +76,7 @@
             />
           </svg>
         </button>
-        <button class="Viewer-ZoomControl__button">
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_minus')}>
           <svg
             width="20"
             height="20"
@@ -64,11 +103,11 @@
             </defs>
           </svg>
         </button>
-        <p class="Viewer-ZoomControl__label">{0.25}</p>
+        <p class="Viewer-ZoomControl__label">{pprintZoom(Number(zoom))}</p>
       </div>
       <div class="Viewer-ZoomControl__group">
         <p class="Viewer-ZoomControl__label">Reset view</p>
-        <button class="Viewer-ZoomControl__button">
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_reset')}>
           <svg
             width="20"
             height="20"

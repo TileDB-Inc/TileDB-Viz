@@ -3,9 +3,9 @@
 <script>
   import events from './constants/events';
 
-  export let id = '',
-    label,
-    name;
+  export let id = '';
+  export let label;
+  export let name;
 
   let value = false;
 

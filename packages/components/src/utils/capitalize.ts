@@ -4,6 +4,16 @@ function capitalize(str: string): string {
   return firstChar.toUpperCase() + str.slice(1);
 }
 
+export const pprintZoom = (zoom?: number): string => {
+  if (typeof zoom === 'undefined') {
+    return '-';
+  }
+
+  const percentage = 100 * Math.pow(2, zoom);
+
+  return `${Math.floor(percentage)}%`;
+};
+
 export function rangeToPagination(
   currentPage: number,
   itemsPerPage: number,

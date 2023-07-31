@@ -25,7 +25,8 @@ class TileImageGUI {
     rootElement: HTMLElement,
     height: string,
     channels: Channel[],
-    dimensions: Dimension[]
+    dimensions: Dimension[],
+    zoomCallback: (step: number) => void
   ) {
     this.scene = scene;
     this.rootElement = rootElement;
@@ -48,16 +49,21 @@ class TileImageGUI {
 
     uiWrapper.innerHTML = `
     <sidebar-menu>
-      <zoom-control>
+      <zoom-control zoom='-2'>
       </zoom-control>
-      <cache-control>
-      </cache-control>
       <channel-panel channels='${JSON.stringify(channels)}'>
       </channel-panel>
-      <dimension-panel dimensions='${JSON.stringify(dimensions)}'>
-      </dimension-panel>
+      ${
+        dimensions.length > 0
+          ? `<dimension-panel dimensions='${JSON.stringify(
+              dimensions
+            )}'></dimension-panel>`
+          : ''
+      }
       <group-panel>
       </group-panel>
+      <cache-control>
+      </cache-control>
     </sidebar-menu>
       `;
 
@@ -120,6 +126,33 @@ class TileImageGUI {
 
         const channelIndex = Number(customEvent.detail.id.substring(2));
         tileset.updateChannelVisibility(channelIndex, customEvent.detail.value);
+      },
+      {
+        capture: true
+      }
+    );
+
+    window.addEventListener(
+      Events.BUTTON_CLICK,
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ id: string }>;
+
+        switch (customEvent.detail.id) {
+          case 'zoom_plus':
+            zoomCallback(0.25);
+            break;
+          case 'zoom_minus':
+            zoomCallback(-0.25);
+            break;
+          case 'zoom_reset':
+            zoomCallback(-1000);
+            break;
+          default:
+            console.warn(
+              `Unrecognized event. Event ID: ${customEvent.detail.id}`
+            );
+            break;
+        }
       },
       {
         capture: true
