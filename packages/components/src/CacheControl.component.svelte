@@ -17,6 +17,17 @@
     }
   }
 
+  function clearCache(e) {
+    window.dispatchEvent(
+      new CustomEvent(events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          id: 'cache_clear'
+        }
+      })
+    );
+  }
+
   onMount(() => {
     window.addEventListener(
       events.ENGINE_INFO_UPDATE,
@@ -69,9 +80,9 @@
           />
         </svg>
         <p class="Viewer-CacheControls__label">
-          Cached tiles: {15}
+          Cached tiles: {tiles}
         </p>
-        <button class="Viewer-CacheControls__button">
+        <button class="Viewer-CacheControls__button" on:click={clearCache}>
           <svg
             width="20"
             height="20"
@@ -105,12 +116,12 @@
         </svg>
   
         <p class="Viewer-CacheControls__label">
-          ~{(0.243).toFixed(3)}GB
+          ~{(diskSpace).toFixed(3)}GB
         </p>
       </div>
     </div>
-    <toggle-input id={'minimap'} label={'Display minimap'} name={'displayMinimap'}>
-    </toggle-input>
+    <toggle-switch id={'minimap'} label={'Display minimap'} value={true}>
+    </toggle-switch>
   </div >
 </section-menu>
 

@@ -13,7 +13,6 @@
 
   function toggleVissible(e) {
     visible = e.detail.value;
-    console.log(visible);
   }
 
   onMount(() => {

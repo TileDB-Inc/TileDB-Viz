@@ -298,6 +298,15 @@ export class Tileset {
     );
   }
 
+  public toggleMinimap(visible: boolean) {
+    if (this.minimap.mesh === null) {
+      console.log('Minimap is not initialized');
+      return;
+    }
+
+    this.minimap.mesh.isVisible = visible;
+  }
+
   private calculateChannelRanges() {
     let range: number[] = [];
     this.channelRanges = [];

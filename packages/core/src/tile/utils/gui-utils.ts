@@ -26,7 +26,8 @@ class TileImageGUI {
     height: string,
     channels: Channel[],
     dimensions: Dimension[],
-    zoomCallback: (step: number) => void
+    zoomCallback: (step: number) => void,
+    clearCache: () => void
   ) {
     this.scene = scene;
     this.rootElement = rootElement;
@@ -122,10 +123,28 @@ class TileImageGUI {
     window.addEventListener(
       Events.TOGGLE_INPUT_CHANGE,
       (e: Event) => {
-        const customEvent = e as CustomEvent<{ id: string; value: boolean }>;
+        const customEvent = e as CustomEvent<{ id: string; value: any }>;
+        const id_parts = customEvent.detail.id.split('_');
 
-        const channelIndex = Number(customEvent.detail.id.substring(2));
-        tileset.updateChannelVisibility(channelIndex, customEvent.detail.value);
+        switch (id_parts[0]) {
+          case 'c':
+            {
+              const channelIndex = Number(id_parts[1]);
+              tileset.updateChannelVisibility(
+                channelIndex,
+                customEvent.detail.value
+              );
+            }
+            break;
+          case 'minimap':
+            tileset.toggleMinimap(customEvent.detail.value);
+            break;
+          default:
+            console.warn(
+              `Unrecognized event. Event ID: ${customEvent.detail.id}`
+            );
+            break;
+        }
       },
       {
         capture: true
@@ -146,6 +165,9 @@ class TileImageGUI {
             break;
           case 'zoom_reset':
             zoomCallback(-1000);
+            break;
+          case 'cache_clear':
+            clearCache();
             break;
           default:
             console.warn(

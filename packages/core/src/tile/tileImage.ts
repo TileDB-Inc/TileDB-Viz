@@ -11,11 +11,12 @@ import { TileDBTileImageOptions } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
-import { LevelRecord, ImageMetadata } from './types';
+import { LevelRecord, ImageMetadata, types } from './types';
 import { Attribute, Dimension } from '../types';
 import { getAssetMetadata } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
+import { clearMultiCache, getTileCount } from '../utils/cache';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -28,6 +29,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private dimensions!: Dimension[];
   private levels!: LevelRecord[];
   private camera!: FreeCamera;
+  private tileSize = 1024;
 
   private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
@@ -80,7 +82,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.dimensions,
         this.metadata.channels,
         this.attributes,
-        1024,
+        this.tileSize,
         this.options.namespace,
         this.options.token,
         '',
@@ -91,8 +93,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.resizeViewport();
       });
 
-      console.log(this.metadata.channels.get('intensity'), this.dimensions);
-
       new TileImageGUI(
         this.scene,
         this.tileset,
@@ -100,8 +100,17 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.height,
         this.metadata.channels.get('intensity') ?? [],
         this.dimensions,
-        (step: number) => this.onZoom(step)
+        (step: number) => this.onZoom(step),
+        () => this.clearCache()
       );
+
+      this.updateEngineInfo();
+
+      const intervalID = setInterval(() => this.updateEngineInfo(), 30 * 1000);
+
+      this.scene.onDisposeObservable.add(() => {
+        clearInterval(intervalID);
+      });
 
       this.scene.onBeforeRenderObservable.add(() => {
         this.fetchTiles();
@@ -109,10 +118,36 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         //console.log(this.scene.getEngine()._uniformBuffers.length);
       });
 
-      //scene.debugLayer.show();
+      scene.debugLayer.show();
 
       return scene;
     });
+  }
+
+  private updateEngineInfo() {
+    getTileCount(this.levels.map(x => `${x.id}_${this.tileSize}`)).then(
+      tileCount => {
+        const selectedAttribute = this.attributes
+          .filter(x => x.visible)[0]
+          .type.toLowerCase();
+        const size =
+          (tileCount *
+            (types as any)[selectedAttribute].bytes *
+            this.tileSize ** 2) /
+          2 ** 30;
+
+        window.dispatchEvent(
+          new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+            bubbles: true,
+            detail: {
+              type: 'CACHE_INFO',
+              tiles: tileCount,
+              diskSpace: size
+            }
+          })
+        );
+      }
+    );
   }
 
   private fetchTiles() {
@@ -178,6 +213,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         }
       })
     );
+  }
+
+  private clearCache() {
+    clearMultiCache(this.levels.map(x => `${x.id}_${this.tileSize}`));
   }
 }
 
