@@ -71,7 +71,7 @@
       <li class="Viewer-ControlPanel__item">
         <div class="Viewer-ControlPanel__options">
           <input type="color" value="{rgbToHex(channel.color[0], channel.color[1], channel.color[2])}" on:input={(e) => onColorChange(e, `c_${index}`)}/>
-          <div class="Viewer-ControlPanel__icon-wrapper" on:click={(e) => onVisibilityChange(e, index)}>
+          <button class="Viewer-ControlPanel__icon-wrapper" on:click={(e) => onVisibilityChange(e, index)}>
             {#if visibility[index]}
               <svg
                 class="Viewer-ControlPanel__icon"
@@ -103,7 +103,7 @@
                 />
               </svg>
             {/if}
-          </div>
+          </button>
         </div>
         <slider-menu
             class="Viewer-ControlPanel__slider"
@@ -136,11 +136,6 @@
       svg {
         margin-right: 10px;
       }
-
-      div {
-        display: flex;
-        align-items: center;
-      }
     }
 
     &__options {
@@ -155,16 +150,11 @@
     }
 
     &__icon-wrapper {
+      background: none;
+      border: none;
+      padding: 0;
       margin: 0 8px 0;
       cursor: pointer;
-    }
-
-    &__toggle {
-      cursor: pointer;
-
-      svg {
-        margin: 0;
-      }
     }
 
     &__slider {

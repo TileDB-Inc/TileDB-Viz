@@ -12,8 +12,8 @@ import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { Attribute, Dimension } from '../types';
-import { getAssetMetadata } from '../utils/metadata-utils';
+import { AssetEntry, Attribute, Dimension } from '../types';
+import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
 import { clearMultiCache, getTileCount } from '../utils/cache';
@@ -28,6 +28,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private attributes!: Attribute[];
   private dimensions!: Dimension[];
   private levels!: LevelRecord[];
+  private groupAssets!: AssetEntry[];
   private camera!: FreeCamera;
   private tileSize = 1024;
 
@@ -58,6 +59,15 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
           namespace: this.options.namespace,
           assetID: this.options.assetID
         })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
+
+      this.groupAssets = await getGroupContents({
+        token: this.options.token,
+        tiledbEnv: this.options.tiledbEnv,
+        namespace: this.options.namespace,
+        assetID: this.options.assetID,
+        baseGroup: this.options.baseGroup
+      });
+
       this.baseWidth =
         this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
       this.baseHeight =
@@ -101,6 +111,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         this.height,
         this.metadata.channels.get('intensity') ?? [],
         this.dimensions,
+        this.groupAssets,
         (step: number) => this.onZoom(step),
         () => this.clearCache()
       );

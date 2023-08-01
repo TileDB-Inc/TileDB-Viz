@@ -24,7 +24,7 @@
   <span><slot /></span>
   <button class="Viewer-Header__button" on:click={onClick}>
     <svg
-      class={visibleContent ? '' : 'Viewer-Header__icon--rotated'}
+      class={visibleContent ? 'Viewer-Header__icon' : 'Viewer-Header__icon--rotated'}
       width="20"
       height="20"
       viewBox="0 0 20 20"

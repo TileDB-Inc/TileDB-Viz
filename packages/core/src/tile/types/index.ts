@@ -5,6 +5,7 @@ import { Attribute, Dimension, AssetMetadata } from '../../types';
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   assetID: string;
+  baseGroup?: string;
   token: string;
   tiledbEnv?: string;
 }

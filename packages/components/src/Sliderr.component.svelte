@@ -61,10 +61,6 @@
       line-height: 20px;
       color: var(--viewer-text-primary);
       margin: 0;
-  
-      &--light {
-        color: var(--viewer-text-primary);
-      }
     }
   
     &__main {

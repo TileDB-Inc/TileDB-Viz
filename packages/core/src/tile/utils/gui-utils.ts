@@ -2,7 +2,7 @@ import { Scene } from '@babylonjs/core';
 import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
-import { Dimension } from '../../types';
+import { Dimension, AssetEntry } from '../../types';
 import { Tileset } from '../model/tileset';
 
 // const styleElement = document.createElement('style');
@@ -26,6 +26,7 @@ class TileImageGUI {
     height: string,
     channels: Channel[],
     dimensions: Dimension[],
+    assets: AssetEntry[],
     zoomCallback: (step: number) => void,
     clearCache: () => void
   ) {
@@ -61,8 +62,11 @@ class TileImageGUI {
             )}'></dimension-panel>`
           : ''
       }
-      <group-panel>
-      </group-panel>
+      ${
+        assets.length > 0
+          ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
+          : ''
+      }
       <cache-control>
       </cache-control>
     </sidebar-menu>
@@ -154,7 +158,7 @@ class TileImageGUI {
     window.addEventListener(
       Events.BUTTON_CLICK,
       (e: Event) => {
-        const customEvent = e as CustomEvent<{ id: string }>;
+        const customEvent = e as CustomEvent<{ id: string; props?: any }>;
 
         switch (customEvent.detail.id) {
           case 'zoom_plus':
@@ -168,6 +172,8 @@ class TileImageGUI {
             break;
           case 'cache_clear':
             clearCache();
+            break;
+          case 'asset_selection':
             break;
           default:
             console.warn(

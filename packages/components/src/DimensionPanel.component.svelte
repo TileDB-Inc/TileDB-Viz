@@ -58,35 +58,6 @@
       svg {
         margin-right: 10px;
       }
-
-      div {
-        display: flex;
-        align-items: center;
-      }
-    }
-
-    &__options {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-evenly;
-    }
-
-    &__icon {
-      height: auto;
-      width: 20px;
-    }
-
-    &__icon-wrapper {
-      margin: 0 8px 0;
-      cursor: pointer;
-    }
-
-    &__toggle {
-      cursor: pointer;
-
-      svg {
-        margin: 0;
-      }
     }
 
     &__slider {

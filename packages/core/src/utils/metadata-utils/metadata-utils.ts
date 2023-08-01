@@ -1,4 +1,10 @@
-import { AssetOptions, AssetMetadata, Attribute, Dimension } from '../../types';
+import {
+  AssetOptions,
+  AssetMetadata,
+  Attribute,
+  Dimension,
+  AssetEntry
+} from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
   getBiomedicalMetadata,
@@ -9,6 +15,50 @@ import {
   RasterAssetMetadata,
   LevelRecord
 } from '../../tile/types';
+import { GroupContents } from '@tiledb-inc/tiledb-cloud/lib/v1';
+
+export async function getGroupContents(
+  options: AssetOptions
+): Promise<AssetEntry[]> {
+  const client = getTileDBClient({
+    ...(options.token ? { apiKey: options.token } : {}),
+    ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
+  });
+
+  if (!options.baseGroup) {
+    return [];
+  }
+
+  return await client.groups
+    .getGroupContents(options.namespace, options.baseGroup)
+    .then((value: GroupContents) => {
+      if (!value.entries) {
+        return [];
+      }
+
+      return [
+        ...value.entries
+          .filter((entry, _) => entry.group !== undefined)
+          .map((entry, _) => {
+            return {
+              namespace: entry.group?.namespace ?? '',
+              name: entry.group?.name ?? '',
+              id: entry.group?.id ?? ''
+            } as AssetEntry;
+          }),
+
+        ...value.entries
+          .filter((entry, _) => entry.array !== undefined)
+          .map(entry => {
+            return {
+              namespace: entry.array?.namespace ?? '',
+              name: entry.array?.name ?? '',
+              id: entry.array?.id ?? ''
+            } as AssetEntry;
+          })
+      ];
+    });
+}
 
 export async function getAssetMetadata(
   options: AssetOptions

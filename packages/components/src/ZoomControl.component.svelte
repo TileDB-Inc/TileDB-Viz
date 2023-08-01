@@ -146,11 +146,6 @@
       svg {
         margin-right: 10px;
       }
-
-      div {
-        display: flex;
-        align-items: center;
-      }
     }
   
     &__label {
