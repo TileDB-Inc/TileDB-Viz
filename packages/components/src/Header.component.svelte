@@ -1,4 +1,4 @@
-<svelte:options tag="header-menu" />
+<svelte:options customElement="header-menu" />
 
 <script>
   import events from './constants/events';

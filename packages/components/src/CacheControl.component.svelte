@@ -1,7 +1,8 @@
-<svelte:options tag="cache-control" />
+<svelte:options customElement="cache-control" />
 
 <script>
   import Section from './Section.component.svelte';
+  import ToggleSwitch from './ToggleSwitch.component.svelte';
 
   import { onMount, onDestroy } from 'svelte';
   import events from './constants/events';
@@ -45,7 +46,7 @@
   });
 </script>
 
-<section-menu id={'cache-control'} class="Viewer-CacheControls">
+<Section id={'cache-control'}>
   <div slot="header" class="Viewer-CacheControls__title">
     <svg
       width="24"
@@ -120,10 +121,9 @@
         </p>
       </div>
     </div>
-    <toggle-switch id={'minimap'} label={'Display minimap'} value={true}>
-    </toggle-switch>
+    <ToggleSwitch id={'minimap'} label={'Display minimap'} value={true} />
   </div >
-</section-menu>
+</Section>
 
 <style lang="scss">
   .Viewer-CacheControls {

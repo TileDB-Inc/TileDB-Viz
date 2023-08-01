@@ -1,4 +1,4 @@
-<svelte:options tag="sidebar-menu" />
+<svelte:options customElement="sidebar-menu" />
 
 <script>
   import { onMount, onDestroy } from 'svelte';

@@ -1,4 +1,4 @@
-<svelte:options tag="slider-menu" />
+<svelte:options customElement="slider-menu" />
 
 <script>
   import events from './constants/events';
@@ -53,6 +53,7 @@
     border-radius: 12px;
     padding: 12px 12px 20px;
     font-family: Inter, Arial, 'sans-serif';
+    width: 100%;
   
     &__text {
       font-family: Inter, Arial, 'sans-serif';

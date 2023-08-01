@@ -1,4 +1,4 @@
-<svelte:options tag="menu-panel" />
+<svelte:options customElement="menu-panel" />
 
 <script>
   import { onMount, onDestroy } from 'svelte';
@@ -17,15 +17,13 @@
   }
 
   onMount(() => {
-    const CUSTOM_EVENT = events.FLOATING_BUTTON_CLICK;
-
-    window.addEventListener(CUSTOM_EVENT, toggleVissible, {
+    window.addEventListener(events.FLOATING_BUTTON_CLICK, toggleVissible, {
       capture: true
     });
   });
 
   onDestroy(() => {
-    window.removeEventListener(CUSTOM_EVENT, toggleVissible, {
+    window.removeEventListener(events.FLOATING_BUTTON_CLICK, toggleVissible, {
       capture: true
     });
   });

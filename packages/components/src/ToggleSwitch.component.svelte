@@ -1,4 +1,4 @@
-<svelte:options tag="toggle-switch" />
+<svelte:options customElement="toggle-switch" />
 
 <script>
   import events from './constants/events';

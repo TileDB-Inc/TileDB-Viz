@@ -1,4 +1,4 @@
-<svelte:options tag="floating-button" />
+<svelte:options customElement="floating-button" />
 
 <script>
   import events from './constants/events';

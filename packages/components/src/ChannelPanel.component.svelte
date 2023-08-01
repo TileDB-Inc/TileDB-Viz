@@ -1,4 +1,4 @@
-<svelte:options tag="channel-panel" />
+<svelte:options customElement="channel-panel" />
 
 <script>
   import Section from './Section.component.svelte';
@@ -36,7 +36,7 @@
   }
 </script>
 
-<section-menu id={'channel-panel'} class="Viewer-ControlPanel">
+<Section id={'channel-panel'}>
   <div slot="header" class="Viewer-ControlPanel__title">
     <svg
       width="20"
@@ -105,8 +105,7 @@
             {/if}
           </button>
         </div>
-        <slider-menu
-            class="Viewer-ControlPanel__slider"
+        <Sliderr
             id={`c_${index}`}
             label={channel.name}
             value={channel.intensity}
@@ -116,7 +115,7 @@
       </li>
     {/each}
   </ul>
-</section-menu>
+</Section>
 
 <style lang="scss">
   .Viewer-ControlPanel {
@@ -155,10 +154,6 @@
       padding: 0;
       margin: 0 8px 0;
       cursor: pointer;
-    }
-
-    &__slider {
-      width: 100%;
     }
 
     &__list {

@@ -1,4 +1,4 @@
-<svelte:options tag="section-menu" />
+<svelte:options customElement="section-menu" />
 
 <script>
   import Header from './Header.component.svelte';
@@ -39,9 +39,9 @@
 </script>
 
 <div class="Viewer-Section">
-  <header-menu {id} visibleContent={visible}>
+  <Header {id} visibleContent={visible}>
     <slot name="header" />
-  </header-menu>
+  </Header>
   <div
     bind:clientHeight={height}
     class="Viewer-Section__container"

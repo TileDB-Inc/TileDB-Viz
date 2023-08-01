@@ -1,4 +1,4 @@
-<svelte:options tag="zoom-control" />
+<svelte:options customElement="zoom-control" />
 
 <script>
   import Section from './Section.component.svelte';
@@ -43,7 +43,7 @@
   });
 </script>
 
-  <section-menu id={'zoom-control'} class="Viewer-ZoomControl">
+  <Section id={'zoom-control'}>
     <div slot="header" class="Viewer-ZoomControl__title">
       <svg
         width="24"
@@ -124,7 +124,7 @@
         </button>
       </div>
     </div>
-  </section-menu>
+  </Section>
 
 <style lang="scss">
   .Viewer-ZoomControl {

@@ -1,9 +1,8 @@
-<svelte:options tag="group-panel" />
+<svelte:options customElement="group-panel" />
 
 <script>
   import { onMount } from 'svelte';
   import Section from './Section.component.svelte';
-  import Sliderr from './Sliderr.component.svelte';
   import { rangeToPagination } from './utils/capitalize';
 
   export let groups = '[]';
@@ -20,7 +19,7 @@
   function filterGroups(e) {
     let searchTerm = e.target.value.toLowerCase();
     filteredGroups = parsedGroups.filter(
-      item => item.toLowerCase().includes(searchTerm) || searchTerm === ''
+      item => item.name.toLowerCase().includes(searchTerm) || searchTerm === ''
     );
   }
 
@@ -37,7 +36,7 @@
   let currentPage = 0;
 </script>
 
-<section-menu id={'group-panel'} class="Viewer-GroupSelector">
+<Section id={'group-panel'}>
   <div slot="header" class="Viewer-GroupSelector__title">
     <svg
       width="24"
@@ -58,12 +57,12 @@
       class="Viewer-GroupSelector__value"
       placeholder="Search Group"
       type="search"
-      on:input={filterGroups}
+      on:input={e => filterGroups(e)}
     />
     <ul class="Viewer-GroupSelector__list">
       {#each filteredGroups.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage) as group}
-        <li class="Viewer-GroupSelector__item" on:keypress={() => {}}>
-          <button class="Viewer-GroupSelector__item-content">
+        <li class="Viewer-GroupSelector__item">
+          <button class="Viewer-GroupSelector__item-content" on:click={() => {}}>
             <div class="Viewer-GroupSelector__item-icon">
               <svg
                 width="32"
@@ -121,7 +120,7 @@
       </div>
     {/if}
   </div>
-</section-menu>
+</Section>
 
 <style lang="scss">
   .Viewer-GroupSelector {

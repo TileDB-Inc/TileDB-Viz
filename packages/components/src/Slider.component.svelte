@@ -1,4 +1,4 @@
-<svelte:options tag="tdb-slider" />
+<svelte:options customElement="tdb-slider" />
 
 <script>
   import events from './constants/events';

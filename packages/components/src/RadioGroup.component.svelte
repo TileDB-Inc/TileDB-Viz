@@ -1,4 +1,4 @@
-<svelte:options tag="radio-group" />
+<svelte:options customElement="radio-group" />
 
 <script>
   import capitalize from './utils/capitalize';

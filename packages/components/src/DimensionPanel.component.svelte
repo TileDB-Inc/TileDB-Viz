@@ -1,4 +1,4 @@
-<svelte:options tag="dimension-panel" />
+<svelte:options customElement="dimension-panel" />
 
 <script>
   import Section from './Section.component.svelte';
@@ -7,7 +7,7 @@
   export let dimensions = '[]';
 </script>
 
-<section-menu id={'dimension-panel'} class="Viewer-ControlPanel">
+<Section id={'dimension-panel'} class="Viewer-ControlPanel">
   <div slot="header" class="Viewer-ControlPanel__title">
     <svg
       width="20"
@@ -26,8 +26,7 @@
   <ul class="Viewer-ControlPanel__list" slot="content">
     {#each JSON.parse(dimensions) as dimension, index}
       <li class="Viewer-ControlPanel__item">
-        <slider-menu
-          class="Viewer-ControlPanel__slider"
+        <Sliderr
           id={`d_${index}`}
           label={dimension.name}
           value={dimension.value}
@@ -38,7 +37,7 @@
       </li>
     {/each}
   </ul>
-</section-menu>
+</Section>
 
 <style lang="scss">
   .Viewer-ControlPanel {
@@ -58,10 +57,6 @@
       svg {
         margin-right: 10px;
       }
-    }
-
-    &__slider {
-      width: 100%;
     }
 
     &__list {
