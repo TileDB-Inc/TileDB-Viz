@@ -91,6 +91,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
       this.scene.getEngine().onResizeObservable.add(() => {
         this.resizeViewport();
+        this.tileset.minimap.resize();
       });
 
       new TileImageGUI(
@@ -118,7 +119,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         //console.log(this.scene.getEngine()._uniformBuffers.length);
       });
 
-      scene.debugLayer.show();
+      // scene.debugLayer.show();
 
       return scene;
     });

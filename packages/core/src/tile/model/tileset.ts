@@ -7,7 +7,8 @@ import {
   RawTexture2DArray,
   UniformBuffer,
   Nullable,
-  Vector2
+  Vector2,
+  ShaderMaterial
 } from '@babylonjs/core';
 import { BioimageShaderMaterial } from '../materials/bioimageShaderMaterial';
 import { Attribute, Dimension } from '../../types';
@@ -565,8 +566,8 @@ export class Minimap {
 
     this.vertexData = new VertexData();
     this.vertexData.positions = [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0];
-    this.vertexData.uvs = [0, 0, 1, 0, 1, 1, 0, 1];
-    this.vertexData.indices = [0, 1, 3, 1, 2, 3];
+    this.vertexData.uvs = [0, 1, 1, 1, 1, 0, 0, 0];
+    this.vertexData.indices = [0, 3, 1, 1, 3, 2];
   }
 
   public updateTileOptionsAndData(
@@ -671,6 +672,28 @@ export class Minimap {
     this.isPending = true;
 
     this.worker.postMessage(data);
+  }
+
+  public resize() {
+    if (this.mesh === null) {
+      throw new Error('Minimap in not instantiated');
+    }
+
+    const aspectRatio = Math.min(200 / this.bounds[2], 200 / this.bounds[3]);
+
+    const material = this.mesh.material as ShaderMaterial;
+
+    material.setVector2(
+      'screenSize',
+      new Vector2(
+        this.scene.getEngine().getRenderWidth(),
+        this.scene.getEngine().getRenderHeight()
+      )
+    );
+    material.setVector2(
+      'minimapSize',
+      new Vector2(aspectRatio * this.bounds[2], aspectRatio * this.bounds[3])
+    );
   }
 
   public dispose() {

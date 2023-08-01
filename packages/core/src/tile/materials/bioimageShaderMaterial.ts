@@ -75,5 +75,7 @@ export function BioimageShaderMaterial(
     }
   );
 
+  material.backFaceCulling = false;
+
   return material;
 }
