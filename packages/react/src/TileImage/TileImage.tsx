@@ -11,7 +11,7 @@ export interface TileImageVisualizationProps
 }
 
 export const TileImageVisualization: React.FC<
-TileImageVisualizationProps
+  TileImageVisualizationProps
 > = props => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
