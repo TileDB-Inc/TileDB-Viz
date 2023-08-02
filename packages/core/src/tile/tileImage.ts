@@ -81,7 +81,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
-    console.log(this.metadata, this.attributes, this.dimensions, this.levels);
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =

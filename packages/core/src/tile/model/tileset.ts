@@ -301,7 +301,7 @@ export class Tileset {
 
   public toggleMinimap(visible: boolean) {
     if (this.minimap.mesh === null) {
-      console.log('Minimap is not initialized');
+      console.warn('Minimap is not initialized');
       return;
     }
 
@@ -605,6 +605,13 @@ export class Minimap {
       token: this.token,
       basePath: this.basePath
     };
+
+    if (this.tileSize > 4096) {
+      this.isLoaded = true;
+      console.warn('Base level is too large for minimap creation');
+
+      return;
+    }
 
     this.worker = new Worker(
       new URL('../worker/tiledb.tile.worker', import.meta.url),
