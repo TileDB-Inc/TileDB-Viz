@@ -10,30 +10,32 @@ import { Tileset } from '../model/tileset';
 // document.head.appendChild(styleElement);
 
 class TileImageGUI {
-  rootDiv?: HTMLDivElement;
-  menuPanel?: HTMLElement;
-  modelPanel?: HTMLElement;
-  controlsPanel?: HTMLElement;
-  rootElement?: HTMLElement;
-  scene: Scene;
-  tileset: Tileset;
-  height?: string;
+  private rootDiv?: HTMLDivElement;
+  private rootElement?: HTMLElement;
+  private scene: Scene;
+  private tileset: Tileset;
+  private uiWrapper!: HTMLDivElement;
+  private zoomCallback: (step: number) => void;
+  private clearCache: () => void;
+  private assetSelectionCallback: (namespace: string, assetID: string) => void;
 
   constructor(
     scene: Scene,
     tileset: Tileset,
     rootElement: HTMLElement,
-    height: string,
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
     zoomCallback: (step: number) => void,
-    clearCache: () => void
+    clearCache: () => void,
+    assetSelectionCallback: (namespace: string, assetID: string) => void
   ) {
     this.scene = scene;
     this.rootElement = rootElement;
-    this.height = height;
     this.tileset = tileset;
+    this.zoomCallback = zoomCallback;
+    this.clearCache = clearCache;
+    this.assetSelectionCallback = assetSelectionCallback;
 
     for (const childElement of rootElement.children) {
       if (childElement.id === 'tdb-viz-wrapper') {
@@ -46,10 +48,9 @@ class TileImageGUI {
       return;
     }
 
-    const uiWrapper = document.createElement('div');
-    uiWrapper.className;
+    this.uiWrapper = document.createElement('div');
 
-    uiWrapper.innerHTML = `
+    this.uiWrapper.innerHTML = `
     <sidebar-menu>
       <zoom-control zoom='-2'>
       </zoom-control>
@@ -72,122 +73,134 @@ class TileImageGUI {
     </sidebar-menu>
       `;
 
-    window.addEventListener(
-      Events.SLIDER_CHANGE,
-      (e: Event) => {
-        const customEvent = e as CustomEvent<{ id: string; value: number }>;
-
-        switch (customEvent.detail.id[0]) {
-          case 'c':
-            {
-              const channelIndex = Number(customEvent.detail.id.substring(2));
-              tileset.updateChannelIntensity(
-                channelIndex,
-                Number(customEvent.detail.value)
-              );
-            }
-            break;
-          case 'd':
-            {
-              const dimensionIndex = Number(customEvent.detail.id.substring(2));
-              tileset.updateExtraDimensions(
-                dimensionIndex,
-                Number(customEvent.detail.value)
-              );
-            }
-            break;
-          default:
-            console.warn(
-              `Unrecognized event. Event ID: ${customEvent.detail.id}`
-            );
-            break;
-        }
-      },
-      {
-        capture: true
-      }
-    );
-
-    window.addEventListener(
-      Events.COLOR_CHANGE,
-      (e: Event) => {
-        const customEvent = e as CustomEvent<{
-          id: string;
-          value: { r: number; g: number; b: number };
-        }>;
-
-        const channelIndex = Number(customEvent.detail.id.substring(2));
-        tileset.updateChannelColor(channelIndex, customEvent.detail.value);
-      },
-      {
-        capture: true
-      }
-    );
-
+    window.addEventListener(Events.SLIDER_CHANGE, e => this.sliderHandler(e), {
+      capture: true
+    });
+    window.addEventListener(Events.COLOR_CHANGE, e => this.colorHandler(e), {
+      capture: true
+    });
     window.addEventListener(
       Events.TOGGLE_INPUT_CHANGE,
-      (e: Event) => {
-        const customEvent = e as CustomEvent<{ id: string; value: any }>;
-        const id_parts = customEvent.detail.id.split('_');
-
-        switch (id_parts[0]) {
-          case 'c':
-            {
-              const channelIndex = Number(id_parts[1]);
-              tileset.updateChannelVisibility(
-                channelIndex,
-                customEvent.detail.value
-              );
-            }
-            break;
-          case 'minimap':
-            tileset.toggleMinimap(customEvent.detail.value);
-            break;
-          default:
-            console.warn(
-              `Unrecognized event. Event ID: ${customEvent.detail.id}`
-            );
-            break;
-        }
-      },
-      {
-        capture: true
-      }
+      e => this.toggleHandler(e),
+      { capture: true }
     );
+    window.addEventListener(Events.BUTTON_CLICK, e => this.buttonHandler(e), {
+      capture: true
+    });
 
-    window.addEventListener(
+    this.rootElement.appendChild(this.uiWrapper);
+  }
+
+  public dispose() {
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      e => this.sliderHandler(e),
+      { capture: true }
+    );
+    window.removeEventListener(Events.COLOR_CHANGE, e => this.colorHandler(e), {
+      capture: true
+    });
+    window.removeEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      e => this.toggleHandler(e),
+      { capture: true }
+    );
+    window.removeEventListener(
       Events.BUTTON_CLICK,
-      (e: Event) => {
-        const customEvent = e as CustomEvent<{ id: string; props?: any }>;
-
-        switch (customEvent.detail.id) {
-          case 'zoom_plus':
-            zoomCallback(0.25);
-            break;
-          case 'zoom_minus':
-            zoomCallback(-0.25);
-            break;
-          case 'zoom_reset':
-            zoomCallback(-1000);
-            break;
-          case 'cache_clear':
-            clearCache();
-            break;
-          case 'asset_selection':
-            break;
-          default:
-            console.warn(
-              `Unrecognized event. Event ID: ${customEvent.detail.id}`
-            );
-            break;
-        }
-      },
-      {
-        capture: true
-      }
+      e => this.buttonHandler(e),
+      { capture: true }
     );
 
-    this.rootElement.appendChild(uiWrapper);
+    this.rootElement?.removeChild(this.uiWrapper);
+  }
+
+  private sliderHandler(event: Event) {
+    const customEvent = event as CustomEvent<{ id: string; value: number }>;
+
+    switch (customEvent.detail.id[0]) {
+      case 'c':
+        {
+          const channelIndex = Number(customEvent.detail.id.substring(2));
+          this.tileset.updateChannelIntensity(
+            channelIndex,
+            Number(customEvent.detail.value)
+          );
+        }
+        break;
+      case 'd':
+        {
+          const dimensionIndex = Number(customEvent.detail.id.substring(2));
+          this.tileset.updateExtraDimensions(
+            dimensionIndex,
+            Number(customEvent.detail.value)
+          );
+        }
+        break;
+      default:
+        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
+        break;
+    }
+  }
+
+  private colorHandler(event: Event) {
+    const customEvent = event as CustomEvent<{
+      id: string;
+      value: { r: number; g: number; b: number };
+    }>;
+
+    const channelIndex = Number(customEvent.detail.id.substring(2));
+    this.tileset.updateChannelColor(channelIndex, customEvent.detail.value);
+  }
+
+  private toggleHandler(event: Event) {
+    const customEvent = event as CustomEvent<{ id: string; value: any }>;
+    const id_parts = customEvent.detail.id.split('_');
+
+    switch (id_parts[0]) {
+      case 'c':
+        {
+          const channelIndex = Number(id_parts[1]);
+          this.tileset.updateChannelVisibility(
+            channelIndex,
+            customEvent.detail.value
+          );
+        }
+        break;
+      case 'minimap':
+        this.tileset.toggleMinimap(customEvent.detail.value);
+        break;
+      default:
+        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
+        break;
+    }
+  }
+
+  private buttonHandler(event: Event) {
+    const customEvent = event as CustomEvent<{ id: string; props?: any }>;
+
+    switch (customEvent.detail.id) {
+      case 'zoom_plus':
+        this.zoomCallback(0.25);
+        break;
+      case 'zoom_minus':
+        this.zoomCallback(-0.25);
+        break;
+      case 'zoom_reset':
+        this.zoomCallback(-1000);
+        break;
+      case 'cache_clear':
+        this.clearCache();
+        break;
+      case 'asset_selection':
+        this.assetSelectionCallback(
+          customEvent.detail.props.namespace,
+          customEvent.detail.props.assetID
+        );
+        break;
+      default:
+        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
+        break;
+    }
   }
 }
 

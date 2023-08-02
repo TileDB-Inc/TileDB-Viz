@@ -47,7 +47,14 @@ export default defineConfig({
         scss: {
             prependData: `@import './src/assets/_design-tokens.scss';`
         }
-      })
+      }),
+      onwarn: (warning, handler) => {
+        const { code, frame } = warning;
+        if (code === "css-unused-selector")
+            return;
+
+        handler(warning);
+      }
     }),
     dts({ insertTypesEntry: true, copyDtsFiles: true, outDir: './dist' }),
     minifyEs()

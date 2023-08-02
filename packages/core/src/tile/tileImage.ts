@@ -30,6 +30,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private levels!: LevelRecord[];
   private groupAssets!: AssetEntry[];
   private camera!: FreeCamera;
+  private gui!: TileImageGUI;
   private tileSize = 1024;
 
   private pointerDownStartPosition: Nullable<Vector3>;
@@ -52,88 +53,107 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
-      [this.metadata, this.attributes, this.dimensions, this.levels] =
-        (await getAssetMetadata({
-          token: this.options.token,
-          tiledbEnv: this.options.tiledbEnv,
-          namespace: this.options.namespace,
-          assetID: this.options.assetID
-        })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
-
-      this.groupAssets = await getGroupContents({
-        token: this.options.token,
-        tiledbEnv: this.options.tiledbEnv,
-        namespace: this.options.namespace,
-        assetID: this.options.assetID,
-        baseGroup: this.options.baseGroup
-      });
-
-      this.baseWidth =
-        this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
-      this.baseHeight =
-        this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
       this.scene = scene;
-
-      setupCamera(
-        this.scene,
-        this.zoom,
-        new Vector3(this.baseWidth / 2, -100, this.baseHeight / 2)
-      );
-      this.setupCameraMovement();
-
-      if (this.scene.activeCamera === null) {
-        throw new Error('Failed to initialize camera');
-      }
-
-      this.camera = this.scene.activeCamera as FreeCamera;
-
-      this.tileset = new Tileset(
-        this.levels,
-        this.dimensions,
-        this.metadata.channels,
-        this.attributes,
-        this.tileSize,
-        this.options.namespace,
-        this.options.token,
-        '',
-        scene
-      );
-
-      this.scene.getEngine().onResizeObservable.add(() => {
-        this.resizeViewport();
-        this.tileset.minimap.resize();
-      });
-
-      new TileImageGUI(
-        this.scene,
-        this.tileset,
-        this.rootElement,
-        this.height,
-        this.metadata.channels.get('intensity') ?? [],
-        this.dimensions,
-        this.groupAssets,
-        (step: number) => this.onZoom(step),
-        () => this.clearCache()
-      );
-
-      this.updateEngineInfo();
-
-      const intervalID = setInterval(() => this.updateEngineInfo(), 30 * 1000);
-
-      this.scene.onDisposeObservable.add(() => {
-        clearInterval(intervalID);
-      });
-
-      this.scene.onBeforeRenderObservable.add(() => {
-        this.fetchTiles();
-
-        //console.log(this.scene.getEngine()._uniformBuffers.length);
-      });
-
+      await this.initializeScene();
       // scene.debugLayer.show();
 
       return scene;
     });
+  }
+
+  private async initializeScene() {
+    this.pointerDownStartPosition = null;
+    this.zoom = 0.25;
+
+    [this.metadata, this.attributes, this.dimensions, this.levels] =
+      (await getAssetMetadata({
+        token: this.options.token,
+        tiledbEnv: this.options.tiledbEnv,
+        namespace: this.options.namespace,
+        assetID: this.options.assetID
+      })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
+
+    this.groupAssets = await getGroupContents({
+      token: this.options.token,
+      tiledbEnv: this.options.tiledbEnv,
+      namespace: this.options.namespace,
+      assetID: this.options.assetID,
+      baseGroup: this.options.baseGroup
+    });
+
+    this.baseWidth =
+      this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
+    this.baseHeight =
+      this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
+    this.scene.getEngine().disableUniformBuffers = false;
+
+    setupCamera(
+      this.scene,
+      this.zoom,
+      new Vector3(this.baseWidth / 2, -100, this.baseHeight / 2)
+    );
+    this.setupCameraMovement();
+
+    if (this.scene.activeCamera === null) {
+      throw new Error('Failed to initialize camera');
+    }
+
+    this.camera = this.scene.activeCamera as FreeCamera;
+
+    this.tileset = new Tileset(
+      this.levels,
+      this.dimensions,
+      this.metadata.channels,
+      this.attributes,
+      this.tileSize,
+      this.options.namespace,
+      this.options.token,
+      '',
+      this.scene
+    );
+
+    this.scene.getEngine().onResizeObservable.add(() => {
+      this.resizeViewport();
+      this.tileset.minimap.resize();
+    });
+
+    this.gui = new TileImageGUI(
+      this.scene,
+      this.tileset,
+      this.rootElement,
+      this.metadata.channels.get('intensity') ?? [],
+      this.dimensions,
+      this.groupAssets,
+      (step: number) => this.onZoom(step),
+      () => this.clearCache(),
+      (namespace: string, assetID: string) =>
+        this.onAssetSelection(namespace, assetID)
+    );
+
+    this.updateEngineInfo();
+
+    const intervalID = setInterval(() => this.updateEngineInfo(), 30 * 1000);
+
+    this.scene.onDisposeObservable.add(() => {
+      clearInterval(intervalID);
+      this.gui.dispose();
+    });
+
+    this.scene.onBeforeRenderObservable.add(() => {
+      this.fetchTiles();
+
+      //console.log(this.scene.getEngine()._uniformBuffers.length);
+    });
+  }
+
+  private clearScene() {
+    this.scene.onDisposeObservable.clear();
+    this.scene.onBeforeRenderObservable.clear();
+
+    this.gui.dispose();
+    this.camera.dispose();
+    this.tileset.minimap.dispose();
+    this.tileset.tiles.forEach(x => x.dispose());
   }
 
   private updateEngineInfo() {
@@ -224,6 +244,19 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
           zoom: Math.log2(this.zoom)
         }
       })
+    );
+  }
+
+  private onAssetSelection(namespace: string, assetID: string) {
+    this.scene.getEngine().stopRenderLoop();
+
+    this.clearScene();
+
+    this.options.assetID = assetID;
+    this.options.namespace = namespace;
+
+    this.initializeScene().then(() =>
+      this.scene.getEngine().runRenderLoop(() => this.scene.render())
     );
   }
 

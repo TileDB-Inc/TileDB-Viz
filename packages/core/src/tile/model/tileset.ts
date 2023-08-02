@@ -570,6 +570,15 @@ export class Minimap {
     this.vertexData.indices = [0, 3, 1, 1, 3, 2];
   }
 
+  public updateVisibleArea(
+    top: number,
+    bottom: number,
+    left: number,
+    right: number
+  ) {
+    //TODO
+  }
+
   public updateTileOptionsAndData(
     channelRanges: number[],
     dimensions: Dimension[],

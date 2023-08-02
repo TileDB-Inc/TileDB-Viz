@@ -4,12 +4,12 @@
   import { onMount } from 'svelte';
   import Section from './Section.component.svelte';
   import { rangeToPagination } from './utils/capitalize';
+  import events from './constants/events';
 
   export let groups = '[]';
   export let itemsPerPage = 5;
 
   onMount(async () => {
-    console.log(groups);
     let parsedGroups = JSON.parse(groups);
     filteredGroups = [...parsedGroups];
   });
@@ -34,6 +34,21 @@
   let filteredGroups = [...parsedGroups];
   let pages = Math.ceil(filteredGroups.length / itemsPerPage);
   let currentPage = 0;
+
+  function onClick(namespace, assetID) {
+    window.dispatchEvent(
+      new CustomEvent(events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          id: 'asset_selection',
+          props: {
+            namespace,
+            assetID
+          }
+        }
+      })
+    );
+  }
 </script>
 
 <Section id={'group-panel'}>
@@ -57,12 +72,12 @@
       class="Viewer-GroupSelector__value"
       placeholder="Search Group"
       type="search"
-      on:input={e => filterGroups(e)}
+      on:input={filterGroups}
     />
     <ul class="Viewer-GroupSelector__list">
       {#each filteredGroups.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage) as group}
         <li class="Viewer-GroupSelector__item">
-          <button class="Viewer-GroupSelector__item-content" on:click={() => {}}>
+          <button class="Viewer-GroupSelector__item-content" on:click={() => onClick(group.namespace, group.id)}>
             <div class="Viewer-GroupSelector__item-icon">
               <svg
                 width="32"
