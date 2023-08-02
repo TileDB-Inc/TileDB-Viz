@@ -81,6 +81,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
+    console.log(this.metadata, this.attributes, this.dimensions, this.levels);
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
@@ -121,7 +122,9 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.scene,
       this.tileset,
       this.rootElement,
-      this.metadata.channels.get('intensity') ?? [],
+      this.metadata.channels.get(
+        this.attributes.filter(x => x.visible)[0].name
+      ) ?? [],
       this.dimensions,
       this.groupAssets,
       (step: number) => this.onZoom(step),

@@ -68,6 +68,7 @@ export interface BiomedicalAssetMetadata extends AssetMetadata {
 
 export interface RasterAssetMetadata extends AssetMetadata {
   metadata: string;
+  _gdal?: string;
 }
 
 export interface ImageMetadata extends AssetMetadata {
@@ -138,7 +139,7 @@ export const types = {
   uint16: {
     bytes: Uint16Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,
-    type: Constants.TEXTURETYPE_SHORT,
+    type: Constants.TEXTURETYPE_UNSIGNED_SHORT,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'usampler2DArray',
     create: function (size: number) {

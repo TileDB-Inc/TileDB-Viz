@@ -102,9 +102,19 @@ export async function getAssetMetadata(
         uris
       );
     case 'RASTER':
-      getRasterMetadata(assetMetadata as RasterAssetMetadata, attributes);
-      break;
+      return getRasterMetadata(
+        assetMetadata as RasterAssetMetadata,
+        attributes,
+        uris
+      );
     default:
+      if ((assetMetadata as any)._gdal) {
+        return getRasterMetadata(
+          assetMetadata as RasterAssetMetadata,
+          attributes,
+          uris
+        );
+      }
       throw new Error(`Unknown dataset type '${assetMetadata.dataset_type}'`);
   }
 
