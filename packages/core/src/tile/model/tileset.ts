@@ -14,6 +14,7 @@ import { BioimageShaderMaterial } from '../materials/bioimageShaderMaterial';
 import { Attribute, Dimension } from '../../types';
 import { BioimageMinimapShaderMaterial } from '../materials/bioimageMinimapMaterial';
 import { range } from '../utils/helpers';
+import { Events } from '@tiledb-inc/viz-components';
 
 export class Tileset {
   public tiles: Map<string, Tile>;
@@ -426,6 +427,7 @@ export class Tile {
     tileOptions: UniformBuffer
   ) {
     if (!this.isLoaded) {
+      updateLoadingStatus(true);
       this.worker.terminate();
     }
 
@@ -435,6 +437,8 @@ export class Tile {
   }
 
   public load(channelRanges: number[]) {
+    updateLoadingStatus(false);
+
     const data = {
       index: this.index,
       tileSize: this.tileSize,
@@ -501,6 +505,8 @@ export class Tile {
 
       this.mesh.material = material;
       this.mesh.material.freeze();
+
+      updateLoadingStatus(true);
     };
 
     this.isLoaded = false;
@@ -511,6 +517,7 @@ export class Tile {
 
   public dispose() {
     if (!this.isLoaded) {
+      updateLoadingStatus(true);
       this.worker.terminate();
     }
 
@@ -728,4 +735,16 @@ function getChildren(index: number[]): number[][] {
     [2 * index[0], 2 * index[1] + 1, index[2] + 1],
     [2 * index[0] + 1, 2 * index[1] + 1, index[2] + 1]
   ];
+}
+
+function updateLoadingStatus(loaded: boolean) {
+  window.dispatchEvent(
+    new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+      bubbles: true,
+      detail: {
+        type: 'LOADING_TILE',
+        loaded
+      }
+    })
+  );
 }

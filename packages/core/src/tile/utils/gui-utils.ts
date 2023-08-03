@@ -51,6 +51,8 @@ class TileImageGUI {
     this.uiWrapper = document.createElement('div');
 
     this.uiWrapper.innerHTML = `
+    <status-overlay>
+    </status-overlay>
     <sidebar-menu>
       <zoom-control zoom='-2'>
       </zoom-control>

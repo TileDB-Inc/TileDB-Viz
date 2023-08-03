@@ -16,3 +16,4 @@ export { default as Sliderr } from './Sliderr.component.svelte';
 export { default as DimensionPanel } from './DimensionPanel.component.svelte';
 export { default as GroupPanel } from './GroupPanel.component.svelte';
 export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';
+export { default as StatusOverlay } from './StatusOverlay.component.svelte';
