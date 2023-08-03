@@ -8,7 +8,8 @@ import {
   UniformBuffer,
   Nullable,
   Vector2,
-  ShaderMaterial
+  ShaderMaterial,
+  Vector4
 } from '@babylonjs/core';
 import { BioimageShaderMaterial } from '../materials/bioimageShaderMaterial';
 import { Attribute, Dimension } from '../../types';
@@ -146,6 +147,15 @@ export class Tileset {
     const bottom = camera.position.z + (camera?.orthoBottom ?? 0);
     const left = camera.position.x + (camera?.orthoLeft ?? 0);
     const right = camera.position.x + (camera?.orthoRight ?? 0);
+
+    if (this.minimap.isLoaded) {
+      this.minimap.updateVisibleArea(
+        Math.min(this.baseHeight, Math.max(top, 0)),
+        Math.min(this.baseWidth, Math.max(left, 0)),
+        Math.min(this.baseHeight, Math.max(bottom, 0)),
+        Math.min(this.baseWidth, Math.max(right, 0))
+      );
+    }
 
     if (
       top < 0 ||
@@ -543,6 +553,7 @@ export class Minimap {
   private level: LevelRecord;
   private attribute: Attribute;
   private dimensions: Dimension[];
+  private visibleArea: Vector4;
 
   constructor(
     index: number[],
@@ -575,15 +586,7 @@ export class Minimap {
     this.vertexData.positions = [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0];
     this.vertexData.uvs = [0, 1, 1, 1, 1, 0, 0, 0];
     this.vertexData.indices = [0, 3, 1, 1, 3, 2];
-  }
-
-  public updateVisibleArea(
-    top: number,
-    bottom: number,
-    left: number,
-    right: number
-  ) {
-    //TODO
+    this.visibleArea = new Vector4(1, 0, 0, 1);
   }
 
   public updateTileOptionsAndData(
@@ -695,6 +698,31 @@ export class Minimap {
     this.isPending = true;
 
     this.worker.postMessage(data);
+  }
+
+  public updateVisibleArea(
+    top: number,
+    left: number,
+    bottom: number,
+    right: number
+  ) {
+    if (!this.mesh) {
+      return;
+    }
+
+    // Invert top and bottom
+    Vector4.FromFloatsToRef(
+      left / this.bounds[2],
+      bottom / this.bounds[3],
+      right / this.bounds[2],
+      top / this.bounds[3],
+      this.visibleArea
+    );
+
+    (this.mesh.material as ShaderMaterial).setVector4(
+      'visibleArea',
+      this.visibleArea
+    );
   }
 
   public resize() {

@@ -45,8 +45,15 @@ export function BioimageMinimapShaderMaterial(
     };
     
     uniform ${samplerType} texture_arr;
+    uniform vec4 visibleArea; // L-T-R-B
 
     in vec2 vTexCoord;
+
+    float sdAxisAlignedRect(vec2 uv, vec2 tl, vec2 br)
+    {
+      vec2 d = max(tl-uv, uv-br);
+      return length(max(vec2(0.0), d)) + min(0.0, max(d.x, d.y));
+    }
 
     void main() {
       vec4 color = vec4(0.0);
@@ -56,6 +63,13 @@ export function BioimageMinimapShaderMaterial(
         if (channelMapping[i].r == -1) continue;
         float intensity = float(texture(texture_arr, vec3(vTexCoord.xy, channelMapping[i].r)).r);
         color += colors[i] * clamp((intensity - ranges[i].x) / (ranges[i].y - ranges[i].x + 0.01), 0.0, 1.0);
+      }
+
+      float dist = sdAxisAlignedRect(vTexCoord, visibleArea.xy, visibleArea.zw);
+
+      if (dist <= 0.0)
+      {
+        color.rgb = mix(vec3(1.0, 0.0, 0.0), color.rgb, 1.0 - 1.0 / (50.0 * abs(dist) + 1.0));
       }
       
       glFragColor = vec4(color.rgb, 1.0);
@@ -78,7 +92,8 @@ export function BioimageMinimapShaderMaterial(
         'texture_arr',
         'screenSize',
         'minimapSize',
-        'margins'
+        'margins',
+        'visibleArea'
       ],
       uniformBuffers: ['tileOptions']
     }
