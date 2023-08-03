@@ -27,7 +27,7 @@ export function BioimageMinimapShaderMaterial(
     {
       vec2 unitsPerPixel = vec2(2.0) / screenSize;
 
-      gl_Position = (vec4(position, 1.0) * vec4(minimapSize, 0.0, 1.0) + vec4(margins, 0.0, 0.0)) * vec4(unitsPerPixel, 0.0, 1.0) - vec4(1.0, 1.0, 0.99, 0.0);
+      gl_Position = (vec4(position, 1.0) * vec4(minimapSize, 0.0, 1.0) + vec4(margins, 0.0, 0.0)) * vec4(unitsPerPixel.x, -unitsPerPixel.y, 0.0, 1.0) - vec4(1.0, -1.0, 0.99, 0.0);
 
       vTexCoord = uv;
     }

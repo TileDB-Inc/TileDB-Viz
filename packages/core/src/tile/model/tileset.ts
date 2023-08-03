@@ -584,7 +584,7 @@ export class Minimap {
 
     this.vertexData = new VertexData();
     this.vertexData.positions = [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0];
-    this.vertexData.uvs = [0, 1, 1, 1, 1, 0, 0, 0];
+    this.vertexData.uvs = [0, 0, 1, 0, 1, 1, 0, 1];
     this.vertexData.indices = [0, 3, 1, 1, 3, 2];
     this.visibleArea = new Vector4(1, 0, 0, 1);
   }
