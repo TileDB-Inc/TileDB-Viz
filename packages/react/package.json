@@ -21,6 +21,14 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
+  "targets": {
+    "main": {
+      "optimize": true
+    },
+    "module": {
+      "optimize": true
+    }
+  },
   "packageManager": "yarn@3.2.3",
   "scripts": {
     "build": "yarn g:parcel build",
