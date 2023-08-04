@@ -12,7 +12,6 @@ export { default as Section } from './Section.component.svelte';
 export { default as ZoomControl } from './ZoomControl.component.svelte';
 export { default as CacheControl } from './CacheControl.component.svelte';
 export { default as ChannelPanel } from './ChannelPanel.component.svelte'
-export { default as Sliderr } from './Sliderr.component.svelte';
 export { default as DimensionPanel } from './DimensionPanel.component.svelte';
 export { default as GroupPanel } from './GroupPanel.component.svelte';
 export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';

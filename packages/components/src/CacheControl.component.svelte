@@ -3,7 +3,6 @@
 <script>
   import Section from './Section.component.svelte';
   import ToggleSwitch from './ToggleSwitch.component.svelte';
-
   import { onMount, onDestroy } from 'svelte';
   import events from './constants/events';
 

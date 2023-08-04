@@ -1,7 +1,7 @@
 <svelte:options customElement="radio-group" />
 
 <script>
-  import capitalize from './utils/capitalize';
+  import { capitalize } from './utils/helpers';
   import events from './constants/events';
 
   export let values = '',

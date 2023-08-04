@@ -1,22 +1,13 @@
 <svelte:options customElement="header-menu" />
 
-<script>
-  import events from './constants/events';
-  
+<script> 
   export let id;
   export let visibleContent = true;
+  export let toggleCallback = (visible) => {};
 
   function onClick(event) {
     visibleContent = !visibleContent;
-    window.dispatchEvent(
-      new CustomEvent(events.MENU_HEADER_VISIBILITY_TOGGLE + id, {
-        bubbles: true,
-        detail: {
-          id,
-          value: visibleContent
-        }
-      })
-    );
+    toggleCallback(visibleContent);
   }
 </script>
 

@@ -2,7 +2,7 @@
 
 <script>
   import Section from './Section.component.svelte';
-  import {pprintZoom} from './utils/capitalize';
+  import { pprintZoom } from './utils/helpers';
   import { onMount, onDestroy } from 'svelte';
   import events from './constants/events';
 

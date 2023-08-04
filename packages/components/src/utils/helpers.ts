@@ -1,4 +1,4 @@
-function capitalize(str: string): string {
+export function capitalize(str: string): string {
   const firstChar = str.charAt(0);
 
   return firstChar.toUpperCase() + str.slice(1);
@@ -42,5 +42,3 @@ export function hexToRgb(hex: string): {r: number, g: number, b: number} | null 
     b: parseInt(result[3], 16)
   } : null;
 }
-
-export default capitalize;

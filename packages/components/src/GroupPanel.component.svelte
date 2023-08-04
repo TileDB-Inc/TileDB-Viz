@@ -3,7 +3,7 @@
 <script>
   import { onMount } from 'svelte';
   import Section from './Section.component.svelte';
-  import { rangeToPagination } from './utils/capitalize';
+  import { rangeToPagination } from './utils/helpers';
   import events from './constants/events';
 
   export let groups = '[]';

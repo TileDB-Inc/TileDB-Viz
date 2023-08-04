@@ -2,8 +2,8 @@
 
 <script>
   import Section from './Section.component.svelte';
-  import Sliderr from './Sliderr.component.svelte';
-  import { rgbToHex, hexToRgb } from './utils/capitalize';
+  import Slider from './Slider.component.svelte';
+  import { rgbToHex, hexToRgb } from './utils/helpers';
   import events from './constants/events';
 
   export let channels = '[]';
@@ -105,7 +105,7 @@
             {/if}
           </button>
         </div>
-        <Sliderr
+        <Slider
             id={`c_${index}`}
             label={channel.name}
             value={channel.intensity}

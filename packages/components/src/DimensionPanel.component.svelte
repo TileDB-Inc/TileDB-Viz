@@ -2,7 +2,7 @@
 
 <script>
   import Section from './Section.component.svelte';
-  import Sliderr from './Sliderr.component.svelte';
+  import Slider from './Slider.component.svelte';
 
   export let dimensions = '[]';
 </script>
@@ -26,7 +26,7 @@
   <ul class="Viewer-ControlPanel__list" slot="content">
     {#each JSON.parse(dimensions) as dimension, index}
       <li class="Viewer-ControlPanel__item">
-        <Sliderr
+        <Slider
           id={`d_${index}`}
           label={dimension.name}
           value={dimension.value}

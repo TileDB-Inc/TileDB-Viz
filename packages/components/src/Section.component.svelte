@@ -2,8 +2,7 @@
 
 <script>
   import Header from './Header.component.svelte';
-  import events from './constants/events';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   export let id = '';
 
@@ -11,35 +10,13 @@
   let maxHeight;
   let visible = true;
 
-  function toggleVissible(e) {
-    visible = e.detail.value;
-  }
-
   onMount(() => {
-    window.addEventListener(
-      events.MENU_HEADER_VISIBILITY_TOGGLE + id,
-      toggleVissible,
-      {
-        capture: true
-      }
-    );
-
     maxHeight = height;
-  });
-
-  onDestroy(() => {
-    window.removeEventListener(
-      events.MENU_HEADER_VISIBILITY_TOGGLE + id,
-      toggleVissible,
-      {
-        capture: true
-      }
-    );
   });
 </script>
 
 <div class="Viewer-Section">
-  <Header {id} visibleContent={visible}>
+  <Header {id} visibleContent={visible} toggleCallback={(showContent) => visible = showContent}>
     <slot name="header" />
   </Header>
   <div
