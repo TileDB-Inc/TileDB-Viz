@@ -55,7 +55,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      scene.debugLayer.show();
+      //scene.debugLayer.show();
 
       return scene;
     });
@@ -80,7 +80,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       assetID: this.options.assetID,
       baseGroup: this.options.baseGroup
     });
-
+    
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
@@ -126,6 +126,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       ) ?? [],
       this.dimensions,
       this.groupAssets,
+      this.metadata,
       (step: number) => this.onZoom(step),
       () => this.clearCache(),
       (namespace: string, assetID: string) =>
@@ -138,6 +139,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     this.scene.onDisposeObservable.add(() => {
       clearInterval(intervalID);
+      this.tileset.dispose();
       this.gui.dispose();
     });
 
@@ -152,10 +154,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onDisposeObservable.clear();
     this.scene.onBeforeRenderObservable.clear();
 
+    this.tileset.dispose();
     this.gui.dispose();
     this.camera.dispose();
-    this.tileset.minimap.dispose();
-    this.tileset.tiles.forEach(x => x.dispose());
+    this.scene.getEngine().clearInternalTexturesCache();
   }
 
   private updateEngineInfo() {
@@ -232,9 +234,12 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private onZoom(step: number) {
-    this.zoom = this.zoom =
+    this.zoom =
       2 **
-      Math.max(-2, Math.min(this.levels.length, Math.log2(this.zoom) + step));
+      Math.max(
+        -2,
+        Math.min(this.levels.length - 1, Math.log2(this.zoom) + step)
+      );
 
     resizeOrtographicCameraViewport(this.scene, this.zoom);
 

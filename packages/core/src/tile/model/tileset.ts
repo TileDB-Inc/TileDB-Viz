@@ -263,7 +263,19 @@ export class Tileset {
     this.calculateChannelMapping();
     this.calculateChannelRanges();
 
+    this.tileOptions = new UniformBuffer(this.scene.getEngine());
+    this.tileOptions.addUniform(
+      'channelMapping',
+      4,
+      this.channelMapping.length / 4
+    );
+    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
+    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
+
     this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+    this.tileOptions.updateFloatArray('colors', this.colors);
+
     this.tileOptions.update();
 
     for (const tile of this.tiles.values()) {
@@ -337,6 +349,14 @@ export class Tileset {
 
       this.channelMapping[4 * index] = visibleCounter++;
     }
+  }
+
+  public dispose() {
+    for (const tile of this.tiles.values()) {
+      tile.dispose();
+    }
+
+    this.minimap.dispose();
   }
 }
 
