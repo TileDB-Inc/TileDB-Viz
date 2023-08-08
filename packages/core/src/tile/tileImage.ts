@@ -80,7 +80,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       assetID: this.options.assetID,
       baseGroup: this.options.baseGroup
     });
-    
+
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
