@@ -327,6 +327,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;
       let isPanning = false;
+      let zoomChanged = true;
 
       // register for onPointerDown as we need the keyboard state as well
       scene.onPointerDown = evt => {
@@ -354,6 +355,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             if (delta) {
               this.model.calculateBlocks();
             }
+            zoomChanged = true;
             break;
           }
           case PointerEventTypes.POINTERUP: {
@@ -468,14 +470,11 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       });
 
       this.scene.onBeforeRenderObservable.add(() => {
-        if (
-          scene.activeCamera instanceof ArcRotateCamera &&
-          this.arcCameraRadius !== scene.activeCamera.radius
-        ) {
+        if (zoomChanged && scene.activeCamera instanceof ArcRotateCamera) {
+          zoomChanged = false;
           const ratio = this.arcCameraRadius / scene.activeCamera.radius;
-          this.arcCameraRadius = scene.activeCamera.radius;
 
-          scene.activeCamera.panningSensibility *= ratio * 0.996;
+          scene.activeCamera.panningSensibility = ratio * 100;
         }
       });
 
