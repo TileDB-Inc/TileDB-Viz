@@ -1,3 +1,7 @@
-import { getAssetMetadata, getGroupContents } from './metadata-utils';
+import {
+  getAssetMetadata,
+  getGroupContents,
+  getGeometryMetadata
+} from './metadata-utils';
 
-export { getAssetMetadata, getGroupContents };
+export { getAssetMetadata, getGroupContents, getGeometryMetadata };

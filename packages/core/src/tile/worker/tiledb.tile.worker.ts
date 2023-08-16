@@ -1,7 +1,7 @@
 import client from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { QueryMessage, TypedArray, types } from '../types';
-import { transpose, sliceRanges, Axes } from '../utils';
+import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 
 self.onmessage = async function (event: MessageEvent<QueryMessage>) {

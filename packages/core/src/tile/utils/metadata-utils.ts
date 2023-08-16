@@ -297,5 +297,22 @@ export function getRasterMetadata(
     });
   });
 
+  const xml = parseXML(rasterMetadata._gdal ?? '');
+
+  imageMetadata.crs =
+    xml.getElementsByTagName('SRS')[0].childNodes[0].nodeValue ?? undefined;
+  imageMetadata.transformationCoefficients =
+    xml
+      .getElementsByTagName('GeoTransform')[0]
+      .childNodes[0].nodeValue?.split(',')
+      .map(x => Number(x)) ?? undefined;
+
   return [imageMetadata, attributes, dimensions, levelRecords];
+}
+
+function parseXML(xmlText: string) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+
+  return doc;
 }

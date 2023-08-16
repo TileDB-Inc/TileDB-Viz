@@ -46,16 +46,22 @@
     "@babylonjs/loaders": "^5.42.0",
     "@babylonjs/materials": "^5.42.0",
     "@babylonjs/serializers": "^5.42.0",
-    "@tiledb-inc/tiledb-cloud": "1.0.12-beta.1",
+    "@syncpoint/wkx": "0.5.2",
+    "@tiledb-inc/tiledb-cloud": "1.0.14-alpha.1",
     "@tiledb-inc/viz-components": "workspace:packages/components",
     "babylonjs-gui": "^5.42.0",
     "babylonjs-materials": "^5.42.0",
-    "idb": "^7.0.2"
+    "earcut": "2.2.4",
+    "idb": "^7.0.2",
+    "node-buffer": "npm:buffer@6.0.3",
+    "proj4": "^2.9.0",
+    "wkt-crs": "^0.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.0",
     "@babel/preset-env": "^7.18.10",
     "@babel/preset-typescript": "^7.18.6",
+    "@types/proj4": "^2.5.2",
     "parcel": "^2.9.3"
   }
 }

@@ -2,6 +2,14 @@ export interface AssetMetadata {
   dataset_type: string;
 }
 
+export interface GeometryMetadata {
+  type: string;
+  attribute: string;
+  crs?: string;
+  extent: number[]; // [minX, minY, maxX, maxY]
+  pad: number[]; // [padX, padY]
+}
+
 export interface AssetEntry {
   namespace: string;
   name: string;
@@ -13,6 +21,7 @@ export interface AssetOptions {
   tiledbEnv?: string;
   namespace: string;
   assetID: string;
+  geometryID?: string;
   baseGroup?: string;
 }
 

@@ -12,16 +12,22 @@ import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Attribute, Dimension } from '../types';
-import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
+import { AssetEntry, Attribute, Dimension, GeometryMetadata } from '../types';
+import {
+  getAssetMetadata,
+  getGeometryMetadata,
+  getGroupContents
+} from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
 import { clearMultiCache, getTileCount } from '../utils/cache';
+import { GeometrySet } from './model/geometryset';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
   private tileset!: Tileset;
+  private geometryset!: GeometrySet;
   private baseWidth!: number;
   private baseHeight!: number;
   private metadata!: ImageMetadata;
@@ -32,6 +38,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private camera!: FreeCamera;
   private gui!: TileImageGUI;
   private tileSize = 1024;
+  private geometryMetadata?: GeometryMetadata;
 
   private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
@@ -81,6 +88,25 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
+    this.groupAssets = await getGroupContents({
+      token: this.options.token,
+      tiledbEnv: this.options.tiledbEnv,
+      namespace: this.options.namespace,
+      assetID: this.options.assetID,
+      baseGroup: this.options.baseGroup
+    });
+
+    if (this.options.geometryID) {
+      this.geometryMetadata = await getGeometryMetadata({
+        token: this.options.token,
+        tiledbEnv: this.options.tiledbEnv,
+        namespace: this.options.namespace,
+        assetID: this.options.assetID,
+        baseGroup: this.options.baseGroup,
+        geometryID: this.options.geometryID
+      });
+    }
+
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
@@ -111,6 +137,26 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       '',
       this.scene
     );
+
+    if (this.geometryMetadata) {
+      const width =
+        this.levels.at(-1)?.dimensions[this.levels[0].axes.indexOf('X')] ?? 0;
+      const height =
+        this.levels.at(-1)?.dimensions[this.levels[0].axes.indexOf('Y')] ?? 0;
+      this.geometryset = new GeometrySet(
+        width,
+        height,
+        this.levels.length,
+        this.tileSize,
+        this.metadata.crs ?? '',
+        this.geometryMetadata.crs ?? '',
+        this.metadata.transformationCoefficients ?? [],
+        this.options.namespace,
+        this.options.token,
+        '',
+        this.scene
+      );
+    }
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
@@ -187,8 +233,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
-    this.tileset.evict();
+    //this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
+    this.geometryset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
+    //this.tileset.evict();
+    this.geometryset.evict();
   }
 
   private resizeViewport() {

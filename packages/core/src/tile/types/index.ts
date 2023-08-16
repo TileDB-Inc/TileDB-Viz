@@ -5,6 +5,7 @@ import { Attribute, Dimension, AssetMetadata } from '../../types';
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   assetID: string;
+  geometryID?: string;
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -45,6 +46,19 @@ export interface QueryMessage {
   dimensions: Dimension[];
 }
 
+export interface GeometryMessage {
+  index: number[];
+  tileSize: number;
+  token: string;
+  basePath: string;
+  namespace: string;
+  geometryID: string;
+  attribute: string;
+  imageCRS: string;
+  geometryCRS: string;
+  geotransformCoefficients: number[];
+}
+
 export interface LevelRecord {
   id: string;
   zoomLevel: number;
@@ -81,6 +95,8 @@ export interface ImageMetadata extends AssetMetadata {
   physicalSizeZUnit?: string;
   timeIncrement?: number;
   timeIncrementUnit?: string;
+  crs?: string;
+  transformationCoefficients?: number[];
   axes: Array<AxesMetadata>;
 }
 
