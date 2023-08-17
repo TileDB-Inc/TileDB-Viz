@@ -8,6 +8,7 @@ import {
   Color4
 } from '@babylonjs/core';
 import { TileDBPointCloudOptions } from '../utils/tiledb-pc';
+import { getWebGLExtension } from '../../utils/webgl_helpers';
 
 export class SPSHighQualitySplats {
   private scene: Scene;
@@ -47,7 +48,9 @@ export class SPSHighQualitySplats {
       {
         generateDepthBuffer: false,
         format: Constants.TEXTUREFORMAT_RGBA,
-        type: Constants.TEXTURETYPE_FLOAT
+        type: getWebGLExtension('EXT_float_blend', this.scene)
+          ? Constants.TEXTURETYPE_FLOAT
+          : Constants.TEXTURETYPE_HALF_FLOAT
       }
     );
     additiveColorRenderTarget.clearColor = new Color4(0.0, 0.0, 0.0, 0.0);
