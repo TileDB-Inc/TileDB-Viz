@@ -5,7 +5,8 @@ import {
   FreeCamera,
   HemisphericLight,
   Scene,
-  Vector3
+  Vector3,
+  ArcRotateCameraPointersInput
 } from '@babylonjs/core';
 import { TileDBPointCloudOptions } from './tiledb-pc';
 
@@ -61,6 +62,9 @@ export function setCameraLight(
   camera0.minZ = options.cameraNearPlane || 1;
   camera0.maxZ = options.cameraFarPlane || 10000;
   camera0.fov = options.cameraFOV || 0.8;
+  (
+    camera0.inputs.attached['pointers'] as ArcRotateCameraPointersInput
+  ).useNaturalPinchZoom = true;
 
   // freeCamera
   const camera1 = new FreeCamera('Free', centreFreeWorld, scene);
