@@ -2,17 +2,22 @@
 
 <script>
   import Header from './Header.component.svelte';
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate  } from 'svelte';
 
   export let id = '';
 
-  let height;
+  let element;
   let maxHeight;
   let visible = true;
-
+  
   onMount(() => {
-    maxHeight = height;
+    maxHeight = element.scrollHeight;
   });
+
+  afterUpdate(() => {
+    maxHeight = element.scrollHeight;
+  });
+
 </script>
 
 <div class="Viewer-Section">
@@ -20,7 +25,7 @@
     <slot name="header" />
   </Header>
   <div
-    bind:clientHeight={height}
+    bind:this={element}
     class="Viewer-Section__container"
     style="max-height: {visible ? maxHeight : 0}px;"
   >

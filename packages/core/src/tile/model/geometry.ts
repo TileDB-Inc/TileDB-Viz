@@ -2,6 +2,8 @@ import { Mesh, Scene, Nullable, VertexData } from '@babylonjs/core';
 import { Events } from '@tiledb-inc/viz-components';
 import { GeometryMessage } from '../types';
 import { PolygonShaderMaterial } from '../materials/polygonShaderMaterial';
+import { LineShaderMaterial } from '../materials/lineShaderMaterial';
+import { GeometryMetadata } from '../../types';
 
 export class Geometry {
   public isLoaded: boolean;
@@ -14,20 +16,22 @@ export class Geometry {
   private scene: Scene;
   private worker!: Worker;
 
+  private geometryID: string;
   private namespace: string;
   private token: string;
   private basePath: string;
 
   private imageCRS: string;
-  private geometryCRS: string;
+  private geometryMetadata: GeometryMetadata;
   private geotransformCoefficients: number[];
   private tileSize: number;
 
   public constructor(
     index: number[],
+    geometryID: string,
     tileSize: number,
+    geometryMetadata: GeometryMetadata,
     imageCRS: string,
-    geometryCRS: string,
     geotransformCoefficients: number[],
     namespace: string,
     token: string,
@@ -37,6 +41,7 @@ export class Geometry {
     this.mesh = null;
     this.index = index;
     this.scene = scene;
+    this.geometryID = geometryID
     this.namespace = namespace;
     this.token = token;
     this.basePath = basePath;
@@ -44,7 +49,7 @@ export class Geometry {
     this.canEvict = false;
     this.isLoaded = false;
     this.isPending = false;
-    this.geometryCRS = geometryCRS;
+    this.geometryMetadata = geometryMetadata;
     this.imageCRS = imageCRS;
     this.tileSize = tileSize;
   }
@@ -55,13 +60,14 @@ export class Geometry {
     const data = {
       index: this.index,
       tileSize: this.tileSize,
-      geometryID: '3a141cc1-cd90-4c14-bb8d-0881819b51f2',
+      geometryID: this.geometryID,
       namespace: this.namespace,
       token: this.token,
       basePath: this.basePath,
-      attribute: 'wkb_geometry',
+      attribute: this.geometryMetadata.attribute,
+      type: this.geometryMetadata.type,
       imageCRS: this.imageCRS,
-      geometryCRS: this.geometryCRS,
+      geometryCRS: this.geometryMetadata.crs,
       geotransformCoefficients: this.geotransformCoefficients
     } as GeometryMessage;
 
@@ -76,20 +82,34 @@ export class Geometry {
       this.worker.terminate();
       this.mesh?.dispose();
 
-      if (event.data.positions.length !== 0) {
-        this.vertexData = new VertexData();
-        this.vertexData.positions = event.data.positions;
-        this.vertexData.indices = event.data.indices;
+      // if (event.data.positions.length !== 0) {
+      //   this.vertexData = new VertexData();
+      //   this.vertexData.positions = event.data.positions;
+      //   this.vertexData.indices = event.data.indices;
 
-        this.mesh = new Mesh(this.index.toString(), this.scene);
-        this.vertexData.applyToMesh(this.mesh, false);
+      //   this.mesh = new Mesh(this.index.toString(), this.scene);
+      //   this.vertexData.applyToMesh(this.mesh, false);
 
-        this.mesh.position.addInPlaceFromFloats(0, -10, 0);
-        this.mesh.material = PolygonShaderMaterial(
-          this.index.toString(),
-          this.scene
-        );
-      }
+      //   this.mesh.position.addInPlaceFromFloats(0, -10, 0);
+
+      //   switch (this.geometryMetadata.type) {
+      //     case "LineString":
+      //       this.mesh.material = LineShaderMaterial(
+      //         this.index.toString(),
+      //         this.scene
+      //       );
+      //       break;
+      //     case "Polygon":
+      //       this.mesh.material = PolygonShaderMaterial(
+      //         this.index.toString(),
+      //         this.scene
+      //       );
+      //       break;
+      //     default:
+      //       console.warn(`Unknown geometry type "${event.data.type}"`);
+      //       break;
+      //   }
+      // }
 
       this.updateLoadingStatus(true);
 

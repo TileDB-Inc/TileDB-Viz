@@ -11,27 +11,25 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
   const [x, y] = event.data.index;
   const tileSize = event.data.tileSize;
 
-  const cachedPositions = await getQueryDataFromCache(
-    `${event.data.geometryID}_${tileSize}`,
-    `${'position'}_${x}_${y}`
-  );
-  if (cachedPositions) {
-    const cachedIndices = await getQueryDataFromCache(
-      `${event.data.geometryID}_${tileSize}`,
-      `${'indices'}_${x}_${y}`
-    );
-    self.postMessage(
-      {
-        positions: cachedPositions,
-        indices: cachedIndices
-      },
-      [cachedPositions.buffer, cachedIndices.buffer] as any
-    );
+  // const cachedPositions = await getQueryDataFromCache(
+  //   `${event.data.geometryID}_${tileSize}`,
+  //   `${'position'}_${x}_${y}`
+  // );
+  // if (cachedPositions) {
+  //   const cachedIndices = await getQueryDataFromCache(
+  //     `${event.data.geometryID}_${tileSize}`,
+  //     `${'indices'}_${x}_${y}`
+  //   );
+  //   self.postMessage(
+  //     {
+  //       positions: cachedPositions,
+  //       indices: cachedIndices
+  //     },
+  //     [cachedPositions.buffer, cachedIndices.buffer] as any
+  //   );
 
-    return;
-  }
-
-  console.log('weird');
+  //   return;
+  // }
 
   const config = {
     apiKey: event.data.token
@@ -39,7 +37,7 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
   };
 
   const queryClient = new client(config);
-  const converter = proj4(event.data.geometryCRS, event.data.imageCRS);
+  const converter = proj4('PROJCS["NZGD2000 / New Zealand Transverse Mercator 2000",GEOGCS["NZGD2000",DATUM["New_Zealand_Geodetic_Datum_2000",SPHEROID["GRS 1980",6378137,298.257222101]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4167"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",173],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",1600000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","2193"]]', event.data.imageCRS);
   const geotransformCoefficients = event.data.geotransformCoefficients;
 
   const xPixelLimits = [x * tileSize, (x + 1) * tileSize];
@@ -71,8 +69,9 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
       [minLimit[0], maxLimit[0]].sort(),
       [minLimit[1], maxLimit[1]].sort()
     ],
-    bufferSize: 40_000_000,
-    attributes: [event.data.attribute]
+    bufferSize: 5_000_000,
+    attributes: [event.data.attribute],
+    //returnRawBuffers: true
   };
 
   const generator = queryClient.query.ReadQuery(
@@ -88,16 +87,16 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
   }
 
   if (wkbs.length === 0) {
-    await writeToCache(
-      `${event.data.geometryID}_${tileSize}`,
-      `${'position'}_${x}_${y}`,
-      new Float32Array()
-    );
-    await writeToCache(
-      `${event.data.geometryID}_${tileSize}`,
-      `${'indices'}_${x}_${y}`,
-      new Int32Array()
-    );
+    // await writeToCache(
+    //   `${event.data.geometryID}_${tileSize}`,
+    //   `${'position'}_${x}_${y}`,
+    //   new Float32Array()
+    // );
+    // await writeToCache(
+    //   `${event.data.geometryID}_${tileSize}`,
+    //   `${'indices'}_${x}_${y}`,
+    //   new Int32Array()
+    // );
 
     self.postMessage({
       positions: [],
@@ -107,11 +106,75 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
     return;
   }
 
-  let positionOffset = 0;
-
   const positions: number[] = [];
   const indices: number[] = [];
 
+  console.log(event.data.index + " start");
+
+  switch (event.data.type) {
+    case "LineString":
+      parseLine(wkbs, positions, indices, converter, event.data.geotransformCoefficients);
+      break;
+    case "Polygon":
+      parsePolygon(wkbs, positions, indices, converter, event.data.geotransformCoefficients);
+      break;
+    default:
+      console.warn(`Unknown geometry type "${event.data.type}"`);
+      self.close();
+      return;
+  }
+  
+  const rawPositions = Float32Array.from(positions);
+  const rawIndices = Int32Array.from(indices);
+
+  // await writeToCache(
+  //   `${event.data.geometryID}_${tileSize}`,
+  //   `${'position'}_${x}_${y}`,
+  //   rawPositions
+  // );
+  // await writeToCache(
+  //   `${event.data.geometryID}_${tileSize}`,
+  //   `${'indices'}_${x}_${y}`,
+  //   rawIndices
+  // );
+
+  self.postMessage(
+    {
+      positions: rawPositions,
+      indices: rawIndices
+    },
+    [rawPositions.buffer, rawIndices.buffer] as any
+  );
+};
+
+function parseLine(wkbs: ArrayBuffer[], positions: number[], indices: number[], converter: proj4.Converter, geotransformCoefficients: number[]) {
+  let vertexIndex = -1;
+  
+  // for (const wkb of wkbs) {
+  //   const entry = wkx.Geometry.parse(NodeBuffer.from(wkb as ArrayBuffer));
+
+  //   for (let index = 0; index < entry.points.length; ++index) {
+  //     const point = entry.points[index];
+  //     // [point.x, point.y] = converter.forward([point.x, point.y]);
+  //     [point.x, point.y] = [(point.x - geotransformCoefficients[0]) / geotransformCoefficients[1], (point.y - geotransformCoefficients[3]) / geotransformCoefficients[5]];
+      
+
+  //     positions.push(point.x, 0, point.y);
+
+  //     if (index !== 0)
+  //     {
+  //       indices.push(vertexIndex, ++vertexIndex);
+  //     }
+  //     else {
+  //       ++vertexIndex;
+  //     }
+  //   }
+  // }
+}
+
+function parsePolygon(wkbs: ArrayBuffer[], positions: number[], indices: number[], converter: proj4.Converter, geotransformCoefficients: number[]) {
+  let positionOffset = 0;
+  
   for (const wkb of wkbs) {
     const entry = wkx.Geometry.parse(NodeBuffer.from(wkb as ArrayBuffer));
     const shape: number[] = [];
@@ -133,26 +196,4 @@ self.onmessage = async function (event: MessageEvent<GeometryMessage>) {
 
     positionOffset += (shape.length / 2) * 3;
   }
-
-  const rawPositions = Float32Array.from(positions);
-  const rawIndices = Int32Array.from(indices);
-
-  await writeToCache(
-    `${event.data.geometryID}_${tileSize}`,
-    `${'position'}_${x}_${y}`,
-    rawPositions
-  );
-  await writeToCache(
-    `${event.data.geometryID}_${tileSize}`,
-    `${'indices'}_${x}_${y}`,
-    rawIndices
-  );
-
-  self.postMessage(
-    {
-      positions: rawPositions,
-      indices: rawIndices
-    },
-    [rawPositions.buffer, rawIndices.buffer] as any
-  );
-};
+}

@@ -199,11 +199,8 @@ export async function getGeometryMetadata(options: AssetOptions) {
     type: arrayMetadata['GeometryType'],
     attribute: arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'],
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
-    crs: 'CRS' in arrayMetadata ? JSON.parse(arrayMetadata['CRS']) : undefined
+    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
   } as GeometryMetadata;
-
-  geometryMetadata.crs =
-    'PROJCS["NZGD2000 / New Zealand Transverse Mercator 2000",GEOGCS["NZGD2000",DATUM["New_Zealand_Geodetic_Datum_2000",SPHEROID["GRS 1980",6378137,298.257222101]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4167"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",173],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",1600000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","2193"]]';
 
   return geometryMetadata;
 

@@ -54,6 +54,7 @@ export interface GeometryMessage {
   namespace: string;
   geometryID: string;
   attribute: string;
+  type: string;
   imageCRS: string;
   geometryCRS: string;
   geotransformCoefficients: number[];
@@ -183,3 +184,11 @@ export const types = {
     }
   }
 };
+
+export interface GeometryOperations {
+  polygonAddMode: (enable: boolean) => void
+  polygonEditMode: (enable: boolean) => void
+  geometrySave: () => void
+  geometryClear: (id?: string) => void
+  geometryPick: (id: string) => void
+}

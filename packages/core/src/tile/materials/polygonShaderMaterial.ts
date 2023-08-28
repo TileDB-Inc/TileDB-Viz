@@ -24,7 +24,7 @@ export function PolygonShaderMaterial(
     precision highp float;
 
     void main() {
-      glFragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      glFragColor = vec4(1.0, 0.0, 0.0, 0.3);
     }
   `;
 
@@ -42,6 +42,7 @@ export function PolygonShaderMaterial(
   );
 
   material.backFaceCulling = false;
+  material.alpha = 0.3;
 
   return material;
 }

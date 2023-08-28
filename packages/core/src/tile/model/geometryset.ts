@@ -1,5 +1,6 @@
 import { Geometry } from './geometry';
 import { Scene, Camera } from '@babylonjs/core';
+import { GeometryMetadata } from '../../types';
 
 export class GeometrySet {
   public tiles: Map<string, Geometry>;
@@ -9,10 +10,11 @@ export class GeometrySet {
   private baseHeight: number;
   private maxZoom: number;
   private imageCRS: string;
-  private geometryCRS: string;
+  private geometryMetadata: GeometryMetadata;
   private geotransformCoefficients: number[];
 
   private scene: Scene;
+  private geometryID: string;
   private token: string;
   private basePath: string;
   private namespace: string;
@@ -22,8 +24,9 @@ export class GeometrySet {
     baseHeight: number,
     maxZoom: number,
     tileSize: number,
+    geometryID: string,
+    geometryMetadata: GeometryMetadata,
     imageCRS: string,
-    geometryCRS: string,
     geotransformCoefficients: number[],
     namespace: string,
     token: string,
@@ -33,9 +36,10 @@ export class GeometrySet {
     this.baseWidth = baseWidth;
     this.baseHeight = baseHeight;
     this.maxZoom = maxZoom;
+    this.geometryID = geometryID;
     this.tileSize = tileSize;
     this.imageCRS = imageCRS;
-    this.geometryCRS = geometryCRS;
+    this.geometryMetadata = geometryMetadata;
     this.geotransformCoefficients = geotransformCoefficients;
     this.namespace = namespace;
     this.token = token;
@@ -121,9 +125,10 @@ export class GeometrySet {
         } else {
           const tile = new Geometry(
             [x, y],
+            this.geometryID,
             this.tileSize,
+            this.geometryMetadata,
             this.imageCRS,
-            this.geometryCRS,
             this.geotransformCoefficients,
             this.namespace,
             this.token,

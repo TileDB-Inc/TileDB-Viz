@@ -326,64 +326,64 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
       // add panning control
       let plane: Plane;
       let pickOrigin: Nullable<Vector3>;
-      let isPanning = false;
+      const isPanning = false;
 
       // register for onPointerDown as we need the keyboard state as well
-      scene.onPointerDown = evt => {
-        if (evt.ctrlKey || evt.shiftKey) {
-          const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-          if (pickResult) {
-            pickOrigin = pickResult.pickedPoint;
-          }
-          if (pickOrigin) {
-            const normal = this.cameras[0].position
-              .subtract(pickOrigin)
-              .normalize();
-            plane = Plane.FromPositionAndNormal(pickOrigin, normal);
-            this.cameras[0].detachControl();
-            isPanning = true;
-          }
-        }
-      };
+      // scene.onPointerDown = evt => {
+      //   if (evt.ctrlKey || evt.shiftKey) {
+      //     const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+      //     if (pickResult) {
+      //       pickOrigin = pickResult.pickedPoint;
+      //     }
+      //     if (pickOrigin) {
+      //       const normal = this.cameras[0].position
+      //         .subtract(pickOrigin)
+      //         .normalize();
+      //       plane = Plane.FromPositionAndNormal(pickOrigin, normal);
+      //       this.cameras[0].detachControl();
+      //       isPanning = true;
+      //     }
+      //   }
+      // };
 
-      scene.onPointerObservable.add(eventData => {
-        switch (eventData.type) {
-          case PointerEventTypes.POINTERWHEEL: {
-            const event = eventData.event as IWheelEvent;
-            const delta = event.deltaY;
-            if (delta) {
-              this.model.calculateBlocks();
-            }
-            break;
-          }
-          case PointerEventTypes.POINTERUP: {
-            isPanning = false;
-            this.cameras[0].attachControl(true, true);
-            this.model.calculateBlocks();
-            break;
-          }
-          case PointerEventTypes.POINTERMOVE: {
-            if (isPanning && pickOrigin) {
-              const identity = Matrix.Identity();
-              const ray = scene.createPickingRay(
-                scene.pointerX,
-                scene.pointerY,
-                identity,
-                this.cameras[0],
-                false
-              );
-              const distance = ray.intersectsPlane(plane);
-              if (distance === null) {
-                return;
-              }
-              const pickedPoint = ray.direction.scale(distance).add(ray.origin);
-              const diff = pickedPoint.subtract(pickOrigin);
-              this.cameras[0].target.subtractInPlace(diff);
-              break;
-            }
-          }
-        }
-      });
+      // scene.onPointerObservable.add(eventData => {
+      //   switch (eventData.type) {
+      //     case PointerEventTypes.POINTERWHEEL: {
+      //       const event = eventData.event as IWheelEvent;
+      //       const delta = event.deltaY;
+      //       if (delta) {
+      //         this.model.calculateBlocks();
+      //       }
+      //       break;
+      //     }
+      //     case PointerEventTypes.POINTERUP: {
+      //       isPanning = false;
+      //       this.cameras[0].attachControl(true, true);
+      //       this.model.calculateBlocks();
+      //       break;
+      //     }
+      //     case PointerEventTypes.POINTERMOVE: {
+      //       if (isPanning && pickOrigin) {
+      //         const identity = Matrix.Identity();
+      //         const ray = scene.createPickingRay(
+      //           scene.pointerX,
+      //           scene.pointerY,
+      //           identity,
+      //           this.cameras[0],
+      //           false
+      //         );
+      //         const distance = ray.intersectsPlane(plane);
+      //         if (distance === null) {
+      //           return;
+      //         }
+      //         const pickedPoint = ray.direction.scale(distance).add(ray.origin);
+      //         const diff = pickedPoint.subtract(pickOrigin);
+      //         this.cameras[0].target.subtractInPlace(diff);
+      //         break;
+      //       }
+      //     }
+      //   }
+      // });
 
       if (!this.engine) {
         throw new Error('Engine is unitialized');

@@ -1,7 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
-import { Channel } from '../types';
+import { Channel, GeometryOperations, ImageMetadata } from '../types';
 import { Dimension, AssetEntry } from '../../types';
 import { Tileset } from '../model/tileset';
 
@@ -18,6 +18,7 @@ class TileImageGUI {
   private zoomCallback: (step: number) => void;
   private clearCache: () => void;
   private assetSelectionCallback: (namespace: string, assetID: string) => void;
+  private geometryOperations: GeometryOperations;
 
   constructor(
     scene: Scene,
@@ -26,6 +27,8 @@ class TileImageGUI {
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
+    metadata: ImageMetadata,
+    geometryOperations: GeometryOperations,
     zoomCallback: (step: number) => void,
     clearCache: () => void,
     assetSelectionCallback: (namespace: string, assetID: string) => void
@@ -36,6 +39,7 @@ class TileImageGUI {
     this.zoomCallback = zoomCallback;
     this.clearCache = clearCache;
     this.assetSelectionCallback = assetSelectionCallback;
+    this.geometryOperations = geometryOperations;
 
     for (const childElement of rootElement.children) {
       if (childElement.id === 'tdb-viz-wrapper') {
@@ -53,6 +57,10 @@ class TileImageGUI {
     this.uiWrapper.innerHTML = `
     <status-overlay>
     </status-overlay>
+    <scale-bar basePhysicalSize='${
+      metadata.physicalSizeX ?? 0
+    }' basePhysicalSizeUnit='${metadata.physicalSizeXUnit ?? ''}'>
+    </scale-bar>
     <sidebar-menu>
       <zoom-control zoom='-2'>
       </zoom-control>
@@ -70,6 +78,8 @@ class TileImageGUI {
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
           : ''
       }
+      <geometry-panel>
+      </geometry-panel>
       <cache-control>
       </cache-control>
     </sidebar-menu>
@@ -198,6 +208,15 @@ class TileImageGUI {
           customEvent.detail.props.namespace,
           customEvent.detail.props.assetID
         );
+        break;
+      case 'rectangle_add':
+        this.geometryOperations.polygonAddMode(customEvent.detail.props.enable);
+        break;
+      case 'geometry_clear':
+        this.geometryOperations.geometryClear(customEvent.detail?.props.id);
+        break;
+      case 'geometry_pick':
+        this.geometryOperations.geometryPick(customEvent.detail.props.id);
         break;
       default:
         console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);

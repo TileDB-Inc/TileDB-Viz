@@ -296,7 +296,7 @@ export class Tileset {
     this.dimensions[index].value = value;
 
     for (const tile of this.tiles.values()) {
-      tile.updateTileOptionsAndData(
+      tile?.updateTileOptionsAndData(
         this.channelRanges,
         this.dimensions,
         this.tileOptions
