@@ -1,4 +1,3 @@
-import { Scene } from '@babylonjs/core';
 import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
@@ -12,7 +11,6 @@ import { Tileset } from '../model/tileset';
 class TileImageGUI {
   private rootDiv?: HTMLDivElement;
   private rootElement?: HTMLElement;
-  private scene: Scene;
   private tileset: Tileset;
   private uiWrapper!: HTMLDivElement;
   private zoomCallback: (step: number) => void;
@@ -20,7 +18,6 @@ class TileImageGUI {
   private assetSelectionCallback: (namespace: string, assetID: string) => void;
 
   constructor(
-    scene: Scene,
     tileset: Tileset,
     rootElement: HTMLElement,
     channels: Channel[],
@@ -30,7 +27,6 @@ class TileImageGUI {
     clearCache: () => void,
     assetSelectionCallback: (namespace: string, assetID: string) => void
   ) {
-    this.scene = scene;
     this.rootElement = rootElement;
     this.tileset = tileset;
     this.zoomCallback = zoomCallback;

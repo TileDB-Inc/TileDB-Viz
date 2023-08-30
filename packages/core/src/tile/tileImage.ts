@@ -118,7 +118,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     });
 
     this.gui = new TileImageGUI(
-      this.scene,
       this.tileset,
       this.rootElement,
       this.metadata.channels.get(
@@ -126,7 +125,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       ) ?? [],
       this.dimensions,
       this.groupAssets,
-      this.metadata,
       (step: number) => this.onZoom(step),
       () => this.clearCache(),
       (namespace: string, assetID: string) =>
