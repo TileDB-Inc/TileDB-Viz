@@ -33,6 +33,25 @@ export interface AxesMetadata {
   axesOffset?: number[];
 }
 
+export const enum RequestType {
+  CANCEL = 0,
+  IMAGE = 1,
+  GEOMETRY = 2,
+
+  INITIALIZE = 100
+}
+
+export interface DataRequest {
+  type: RequestType;
+  id: string;
+  request: any;
+}
+
+export interface InitializeMessage {
+  token: string;
+  basePath?: string;
+}
+
 export interface QueryMessage {
   index: number[];
   tileSize: number;
@@ -58,6 +77,27 @@ export interface GeometryMessage {
   imageCRS: string;
   geometryCRS: string;
   geotransformCoefficients: number[];
+}
+
+export interface WorkerResponse {
+  type: RequestType;
+  id: string;
+  response: any;
+}
+
+export interface ImageResponse {
+  index: number[];
+  data: TypedArray;
+  width: number;
+  height: number;
+  channels: number;
+  dtype: string;
+  canceled: boolean;
+}
+
+export interface ResponseCallback {
+  image?: (id: string, response: ImageResponse) => void;
+  geometry?: (id: string, response: any) => void;
 }
 
 export interface LevelRecord {
@@ -186,9 +226,9 @@ export const types = {
 };
 
 export interface GeometryOperations {
-  polygonAddMode: (enable: boolean) => void
-  polygonEditMode: (enable: boolean) => void
-  geometrySave: () => void
-  geometryClear: (id?: string) => void
-  geometryPick: (id: string) => void
+  polygonAddMode: (enable: boolean) => void;
+  polygonEditMode: (enable: boolean) => void;
+  geometrySave: () => void;
+  geometryClear: (id?: string) => void;
+  geometryPick: (id: string) => void;
 }

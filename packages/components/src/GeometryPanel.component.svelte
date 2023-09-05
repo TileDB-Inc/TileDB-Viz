@@ -83,7 +83,6 @@
     switch (e.detail.type)
     {
       case 'RECTANGLE_LIST':
-        console.log(e.detail.ids);
         pendingGeometry = JSON.parse(e.detail.ids);
         break;
       case 'RECTANGLE_ADD':

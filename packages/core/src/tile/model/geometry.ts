@@ -41,7 +41,7 @@ export class Geometry {
     this.mesh = null;
     this.index = index;
     this.scene = scene;
-    this.geometryID = geometryID
+    this.geometryID = geometryID;
     this.namespace = namespace;
     this.token = token;
     this.basePath = basePath;
@@ -82,34 +82,34 @@ export class Geometry {
       this.worker.terminate();
       this.mesh?.dispose();
 
-      // if (event.data.positions.length !== 0) {
-      //   this.vertexData = new VertexData();
-      //   this.vertexData.positions = event.data.positions;
-      //   this.vertexData.indices = event.data.indices;
+      if (event.data.positions.length !== 0) {
+        this.vertexData = new VertexData();
+        this.vertexData.positions = event.data.positions;
+        this.vertexData.indices = event.data.indices;
 
-      //   this.mesh = new Mesh(this.index.toString(), this.scene);
-      //   this.vertexData.applyToMesh(this.mesh, false);
+        this.mesh = new Mesh(this.index.toString(), this.scene);
+        this.vertexData.applyToMesh(this.mesh, false);
 
-      //   this.mesh.position.addInPlaceFromFloats(0, -10, 0);
+        this.mesh.position.addInPlaceFromFloats(0, -10, 0);
 
-      //   switch (this.geometryMetadata.type) {
-      //     case "LineString":
-      //       this.mesh.material = LineShaderMaterial(
-      //         this.index.toString(),
-      //         this.scene
-      //       );
-      //       break;
-      //     case "Polygon":
-      //       this.mesh.material = PolygonShaderMaterial(
-      //         this.index.toString(),
-      //         this.scene
-      //       );
-      //       break;
-      //     default:
-      //       console.warn(`Unknown geometry type "${event.data.type}"`);
-      //       break;
-      //   }
-      // }
+        switch (this.geometryMetadata.type) {
+          case 'LineString':
+            this.mesh.material = LineShaderMaterial(
+              this.index.toString(),
+              this.scene
+            );
+            break;
+          case 'Polygon':
+            this.mesh.material = PolygonShaderMaterial(
+              this.index.toString(),
+              this.scene
+            );
+            break;
+          default:
+            console.warn(`Unknown geometry type "${event.data.type}"`);
+            break;
+        }
+      }
 
       this.updateLoadingStatus(true);
 

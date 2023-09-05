@@ -112,6 +112,7 @@ export class TileDBVisualization {
     this.engine = new Engine(this.canvas, true);
 
     const engine = this.engine;
+    engine.doNotHandleContextLost = true;
 
     SceneLoader.ShowLoadingScreen = false;
 

@@ -222,4 +222,6 @@ self.onmessage = async function (event: MessageEvent<QueryMessage>) {
     },
     [imageData.buffer] as any
   );
+
+  self.close();
 };
