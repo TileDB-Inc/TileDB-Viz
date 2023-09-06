@@ -16,7 +16,11 @@ import { AssetEntry, Attribute, Dimension } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
-import { clearMultiCache, getTileCount } from '../utils/cache';
+import {
+  clearMultiCache,
+  getTileCount,
+  initializeCacheDB
+} from '../utils/cache';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -55,7 +59,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      //scene.debugLayer.show();
+      scene.debugLayer.show();
 
       return scene;
     });
@@ -85,6 +89,19 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
+
+    await initializeCacheDB([
+      `${this.levels[0].id}_${Math.max(this.baseWidth, this.baseHeight)}`
+    ]);
+    await initializeCacheDB(
+      this.levels
+        .map(x => `${x.id}_${this.tileSize}`)
+        .filter(
+          (value: string, index: number, array: string[]) =>
+            array.indexOf(value) === index
+        )
+    );
+
     this.scene.getEngine().disableUniformBuffers = false;
 
     setupCamera(
