@@ -4,8 +4,6 @@
   import Header from './Header.component.svelte';
   import { onMount } from 'svelte';
 
-  export let id = '';
-
   let height;
   let maxHeight;
   let visible = true;
@@ -16,7 +14,7 @@
 </script>
 
 <div class="Viewer-Section">
-  <Header {id} visibleContent={visible} toggleCallback={(showContent) => visible = showContent}>
+  <Header visibleContent={visible} toggleCallback={(showContent) => visible = showContent}>
     <slot name="header" />
   </Header>
   <div

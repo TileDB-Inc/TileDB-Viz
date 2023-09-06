@@ -1,7 +1,6 @@
 <svelte:options customElement="header-menu" />
 
-<script> 
-  export let id;
+<script>
   export let visibleContent = true;
   export let toggleCallback = (visible) => {};
 
