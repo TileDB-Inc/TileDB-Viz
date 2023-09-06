@@ -28,6 +28,7 @@ export class Minimap {
   private token: string;
   private basePath: string;
   private tileSize: number;
+  private maxChannels: number;
   private level: LevelRecord;
   private attribute: Attribute;
   private dimensions: Dimension[];
@@ -40,6 +41,7 @@ export class Minimap {
     dimensions: Dimension[],
     attribute: Attribute,
     tileSize: number,
+    maxChannels: number,
     tileOptions: UniformBuffer,
     namespace: string,
     token: string,
@@ -59,6 +61,7 @@ export class Minimap {
     this.tileSize = tileSize;
     this.isLoaded = false;
     this.isPending = false;
+    this.maxChannels = maxChannels;
 
     this.vertexData = new VertexData();
     this.vertexData.positions = [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0];
@@ -148,7 +151,7 @@ export class Minimap {
         'minimap',
         this.scene,
         (types as any)[dtype].samplerType,
-        channels
+        this.maxChannels
       );
 
       const aspectRatio = Math.min(200 / this.bounds[2], 200 / this.bounds[3]);

@@ -17,6 +17,11 @@ class TileImageGUI {
   private clearCache: () => void;
   private assetSelectionCallback: (namespace: string, assetID: string) => void;
 
+  private sliderEventHandler;
+  private colorEventHandler;
+  private toggleEventHandler;
+  private buttonEventHandler;
+
   constructor(
     tileset: Tileset,
     rootElement: HTMLElement,
@@ -71,18 +76,23 @@ class TileImageGUI {
     </sidebar-menu>
       `;
 
-    window.addEventListener(Events.SLIDER_CHANGE, e => this.sliderHandler(e), {
+    this.sliderEventHandler = (e: Event) => this.sliderHandler(e);
+    this.colorEventHandler = (e: Event) => this.colorHandler(e);
+    this.toggleEventHandler = (e: Event) => this.toggleHandler(e);
+    this.buttonEventHandler = (e: Event) => this.buttonHandler(e);
+
+    window.addEventListener(Events.SLIDER_CHANGE, this.sliderEventHandler, {
       capture: true
     });
-    window.addEventListener(Events.COLOR_CHANGE, e => this.colorHandler(e), {
+    window.addEventListener(Events.COLOR_CHANGE, this.colorEventHandler, {
       capture: true
     });
     window.addEventListener(
       Events.TOGGLE_INPUT_CHANGE,
-      e => this.toggleHandler(e),
+      this.toggleEventHandler,
       { capture: true }
     );
-    window.addEventListener(Events.BUTTON_CLICK, e => this.buttonHandler(e), {
+    window.addEventListener(Events.BUTTON_CLICK, this.buttonEventHandler, {
       capture: true
     });
 
@@ -92,20 +102,24 @@ class TileImageGUI {
   public dispose() {
     window.removeEventListener(
       Events.SLIDER_CHANGE,
-      e => this.sliderHandler(e),
+      this.sliderEventHandler as any,
       { capture: true }
     );
-    window.removeEventListener(Events.COLOR_CHANGE, e => this.colorHandler(e), {
-      capture: true
-    });
+    window.removeEventListener(
+      Events.COLOR_CHANGE,
+      this.colorEventHandler as any,
+      {
+        capture: true
+      }
+    );
     window.removeEventListener(
       Events.TOGGLE_INPUT_CHANGE,
-      e => this.toggleHandler(e),
+      this.toggleEventHandler as any,
       { capture: true }
     );
     window.removeEventListener(
       Events.BUTTON_CLICK,
-      e => this.buttonHandler(e),
+      this.buttonEventHandler as any,
       { capture: true }
     );
 

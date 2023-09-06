@@ -27,6 +27,7 @@ export class Tile {
   private token: string;
   private basePath: string;
   private tileSize: number;
+  private maxChannels: number;
   private level: LevelRecord;
   private attribute: Attribute;
   private dimensions: Dimension[];
@@ -38,6 +39,7 @@ export class Tile {
     dimensions: Dimension[],
     attribute: Attribute,
     tileSize: number,
+    maxChannels: number,
     tileOptions: UniformBuffer,
     namespace: string,
     token: string,
@@ -58,6 +60,7 @@ export class Tile {
     this.isPending = false;
     this.tileOptions = tileOptions;
     this.tileSize = tileSize;
+    this.maxChannels = maxChannels;
 
     const left = Math.max(bounds[0], (index[0] * tileSize) / 2 ** index[2]);
     const right = Math.min(
@@ -164,7 +167,7 @@ export class Tile {
         this.index.toString(),
         this.scene,
         (types as any)[dtype].samplerType,
-        channels
+        this.maxChannels
       );
 
       material.setTexture('texture_arr', intensityTexture);

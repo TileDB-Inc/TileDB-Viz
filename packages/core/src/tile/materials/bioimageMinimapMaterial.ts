@@ -6,7 +6,9 @@ export function BioimageMinimapShaderMaterial(
   samplerType: string,
   channelCount: number
 ): ShaderMaterial {
-  Effect.ShadersStore[`BioimageMinimap_${samplerType}VertexShader`] = `
+  Effect.ShadersStore[
+    `BioimageMinimap_${samplerType}_${channelCount}VertexShader`
+  ] = `
     precision highp float;
 
     in vec3 position;
@@ -33,7 +35,9 @@ export function BioimageMinimapShaderMaterial(
     }
   `;
 
-  Effect.ShadersStore[`BioimageMinimap_${samplerType}FragmentShader`] = `
+  Effect.ShadersStore[
+    `BioimageMinimap_${samplerType}_${channelCount}FragmentShader`
+  ] = `
     precision highp ${samplerType};
     precision highp float;
     precision highp int;
@@ -80,8 +84,8 @@ export function BioimageMinimapShaderMaterial(
     name,
     scene,
     {
-      vertex: `BioimageMinimap_${samplerType}`,
-      fragment: `BioimageMinimap_${samplerType}`
+      vertex: `BioimageMinimap_${samplerType}_${channelCount}`,
+      fragment: `BioimageMinimap_${samplerType}_${channelCount}`
     },
     {
       attributes: ['position', 'uv'],

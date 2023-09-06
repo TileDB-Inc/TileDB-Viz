@@ -6,7 +6,7 @@ export function BioimageShaderMaterial(
   samplerType: string,
   channelCount: number
 ): ShaderMaterial {
-  Effect.ShadersStore[`Bioimage_${samplerType}VertexShader`] = `
+  Effect.ShadersStore[`Bioimage_${samplerType}_${channelCount}VertexShader`] = `
     precision highp float;
 
     in vec3 position;
@@ -27,7 +27,9 @@ export function BioimageShaderMaterial(
     }
   `;
 
-  Effect.ShadersStore[`Bioimage_${samplerType}FragmentShader`] = `
+  Effect.ShadersStore[
+    `Bioimage_${samplerType}_${channelCount}FragmentShader`
+  ] = `
     precision highp ${samplerType};
     precision highp float;
     precision highp int;
@@ -60,8 +62,8 @@ export function BioimageShaderMaterial(
     name,
     scene,
     {
-      vertex: `Bioimage_${samplerType}`,
-      fragment: `Bioimage_${samplerType}`
+      vertex: `Bioimage_${samplerType}_${channelCount}`,
+      fragment: `Bioimage_${samplerType}_${channelCount}`
     },
     {
       attributes: ['position', 'uv'],
