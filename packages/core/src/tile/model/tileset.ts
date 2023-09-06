@@ -301,7 +301,6 @@ export class Tileset {
           id: `image_${key}`
         } as DataRequest);
       } else if (status.state === TileState.VISIBLE) {
-        console.log(`Dispose ${key} status ${status.tile}`);
         status.tile?.dispose();
       }
 
@@ -417,7 +416,7 @@ export class Tileset {
       return;
     }
 
-    this.minimap.mesh.isVisible = false;
+    this.minimap.mesh.isVisible = visible;
   }
 
   private calculateChannelRanges() {

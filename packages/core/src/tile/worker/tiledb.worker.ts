@@ -215,7 +215,7 @@ async function imageRequest(id: string, request: QueryMessage) {
 
     let offset = 0;
     const data: TypedArray = (types as any)[format].create(size);
-
+    console.log(request.index.toString() + " started " + (size * (types as any)[format].bytes / 2 ** 20).toString());
     try {
       for await (const rawResult of generator) {
         const result: TypedArray = (types as any)[format].create(

@@ -30,7 +30,7 @@ import {
 } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
-import { clearMultiCache, getTileCount } from '../utils/cache';
+import { clearMultiCache, getTileCount, initializeCacheDB } from '../utils/cache';
 import { GeometrySet } from './model/geometryset';
 import earcut from 'earcut';
 import { PolygonShaderMaterial } from './materials/polygonShaderMaterial';
@@ -140,6 +140,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
     this.scene.getEngine().disableUniformBuffers = false;
 
+    await initializeCacheDB([`${this.levels[0].id}_${Math.max(this.baseWidth, this.baseHeight)}`]);
+    await initializeCacheDB(this.levels.map(x => `${x.id}_${this.tileSize}`).filter((value: string, index: number, array: string[]) => array.indexOf(value) === index));
+  
+    console.log("Cache initialized");
     setupCamera(
       this.scene,
       this.zoom,
