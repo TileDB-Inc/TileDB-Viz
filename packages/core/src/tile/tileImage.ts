@@ -73,14 +73,14 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         token: this.options.token,
         tiledbEnv: this.options.tiledbEnv,
         namespace: this.options.namespace,
-        assetID: this.options.assetID
+        arrayID: this.options.arrayID,
+        groupID: this.options.groupID
       })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
 
     this.groupAssets = await getGroupContents({
       token: this.options.token,
       tiledbEnv: this.options.tiledbEnv,
       namespace: this.options.namespace,
-      assetID: this.options.assetID,
       baseGroup: this.options.baseGroup
     });
 
@@ -143,8 +143,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.groupAssets,
       (step: number) => this.onZoom(step),
       () => this.clearCache(),
-      (namespace: string, assetID: string) =>
-        this.onAssetSelection(namespace, assetID)
+      (namespace: string, groupID?: string, arrayID?: string) =>
+        this.onAssetSelection(namespace, groupID, arrayID)
     );
 
     this.updateEngineInfo();
@@ -174,7 +174,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   private updateEngineInfo() {
     getTileCount(this.levels.map(x => `${x.id}_${this.tileSize}`)).then(
-      tileCount => {
+      (tileCount: number) => {
         const selectedAttribute = this.attributes
           .filter(x => x.visible)[0]
           .type.toLowerCase();
@@ -266,12 +266,17 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     );
   }
 
-  private onAssetSelection(namespace: string, assetID: string) {
+  private onAssetSelection(
+    namespace: string,
+    groupID?: string,
+    arrayID?: string
+  ) {
     this.scene.getEngine().stopRenderLoop();
 
     this.clearScene();
 
-    this.options.assetID = assetID;
+    this.options.groupID = groupID;
+    this.options.arrayID = arrayID;
     this.options.namespace = namespace;
 
     this.initializeScene().then(() =>

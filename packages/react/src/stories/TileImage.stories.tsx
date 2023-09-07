@@ -26,7 +26,8 @@ const Template = () => (
   <TileImageVisualization
     token={token}
     namespace={namespace}
-    assetID={'<array/group ID>'}
+    arrayID={'<array ID>'}
+    //groupID={'<group ID>'}
     width={'100vw'}
     height={'100vh'}
   />

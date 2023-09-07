@@ -5,14 +5,16 @@ export interface AssetMetadata {
 export interface AssetEntry {
   namespace: string;
   name: string;
-  id: string;
+  arrayID?: string;
+  groupID?: string;
 }
 
 export interface AssetOptions {
   token: string;
   tiledbEnv?: string;
   namespace: string;
-  assetID: string;
+  arrayID?: string;
+  groupID?: string;
   baseGroup?: string;
 }
 
