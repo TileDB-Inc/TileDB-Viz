@@ -415,7 +415,7 @@ export async function getArrayMetadata(
       options.groupName!
     );
     if (!contents.entries) {
-      console.log('TileDB Group does not contain any array data');
+      console.warn('TileDB Group does not contain any array data');
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const nLevels = contents.entries!.length;

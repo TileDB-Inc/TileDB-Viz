@@ -6,3 +6,14 @@ export { default as RadioGroup } from './RadioGroup.component.svelte';
 export { default as ToggleInput } from './Toggle.component.svelte';
 export { default as ConfirmationBox } from './ConfirmationBox.component.svelte';
 export { default as DoubleRangeSlider } from './DoubleRangeSlider.component.svelte';
+export { default as Sidebar } from './Sidebar.component.svelte';
+export { default as Header } from './Header.component.svelte';
+export { default as Section } from './Section.component.svelte';
+export { default as ZoomControl } from './ZoomControl.component.svelte';
+export { default as CacheControl } from './CacheControl.component.svelte';
+export { default as ChannelPanel } from './ChannelPanel.component.svelte'
+export { default as DimensionPanel } from './DimensionPanel.component.svelte';
+export { default as GroupPanel } from './GroupPanel.component.svelte';
+export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';
+export { default as StatusOverlay } from './StatusOverlay.component.svelte';
+export { default as Scalebar } from './Scalebar.component.svelte';

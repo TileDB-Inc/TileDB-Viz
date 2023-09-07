@@ -1,11 +1,11 @@
-<svelte:options tag="toggle-input" />
+<svelte:options customElement="toggle-input" />
 
 <script>
   import events from './constants/events';
 
-  export let id = '',
-    label,
-    name;
+  export let id = '';
+  export let label;
+  export let name;
 
   let value = false;
 

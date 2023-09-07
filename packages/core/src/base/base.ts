@@ -110,6 +110,7 @@ export class TileDBVisualization {
     this.rootElement.appendChild(wrapperDiv);
 
     this.engine = new Engine(this.canvas, true);
+    this.engine.doNotHandleContextLost = true;
 
     const engine = this.engine;
 

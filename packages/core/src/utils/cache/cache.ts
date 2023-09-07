@@ -36,7 +36,51 @@ const getCacheDB = async (storeName: string) => {
   });
 };
 
-export const getQueryDataFromCache = async (storeName: string, key: number) => {
+export const initializeCacheDB = async (storeNames: string[]) => {
+  let db = await openDB(DB_NAME);
+  const missingStoreNames: string[] = [];
+
+  for (const storeName of storeNames) {
+    if (!db.objectStoreNames.contains(storeName + '_' + DATA_MODEL_VERSION)) {
+      missingStoreNames.push(storeName);
+    }
+  }
+
+  db.close();
+
+  if (missingStoreNames.length === 0) {
+    return;
+  }
+
+  DB_VERSION = db.version + 1;
+
+  db = await openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      for (const storeName of missingStoreNames) {
+        for (let i = 0; i < DATA_MODEL_VERSION; ++i) {
+          if (db.objectStoreNames.contains(storeName + '_' + i)) {
+            db.deleteObjectStore(storeName + '_' + i);
+          }
+        }
+
+        const store = db.createObjectStore(
+          storeName + '_' + DATA_MODEL_VERSION,
+          {
+            autoIncrement: true
+          }
+        );
+        store.createIndex(INDEX_NAME, '__timestamp');
+      }
+    }
+  });
+
+  db.close();
+};
+
+export const getQueryDataFromCache = async (
+  storeName: string,
+  key: number | string
+) => {
   try {
     const db = await getCacheDB(storeName);
     const value = await db.get(storeName + '_' + DATA_MODEL_VERSION, key);
@@ -48,7 +92,7 @@ export const getQueryDataFromCache = async (storeName: string, key: number) => {
 
 export const writeToCache = async (
   storeName: string,
-  key: number,
+  key: number | string,
   data: any
 ) => {
   try {
@@ -68,4 +112,30 @@ export const clearCache = async (storeName: string) => {
   const db = await getCacheDB(storeName);
 
   await db.clear(storeName + '_' + DATA_MODEL_VERSION);
+};
+
+export const clearMultiCache = async (storeNames: string[]) => {
+  const db = await openDB(DB_NAME);
+  const filterObjectStores = storeNames.map(x => `${x}_${DATA_MODEL_VERSION}`);
+  await Promise.all(
+    Array.from(db.objectStoreNames)
+      .filter(x => filterObjectStores.includes(x))
+      .map(x => db.clear(x))
+  );
+
+  db.close();
+};
+
+export const getTileCount = async (storeNames: string[]) => {
+  const db = await openDB(DB_NAME);
+  const filterObjectStores = storeNames.map(x => `${x}_${DATA_MODEL_VERSION}`);
+  const counts = await Promise.all(
+    Array.from(db.objectStoreNames)
+      .filter(x => filterObjectStores.includes(x))
+      .map(x => db.count(x))
+  );
+
+  db.close();
+
+  return counts.reduce((partialSum: number, a: number) => partialSum + a, 0);
 };

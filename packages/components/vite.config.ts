@@ -2,6 +2,7 @@ import { defineConfig, LibraryFormats } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { transform } from 'esbuild';
 import dts from 'vite-plugin-dts';
+import preprocess from 'svelte-preprocess';
 
 const bundleComponents = process.env.BUNDLE_COMPONENTS ?? true;
 
@@ -41,6 +42,18 @@ export default defineConfig({
       exclude: /\.wc\.svelte$/ as any,
       compilerOptions: {
         customElement: true
+      },
+      preprocess: preprocess({
+        scss: {
+            prependData: `@import './src/assets/_design-tokens.scss';`
+        }
+      }),
+      onwarn: (warning, handler) => {
+        const { code, frame } = warning;
+        if (code === "css-unused-selector")
+            return;
+
+        handler(warning);
       }
     }),
     dts({ insertTypesEntry: true, copyDtsFiles: true, outDir: './dist' }),

@@ -1,4 +1,4 @@
-<svelte:options tag="dual-slider" />
+<svelte:options customElement="dual-slider" />
 
 <script>
   import Events from './constants/events';

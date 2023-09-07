@@ -1,4 +1,4 @@
-<svelte:options tag="confirmation-box" />
+<svelte:options customElement="confirmation-box" />
 
 <script>
   import { onMount, onDestroy } from 'svelte';

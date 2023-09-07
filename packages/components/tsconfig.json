@@ -4,7 +4,7 @@
   "_version": "5.0.0",
   "compilerOptions": {
     "moduleResolution": "node16",
-    "target": "es2017",
+    "target": "es2022",
     
     /**
       To have warnings/errors of the Svelte compiler at the correct position,
