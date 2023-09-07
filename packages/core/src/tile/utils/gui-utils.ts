@@ -15,7 +15,11 @@ class TileImageGUI {
   private uiWrapper!: HTMLDivElement;
   private zoomCallback: (step: number) => void;
   private clearCache: () => void;
-  private assetSelectionCallback: (namespace: string, assetID: string) => void;
+  private assetSelectionCallback: (
+    namespace: string,
+    groupID?: string,
+    arrayID?: string
+  ) => void;
 
   private sliderEventHandler;
   private colorEventHandler;
@@ -30,7 +34,11 @@ class TileImageGUI {
     assets: AssetEntry[],
     zoomCallback: (step: number) => void,
     clearCache: () => void,
-    assetSelectionCallback: (namespace: string, assetID: string) => void
+    assetSelectionCallback: (
+      namespace: string,
+      groupID?: string,
+      arrayID?: string
+    ) => void
   ) {
     this.rootElement = rootElement;
     this.tileset = tileset;
@@ -206,7 +214,8 @@ class TileImageGUI {
       case 'asset_selection':
         this.assetSelectionCallback(
           customEvent.detail.props.namespace,
-          customEvent.detail.props.assetID
+          customEvent.detail.props.groupID,
+          customEvent.detail.props.arrayID
         );
         break;
       default:

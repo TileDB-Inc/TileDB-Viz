@@ -43,7 +43,7 @@ export async function getGroupContents(
             return {
               namespace: entry.group?.namespace ?? '',
               name: entry.group?.name ?? '',
-              id: entry.group?.id ?? ''
+              groupID: entry.group?.id ?? ''
             } as AssetEntry;
           }),
 
@@ -53,7 +53,7 @@ export async function getGroupContents(
             return {
               namespace: entry.array?.namespace ?? '',
               name: entry.array?.name ?? '',
-              id: entry.array?.id ?? ''
+              arrayID: entry.array?.id ?? ''
             } as AssetEntry;
           })
       ];
@@ -71,12 +71,16 @@ export async function getAssetMetadata(
   let assetMetadata: AssetMetadata;
   let uris: string[];
 
-  //TODO: Find a better way to differentiate between group or array
-  try {
-    await client.info(options.namespace, options.assetID);
-    [assetMetadata, uris] = await getArrayMetadata(options);
-  } catch (e: unknown) {
+  if (options.groupID && options.arrayID) {
+    throw new Error(
+      'Both groupID and arrayID specified. Please select only one asset.'
+    );
+  } else if (options.groupID) {
     [assetMetadata, uris] = await getGroupMetadata(options);
+  } else if (options.arrayID) {
+    [assetMetadata, uris] = await getArrayMetadata(options);
+  } else {
+    throw new Error('No asset selected.');
   }
 
   const arraySchemaResponse = await client.ArrayApi.getArray(
@@ -117,8 +121,6 @@ export async function getAssetMetadata(
       }
       throw new Error(`Unknown dataset type '${assetMetadata.dataset_type}'`);
   }
-
-  return [] as any;
 }
 
 async function getArrayMetadata(
@@ -129,12 +131,16 @@ async function getArrayMetadata(
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
 
+  if (!options.arrayID) {
+    throw new Error('Array ID is undefined');
+  }
+
   const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
     options.namespace,
-    options.assetID
+    options.arrayID
   ).then((response: any) => response.data);
 
-  return [arrayMetadata, [options.assetID]];
+  return [arrayMetadata, [options.arrayID]];
 }
 
 async function getGroupMetadata(
@@ -145,8 +151,12 @@ async function getGroupMetadata(
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
 
+  if (!options.groupID) {
+    throw new Error('Group ID is undefined');
+  }
+
   const [groupMetadata, memberUris] = await Promise.all([
-    client.groups.V2API.getGroupMetadata(options.namespace, options.assetID)
+    client.groups.V2API.getGroupMetadata(options.namespace, options.groupID)
       .then((response: any) => response.data.entries)
       .then((data: any) => {
         return data.reduce((map: any, obj: any) => {
@@ -154,7 +164,7 @@ async function getGroupMetadata(
           return map;
         }, {});
       }),
-    client.groups.API.getGroupContents(options.namespace, options.assetID)
+    client.groups.API.getGroupContents(options.namespace, options.groupID)
       .then((response: any) => response.data.entries)
       .then((data: any) => {
         data.sort((a: any, b: any) => a.array.size - b.array.size);

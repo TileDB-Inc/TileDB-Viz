@@ -35,7 +35,7 @@
   let pages = Math.ceil(filteredGroups.length / itemsPerPage);
   let currentPage = 0;
 
-  function onClick(namespace, assetID) {
+  function onClick(namespace, groupID, arrayID) {
     window.dispatchEvent(
       new CustomEvent(events.BUTTON_CLICK, {
         bubbles: true,
@@ -43,7 +43,8 @@
           id: 'asset_selection',
           props: {
             namespace,
-            assetID
+            groupID,
+            arrayID
           }
         }
       })
@@ -77,7 +78,7 @@
     <ul class="Viewer-GroupSelector__list">
       {#each filteredGroups.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage) as group}
         <li class="Viewer-GroupSelector__item">
-          <button class="Viewer-GroupSelector__item-content" on:click={() => onClick(group.namespace, group.id)}>
+          <button class="Viewer-GroupSelector__item-content" on:click={() => onClick(group.namespace, group.groupID, group.arrayID)}>
             <div class="Viewer-GroupSelector__item-icon">
               <svg
                 width="32"
