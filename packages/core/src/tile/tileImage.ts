@@ -59,7 +59,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      scene.debugLayer.show();
 
       return scene;
     });
@@ -160,8 +159,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     this.scene.onBeforeRenderObservable.add(() => {
       this.fetchTiles();
-
-      //console.log(this.scene.getEngine()._uniformBuffers.length);
     });
   }
 
