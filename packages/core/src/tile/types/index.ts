@@ -199,7 +199,7 @@ export interface ImageResponse {
   width: number;
   height: number;
   channels: number;
-  dtype: string;
+  dtype: keyof typeof types;
   canceled: boolean;
 }
 
