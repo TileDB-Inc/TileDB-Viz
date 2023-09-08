@@ -73,7 +73,7 @@ export class Tile {
       const material = BioimageShaderMaterial(
         response.index.toString(),
         this.scene,
-        (types as any)[response.dtype].samplerType,
+        types[response.dtype].samplerType,
         this.channelCount
       );
 
@@ -82,12 +82,12 @@ export class Tile {
         response.width,
         response.height,
         response.channels,
-        (types as any)[response.dtype].format,
+        types[response.dtype].format,
         this.scene,
         false,
         false,
-        (types as any)[response.dtype].filtering,
-        (types as any)[response.dtype].type
+        types[response.dtype].filtering,
+        types[response.dtype].type
       );
 
       intensityTexture.wrapU = RawTexture2DArray.CLAMP_ADDRESSMODE;
