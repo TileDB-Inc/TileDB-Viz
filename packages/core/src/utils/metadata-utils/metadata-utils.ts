@@ -3,7 +3,8 @@ import {
   AssetMetadata,
   Attribute,
   Dimension,
-  AssetEntry
+  AssetEntry,
+  GeometryMetadata
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -173,6 +174,37 @@ async function getGroupMetadata(
   ]);
 
   return [groupMetadata, memberUris];
+}
+
+export async function getGeometryMetadata(options: AssetOptions) {
+  const client = getTileDBClient({
+    ...(options.token ? { apiKey: options.token } : {}),
+    ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
+  });
+
+  if (!options.geometryArrayID) {
+    throw new Error('Geometry array ID is undefined');
+  }
+
+  const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
+    options.namespace,
+    options.geometryArrayID
+  ).then((response: any) => response.data);
+
+  const geometryMetadata = {
+    extent: [
+      arrayMetadata['LAYER_EXTENT_MINX'],
+      arrayMetadata['LAYER_EXTENT_MINY'],
+      arrayMetadata['LAYER_EXTENT_MAXX'],
+      arrayMetadata['LAYER_EXTENT_MAXY']
+    ],
+    type: arrayMetadata['GeometryType'],
+    attribute: arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'],
+    pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
+    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
+  } as GeometryMetadata;
+
+  return geometryMetadata;
 }
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {

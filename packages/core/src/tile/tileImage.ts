@@ -12,7 +12,7 @@ import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { Tileset } from './model/tileset';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Attribute, Dimension } from '../types';
+import { AssetEntry, Attribute, Dimension, GeometryMetadata } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -22,6 +22,7 @@ import {
   initializeCacheDB
 } from '../utils/cache';
 import { WorkerPool } from './worker/tiledb.worker.pool';
+import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -32,6 +33,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private metadata!: ImageMetadata;
   private attributes!: Attribute[];
   private dimensions!: Dimension[];
+  private geometryMetadata?: GeometryMetadata;
   private levels!: LevelRecord[];
   private groupAssets!: AssetEntry[];
   private camera!: FreeCamera;
@@ -90,6 +92,10 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       namespace: this.options.namespace,
       baseGroup: this.options.baseGroup
     });
+
+    if (this.options.geometryArrayID) {
+      this.geometryMetadata = await getGeometryMetadata(this.options);
+    }
 
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];

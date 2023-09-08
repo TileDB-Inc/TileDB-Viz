@@ -6,6 +6,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   arrayID?: string;
   groupID?: string;
+  geometryArrayID?: string;
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -185,6 +186,20 @@ export interface ImageMessage {
   token: string;
   basePath: string;
   dimensions: Dimension[];
+}
+
+export interface GeometryMessage {
+  index: number[];
+  tileSize: number;
+  token: string;
+  basePath: string;
+  namespace: string;
+  geometryID: string;
+  attribute: string;
+  type: string;
+  imageCRS: string;
+  geometryCRS: string;
+  geotransformCoefficients: number[];
 }
 
 export interface WorkerResponse {
