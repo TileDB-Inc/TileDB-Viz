@@ -33,19 +33,6 @@ export interface AxesMetadata {
   axesOffset?: number[];
 }
 
-export interface QueryMessage {
-  index: number[];
-  tileSize: number;
-  levelRecord: LevelRecord;
-  namespace: string;
-  channelRanges: number[];
-  channelMapping: number[];
-  attribute: Attribute;
-  token: string;
-  basePath: string;
-  dimensions: Dimension[];
-}
-
 export interface LevelRecord {
   id: string;
   zoomLevel: number;
@@ -168,3 +155,54 @@ export const types = {
     }
   }
 };
+
+export const enum RequestType {
+  CANCEL = 0,
+  IMAGE = 1,
+
+  INITIALIZE = 100
+}
+
+export interface DataRequest {
+  type: RequestType;
+  id: string;
+  request: any;
+}
+
+export interface InitializeMessage {
+  token: string;
+  basePath?: string;
+}
+
+export interface ImageMessage {
+  index: number[];
+  tileSize: number;
+  levelRecord: LevelRecord;
+  namespace: string;
+  channelRanges: number[];
+  channelMapping: number[];
+  attribute: Attribute;
+  token: string;
+  basePath: string;
+  dimensions: Dimension[];
+}
+
+export interface WorkerResponse {
+  type: RequestType;
+  id: string;
+  response: any;
+}
+
+export interface ImageResponse {
+  index: number[];
+  data: TypedArray;
+  width: number;
+  height: number;
+  channels: number;
+  dtype: string;
+  canceled: boolean;
+}
+
+export interface ResponseCallback {
+  image?: (id: string, response: ImageResponse) => void;
+}

@@ -21,6 +21,7 @@ import {
   getTileCount,
   initializeCacheDB
 } from '../utils/cache';
+import { WorkerPool } from './worker/tiledb.worker.pool';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -36,6 +37,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private camera!: FreeCamera;
   private gui!: TileImageGUI;
   private tileSize = 1024;
+  private workerPool: WorkerPool;
 
   private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
@@ -53,6 +55,11 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
       });
     }
+
+    this.workerPool = new WorkerPool({
+      token: options.token,
+      basePath: options.tiledbEnv
+    });
   }
 
   protected async createScene(): Promise<Scene> {
@@ -123,14 +130,13 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       this.attributes,
       this.tileSize,
       this.options.namespace,
-      this.options.token,
-      '',
+      this.workerPool,
       this.scene
     );
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
-      this.tileset.minimap.resize();
+      this.tileset.onViewportResize();
     });
 
     this.gui = new TileImageGUI(
@@ -154,6 +160,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onDisposeObservable.add(() => {
       clearInterval(intervalID);
       this.tileset.dispose();
+      this.workerPool.dispose();
       this.gui.dispose();
     });
 
@@ -167,6 +174,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onBeforeRenderObservable.clear();
 
     this.tileset.dispose();
+    this.workerPool.cleanUp();
     this.gui.dispose();
     this.camera.dispose();
     this.scene.getEngine().clearInternalTexturesCache();

@@ -1,13 +1,31 @@
-import { Channel, LevelRecord } from '../types';
-import { Camera, Scene, UniformBuffer } from '@babylonjs/core';
+import {
+  Channel,
+  DataRequest,
+  ImageResponse,
+  LevelRecord,
+  RequestType
+} from '../types';
+import { Camera, Scene, UniformBuffer, Nullable } from '@babylonjs/core';
 import { Attribute, Dimension } from '../../types';
 import { range } from '../utils/helpers';
 import { Tile } from './tile';
 import { Minimap } from './minimap';
+import { WorkerPool } from '../worker/tiledb.worker.pool';
+import { Events } from '@tiledb-inc/viz-components';
+
+const enum TileState {
+  LOADING,
+  VISIBLE
+}
+
+interface TileStatus {
+  tile?: Tile;
+  state?: TileState;
+  evict: boolean;
+}
 
 export class Tileset {
-  public tiles: Map<string, Tile>;
-  public minimap!: Minimap;
+  public minimap: Nullable<Minimap>;
   private levels: LevelRecord[];
   private dimensions: Dimension[];
   private channels: Map<string, Channel[]>;
@@ -16,8 +34,6 @@ export class Tileset {
   private baseWidth: number;
   private baseHeight: number;
   private scene: Scene;
-  private token: string;
-  private basePath: string;
   private namespace: string;
   private tileOptions: UniformBuffer;
 
@@ -27,6 +43,9 @@ export class Tileset {
   private colors: Float32Array;
   private selectedAttribute: Attribute;
 
+  public workerPool!: WorkerPool;
+  public tileStatus: Map<string, TileStatus>;
+
   constructor(
     levels: LevelRecord[],
     dimensions: Dimension[],
@@ -34,8 +53,7 @@ export class Tileset {
     attributes: Attribute[],
     tileSize: number,
     namespace: string,
-    token: string,
-    basePath: string,
+    workerPool: WorkerPool,
     scene: Scene
   ) {
     this.levels = levels;
@@ -44,9 +62,8 @@ export class Tileset {
     this.attributes = attributes;
     this.tileSize = tileSize;
     this.namespace = namespace;
-    this.token = token;
-    this.basePath = basePath;
-    this.tiles = new Map<string, Tile>();
+    this.tileStatus = new Map<string, TileStatus>();
+    this.workerPool = workerPool;
     this.scene = scene;
 
     this.baseWidth =
@@ -94,32 +111,78 @@ export class Tileset {
     this.tileOptions.updateFloatArray('colors', this.colors);
 
     this.tileOptions.update();
+
+    this.workerPool.callbacks.image = this.onTileDataLoad.bind(this);
+    this.minimap = null;
+
+    if (
+      this.baseWidth <= Minimap.IMAGE_MAX_SIZE &&
+      this.baseHeight <= Minimap.IMAGE_MAX_SIZE
+    ) {
+      this.workerPool.postMessage({
+        id: 'image_minimap',
+        type: RequestType.IMAGE,
+        request: {
+          id: 'image_minimap',
+          index: [0, 0, 0],
+          tileSize: Math.max(this.baseWidth, this.baseHeight),
+          levelRecord: this.levels[0],
+          namespace: this.namespace,
+          attribute: this.selectedAttribute,
+          channelRanges: this.channelRanges,
+          dimensions: this.dimensions
+        }
+      });
+    }
+  }
+
+  public onTileDataLoad(id: string, response: ImageResponse) {
+    if (response.canceled) {
+      return;
+    }
+
+    if (id === 'image_minimap') {
+      if (this.minimap) {
+        this.minimap.update(this.tileOptions, response);
+        updateLoadingStatus(true);
+      } else {
+        this.minimap = new Minimap(
+          [0, 0, this.baseWidth, this.baseHeight],
+          this.channels.get(this.selectedAttribute.name)?.length ?? 0,
+          this.tileOptions,
+          response,
+          this.scene
+        );
+      }
+    } else {
+      const tileIndex = `${response.index[0]}_${response.index[1]}_${response.index[2]}`;
+      const status = this.tileStatus.get(tileIndex) ?? {
+        evict: false,
+        state: TileState.VISIBLE
+      };
+
+      if (status.tile) {
+        status.tile.update(this.tileOptions, response);
+      } else {
+        status.tile = new Tile(
+          [0, 0, this.baseWidth, this.baseHeight],
+          this.tileSize,
+          this.channels.get(this.selectedAttribute.name)?.length ?? 0,
+          this.tileOptions,
+          response,
+          this.scene
+        );
+      }
+
+      status.state = TileState.VISIBLE;
+      this.tileStatus.set(tileIndex, status);
+      updateLoadingStatus(true);
+    }
   }
 
   public calculateVisibleTiles(camera: Camera, zoom: number) {
-    if (!this.minimap) {
-      this.minimap = new Minimap(
-        [0, 0, 0],
-        [0, 0, this.baseWidth, this.baseHeight],
-        this.levels[0],
-        this.dimensions,
-        this.selectedAttribute,
-        Math.max(this.baseWidth, this.baseHeight),
-        this.channels.get(this.selectedAttribute.name)?.length ?? 0,
-        this.tileOptions,
-        this.namespace,
-        this.token,
-        this.basePath,
-        this.scene
-      );
-    }
-
-    if (!this.minimap.isLoaded && !this.minimap.isPending) {
-      this.minimap.load(this.channelRanges);
-    }
-
-    for (const [, value] of this.tiles.entries()) {
-      value.canEvict = true;
+    for (const [, value] of this.tileStatus) {
+      value.evict = true;
     }
 
     const integerZoom = Math.max(
@@ -137,13 +200,13 @@ export class Tileset {
     const left = camera.position.x + (camera?.orthoLeft ?? 0);
     const right = camera.position.x + (camera?.orthoRight ?? 0);
 
-    if (this.minimap.isLoaded) {
-      this.minimap.updateVisibleArea(
-        Math.min(this.baseHeight, Math.max(top, 0)),
+    if (this.minimap) {
+      this.minimap.update(this.tileOptions, undefined, [
         Math.min(this.baseWidth, Math.max(left, 0)),
         Math.min(this.baseHeight, Math.max(bottom, 0)),
-        Math.min(this.baseWidth, Math.max(right, 0))
-      );
+        Math.min(this.baseWidth, Math.max(right, 0)),
+        Math.min(this.baseHeight, Math.max(top, 0))
+      ]);
     }
 
     if (
@@ -178,63 +241,80 @@ export class Tileset {
     for (let x = minXIndex; x <= maxXIndex; ++x) {
       for (let y = minYIndex; y <= maxYIndex; ++y) {
         const tileIndex = `${x}_${y}_${integerZoom}`;
+        const status = this.tileStatus.get(tileIndex) ?? { evict: false };
 
-        if (this.tiles.has(tileIndex)) {
-          const tile = this.tiles.get(tileIndex);
+        status.evict = false;
 
-          if (tile === undefined) {
-            throw new Error(
-              `Unexpected tile requested. Tile index: ${tileIndex}`
-            );
+        if (status.state === TileState.LOADING) {
+          let parent = getParent([x, y, integerZoom]);
+
+          while (parent !== undefined) {
+            const parentIndex = `${parent[0]}_${parent[1]}_${parent[2]}`;
+            const parentState = this.tileStatus.get(parentIndex);
+            if (parentState?.state === TileState.VISIBLE) {
+              parentState.evict = false;
+              break;
+            }
+
+            parent = getParent(parent);
           }
+        } else if (status.state === undefined) {
+          this.workerPool.postMessage({
+            type: RequestType.IMAGE,
+            id: `image_${x}_${y}_${integerZoom}`,
+            request: {
+              index: [x, y, integerZoom],
+              tileSize: this.tileSize,
+              levelRecord: this.levels[integerZoom],
+              namespace: this.namespace,
+              attribute: this.selectedAttribute,
+              channelRanges: this.channelRanges,
+              dimensions: this.dimensions
+            }
+          });
 
-          tile.canEvict = false;
-        } else {
-          const tile = new Tile(
-            [x, y, integerZoom],
-            [0, 0, this.baseWidth, this.baseHeight],
-            this.levels[integerZoom],
-            this.dimensions,
-            this.selectedAttribute,
-            this.tileSize,
-            this.channels.get(this.selectedAttribute.name)?.length ?? 0,
-            this.tileOptions,
-            this.namespace,
-            this.token,
-            this.basePath,
-            this.scene
-          );
+          status.state = TileState.LOADING;
+          this.tileStatus.set(tileIndex, status);
 
-          tile.load(this.channelRanges);
-          this.tiles.set(tileIndex, tile);
-        }
-      }
-    }
+          updateLoadingStatus(false);
 
-    for (const [, value] of this.tiles.entries()) {
-      if (!value.canEvict && !value.isLoaded) {
-        let parent = getParent(value.index);
-        while (parent !== undefined) {
-          const tile = this.tiles.get(`${parent[0]}_${parent[1]}_${parent[2]}`);
-          if (tile?.isLoaded) {
-            tile.canEvict = false;
-            break;
+          let parent = getParent([x, y, integerZoom]);
+          while (parent !== undefined) {
+            const parentIndex = `${parent[0]}_${parent[1]}_${parent[2]}`;
+            const parentState = this.tileStatus.get(parentIndex);
+            if (parentState?.state === TileState.VISIBLE) {
+              parentState.evict = false;
+              break;
+            }
+
+            parent = getParent(parent);
           }
-
-          parent = getParent(parent);
         }
       }
     }
   }
 
   public evict() {
-    for (const key of this.tiles.keys()) {
-      const tile = this.tiles.get(key);
-      if (tile?.canEvict) {
-        tile.dispose();
-
-        this.tiles.delete(key);
+    for (const key of this.tileStatus.keys()) {
+      const status = this.tileStatus.get(key);
+      if (!status?.evict) {
+        continue;
       }
+
+      if (status.state === TileState.LOADING) {
+        const canceled = this.workerPool.cancelRequest({
+          type: RequestType.CANCEL,
+          id: `image_${key}`
+        } as DataRequest);
+
+        if (canceled) {
+          updateLoadingStatus(true);
+        }
+      } else if (status.state === TileState.VISIBLE) {
+        status.tile?.dispose();
+      }
+
+      this.tileStatus.delete(key);
     }
   }
 
@@ -280,44 +360,85 @@ export class Tileset {
 
     this.tileOptions.update();
 
-    for (const tile of this.tiles.values()) {
-      tile.updateTileOptionsAndData(
-        this.channelRanges,
-        this.dimensions,
-        this.tileOptions
-      );
-    }
-    this.minimap.updateTileOptionsAndData(
-      this.channelRanges,
-      this.dimensions,
-      this.tileOptions
-    );
+    this.update();
   }
 
   public updateExtraDimensions(index: number, value: number) {
     this.dimensions[index].value = value;
 
-    for (const tile of this.tiles.values()) {
-      tile.updateTileOptionsAndData(
-        this.channelRanges,
-        this.dimensions,
-        this.tileOptions
-      );
+    this.update();
+  }
+
+  private update() {
+    for (const key of this.tileStatus.keys()) {
+      const index = key.split('_').map(x => parseInt(x));
+
+      const status = this.tileStatus.get(key);
+      if (!status) {
+        console.error(`Unexpected key ${key}`);
+        continue;
+      }
+
+      status.state = TileState.LOADING;
+
+      const canceled = this.workerPool.cancelRequest({
+        type: RequestType.CANCEL,
+        id: `image_${key}`
+      } as DataRequest);
+
+      if (canceled) {
+        updateLoadingStatus(true);
+      }
+
+      this.workerPool.postMessage({
+        id: `image_${key}`,
+        type: RequestType.IMAGE,
+        request: {
+          index: index,
+          tileSize: this.tileSize,
+          levelRecord: this.levels[index[2]],
+          namespace: this.namespace,
+          attribute: this.selectedAttribute,
+          channelRanges: this.channelRanges,
+          dimensions: this.dimensions
+        }
+      });
+
+      updateLoadingStatus(false);
     }
-    this.minimap.updateTileOptionsAndData(
-      this.channelRanges,
-      this.dimensions,
-      this.tileOptions
-    );
+
+    const canceled = this.workerPool.cancelRequest({
+      type: RequestType.CANCEL,
+      id: 'image_minimap'
+    } as DataRequest);
+
+    if (canceled) {
+      updateLoadingStatus(true);
+    }
+
+    this.workerPool.postMessage({
+      id: 'image_minimap',
+      type: RequestType.IMAGE,
+      request: {
+        index: [0, 0, 0],
+        tileSize: Math.max(this.baseWidth, this.baseHeight),
+        levelRecord: this.levels[0],
+        namespace: this.namespace,
+        attribute: this.selectedAttribute,
+        channelRanges: this.channelRanges,
+        dimensions: this.dimensions
+      }
+    });
+
+    updateLoadingStatus(false);
   }
 
   public toggleMinimap(visible: boolean) {
-    if (this.minimap.mesh === null) {
-      console.warn('Minimap is not initialized');
-      return;
-    }
+    this.minimap?.hide(visible);
+  }
 
-    this.minimap.mesh.isVisible = visible;
+  public onViewportResize() {
+    this.minimap?.resize();
   }
 
   private calculateChannelRanges() {
@@ -354,11 +475,11 @@ export class Tileset {
   }
 
   public dispose() {
-    for (const tile of this.tiles.values()) {
-      tile.dispose();
+    for (const [, status] of this.tileStatus) {
+      status.tile?.dispose();
     }
 
-    this.minimap.dispose();
+    this.minimap?.dispose();
   }
 }
 
@@ -368,4 +489,16 @@ function getParent(index: number[]): number[] | undefined {
   }
 
   return [index[0] >> 1, index[1] >> 1, index[2] - 1];
+}
+
+function updateLoadingStatus(loaded: boolean) {
+  window.dispatchEvent(
+    new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+      bubbles: true,
+      detail: {
+        type: 'LOADING_TILE',
+        loaded
+      }
+    })
+  );
 }
