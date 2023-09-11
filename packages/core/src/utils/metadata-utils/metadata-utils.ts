@@ -199,7 +199,8 @@ export async function getGeometryMetadata(options: AssetOptions) {
       arrayMetadata['LAYER_EXTENT_MAXY']
     ],
     type: arrayMetadata['GeometryType'],
-    attribute: arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'],
+    idAttribute: arrayMetadata['FID_ATTRIBUTE_NAME'],
+    geometryAttribute: arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'],
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
   } as GeometryMetadata;

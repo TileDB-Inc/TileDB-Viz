@@ -10,7 +10,6 @@ import {
 import { TileDBTileImageOptions } from './types';
 import { setupCamera, resizeOrtographicCameraViewport } from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
-import { Tileset } from './model/tileset';
 import { LevelRecord, ImageMetadata, types } from './types';
 import { AssetEntry, Attribute, Dimension, GeometryMetadata } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
@@ -23,11 +22,14 @@ import {
 } from '../utils/cache';
 import { WorkerPool } from './worker/tiledb.worker.pool';
 import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
+import { ImageManager } from './model/image/imageManager';
+import { GeometryManager } from './model/geometry/geometryManager';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
-  private tileset!: Tileset;
+  private tileset!: ImageManager;
+  private geometryManager?: GeometryManager;
   private baseWidth!: number;
   private baseHeight!: number;
   private metadata!: ImageMetadata;
@@ -95,6 +97,37 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     if (this.options.geometryArrayID) {
       this.geometryMetadata = await getGeometryMetadata(this.options);
+
+      const originalLevel = this.levels.at(-1);
+
+      if (!originalLevel) {
+        console.warn(
+          'Unable to construct geometry manager. Base image level is undefined'
+        );
+      } else {
+        this.geometryManager = new GeometryManager(
+          this.scene,
+          this.workerPool,
+          this.tileSize,
+          {
+            arrayID: this.options.geometryArrayID,
+            namespace: this.options.namespace,
+            metadata: this.geometryMetadata,
+            baseCRS: this.metadata.crs ?? '',
+            baseWidth:
+              originalLevel.dimensions[originalLevel.axes.indexOf('X')],
+            baseHeight:
+              originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
+            transformationCoefficients:
+              this.metadata.transformationCoefficients ?? [],
+            nativeZoom: this.levels.length - 1
+          }
+        );
+
+        await initializeCacheDB([
+          `${this.options.geometryArrayID}_${this.tileSize}`
+        ]);
+      }
     }
 
     this.baseWidth =
@@ -129,20 +162,21 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     this.camera = this.scene.activeCamera as FreeCamera;
 
-    this.tileset = new Tileset(
-      this.levels,
-      this.dimensions,
-      this.metadata.channels,
-      this.attributes,
-      this.tileSize,
-      this.options.namespace,
+    this.tileset = new ImageManager(
+      this.scene,
       this.workerPool,
-      this.scene
+      this.tileSize,
+      {
+        metadata: this.metadata,
+        dimensions: this.dimensions,
+        attributes: this.attributes,
+        levels: this.levels
+      }
     );
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
-      this.tileset.onViewportResize();
+      //this.tileset.onViewportResize();
     });
 
     this.gui = new TileImageGUI(
@@ -166,6 +200,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onDisposeObservable.add(() => {
       clearInterval(intervalID);
       this.tileset.dispose();
+      this.geometryManager?.dispose();
       this.workerPool.dispose();
       this.gui.dispose();
     });
@@ -180,6 +215,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onBeforeRenderObservable.clear();
 
     this.tileset.dispose();
+    this.geometryManager?.dispose();
     this.workerPool.cleanUp();
     this.gui.dispose();
     this.camera.dispose();
@@ -213,8 +249,15 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
-    this.tileset.evict();
+    // this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
+    // this.tileset.evict();
+    const integerZoom = Math.max(
+      0,
+      Math.min(this.levels.length - 1, Math.ceil(Math.log2(this.zoom)))
+    );
+
+    this.tileset.loadTiles(this.camera, integerZoom);
+    this.geometryManager?.loadTiles(this.camera, integerZoom);
   }
 
   private resizeViewport() {

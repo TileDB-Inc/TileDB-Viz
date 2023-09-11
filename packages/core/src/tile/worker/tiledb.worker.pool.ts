@@ -4,7 +4,8 @@ import {
   RequestType,
   WorkerResponse,
   ImageResponse,
-  ResponseCallback
+  ResponseCallback,
+  GeometryResponse
 } from '../types';
 
 export interface WorkerPoolOptions {
@@ -62,6 +63,14 @@ export class WorkerPool {
       case RequestType.IMAGE:
         if (this.callbacks.image) {
           this.callbacks.image(response.id, response.response as ImageResponse);
+        }
+        break;
+      case RequestType.GEOMETRY:
+        if (this.callbacks.geometry) {
+          this.callbacks.geometry(
+            response.id,
+            response.response as GeometryResponse
+          );
         }
         break;
       case RequestType.CANCEL:

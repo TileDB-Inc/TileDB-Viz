@@ -70,6 +70,8 @@ export interface ImageMetadata extends AssetMetadata {
   physicalSizeZUnit?: string;
   timeIncrement?: number;
   timeIncrementUnit?: string;
+  crs?: string;
+  transformationCoefficients?: number[];
   axes: Array<AxesMetadata>;
 }
 
@@ -160,6 +162,7 @@ export const types = {
 export const enum RequestType {
   CANCEL = 0,
   IMAGE = 1,
+  GEOMETRY = 2,
 
   INITIALIZE = 100
 }
@@ -191,11 +194,11 @@ export interface ImageMessage {
 export interface GeometryMessage {
   index: number[];
   tileSize: number;
-  token: string;
-  basePath: string;
+  arrayID: string;
   namespace: string;
-  geometryID: string;
-  attribute: string;
+  idAttribute: string;
+  geometryAttribute: string;
+  extraAttributes?: string[];
   type: string;
   imageCRS: string;
   geometryCRS: string;
@@ -208,16 +211,27 @@ export interface WorkerResponse {
   response: any;
 }
 
-export interface ImageResponse {
+export interface BaseResponse {
   index: number[];
+  canceled: boolean;
+}
+
+export interface ImageResponse extends BaseResponse {
   data: TypedArray;
   width: number;
   height: number;
   channels: number;
   dtype: keyof typeof types;
-  canceled: boolean;
+}
+
+export interface GeometryResponse extends BaseResponse {
+  positions: Float32Array;
+  colors: Float32Array;
+  indices: Int32Array;
+  gtype: string;
 }
 
 export interface ResponseCallback {
   image?: (id: string, response: ImageResponse) => void;
+  geometry?: (id: string, response: GeometryResponse) => void;
 }

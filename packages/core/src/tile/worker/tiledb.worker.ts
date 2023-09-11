@@ -7,13 +7,19 @@ import {
   TypedArray,
   types,
   WorkerResponse,
-  ImageResponse
+  ImageResponse,
+  GeometryResponse,
+  GeometryMessage
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import axios, { CancelTokenSource } from 'axios';
 import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
+import proj4 from 'proj4';
+import { Buffer as NodeBuffer } from 'node-buffer';
+import wkx from '@syncpoint/wkx';
+import earcut from 'earcut';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -28,6 +34,12 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       currentId = event.data.id;
       tokenSource = CancelToken.source();
       imageRequest(event.data.id, event.data.request as ImageMessage);
+      break;
+    case RequestType.GEOMETRY:
+      cancelSignal = false;
+      currentId = event.data.id;
+      tokenSource = CancelToken.source();
+      geometryRequest(event.data.id, event.data.request as GeometryMessage);
       break;
     case RequestType.CANCEL:
       cancelSignal = currentId === event.data.id;
@@ -296,5 +308,274 @@ async function imageRequest(id: string, request: ImageMessage) {
       } as WorkerResponse,
       [imageData.buffer] as any
     );
+  }
+}
+
+async function geometryRequest(id: string, request: GeometryMessage) {
+  if (!tiledbClient) {
+    console.warn('TileDB client is not initialized');
+    return;
+  }
+
+  const [x, y] = request.index;
+  const tileSize = request.tileSize;
+
+  const cachedPositions = await getQueryDataFromCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'position'}_${x}_${y}`
+  );
+
+  if (cachedPositions) {
+    const cachedColors = await getQueryDataFromCache(
+      `${request.arrayID}_${tileSize}`,
+      `${'color'}_${x}_${y}`
+    );
+    const cachedIndices = await getQueryDataFromCache(
+      `${request.arrayID}_${tileSize}`,
+      `${'indices'}_${x}_${y}`
+    );
+
+    if (cancelSignal) {
+      self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    } else {
+      self.postMessage(
+        {
+          id: id,
+          type: RequestType.GEOMETRY,
+          response: {
+            index: request.index,
+            positions: cachedPositions,
+            colors: cachedColors,
+            indices: cachedIndices,
+            gtype: request.type,
+            canceled: cancelSignal
+          } as GeometryResponse
+        } as WorkerResponse,
+        [
+          cachedPositions.buffer,
+          cachedColors.buffer,
+          cachedIndices.buffer
+        ] as any
+      );
+    }
+
+    return;
+  }
+
+  const converter = proj4(request.geometryCRS, request.imageCRS);
+  const geotransformCoefficients = request.geotransformCoefficients;
+
+  const xPixelLimits = [x * tileSize, (x + 1) * tileSize];
+  const yPixelLimits = [y * tileSize, (y + 1) * tileSize];
+
+  const geoXMin =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xPixelLimits[0] +
+    geotransformCoefficients[2] * yPixelLimits[0];
+  const geoYMin =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xPixelLimits[0] +
+    geotransformCoefficients[5] * yPixelLimits[0];
+  const geoXMax =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xPixelLimits[1] +
+    geotransformCoefficients[2] * yPixelLimits[1];
+  const geoYMax =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xPixelLimits[1] +
+    geotransformCoefficients[5] * yPixelLimits[1];
+
+  const minLimit = converter.inverse([geoXMin, geoYMin]);
+  const maxLimit = converter.inverse([geoXMax, geoYMax]);
+
+  const query = {
+    layout: Layout.Unordered,
+    ranges: [
+      [minLimit[0], maxLimit[0]].sort(),
+      [minLimit[1], maxLimit[1]].sort()
+    ],
+    bufferSize: 5_000_000,
+    attributes: [request.geometryAttribute, request.idAttribute],
+    returnRawBuffers: true,
+    ignoreOffsets: true,
+    returnOffsets: true,
+    cancelToken: tokenSource?.token
+  };
+
+  const generator = tiledbClient.query.ReadQuery(
+    request.namespace,
+    request.arrayID,
+    query
+  );
+
+  const ids: ArrayBuffer[] = [];
+  const wkbs: ArrayBuffer[] = [];
+  const offsets: BigUint64Array[] = [];
+
+  try {
+    for await (const result of generator) {
+      if ((result as any)['__offsets'][request.geometryAttribute]) {
+        wkbs.push((result as any)[request.geometryAttribute]);
+        ids.push((result as any)[request.idAttribute]);
+        offsets.push((result as any)['__offsets'][request.geometryAttribute]);
+      }
+    }
+  } catch (e) {
+    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    return;
+  }
+
+  if (wkbs.length === 0) {
+    await writeToCache(
+      `${request.arrayID}_${tileSize}`,
+      `${'position'}_${x}_${y}`,
+      new Float32Array()
+    );
+    await writeToCache(
+      `${request.arrayID}_${tileSize}`,
+      `${'color'}_${x}_${y}`,
+      new Float32Array()
+    );
+    await writeToCache(
+      `${request.arrayID}_${tileSize}`,
+      `${'indices'}_${x}_${y}`,
+      new Int32Array()
+    );
+
+    self.postMessage({
+      id: id,
+      type: RequestType.GEOMETRY,
+      response: {
+        index: request.index,
+        positions: new Float32Array(),
+        colors: new Float32Array(),
+        indices: new Int32Array(),
+        gtype: request.type,
+        canceled: cancelSignal
+      } as GeometryResponse
+    } as WorkerResponse);
+
+    return;
+  }
+
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const faceMapping: number[] = [];
+
+  switch (request.type) {
+    case 'Polygon':
+      for (let index = 0; index < wkbs.length; ++index) {
+        parsePolygon(
+          wkbs[index],
+          offsets[index],
+          positions,
+          indices,
+          faceMapping,
+          converter,
+          geotransformCoefficients
+        );
+      }
+      break;
+    default:
+      console.warn(`Unknown geometry type "${request.type}"`);
+      return;
+  }
+
+  const rawPositions = Float32Array.from(positions);
+  const rawColors = new Float32Array((positions.length / 3) * 4);
+  const rawIndices = Int32Array.from(indices);
+
+  let globalIndex = 0;
+  for (const polygonIDs of ids) {
+    const a = new Float32Array(polygonIDs);
+    for (let index = 0; index < a.length; index += 2) {
+      // R and G channels contain the 64bit polygon identifier.
+      // B and A channels can be used to supply the shader additional information e.g. rendering color
+      rawColors[globalIndex] = a[index];
+      rawColors[globalIndex + 1] = a[index + 1];
+
+      globalIndex += 4;
+    }
+  }
+
+  await writeToCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'position'}_${x}_${y}`,
+    rawPositions
+  );
+  await writeToCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'color'}_${x}_${y}`,
+    rawColors
+  );
+  await writeToCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'indices'}_${x}_${y}`,
+    rawIndices
+  );
+
+  if (cancelSignal) {
+    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+  } else {
+    self.postMessage(
+      {
+        id: id,
+        type: RequestType.GEOMETRY,
+        response: {
+          index: request.index,
+          positions: rawPositions,
+          colors: rawColors,
+          indices: rawIndices,
+          gtype: request.type,
+          canceled: cancelSignal
+        } as GeometryResponse
+      } as WorkerResponse,
+      [rawPositions.buffer, rawColors.buffer, rawIndices.buffer] as any
+    );
+  }
+}
+
+function parsePolygon(
+  wkbs: ArrayBuffer,
+  offsets: BigUint64Array,
+  positions: number[],
+  indices: number[],
+  faceMapping: number[],
+  converter: proj4.Converter,
+  geotransformCoefficients: number[]
+) {
+  let positionOffset = positions.length;
+
+  for (const [geometryIndex, offset] of offsets.entries()) {
+    const entry = wkx.Geometry.parse(
+      NodeBuffer.from(
+        wkbs,
+        Number(offset),
+        geometryIndex === offsets.length - 1
+          ? undefined
+          : Number(offsets[geometryIndex + 1] - offset)
+      )
+    );
+    const shape: number[] = [];
+
+    for (let index = 0; index < entry.exteriorRing.length; ++index) {
+      const point = entry.exteriorRing[index];
+      [point.x, point.y] = converter.forward([point.x, point.y]);
+      [point.x, point.y] = [
+        (point.x - geotransformCoefficients[0]) / geotransformCoefficients[1],
+        (point.y - geotransformCoefficients[3]) / geotransformCoefficients[5]
+      ];
+      shape.push(point.x, point.y);
+      positions.push(point.x, 0, point.y);
+    }
+
+    const trianglulation = earcut(shape, null, 2);
+
+    indices.push(...trianglulation.map((x: number) => x + positionOffset / 3));
+    faceMapping.push(
+      ...new Array(trianglulation.length / 3).fill(geometryIndex)
+    );
+
+    positionOffset += (shape.length / 2) * 3;
   }
 }

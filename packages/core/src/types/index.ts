@@ -4,7 +4,8 @@ export interface AssetMetadata {
 
 export interface GeometryMetadata {
   type: string;
-  attribute: string;
+  idAttribute: string;
+  geometryAttribute: string;
   crs?: string;
   extent: number[]; // [minX, minY, maxX, maxY]
   pad: number[]; // [padX, padY]

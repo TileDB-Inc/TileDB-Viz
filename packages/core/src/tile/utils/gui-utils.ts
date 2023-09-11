@@ -2,7 +2,7 @@ import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
 import { Dimension, AssetEntry } from '../../types';
-import { Tileset } from '../model/tileset';
+import { ImageManager } from '../model/image/imageManager';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -11,7 +11,7 @@ import { Tileset } from '../model/tileset';
 class TileImageGUI {
   private rootDiv?: HTMLDivElement;
   private rootElement?: HTMLElement;
-  private tileset: Tileset;
+  private tileset: ImageManager;
   private uiWrapper!: HTMLDivElement;
   private zoomCallback: (step: number) => void;
   private clearCache: () => void;
@@ -27,7 +27,7 @@ class TileImageGUI {
   private buttonEventHandler;
 
   constructor(
-    tileset: Tileset,
+    tileset: ImageManager,
     rootElement: HTMLElement,
     channels: Channel[],
     dimensions: Dimension[],
@@ -141,18 +141,22 @@ class TileImageGUI {
       case 'c':
         {
           const channelIndex = Number(customEvent.detail.id.substring(2));
-          this.tileset.updateChannelIntensity(
-            channelIndex,
-            Number(customEvent.detail.value)
+          this.tileset.updateTiles(
+            new ImageManager.IntensityUpdate(
+              channelIndex,
+              Number(customEvent.detail.value)
+            )
           );
         }
         break;
       case 'd':
         {
           const dimensionIndex = Number(customEvent.detail.id.substring(2));
-          this.tileset.updateExtraDimensions(
-            dimensionIndex,
-            Number(customEvent.detail.value)
+          this.tileset.updateTiles(
+            new ImageManager.DimensionUpdate(
+              dimensionIndex,
+              Number(customEvent.detail.value)
+            )
           );
         }
         break;
@@ -169,7 +173,9 @@ class TileImageGUI {
     }>;
 
     const channelIndex = Number(customEvent.detail.id.substring(2));
-    this.tileset.updateChannelColor(channelIndex, customEvent.detail.value);
+    this.tileset.updateTiles(
+      new ImageManager.ColorUpdate(channelIndex, customEvent.detail.value)
+    );
   }
 
   private toggleHandler(event: Event) {
@@ -180,14 +186,16 @@ class TileImageGUI {
       case 'c':
         {
           const channelIndex = Number(id_parts[1]);
-          this.tileset.updateChannelVisibility(
-            channelIndex,
-            customEvent.detail.value
+          this.tileset.updateTiles(
+            new ImageManager.ChannelUpdate(
+              channelIndex,
+              customEvent.detail.value
+            )
           );
         }
         break;
       case 'minimap':
-        this.tileset.toggleMinimap(customEvent.detail.value);
+        //this.tileset.toggleMinimap(customEvent.detail.value);
         break;
       default:
         console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
