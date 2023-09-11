@@ -394,7 +394,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       [minLimit[0], maxLimit[0]].sort(),
       [minLimit[1], maxLimit[1]].sort()
     ],
-    bufferSize: 5_000_000,
+    bufferSize: 20_000_000,
     attributes: [request.geometryAttribute, request.idAttribute],
     returnRawBuffers: true,
     ignoreOffsets: true,
@@ -557,6 +557,7 @@ function parsePolygon(
       )
     );
     const shape: number[] = [];
+    const holes: number[] = [];
 
     for (let index = 0; index < entry.exteriorRing.length; ++index) {
       const point = entry.exteriorRing[index];
@@ -569,7 +570,29 @@ function parsePolygon(
       positions.push(point.x, 0, point.y);
     }
 
-    const trianglulation = earcut(shape, null, 2);
+    for (
+      let holeIndex = 0;
+      holeIndex < entry.interiorRings.length;
+      ++holeIndex
+    ) {
+      holes.push(shape.length / 2);
+      for (
+        let index = 0;
+        index < entry.interiorRings[holeIndex].length;
+        ++index
+      ) {
+        const point = entry.interiorRings[holeIndex][index];
+        [point.x, point.y] = converter.forward([point.x, point.y]);
+        [point.x, point.y] = [
+          (point.x - geotransformCoefficients[0]) / geotransformCoefficients[1],
+          (point.y - geotransformCoefficients[3]) / geotransformCoefficients[5]
+        ];
+        shape.push(point.x, point.y);
+        positions.push(point.x, 0, point.y);
+      }
+    }
+
+    const trianglulation = earcut(shape, holes.length > 0 ? holes : null, 2);
 
     indices.push(...trianglulation.map((x: number) => x + positionOffset / 3));
     faceMapping.push(

@@ -95,6 +95,8 @@ export class GeometryManager extends Manager<GeometryTile> {
             } as GeometryMessage
           } as DataRequest);
 
+          this.updateLoadingStatus(false);
+
           status.state = TileState.LOADING;
           this.tileStatus.set(tileIndex, status);
         }
