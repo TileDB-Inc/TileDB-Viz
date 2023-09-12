@@ -13,9 +13,11 @@ import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, UpdateOperation, TileStatus, TileState } from '../manager';
 import { ImageTile } from './image';
 import { range } from '../../utils/helpers';
+import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
 
 interface ImageOptions {
   metadata: ImageMetadata;
+  namespace: string;
   levels: LevelRecord[];
   dimensions: Dimension[];
   attributes: Attribute[];
@@ -31,7 +33,7 @@ export class ImageManager extends Manager<ImageTile> {
   private dimensions: Dimension[];
   private attributes: Attribute[];
   private metadata: ImageMetadata;
-  private namespace = 'xanthos-xanthopoulos';
+  private namespace: string;
 
   private selectedAttribute!: Attribute;
 
@@ -94,8 +96,8 @@ export class ImageManager extends Manager<ImageTile> {
 
     apply(source: ImageManager): void {
       source.channelMapping[4 * this.index] = this.visible ? this.index : -1;
-      source.calculateChannelMapping();
-      source.calculateChannelRanges();
+      calculateChannelMapping(source.channelMapping);
+      source.channelRanges = calculateChannelRanges(source.channelMapping);
 
       source.tileOptions = new UniformBuffer(source.scene.getEngine());
       source.tileOptions.addUniform(
@@ -154,12 +156,13 @@ export class ImageManager extends Manager<ImageTile> {
 
     super(scene, workerPool, tileSize, baseWidth, baseHeight);
 
-    this.workerPool.callbacks.image = this.onImageTileDataLoad.bind(this);
+    this.workerPool.callbacks.image.push(this.onImageTileDataLoad.bind(this));
 
     this.levels = imageOptions.levels;
     this.dimensions = imageOptions.dimensions;
     this.attributes = imageOptions.attributes;
     this.metadata = imageOptions.metadata;
+    this.namespace = imageOptions.namespace;
 
     this.selectedAttribute = this.attributes.filter(item => item.visible)[0];
     this.channelRanges = [
@@ -307,12 +310,12 @@ export class ImageManager extends Manager<ImageTile> {
     }
 
     const tileIndex = `image_${response.index[0]}_${response.index[1]}_${response.index[2]}`;
-    const status =
-      this.tileStatus.get(tileIndex) ??
-      ({
-        evict: false,
-        state: TileState.VISIBLE
-      } as TileStatus<ImageTile>);
+    const status = this.tileStatus.get(id);
+
+    if (!status) {
+      // Tile was removed from the tileset but canceling missed timing
+      return;
+    }
 
     if (status.tile) {
       status.tile.update({ uniformBuffer: this.tileOptions, response });
@@ -328,41 +331,9 @@ export class ImageManager extends Manager<ImageTile> {
     }
 
     status.state = TileState.VISIBLE;
+    status.evict = false;
     this.tileStatus.set(tileIndex, status);
     this.updateLoadingStatus(true);
-  }
-
-  private calculateChannelRanges() {
-    let range: number[] = [];
-    this.channelRanges = [];
-    for (let index = 0; index < this.channelMapping.length / 4; ++index) {
-      if (this.channelMapping[4 * index] === -1) {
-        continue;
-      }
-
-      if (range.length === 0) {
-        range.push(index);
-      } else {
-        if (index - (range.at(-1) as number) !== 1) {
-          this.channelRanges.push(range[0], range.at(-1) as number);
-          range = [index];
-        } else {
-          range.push(index);
-        }
-      }
-    }
-    this.channelRanges.push(range[0], range.at(-1) as number);
-  }
-
-  private calculateChannelMapping() {
-    let visibleCounter = 0;
-    for (let index = 0; index < this.channelMapping.length / 4; ++index) {
-      if (this.channelMapping[4 * index] === -1) {
-        continue;
-      }
-
-      this.channelMapping[4 * index] = visibleCounter++;
-    }
   }
 
   private update() {

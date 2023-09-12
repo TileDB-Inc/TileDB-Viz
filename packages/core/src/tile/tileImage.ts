@@ -24,12 +24,14 @@ import { WorkerPool } from './worker/tiledb.worker.pool';
 import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
+import { MinimapManager } from './model/image/minimap';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
   private tileset!: ImageManager;
   private geometryManager?: GeometryManager;
+  private minimapManager!: MinimapManager;
   private baseWidth!: number;
   private baseHeight!: number;
   private metadata!: ImageMetadata;
@@ -170,7 +172,21 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
         metadata: this.metadata,
         dimensions: this.dimensions,
         attributes: this.attributes,
-        levels: this.levels
+        levels: this.levels,
+        namespace: this.options.namespace
+      }
+    );
+
+    this.minimapManager = new MinimapManager(
+      this.scene,
+      this.workerPool,
+      Math.max(this.baseWidth, this.baseHeight),
+      {
+        metadata: this.metadata,
+        dimensions: this.dimensions,
+        attributes: this.attributes,
+        baseLevel: this.levels[0],
+        namespace: this.options.namespace
       }
     );
 
@@ -181,6 +197,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     this.gui = new TileImageGUI(
       this.tileset,
+      this.minimapManager,
       this.rootElement,
       this.metadata.channels.get(
         this.attributes.filter(x => x.visible)[0].name
@@ -257,6 +274,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     );
 
     this.tileset.loadTiles(this.camera, integerZoom);
+    this.minimapManager.loadTiles(this.camera, integerZoom);
     this.geometryManager?.loadTiles(this.camera, integerZoom);
   }
 

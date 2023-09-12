@@ -5,7 +5,7 @@ import {
   RawTexture2DArray,
   UniformBuffer
 } from '@babylonjs/core';
-import { BioimageShaderMaterial } from '../../materials/bioimageShaderMaterial';
+import { ImageShaderMaterial } from '../../materials/imageShaderMaterial';
 import { Tile, UpdateOptions } from '../tile';
 
 export interface ImageUpdateOptions extends UpdateOptions<ImageResponse> {
@@ -70,7 +70,7 @@ export class ImageTile extends Tile<ImageResponse> {
     if (updateOptions.response) {
       this.mesh.material?.dispose(true, true);
 
-      const material = BioimageShaderMaterial(
+      const material = ImageShaderMaterial(
         this.index.toString(),
         this.scene,
         types[updateOptions.response.dtype].samplerType,

@@ -51,7 +51,9 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.namespace = geometryOptions.namespace;
     this.nativeZoom = geometryOptions.nativeZoom;
 
-    this.workerPool.callbacks.geometry = this.onGeometryTileDataLoad.bind(this);
+    this.workerPool.callbacks.geometry.push(
+      this.onGeometryTileDataLoad.bind(this)
+    );
   }
 
   public loadTiles(camera: Camera, zoom: number): void {

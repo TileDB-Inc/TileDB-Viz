@@ -1,6 +1,6 @@
 import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
 
-export function BioimageShaderMaterial(
+export function ImageShaderMaterial(
   name: string,
   scene: Scene,
   samplerType: string,

@@ -232,6 +232,6 @@ export interface GeometryResponse extends BaseResponse {
 }
 
 export interface ResponseCallback {
-  image?: (id: string, response: ImageResponse) => void;
-  geometry?: (id: string, response: GeometryResponse) => void;
+  image: { (id: string, response: ImageResponse): void }[];
+  geometry: { (id: string, response: GeometryResponse): void }[];
 }

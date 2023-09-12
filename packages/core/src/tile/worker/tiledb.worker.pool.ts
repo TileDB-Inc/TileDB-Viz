@@ -27,7 +27,7 @@ export class WorkerPool {
 
   constructor(options?: WorkerPoolOptions) {
     this.poolSize = options?.poolSize ?? window.navigator.hardwareConcurrency;
-    this.callbacks = options?.callbacks ?? {};
+    this.callbacks = options?.callbacks ?? { image: [], geometry: [] };
     this.taskMap = new Map<string, number>();
     this.initilizeMessage = {
       type: RequestType.INITIALIZE,
@@ -61,16 +61,13 @@ export class WorkerPool {
 
     switch (response.type) {
       case RequestType.IMAGE:
-        if (this.callbacks.image) {
-          this.callbacks.image(response.id, response.response as ImageResponse);
+        for (const callback of this.callbacks.image) {
+          callback(response.id, response.response as ImageResponse);
         }
         break;
       case RequestType.GEOMETRY:
-        if (this.callbacks.geometry) {
-          this.callbacks.geometry(
-            response.id,
-            response.response as GeometryResponse
-          );
+        for (const callback of this.callbacks.geometry) {
+          callback(response.id, response.response as GeometryResponse);
         }
         break;
       case RequestType.CANCEL:
