@@ -218,6 +218,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       clearInterval(intervalID);
       this.tileset.dispose();
       this.geometryManager?.dispose();
+      this.minimapManager.dispose();
       this.workerPool.dispose();
       this.gui.dispose();
     });
@@ -232,6 +233,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onBeforeRenderObservable.clear();
 
     this.tileset.dispose();
+    this.minimapManager.dispose();
     this.geometryManager?.dispose();
     this.workerPool.cleanUp();
     this.gui.dispose();
@@ -266,8 +268,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    // this.tileset.calculateVisibleTiles(this.camera, Math.log2(this.zoom));
-    // this.tileset.evict();
     const integerZoom = Math.max(
       0,
       Math.min(this.levels.length - 1, Math.ceil(Math.log2(this.zoom)))
@@ -325,7 +325,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       2 **
       Math.max(
         -2,
-        Math.min(this.levels.length - 1, Math.log2(this.zoom) + step)
+        Math.min(this.levels.length + 1, Math.log2(this.zoom) + step)
       );
 
     resizeOrtographicCameraViewport(this.scene, this.zoom);

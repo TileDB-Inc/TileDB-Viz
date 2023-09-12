@@ -198,6 +198,7 @@ export interface GeometryMessage {
   namespace: string;
   idAttribute: string;
   geometryAttribute: string;
+  pad: number[];
   extraAttributes?: string[];
   type: string;
   imageCRS: string;

@@ -36,6 +36,7 @@ export class MinimapManager extends Manager<MinimapTile> {
   private namespace: string;
 
   private selectedAttribute!: Attribute;
+  private shouldLoad: boolean;
 
   public static readonly MINIMAP_MAX_SIZE = 200;
   public static readonly IMAGE_MAX_SIZE = 4096;
@@ -188,6 +189,9 @@ export class MinimapManager extends Manager<MinimapTile> {
     const baseHeight = minimapOptions.baseLevel.dimensions[yIndex];
 
     super(scene, workerPool, tileSize, baseWidth, baseHeight);
+    this.shouldLoad =
+      baseHeight < MinimapManager.IMAGE_MAX_SIZE &&
+      baseWidth < MinimapManager.IMAGE_MAX_SIZE;
 
     this.workerPool.callbacks.image.push(this.onImageTileDataLoad.bind(this));
 
@@ -242,10 +246,7 @@ export class MinimapManager extends Manager<MinimapTile> {
   }
 
   public loadTiles(camera: Camera, zoom: number): void {
-    if (
-      this.baseHeight > MinimapManager.IMAGE_MAX_SIZE ||
-      this.baseWidth > MinimapManager.IMAGE_MAX_SIZE
-    ) {
+    if (!this.shouldLoad) {
       return;
     }
 
@@ -254,7 +255,6 @@ export class MinimapManager extends Manager<MinimapTile> {
       ({ evict: false } as TileStatus<MinimapTile>);
 
     if (status.state === undefined) {
-      console.log('Minimap Loading');
       this.workerPool.postMessage({
         type: RequestType.IMAGE,
         id: 'minimap',
@@ -294,7 +294,7 @@ export class MinimapManager extends Manager<MinimapTile> {
   }
 
   public onImageTileDataLoad(id: string, response: ImageResponse) {
-    if (response.canceled) {
+    if (response.canceled || !this.shouldLoad) {
       return;
     }
 
@@ -323,10 +323,7 @@ export class MinimapManager extends Manager<MinimapTile> {
   }
 
   private update() {
-    if (
-      this.baseHeight > MinimapManager.IMAGE_MAX_SIZE ||
-      this.baseWidth > MinimapManager.IMAGE_MAX_SIZE
-    ) {
+    if (!this.shouldLoad) {
       return;
     }
 

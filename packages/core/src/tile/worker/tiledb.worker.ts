@@ -388,11 +388,14 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   const minLimit = converter.inverse([geoXMin, geoYMin]);
   const maxLimit = converter.inverse([geoXMax, geoYMax]);
 
+  const xRange = [minLimit[0], maxLimit[0]].sort();
+  const yRange = [minLimit[1], maxLimit[1]].sort();
+
   const query = {
     layout: Layout.Unordered,
     ranges: [
-      [minLimit[0], maxLimit[0]].sort(),
-      [minLimit[1], maxLimit[1]].sort()
+      [xRange[0] - request.pad[0], xRange[1] + request.pad[0]],
+      [yRange[0] - request.pad[1], yRange[1] + request.pad[1]]
     ],
     bufferSize: 20_000_000,
     attributes: [request.geometryAttribute, request.idAttribute],

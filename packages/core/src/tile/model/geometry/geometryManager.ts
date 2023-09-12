@@ -67,7 +67,7 @@ export class GeometryManager extends Manager<GeometryTile> {
 
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
       camera,
-      zoom
+      0
     );
 
     for (let x = minXIndex; x <= maxXIndex; ++x) {
@@ -90,6 +90,7 @@ export class GeometryManager extends Manager<GeometryTile> {
               namespace: this.namespace,
               idAttribute: this.metadata.idAttribute,
               geometryAttribute: this.metadata.geometryAttribute,
+              pad: this.metadata.pad,
               type: this.metadata.type,
               imageCRS: this.baseCRS,
               geometryCRS: this.metadata.crs,
