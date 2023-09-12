@@ -15,12 +15,13 @@ export interface MinimapUpdateOptions extends UpdateOptions<ImageResponse> {
   uniformBuffer?: UniformBuffer;
   visibleArea?: number[];
   visible?: boolean;
+  maxSize?: number;
 }
 
 export class MinimapTile extends Tile<ImageResponse> {
   private channelCount: number;
   private baseSize: number[];
-  private minimapSize: Vector2;
+  private minimapSize!: Vector2;
   private maxSize: number;
 
   constructor(
@@ -37,15 +38,7 @@ export class MinimapTile extends Tile<ImageResponse> {
     this.channelCount = channelCount;
     this.baseSize = [...bounds];
 
-    const aspectRatio = Math.min(
-      this.maxSize / bounds[0],
-      this.maxSize / bounds[1]
-    );
-
-    this.minimapSize = new Vector2(
-      aspectRatio * bounds[0],
-      aspectRatio * bounds[1]
-    );
+    this.calculateMinimapSize();
 
     const vertexData = new VertexData();
 
@@ -89,15 +82,6 @@ export class MinimapTile extends Tile<ImageResponse> {
       intensityTexture.wrapU = RawTexture2DArray.CLAMP_ADDRESSMODE;
       intensityTexture.wrapV = RawTexture2DArray.CLAMP_ADDRESSMODE;
 
-      material.setVector2(
-        'screenSize',
-        new Vector2(
-          this.scene.getEngine().getRenderWidth(),
-          this.scene.getEngine().getRenderHeight()
-        )
-      );
-
-      material.setVector2('minimapSize', this.minimapSize);
       material.setVector2('margins', new Vector2(20, 20));
       material.setTexture('texture_arr', intensityTexture);
 
@@ -106,7 +90,6 @@ export class MinimapTile extends Tile<ImageResponse> {
       }
 
       this.mesh.material = material;
-      this.mesh.material.freeze();
     }
 
     if (updateOptions.visibleArea && this.mesh.material) {
@@ -123,8 +106,36 @@ export class MinimapTile extends Tile<ImageResponse> {
       );
     }
 
+    if (this.mesh.material) {
+      this.maxSize = updateOptions.maxSize ?? this.maxSize;
+
+      const material = this.mesh.material as ShaderMaterial;
+      material.unfreeze();
+      material.setVector2(
+        'screenSize',
+        new Vector2(
+          this.scene.getEngine().getRenderWidth(),
+          this.scene.getEngine().getRenderHeight()
+        )
+      );
+      material.setVector2('minimapSize', this.minimapSize);
+      material.freeze();
+    }
+
     if (updateOptions.visible !== undefined) {
       this.mesh.isVisible = updateOptions.visible;
     }
+  }
+
+  private calculateMinimapSize() {
+    const aspectRatio = Math.min(
+      this.maxSize / this.baseSize[0],
+      this.maxSize / this.baseSize[1]
+    );
+
+    this.minimapSize = new Vector2(
+      aspectRatio * this.baseSize[0],
+      aspectRatio * this.baseSize[1]
+    );
   }
 }

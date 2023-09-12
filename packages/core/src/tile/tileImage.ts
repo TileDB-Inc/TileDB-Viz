@@ -192,7 +192,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
-      //this.tileset.onViewportResize();
+      this.minimapManager.updateTiles(new MinimapManager.SizeUpdate());
     });
 
     this.gui = new TileImageGUI(

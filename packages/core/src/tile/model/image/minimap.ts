@@ -160,6 +160,21 @@ export class MinimapManager extends Manager<MinimapTile> {
     }
   };
 
+  public static readonly SizeUpdate = class
+    implements UpdateOperation<MinimapManager>
+  {
+    public minimapMaxSize?: number;
+
+    constructor(minimapMaxSize?: number) {
+      this.minimapMaxSize = minimapMaxSize;
+    }
+
+    apply(source: MinimapManager): void {
+      const status = source.tileStatus.get('minimap');
+      status?.tile?.update({ maxSize: this.minimapMaxSize });
+    }
+  };
+
   constructor(
     scene: Scene,
     workerPool: WorkerPool,
