@@ -1725,80 +1725,80 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babylonjs/core@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/core@npm:5.57.1"
-  checksum: 72b05ae5b04a26efa9f33a67ec873e8fd69b0c54c075418c38705c36680ac5bae1aeba2b61417e8a599e751be06ef52400f4cefff079fc916bdcc1aa23863127
+"@babylonjs/core@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/core@npm:6.20.2"
+  checksum: 04db2834d16d9b3294d07afd5139456e0ab361d4d81d1f1b65bd273c8c3968948baf166733b7b5f6e74082a99b73992d0c60809fe381902ef54d5f5a01ef1aa5
   languageName: node
   linkType: hard
 
-"@babylonjs/gui-editor@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/gui-editor@npm:5.57.1"
+"@babylonjs/gui-editor@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/gui-editor@npm:6.20.2"
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-    "@babylonjs/gui": ^5.22.0
+    "@babylonjs/core": ^6.0.0
+    "@babylonjs/gui": ^6.0.0
     "@types/react": ">=16.7.3"
     "@types/react-dom": ">=16.0.9"
-  checksum: d8619cb2e254a2d152421417351177b0b167508228d2f8c6aaa769cf01a23442705704a2baf09f429557ce4fc65464af9843cd8e0c649e11f85241fa24e8fa9c
+  checksum: c48b4abe61a09dc09de609642624e4b22cf3726301a6da4ff426c64a79ba750da3200be980fec9049a88b0578660b822a403e8fe5d4802db775130d7b8d0aa44
   languageName: node
   linkType: hard
 
-"@babylonjs/gui@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/gui@npm:5.57.1"
+"@babylonjs/gui@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/gui@npm:6.20.2"
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-  checksum: 2af2a20f56f86f21384c28a957f059ebf9eaa886a59c08d2561f774541af25c348c0e23766d8a146745d6d9ce9b24baf58bcb3f53ef5f787239144e65967b75e
+    "@babylonjs/core": ^6.0.0
+  checksum: b2f02198b0fcf8cfd471caa5b1798ee96903cd1b9e5db2554ed41a46f1487e667623b1e14e4826803c6b5a0fbc4aeb25b9ff7448f0de7e353b85ee2b515c1e07
   languageName: node
   linkType: hard
 
-"@babylonjs/inspector@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/inspector@npm:5.57.1"
+"@babylonjs/inspector@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/inspector@npm:6.20.2"
   dependencies:
     "@fortawesome/fontawesome-svg-core": ^6.1.0
     "@fortawesome/free-regular-svg-icons": ^6.0.0
     "@fortawesome/free-solid-svg-icons": ^6.0.0
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-    "@babylonjs/gui": ^5.22.0
-    "@babylonjs/gui-editor": ^5.22.0
-    "@babylonjs/loaders": ^5.22.0
-    "@babylonjs/materials": ^5.22.0
-    "@babylonjs/serializers": ^5.22.0
+    "@babylonjs/core": ^6.0.0
+    "@babylonjs/gui": ^6.0.0
+    "@babylonjs/gui-editor": ^6.0.0
+    "@babylonjs/loaders": ^6.0.0
+    "@babylonjs/materials": ^6.0.0
+    "@babylonjs/serializers": ^6.0.0
     "@types/react": ">=16.7.3"
     "@types/react-dom": ">=16.0.9"
-  checksum: 26e5d26ee2cd25fd97a12db622e8efc527a5eff97b186684fed371d5723a80a6dbd46d47cbecd140128d0cb6911bd7dbc0001d769d5b5f6839117a45cb6bc475
+  checksum: 6105ec77408f7b79d763c823b0f282ceff5f067f79c3f746f4c904b2ddb6fb8a8795f7d4175f976612eff2e71033108c89bb6d1a3b44935e93d9a17da3fc8e8f
   languageName: node
   linkType: hard
 
-"@babylonjs/loaders@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/loaders@npm:5.57.1"
+"@babylonjs/loaders@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/loaders@npm:6.20.2"
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-    babylonjs-gltf2interface: ^5.22.0
-  checksum: 557ddf2fb8d2da6ecea33ccf1468c607b757921757b01739eaffe0f20d19fe251c70080ceb62f9524d97a1e4500b8cf3e1ec7f7b34a7186ba8ab3e2d5853790c
+    "@babylonjs/core": ^6.0.0
+    babylonjs-gltf2interface: ^6.0.0
+  checksum: 9e0c271d763ad898467aaf5e4d483bbe52df9c201ce21abd07034dba4ce2c22e3fdd7357b309eb7b86b3f764749e9bc8ed08a705d4d06e473ad3eabe680b374f
   languageName: node
   linkType: hard
 
-"@babylonjs/materials@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/materials@npm:5.57.1"
+"@babylonjs/materials@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/materials@npm:6.20.2"
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-  checksum: 382c00a6fed87ac9b59a7c2583d706e8c897278ce752b2ac93cd0f0cba22e333689eaf281cf48afc04e6771b87ebb51475bdf21f54b97d2b9bc8e3d8819ea525
+    "@babylonjs/core": ^6.0.0
+  checksum: 10aafe609d80c95c7def1945b58194e2ec062b1fefdb5fcc9327c719ad078ee867e0ae75b07f081a6c089403cc44ad2a9ccf0464d252c99e164aff2133c192c4
   languageName: node
   linkType: hard
 
-"@babylonjs/serializers@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "@babylonjs/serializers@npm:5.57.1"
+"@babylonjs/serializers@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "@babylonjs/serializers@npm:6.20.2"
   peerDependencies:
-    "@babylonjs/core": ^5.22.0
-    babylonjs-gltf2interface: ^5.22.0
-  checksum: 58786d4c309946a75152e7b36cd9396ea9700858cf772ad2261f3b68b9acae729784cfc5b5893f6f864fc4a4ce632e5e29a770a984feeff5f2b0247881ab827b
+    "@babylonjs/core": ^6.0.0
+    babylonjs-gltf2interface: ^6.0.0
+  checksum: b695d818ac89517b390418e3562d2b867c2147d1bca0f3d264ccd2a215ee1193e42a85aa1c90c343e161200c7ef7e565ac6437ed9b75d73cfff7ce99867e68ed
   languageName: node
   linkType: hard
 
@@ -6157,19 +6157,19 @@ __metadata:
     "@babel/core": ^7.12.0
     "@babel/preset-env": ^7.18.10
     "@babel/preset-typescript": ^7.18.6
-    "@babylonjs/core": ^5.42.0
-    "@babylonjs/gui": ^5.42.0
-    "@babylonjs/gui-editor": ^5.42.0
-    "@babylonjs/inspector": ^5.42.0
-    "@babylonjs/loaders": ^5.42.0
-    "@babylonjs/materials": ^5.42.0
-    "@babylonjs/serializers": ^5.42.0
+    "@babylonjs/core": ^6.20.2
+    "@babylonjs/gui": ^6.20.2
+    "@babylonjs/gui-editor": ^6.20.2
+    "@babylonjs/inspector": ^6.20.2
+    "@babylonjs/loaders": ^6.20.2
+    "@babylonjs/materials": ^6.20.2
+    "@babylonjs/serializers": ^6.20.2
     "@syncpoint/wkx": 0.5.2
     "@tiledb-inc/tiledb-cloud": 1.0.14
     "@tiledb-inc/viz-components": "workspace:packages/components"
     axios: ^0.21.1
-    babylonjs-gui: ^5.42.0
-    babylonjs-materials: ^5.42.0
+    babylonjs-gui: ^6.20.2
+    babylonjs-materials: ^6.20.2
     earcut: 2.2.4
     idb: ^7.0.2
     node-buffer: "npm:buffer@6.0.3"
@@ -8231,28 +8231,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"babylonjs-gui@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "babylonjs-gui@npm:5.57.1"
+"babylonjs-gui@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "babylonjs-gui@npm:6.20.2"
   dependencies:
-    babylonjs: ^5.57.1
-  checksum: 46f96311dcf05a19d00b0e6529bf794a31390f0c5d224f87e05047da8d1f22bf8374d5ddce0b4ee0c763807b682f89f18304068cb84c39c5ab894d6fbc3cc01e
+    babylonjs: ^6.20.2
+  checksum: 07b1db14fb808cf1e0603c920a786e2929900d0aadec94edf551a6ad792d8c4548eb2324f90089a41ef0438ea06b3971ce4ae0036302caf2b8c8eea0ebedbb82
   languageName: node
   linkType: hard
 
-"babylonjs-materials@npm:^5.42.0":
-  version: 5.57.1
-  resolution: "babylonjs-materials@npm:5.57.1"
+"babylonjs-materials@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "babylonjs-materials@npm:6.20.2"
   dependencies:
-    babylonjs: ^5.57.1
-  checksum: a1338e8ea08444f664c4b06d3501da6ce5a783a321991188742e663f28f707c0ca8c93d7dbc9f3d9affa87e9d346d727d10d675320f11a6ad8b0b6f0c37fb168
+    babylonjs: ^6.20.2
+  checksum: faa4f5fee7da20dc17a74811fb58c437dcd35ebde62023ee8864e4513b490db0a1024695a39419fe67b4afcb68b017a5d3a2f6afdfa7c327a3f0fb56915e3004
   languageName: node
   linkType: hard
 
-"babylonjs@npm:^5.57.1":
-  version: 5.57.1
-  resolution: "babylonjs@npm:5.57.1"
-  checksum: 2d6328322c5dca3dda63c03ef8c0658dbc981454ea1b0f7f5de573fb24fb1593d1d102b7d59a0cc5d605f9dc7d8456d04961d410b27574ae11f878f8dd6e5e78
+"babylonjs@npm:^6.20.2":
+  version: 6.20.2
+  resolution: "babylonjs@npm:6.20.2"
+  checksum: 61f3dab94d1dc4b8aead528856723031ae13c531a8761456c4ae563f17624e5ab2f67530695996474d57788396595aaac74772075217ead2af87a7365392e7fc
   languageName: node
   linkType: hard
 

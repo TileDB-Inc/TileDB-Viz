@@ -1,4 +1,9 @@
-import { setupCamera, resizeOrtographicCameraViewport } from './camera-utils';
+import {
+  setupCamera,
+  resizeOrtographicCameraViewport,
+  getCamera,
+  hasMinimap
+} from './camera-utils';
 import { Axes, transpose, packRange, sliceRanges } from './array-utils';
 
 export {
@@ -7,5 +12,7 @@ export {
   Axes,
   transpose,
   packRange,
-  sliceRanges
+  sliceRanges,
+  getCamera,
+  hasMinimap
 };

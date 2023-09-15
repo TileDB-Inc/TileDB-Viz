@@ -70,6 +70,9 @@ export class WorkerPool {
           callback(response.id, response.response as GeometryResponse);
         }
         break;
+      case RequestType.GEOMETRY_INFO:
+        console.log(response);
+        break;
       case RequestType.CANCEL:
         break;
       default:

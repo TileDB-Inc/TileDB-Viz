@@ -36,6 +36,7 @@ export class ImageManager extends Manager<ImageTile> {
   private namespace: string;
 
   private selectedAttribute!: Attribute;
+  private hasMinimap: boolean;
 
   public static readonly ColorUpdate = class
     implements UpdateOperation<ImageManager>
@@ -206,11 +207,15 @@ export class ImageManager extends Manager<ImageTile> {
     this.tileOptions.updateFloatArray('colors', this.colors);
 
     this.tileOptions.update();
+
+    this.hasMinimap =
+      (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??
+        0) > 0;
   }
 
   public loadTiles(camera: Camera, zoom: number): void {
-    for (const [, value] of this.tileStatus) {
-      value.evict = true;
+    for (const [key, value] of this.tileStatus) {
+      value.evict = this.hasMinimap ? !key.endsWith('0') : true;
     }
 
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
@@ -325,6 +330,7 @@ export class ImageManager extends Manager<ImageTile> {
         this.tileSize,
         this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0,
         this.tileOptions,
+        this.hasMinimap,
         response,
         this.scene
       );

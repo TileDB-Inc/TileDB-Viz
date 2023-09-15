@@ -5,10 +5,16 @@ import {
   PointerInfo,
   PointerEventTypes,
   Nullable,
-  FreeCamera
+  FreeCamera,
+  RenderTargetTexture
 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
-import { setupCamera, resizeOrtographicCameraViewport } from './utils';
+import {
+  setupCamera,
+  resizeOrtographicCameraViewport,
+  getCamera,
+  hasMinimap
+} from './utils';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
 import { AssetEntry, Attribute, Dimension, GeometryMetadata } from '../types';
@@ -24,14 +30,13 @@ import { WorkerPool } from './worker/tiledb.worker.pool';
 import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
-import { MinimapManager } from './model/image/minimap';
+import { GeometryPipeline } from './pipelines/pipeline';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
   private tileset!: ImageManager;
   private geometryManager?: GeometryManager;
-  private minimapManager!: MinimapManager;
   private baseWidth!: number;
   private baseHeight!: number;
   private metadata!: ImageMetadata;
@@ -44,6 +49,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private gui!: TileImageGUI;
   private tileSize = 1024;
   private workerPool: WorkerPool;
+  private pipeline?: GeometryPipeline;
+  private renderTargets: RenderTargetTexture[];
 
   private pointerDownStartPosition: Nullable<Vector3>;
   private zoom: number;
@@ -66,6 +73,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       token: options.token,
       basePath: options.tiledbEnv
     });
+
+    this.renderTargets = [];
   }
 
   protected async createScene(): Promise<Scene> {
@@ -97,41 +106,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
-    if (this.options.geometryArrayID) {
-      this.geometryMetadata = await getGeometryMetadata(this.options);
-
-      const originalLevel = this.levels.at(-1);
-
-      if (!originalLevel) {
-        console.warn(
-          'Unable to construct geometry manager. Base image level is undefined'
-        );
-      } else {
-        this.geometryManager = new GeometryManager(
-          this.scene,
-          this.workerPool,
-          this.tileSize,
-          {
-            arrayID: this.options.geometryArrayID,
-            namespace: this.options.namespace,
-            metadata: this.geometryMetadata,
-            baseCRS: this.metadata.crs ?? '',
-            baseWidth:
-              originalLevel.dimensions[originalLevel.axes.indexOf('X')],
-            baseHeight:
-              originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
-            transformationCoefficients:
-              this.metadata.transformationCoefficients ?? [],
-            nativeZoom: this.levels.length - 1
-          }
-        );
-
-        await initializeCacheDB([
-          `${this.options.geometryArrayID}_${this.tileSize}`
-        ]);
-      }
-    }
-
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
     this.baseHeight =
@@ -154,15 +128,51 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     setupCamera(
       this.scene,
       this.zoom,
-      new Vector3(this.baseWidth / 2, -100, this.baseHeight / 2)
+      new Vector3(this.baseWidth, -100, this.baseHeight)
     );
     this.setupCameraMovement();
 
-    if (this.scene.activeCamera === null) {
-      throw new Error('Failed to initialize camera');
-    }
+    this.camera = getCamera(this.scene, 'Main');
 
-    this.camera = this.scene.activeCamera as FreeCamera;
+    if (this.options.geometryArrayID) {
+      this.geometryMetadata = await getGeometryMetadata(this.options);
+
+      const originalLevel = this.levels.at(-1);
+
+      if (!originalLevel) {
+        console.warn(
+          'Unable to construct geometry manager. Base image level is undefined'
+        );
+      } else {
+        this.pipeline = new GeometryPipeline(this.scene);
+        this.renderTargets = this.pipeline.initializeRTTs();
+        this.pipeline.initializePostProcess();
+
+        this.geometryManager = new GeometryManager(
+          this.scene,
+          this.workerPool,
+          this.tileSize,
+          {
+            renderTarget: this.renderTargets[0],
+            arrayID: this.options.geometryArrayID,
+            namespace: this.options.namespace,
+            metadata: this.geometryMetadata,
+            baseCRS: this.metadata.crs ?? '',
+            baseWidth:
+              originalLevel.dimensions[originalLevel.axes.indexOf('X')],
+            baseHeight:
+              originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
+            transformationCoefficients:
+              this.metadata.transformationCoefficients ?? [],
+            nativeZoom: this.levels.length - 1
+          }
+        );
+
+        await initializeCacheDB([
+          `${this.options.geometryArrayID}_${this.tileSize}`
+        ]);
+      }
+    }
 
     this.tileset = new ImageManager(
       this.scene,
@@ -177,27 +187,12 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       }
     );
 
-    this.minimapManager = new MinimapManager(
-      this.scene,
-      this.workerPool,
-      Math.max(this.baseWidth, this.baseHeight),
-      {
-        metadata: this.metadata,
-        dimensions: this.dimensions,
-        attributes: this.attributes,
-        baseLevel: this.levels[0],
-        namespace: this.options.namespace
-      }
-    );
-
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
-      this.minimapManager.updateTiles(new MinimapManager.SizeUpdate());
     });
 
     this.gui = new TileImageGUI(
       this.tileset,
-      this.minimapManager,
       this.rootElement,
       this.metadata.channels.get(
         this.attributes.filter(x => x.visible)[0].name
@@ -207,7 +202,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       (step: number) => this.onZoom(step),
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
-        this.onAssetSelection(namespace, groupID, arrayID)
+        this.onAssetSelection(namespace, groupID, arrayID),
+      this.scene
     );
 
     this.updateEngineInfo();
@@ -218,10 +214,15 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       clearInterval(intervalID);
       this.tileset.dispose();
       this.geometryManager?.dispose();
-      this.minimapManager.dispose();
       this.workerPool.dispose();
       this.gui.dispose();
     });
+
+    if (hasMinimap(this.scene)) {
+      this.scene.onBeforeRenderObservable.addOnce(() => {
+        this.tileset.loadTiles(getCamera(this.scene, 'Minimap'), 0);
+      });
+    }
 
     this.scene.onBeforeRenderObservable.add(() => {
       this.fetchTiles();
@@ -233,7 +234,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.scene.onBeforeRenderObservable.clear();
 
     this.tileset.dispose();
-    this.minimapManager.dispose();
     this.geometryManager?.dispose();
     this.workerPool.cleanUp();
     this.gui.dispose();
@@ -274,7 +274,6 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     );
 
     this.tileset.loadTiles(this.camera, integerZoom);
-    this.minimapManager.loadTiles(this.camera, integerZoom);
     this.geometryManager?.loadTiles(this.camera, integerZoom);
   }
 
@@ -286,6 +285,17 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     // Add camera panning and zoom via mouse control
     this.scene.onPointerObservable.add((pointerInfo: PointerInfo) => {
       switch (pointerInfo.type) {
+        case PointerEventTypes.POINTERTAP:
+          if (!pointerInfo.pickInfo?.pickedMesh) {
+            break;
+          }
+
+          this.geometryManager?.pickGeometry(
+            pointerInfo.pickInfo?.pickedMesh,
+            pointerInfo.event.offsetX,
+            pointerInfo.event.offsetY
+          );
+          break;
         case PointerEventTypes.POINTERDOWN:
           this.pointerDownStartPosition = new Vector3(
             pointerInfo.event.offsetX * (1 / this.zoom),

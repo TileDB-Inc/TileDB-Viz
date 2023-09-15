@@ -2,10 +2,16 @@ import {
   GeometryMessage,
   DataRequest,
   GeometryResponse,
-  RequestType
+  RequestType,
+  GeometryInfoMessage
 } from '../../types';
 import { GeometryTile } from './geometry';
-import { Scene, Camera } from '@babylonjs/core';
+import {
+  Scene,
+  Camera,
+  RenderTargetTexture,
+  AbstractMesh
+} from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
@@ -19,6 +25,7 @@ interface GeometryOptions {
   baseCRS: string;
   transformationCoefficients: number[];
   metadata: GeometryMetadata;
+  renderTarget: RenderTargetTexture;
 }
 
 export class GeometryManager extends Manager<GeometryTile> {
@@ -28,6 +35,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   private arrayID: string;
   private namespace: string;
   private nativeZoom: number;
+  private renderTarget: RenderTargetTexture;
 
   constructor(
     scene: Scene,
@@ -50,6 +58,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.arrayID = geometryOptions.arrayID;
     this.namespace = geometryOptions.namespace;
     this.nativeZoom = geometryOptions.nativeZoom;
+    this.renderTarget = geometryOptions.renderTarget;
 
     this.workerPool.callbacks.geometry.push(
       this.onGeometryTileDataLoad.bind(this)
@@ -129,6 +138,43 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
   }
 
+  public pickGeometry(pickedMesh: AbstractMesh, x: number, y: number) {
+    const buffer = new Uint32Array(4);
+    const gl = this.scene.getEngine()._gl;
+
+    this.renderTarget._bindFrameBuffer();
+    gl.readPixels(
+      x,
+      this.renderTarget.getRenderHeight() - y,
+      1,
+      1,
+      gl.RGBA_INTEGER,
+      gl.UNSIGNED_INT,
+      buffer
+    );
+
+    if (buffer[3] === 1) {
+      const index =
+        pickedMesh.name.split(',').map(x => Number.parseInt(x)) ?? [];
+      this.workerPool.postMessage({
+        type: RequestType.GEOMETRY_INFO,
+        id: 'geometry_info',
+        request: {
+          id: new BigInt64Array(buffer.buffer)[0],
+          index: index,
+          tileSize: this.tileSize,
+          arrayID: this.arrayID,
+          namespace: this.namespace,
+          idAttribute: this.metadata.idAttribute,
+          geometryAttribute: this.metadata.geometryAttribute,
+          imageCRS: this.baseCRS,
+          geometryCRS: this.metadata.crs,
+          geotransformCoefficients: this.transformationCoefficients
+        } as GeometryInfoMessage
+      } as DataRequest);
+    }
+  }
+
   private onGeometryTileDataLoad(id: string, response: GeometryResponse) {
     if (response.canceled) {
       return;
@@ -145,7 +191,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     if (status.tile) {
       status.tile.update({ response });
     } else {
-      status.tile = new GeometryTile(response, this.scene);
+      status.tile = new GeometryTile(response, this.scene, this.renderTarget);
     }
 
     status.state = TileState.VISIBLE;

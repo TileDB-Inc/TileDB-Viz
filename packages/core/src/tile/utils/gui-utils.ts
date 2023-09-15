@@ -3,17 +3,18 @@ import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
 import { Dimension, AssetEntry } from '../../types';
 import { ImageManager } from '../model/image/imageManager';
-import { MinimapManager } from '../model/image/minimap';
+import { getCamera, hasMinimap } from './camera-utils';
+import { Scene } from '@babylonjs/core';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
 // document.head.appendChild(styleElement);
 
 class TileImageGUI {
+  private scene: Scene;
   private rootDiv?: HTMLDivElement;
   private rootElement?: HTMLElement;
   private tileset: ImageManager;
-  private minimap: MinimapManager;
   private uiWrapper!: HTMLDivElement;
   private zoomCallback: (step: number) => void;
   private clearCache: () => void;
@@ -30,7 +31,6 @@ class TileImageGUI {
 
   constructor(
     tileset: ImageManager,
-    minimap: MinimapManager,
     rootElement: HTMLElement,
     channels: Channel[],
     dimensions: Dimension[],
@@ -41,11 +41,12 @@ class TileImageGUI {
       namespace: string,
       groupID?: string,
       arrayID?: string
-    ) => void
+    ) => void,
+    scene: Scene
   ) {
+    this.scene = scene;
     this.rootElement = rootElement;
     this.tileset = tileset;
-    this.minimap = minimap;
     this.zoomCallback = zoomCallback;
     this.clearCache = clearCache;
     this.assetSelectionCallback = assetSelectionCallback;
@@ -151,12 +152,6 @@ class TileImageGUI {
               Number(customEvent.detail.value)
             )
           );
-          this.minimap.updateTiles(
-            new MinimapManager.IntensityUpdate(
-              channelIndex,
-              Number(customEvent.detail.value)
-            )
-          );
         }
         break;
       case 'd':
@@ -164,12 +159,6 @@ class TileImageGUI {
           const dimensionIndex = Number(customEvent.detail.id.substring(2));
           this.tileset.updateTiles(
             new ImageManager.DimensionUpdate(
-              dimensionIndex,
-              Number(customEvent.detail.value)
-            )
-          );
-          this.minimap.updateTiles(
-            new MinimapManager.DimensionUpdate(
               dimensionIndex,
               Number(customEvent.detail.value)
             )
@@ -192,9 +181,6 @@ class TileImageGUI {
     this.tileset.updateTiles(
       new ImageManager.ColorUpdate(channelIndex, customEvent.detail.value)
     );
-    this.minimap.updateTiles(
-      new MinimapManager.ColorUpdate(channelIndex, customEvent.detail.value)
-    );
   }
 
   private toggleHandler(event: Event) {
@@ -211,18 +197,13 @@ class TileImageGUI {
               customEvent.detail.value
             )
           );
-          this.minimap.updateTiles(
-            new MinimapManager.ChannelUpdate(
-              channelIndex,
-              customEvent.detail.value
-            )
-          );
         }
         break;
       case 'minimap':
-        this.minimap.updateTiles(
-          new MinimapManager.VisibilityUpdate(customEvent.detail.value)
-        );
+        if (hasMinimap(this.scene)) {
+          getCamera(this.scene, 'Minimap')._skipRendering =
+            !customEvent.detail.value;
+        }
         break;
       default:
         console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);

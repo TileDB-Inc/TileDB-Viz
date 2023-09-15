@@ -163,6 +163,7 @@ export const enum RequestType {
   CANCEL = 0,
   IMAGE = 1,
   GEOMETRY = 2,
+  GEOMETRY_INFO = 3,
 
   INITIALIZE = 100
 }
@@ -206,6 +207,19 @@ export interface GeometryMessage {
   geotransformCoefficients: number[];
 }
 
+export interface GeometryInfoMessage {
+  id: bigint;
+  index: number[];
+  tileSize: number;
+  arrayID: string;
+  namespace: string;
+  idAttribute: string;
+  geometryAttribute: string;
+  imageCRS: string;
+  geometryCRS: string;
+  geotransformCoefficients: number[];
+}
+
 export interface WorkerResponse {
   type: RequestType;
   id: string;
@@ -227,9 +241,13 @@ export interface ImageResponse extends BaseResponse {
 
 export interface GeometryResponse extends BaseResponse {
   positions: Float32Array;
-  colors: Float32Array;
+  ids: BigInt64Array;
   indices: Int32Array;
   gtype: string;
+}
+
+export interface GeoemtryInfoResponse extends BaseResponse {
+  info: any;
 }
 
 export interface ResponseCallback {

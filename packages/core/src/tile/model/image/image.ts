@@ -20,6 +20,7 @@ export class ImageTile extends Tile<ImageResponse> {
     tileSize: number,
     channelCount: number,
     tileOptions: UniformBuffer,
+    hasMinimap: boolean,
     response: ImageResponse,
     scene: Scene
   ) {
@@ -62,6 +63,8 @@ export class ImageTile extends Tile<ImageResponse> {
     vertexData.indices = [0, 3, 1, 1, 3, 2];
 
     vertexData.applyToMesh(this.mesh);
+
+    this.mesh.layerMask = hasMinimap ? 5 : 1;
 
     this.update({ uniformBuffer: tileOptions, response: response });
   }
