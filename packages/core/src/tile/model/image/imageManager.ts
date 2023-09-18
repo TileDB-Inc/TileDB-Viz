@@ -164,16 +164,13 @@ export class ImageManager extends Manager<ImageTile> {
     this.metadata = imageOptions.metadata;
     this.namespace = imageOptions.namespace;
 
+    const channelCount =
+      this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
+
     this.selectedAttribute = this.attributes.filter(item => item.visible)[0];
-    this.channelRanges = [
-      0,
-      (this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0) - 1
-    ];
+    this.channelRanges = [0, channelCount - 1];
     this.channelMapping = new Int32Array(
-      range(
-        0,
-        this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0
-      )
+      range(0, channelCount)
         .map(x => [x, 0, 0, 0])
         .flat()
     );

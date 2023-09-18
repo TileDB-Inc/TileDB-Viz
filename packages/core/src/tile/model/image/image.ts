@@ -26,36 +26,26 @@ export class ImageTile extends Tile<ImageResponse> {
     super(scene, response);
     this.channelCount = channelCount;
 
-    const left = Math.max(
-      bounds[0],
-      (this.index[0] * tileSize) / 2 ** this.index[2]
-    );
-    const right = Math.min(
-      bounds[2],
-      ((this.index[0] + 1) * tileSize) / 2 ** this.index[2]
-    );
-    const bottom = Math.max(
-      bounds[1],
-      (this.index[1] * tileSize) / 2 ** this.index[2]
-    );
-    const top = Math.min(
-      bounds[3],
-      ((this.index[1] + 1) * tileSize) / 2 ** this.index[2]
-    );
+    const [xIndex, yIndex, level] = this.index;
+
+    const left = Math.max(bounds[0], (xIndex * tileSize) / 2 ** level);
+    const right = Math.min(bounds[2], ((xIndex + 1) * tileSize) / 2 ** level);
+    const bottom = Math.max(bounds[1], (yIndex * tileSize) / 2 ** level);
+    const top = Math.min(bounds[3], ((yIndex + 1) * tileSize) / 2 ** level);
 
     const vertexData = new VertexData();
     vertexData.positions = [
       left,
-      -this.index[2],
+      -level,
       bottom,
       right,
-      -this.index[2],
+      -level,
       bottom,
       right,
-      -this.index[2],
+      -level,
       top,
       left,
-      -this.index[2],
+      -level,
       top
     ];
     vertexData.uvs = [0, 0, 1, 0, 1, 1, 0, 1];
