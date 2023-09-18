@@ -15,7 +15,7 @@ export class GeometryPipeline {
   public renderTargets: RenderTargetTexture[] = [];
   private width!: number;
   private height!: number;
-  private camera: Camera;
+  private camera?: Camera;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -53,6 +53,10 @@ export class GeometryPipeline {
   }
 
   initializePostProcess() {
+    if (!this.camera) {
+      return;
+    }
+
     this.width = this.scene.getEngine().getRenderWidth();
     this.height = this.scene.getEngine().getRenderHeight();
 
@@ -94,12 +98,6 @@ export class GeometryPipeline {
     this.postProcess.onApply = (effect: Effect) => {
       effect.setTexture('geometryTexture', this.renderTargets[0]);
     };
-  }
-
-  public setActiveCamera(): void {
-    this.renderTargets[0].activeCamera = this.camera;
-
-    this.camera.attachPostProcess(this.postProcess);
   }
 
   public resize(): void {

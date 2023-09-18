@@ -11,7 +11,7 @@ import {
   GeometryResponse,
   GeometryMessage,
   GeometryInfoMessage,
-  GeoemtryInfoResponse
+  GeometryInfoResponse
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
@@ -617,6 +617,9 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
   );
 
   const info = {} as any;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const faceMapping: bigint[] = [];
 
   try {
     for await (const result of generator) {
@@ -627,7 +630,19 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
       }
 
       for (const [key, val] of Object.entries(result)) {
-        if (key === request.idAttribute || key === request.geometryAttribute) {
+        if (key === request.idAttribute) {
+          continue;
+        } else if (key === request.geometryAttribute) {
+          parsePolygon(
+            val[index],
+            BigUint64Array.from([0n]),
+            BigInt64Array.from([0n]),
+            positions,
+            indices,
+            faceMapping,
+            converter,
+            geotransformCoefficients
+          );
           continue;
         }
 
@@ -645,8 +660,10 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     response: {
       index: [],
       canceled: cancelSignal,
-      info: info
-    } as GeoemtryInfoResponse
+      info: info,
+      positions: Float32Array.from(positions),
+      indices: Int32Array.from(indices)
+    } as GeometryInfoResponse
   } as WorkerResponse);
 
   return;

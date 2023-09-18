@@ -246,11 +246,14 @@ export interface GeometryResponse extends BaseResponse {
   gtype: string;
 }
 
-export interface GeoemtryInfoResponse extends BaseResponse {
+export interface GeometryInfoResponse extends BaseResponse {
   info: any;
+  positions: Float32Array;
+  indices: Int32Array;
 }
 
 export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
+  info: { (id: string, response: GeometryInfoResponse): void }[];
 }

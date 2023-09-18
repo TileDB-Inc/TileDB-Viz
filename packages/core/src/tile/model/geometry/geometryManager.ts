@@ -3,18 +3,25 @@ import {
   DataRequest,
   GeometryResponse,
   RequestType,
-  GeometryInfoMessage
+  GeometryInfoMessage,
+  GeometryInfoResponse
 } from '../../types';
 import { GeometryTile } from './geometry';
 import {
   Scene,
   Camera,
   RenderTargetTexture,
-  AbstractMesh
+  AbstractMesh,
+  HighlightLayer,
+  Color3,
+  Mesh,
+  VertexData,
+  StandardMaterial
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
+import { Events } from '@tiledb-inc/viz-components';
 
 interface GeometryOptions {
   arrayID: string;
@@ -36,6 +43,8 @@ export class GeometryManager extends Manager<GeometryTile> {
   private namespace: string;
   private nativeZoom: number;
   private renderTarget: RenderTargetTexture;
+  private highlightLayer: HighlightLayer;
+  private selectedPolygon?: Mesh;
 
   constructor(
     scene: Scene,
@@ -63,6 +72,11 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.workerPool.callbacks.geometry.push(
       this.onGeometryTileDataLoad.bind(this)
     );
+    this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
+
+    this.highlightLayer = new HighlightLayer('GeometryHighlight', scene);
+
+    this.setupEventListeners();
   }
 
   public loadTiles(camera: Camera, zoom: number): void {
@@ -197,5 +211,69 @@ export class GeometryManager extends Manager<GeometryTile> {
     status.state = TileState.VISIBLE;
     this.tileStatus.set(tileIndex, status);
     this.updateLoadingStatus(true);
+  }
+
+  private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
+    if (response.canceled || id !== 'geometry_info') {
+      return;
+    }
+
+    this.highlightLayer.removeAllMeshes();
+    this.selectedPolygon?.dispose(false, true);
+
+    const material = new StandardMaterial(
+      'SelectedPolygonMaterial',
+      this.scene
+    );
+    material.diffuseColor = new Color3(0.7, 0, 1);
+    material.backFaceCulling = false;
+
+    this.selectedPolygon = new Mesh('SelectedPolygon', this.scene);
+    this.selectedPolygon.alwaysSelectAsActiveMesh = true;
+    this.selectedPolygon.position.addInPlaceFromFloats(0, -20, 0);
+    this.selectedPolygon.material = material;
+    this.selectedPolygon.layerMask = 1;
+
+    const vertexData = new VertexData();
+    vertexData.positions = response.positions;
+    vertexData.indices = response.indices;
+    vertexData.applyToMesh(this.selectedPolygon, false);
+
+    this.highlightLayer.addMesh(this.selectedPolygon, new Color3(0.7, 0, 0.9));
+
+    window.dispatchEvent(
+      new CustomEvent(Events.PICK_OBJECT, {
+        bubbles: true,
+        detail: {
+          type: 'GEOMETRY_INFO_DATA',
+          info: response.info
+        }
+      })
+    );
+  }
+
+  private pickingHandler(e: CustomEvent<any>) {
+    switch (e.detail.type) {
+      case 'GEOMETRY_SELECT':
+        this.selectedPolygon?.dispose(false, true);
+        this.highlightLayer.removeAllMeshes();
+        break;
+    }
+  }
+
+  public setupEventListeners(): void {
+    window.addEventListener(
+      Events.PICK_OBJECT,
+      this.pickingHandler.bind(this) as any,
+      { capture: true }
+    );
+  }
+
+  public stopEventListeners(): void {
+    window.removeEventListener(
+      Events.PICK_OBJECT,
+      this.pickingHandler.bind(this) as any,
+      { capture: true }
+    );
   }
 }

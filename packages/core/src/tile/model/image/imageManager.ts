@@ -303,10 +303,12 @@ export class ImageManager extends Manager<ImageTile> {
     }
   }
 
-  public dispose(): void {
-    for (const [, status] of this.tileStatus) {
-      status.tile?.dispose();
-    }
+  public setupEventListeners(): void {
+    // Empty
+  }
+
+  public stopEventListeners(): void {
+    // Empty
   }
 
   public onImageTileDataLoad(id: string, response: ImageResponse) {

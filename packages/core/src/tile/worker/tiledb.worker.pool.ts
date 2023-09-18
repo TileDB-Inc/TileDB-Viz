@@ -5,7 +5,8 @@ import {
   WorkerResponse,
   ImageResponse,
   ResponseCallback,
-  GeometryResponse
+  GeometryResponse,
+  GeometryInfoResponse
 } from '../types';
 
 export interface WorkerPoolOptions {
@@ -27,7 +28,11 @@ export class WorkerPool {
 
   constructor(options?: WorkerPoolOptions) {
     this.poolSize = options?.poolSize ?? window.navigator.hardwareConcurrency;
-    this.callbacks = options?.callbacks ?? { image: [], geometry: [] };
+    this.callbacks = options?.callbacks ?? {
+      image: [],
+      geometry: [],
+      info: []
+    };
     this.taskMap = new Map<string, number>();
     this.initilizeMessage = {
       type: RequestType.INITIALIZE,
@@ -71,7 +76,9 @@ export class WorkerPool {
         }
         break;
       case RequestType.GEOMETRY_INFO:
-        console.log(response);
+        for (const callback of this.callbacks.info) {
+          callback(response.id, response.response as GeometryInfoResponse);
+        }
         break;
       case RequestType.CANCEL:
         break;

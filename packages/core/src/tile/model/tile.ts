@@ -6,7 +6,7 @@ export interface UpdateOptions<T extends BaseResponse> {
 }
 
 export abstract class Tile<T extends BaseResponse> {
-  protected mesh: Mesh;
+  public mesh: Mesh;
   protected scene: Scene;
 
   public readonly index: number[];

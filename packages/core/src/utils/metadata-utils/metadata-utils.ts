@@ -176,7 +176,9 @@ async function getGroupMetadata(
   return [groupMetadata, memberUris];
 }
 
-export async function getGeometryMetadata(options: AssetOptions) {
+export async function getGeometryMetadata(
+  options: AssetOptions
+): Promise<[GeometryMetadata, Attribute[]]> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -185,6 +187,21 @@ export async function getGeometryMetadata(options: AssetOptions) {
   if (!options.geometryArrayID) {
     throw new Error('Geometry array ID is undefined');
   }
+
+  const arraySchemaResponse = await client.ArrayApi.getArray(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    options.namespace,
+    options.geometryArrayID,
+    'application/json'
+  );
+
+  const attributes = arraySchemaResponse.data.attributes.map((value, index) => {
+    return {
+      name: value.name,
+      type: value.type as string,
+      visible: index === 0 ? true : false
+    } as Attribute;
+  });
 
   const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
     options.namespace,
@@ -205,7 +222,7 @@ export async function getGeometryMetadata(options: AssetOptions) {
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
   } as GeometryMetadata;
 
-  return geometryMetadata;
+  return [geometryMetadata, attributes];
 }
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {

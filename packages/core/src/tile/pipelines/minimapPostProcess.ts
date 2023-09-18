@@ -6,7 +6,7 @@ export class MinimapPipeline {
   private postProcess!: PostProcess;
   private baseWidth: number;
   private baseHeight: number;
-  private camera: Camera;
+  private camera?: Camera;
 
   constructor(scene: Scene, baseWidth: number, baseHeight: number) {
     this.scene = scene;
@@ -17,6 +17,10 @@ export class MinimapPipeline {
   }
 
   initializePostProcess() {
+    if (!this.camera) {
+      return;
+    }
+
     Effect.ShadersStore['MinimapPostProcessFragmentShader'] = `
         precision highp float;
   
@@ -63,6 +67,11 @@ export class MinimapPipeline {
 
     this.postProcess.onApply = (effect: Effect) => {
       const mainCamera = getCamera(this.scene, 'Main');
+
+      if (!mainCamera) {
+        return;
+      }
+
       const top =
         Math.min(
           this.baseHeight,
@@ -86,9 +95,5 @@ export class MinimapPipeline {
 
       effect.setArray4('visibleArea', [left, 1 - top, right, 1 - bottom]);
     };
-  }
-
-  public setActiveCamera(): void {
-    this.camera.attachPostProcess(this.postProcess);
   }
 }

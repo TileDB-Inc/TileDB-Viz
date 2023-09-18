@@ -35,7 +35,7 @@ export function PolygonShaderMaterial(
     flat in uvec2 vId;
 
     void main() {
-      uint polygonColor = (255u << 24) + (0u << 16) + (124u << 8) + 100u;
+      uint polygonColor = (255u << 24) + (0u << 16) + (124u << 8) + 160u;
       color = uvec4(vId, polygonColor, 1u);
     }
   `;

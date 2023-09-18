@@ -1,14 +1,10 @@
 import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
-import { Dimension, AssetEntry } from '../../types';
+import { Dimension, AssetEntry, Attribute } from '../../types';
 import { ImageManager } from '../model/image/imageManager';
-import { getCamera, hasMinimap } from './camera-utils';
+import { getCamera } from './camera-utils';
 import { Scene } from '@babylonjs/core';
-
-// const styleElement = document.createElement('style');
-// styleElement.textContent = stylesString;
-// document.head.appendChild(styleElement);
 
 class TileImageGUI {
   private scene: Scene;
@@ -35,6 +31,7 @@ class TileImageGUI {
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
+    geometryAttributes: Attribute[] | undefined,
     zoomCallback: (step: number) => void,
     clearCache: () => void,
     assetSelectionCallback: (
@@ -82,6 +79,13 @@ class TileImageGUI {
       ${
         assets.length > 0
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
+          : ''
+      }
+      ${
+        geometryAttributes !== undefined
+          ? `<geometry-panel attributes='${JSON.stringify(
+              geometryAttributes
+            )}'></geometry-panel>`
           : ''
       }
       <cache-control>
@@ -200,9 +204,11 @@ class TileImageGUI {
         }
         break;
       case 'minimap':
-        if (hasMinimap(this.scene)) {
-          getCamera(this.scene, 'Minimap')._skipRendering =
-            !customEvent.detail.value;
+        {
+          const minimapCamera = getCamera(this.scene, 'Minimap');
+          if (minimapCamera) {
+            minimapCamera._skipRendering = !customEvent.detail.value;
+          }
         }
         break;
       default:

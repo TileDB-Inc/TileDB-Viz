@@ -5,8 +5,8 @@ import {
   PointerInfo,
   PointerEventTypes,
   Nullable,
-  FreeCamera,
-  RenderTargetTexture
+  RenderTargetTexture,
+  Camera
 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import {
@@ -41,11 +41,12 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
   private baseHeight!: number;
   private metadata!: ImageMetadata;
   private attributes!: Attribute[];
+  private geometryAttributes?: Attribute[];
   private dimensions!: Dimension[];
   private geometryMetadata?: GeometryMetadata;
   private levels!: LevelRecord[];
   private groupAssets!: AssetEntry[];
-  private camera!: FreeCamera;
+  private camera?: Camera;
   private gui!: TileImageGUI;
   private tileSize = 1024;
   private workerPool: WorkerPool;
@@ -135,7 +136,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.camera = getCamera(this.scene, 'Main');
 
     if (this.options.geometryArrayID) {
-      this.geometryMetadata = await getGeometryMetadata(this.options);
+      [this.geometryMetadata, this.geometryAttributes] =
+        await getGeometryMetadata(this.options);
 
       const originalLevel = this.levels.at(-1);
 
@@ -199,6 +201,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       ) ?? [],
       this.dimensions,
       this.groupAssets,
+      this.geometryAttributes,
       (step: number) => this.onZoom(step),
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
@@ -220,7 +223,11 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
     if (hasMinimap(this.scene)) {
       this.scene.onBeforeRenderObservable.addOnce(() => {
-        this.tileset.loadTiles(getCamera(this.scene, 'Minimap'), 0);
+        const minimapCamera = getCamera(this.scene, 'Minimap');
+
+        if (minimapCamera) {
+          this.tileset.loadTiles(minimapCamera, 0);
+        }
       });
     }
 
@@ -237,7 +244,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     this.geometryManager?.dispose();
     this.workerPool.cleanUp();
     this.gui.dispose();
-    this.camera.dispose();
+    this.camera?.dispose();
     this.scene.getEngine().clearInternalTexturesCache();
   }
 
@@ -273,8 +280,8 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
       Math.min(this.levels.length - 1, Math.ceil(Math.log2(this.zoom)))
     );
 
-    this.tileset.loadTiles(this.camera, integerZoom);
-    this.geometryManager?.loadTiles(this.camera, integerZoom);
+    this.tileset.loadTiles(this.camera!, integerZoom);
+    this.geometryManager?.loadTiles(this.camera!, integerZoom);
   }
 
   private resizeViewport() {
@@ -316,7 +323,7 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
             const positionDifference = pointerCurrentPosition.subtract(
               this.pointerDownStartPosition
             );
-            this.camera.position.addInPlace(
+            this.camera?.position.addInPlace(
               positionDifference.multiplyByFloats(-1, 0, -1)
             );
 

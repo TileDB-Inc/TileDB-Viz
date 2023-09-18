@@ -49,6 +49,10 @@ export abstract class Manager<T extends Tile<any>> {
    */
   public abstract loadTiles(camera: Camera, zoom: number): void;
 
+  public abstract setupEventListeners(): void;
+
+  public abstract stopEventListeners(): void;
+
   /**
    * Update the already visible or currently loading tiles
    * @param options The update options
@@ -61,6 +65,8 @@ export abstract class Manager<T extends Tile<any>> {
    * Dispose all BabylonJS resources
    */
   public dispose() {
+    this.stopEventListeners();
+
     for (const [, status] of this.tileStatus) {
       status.tile?.dispose();
     }

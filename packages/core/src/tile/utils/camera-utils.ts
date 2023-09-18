@@ -1,4 +1,4 @@
-import { FreeCamera, Scene, Vector3, Viewport } from '@babylonjs/core';
+import { Camera, FreeCamera, Scene, Vector3, Viewport } from '@babylonjs/core';
 import { MinimapPipeline } from '../pipelines/minimapPostProcess';
 
 const MINIMAP_OFFSET = 20;
@@ -50,7 +50,7 @@ export function setupCamera(
 }
 
 export function resizeOrtographicCameraViewport(scene: Scene, zoom: number) {
-  const camera = getCamera(scene, 'Main');
+  const camera = getCamera(scene, 'Main') as FreeCamera;
 
   const viewportWidth = scene.getEngine().getRenderWidth();
   const viewportHeight = scene.getEngine().getRenderHeight();
@@ -69,7 +69,7 @@ export function resizeOrtographicMinimapCameraViewport(
   width: number,
   height: number
 ) {
-  const camera = getCamera(scene, 'Minimap');
+  const camera = getCamera(scene, 'Minimap') as FreeCamera;
 
   const screenWidth = scene.getEngine().getRenderWidth();
   const screenHeight = scene.getEngine().getRenderHeight();
@@ -97,16 +97,14 @@ export function resizeOrtographicMinimapCameraViewport(
   camera.orthoRight = width / 2;
 }
 
-export function getCamera(scene: Scene, name: string): FreeCamera {
+export function getCamera(scene: Scene, name: string): Camera | undefined {
   const cameras = scene.activeCameras?.filter(x => x.name === name);
 
   if (!cameras?.length) {
-    throw new Error(
-      `Camera '${name}' cannot be found. Make sure you have added the requested camera`
-    );
+    return undefined;
   }
 
-  return cameras[0] as FreeCamera;
+  return cameras[0];
 }
 
 export function hasMinimap(scene: Scene): boolean {
