@@ -8,7 +8,8 @@ enum Events {
   DUAL_SLIDER_CHANGE = 'dual-slider::change',
   COLOR_CHANGE = 'color-input::change',
   ENGINE_INFO_UPDATE = 'engine-info::update',
-  BUTTON_CLICK = 'button::clicked'
+  BUTTON_CLICK = 'button::clicked',
+  PICK_OBJECT = 'picking::object'
 }
 
 export default Events;

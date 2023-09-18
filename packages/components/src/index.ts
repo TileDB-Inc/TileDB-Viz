@@ -17,3 +17,5 @@ export { default as GroupPanel } from './GroupPanel.component.svelte';
 export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';
 export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
+export { default as GeometryPanel } from './GeometryPanel.component.svelte';
+export { default as TypedInput } from './TypedInput.component.svelte';
