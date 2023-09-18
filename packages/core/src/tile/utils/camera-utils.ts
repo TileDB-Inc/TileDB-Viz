@@ -71,6 +71,10 @@ export function resizeOrtographicMinimapCameraViewport(
 ) {
   const camera = getCamera(scene, 'Minimap') as FreeCamera;
 
+  if (!camera) {
+    return;
+  }
+
   const screenWidth = scene.getEngine().getRenderWidth();
   const screenHeight = scene.getEngine().getRenderHeight();
 

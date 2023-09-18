@@ -31,6 +31,7 @@ import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { GeometryPipeline } from './pipelines/pipeline';
+import { resizeOrtographicMinimapCameraViewport } from './utils/camera-utils';
 
 class TileDBTiledImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -286,6 +287,11 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
 
   private resizeViewport() {
     resizeOrtographicCameraViewport(this.scene, this.zoom);
+    resizeOrtographicMinimapCameraViewport(
+      this.scene,
+      this.baseWidth,
+      this.baseHeight
+    );
   }
 
   private setupCameraMovement() {
