@@ -6,6 +6,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   arrayID?: string;
   groupID?: string;
+  geometryArrayID?: string;
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -69,6 +70,8 @@ export interface ImageMetadata extends AssetMetadata {
   physicalSizeZUnit?: string;
   timeIncrement?: number;
   timeIncrementUnit?: string;
+  crs?: string;
+  transformationCoefficients?: number[];
   axes: Array<AxesMetadata>;
 }
 
@@ -159,6 +162,7 @@ export const types = {
 export const enum RequestType {
   CANCEL = 0,
   IMAGE = 1,
+  GEOMETRY = 2,
 
   INITIALIZE = 100
 }
@@ -187,22 +191,48 @@ export interface ImageMessage {
   dimensions: Dimension[];
 }
 
+export interface GeometryMessage {
+  index: number[];
+  tileSize: number;
+  arrayID: string;
+  namespace: string;
+  idAttribute: string;
+  geometryAttribute: string;
+  pad: number[];
+  extraAttributes?: string[];
+  type: string;
+  imageCRS: string;
+  geometryCRS: string;
+  geotransformCoefficients: number[];
+}
+
 export interface WorkerResponse {
   type: RequestType;
   id: string;
   response: any;
 }
 
-export interface ImageResponse {
+export interface BaseResponse {
   index: number[];
+  canceled: boolean;
+}
+
+export interface ImageResponse extends BaseResponse {
   data: TypedArray;
   width: number;
   height: number;
   channels: number;
   dtype: keyof typeof types;
-  canceled: boolean;
+}
+
+export interface GeometryResponse extends BaseResponse {
+  positions: Float32Array;
+  colors: Float32Array;
+  indices: Int32Array;
+  gtype: string;
 }
 
 export interface ResponseCallback {
-  image?: (id: string, response: ImageResponse) => void;
+  image: { (id: string, response: ImageResponse): void }[];
+  geometry: { (id: string, response: GeometryResponse): void }[];
 }
