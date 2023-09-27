@@ -2,7 +2,7 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   let visible = false;
 
@@ -14,14 +14,14 @@
     hideModal();
 
     window.dispatchEvent(
-      new CustomEvent(events.CONFIRM_BOX_ACCEPT, {
+      new CustomEvent(Events.CONFIRM_BOX_ACCEPT, {
         bubbles: true
       })
     );
   }
 
   onMount(() => {
-    const CUSTOM_EVENT = events.CONFIRM_BOX_SHOW;
+    const CUSTOM_EVENT = Events.CONFIRM_BOX_SHOW;
     window.addEventListener(
       CUSTOM_EVENT,
       () => {

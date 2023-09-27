@@ -1,42 +1,49 @@
 <svelte:options customElement="channel-panel" />
 
-<script>
+<script lang="typescript">
   import Section from './Section.component.svelte';
   import Slider from './Slider.component.svelte';
   import { rgbToHex, hexToRgb } from './utils/helpers';
-  import events from './constants/events';
+  import { Events } from './constants/events';
+  import { ButtonProps, GUIEvent } from './types';
 
   export let channels = '[]';
   $: visibility = JSON.parse(channels).map(x => x.visible);
 
-  function onColorChange(event, id) {
+  function onColorChange(event: Event, index: number) {
     window.dispatchEvent(
-      new CustomEvent(events.COLOR_CHANGE, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.COLOR_CHANGE, {
         bubbles: true,
         detail: {
-          id,
-          value: hexToRgb(event.target.value)
+          target: `channel_${index}`,
+          props: {
+            command: 'color',
+            data: hexToRgb((event.target as HTMLInputElement).value)
+          }
         }
       })
     );
   }
 
-  function onVisibilityChange(event, index) {
+  function onVisibilityChange(event: Event, index: number) {
     visibility[index] = !visibility[index];
 
     window.dispatchEvent(
-      new CustomEvent(events.TOGGLE_INPUT_CHANGE, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.TOGGLE_INPUT_CHANGE, {
         bubbles: true,
         detail: {
-          id: `c_${index}`,
-          value: visibility[index]
+          target: `channel_${index}`,
+          props: {
+            command: 'visibility',
+            data: visibility[index]
+          }
         }
       })
     );
   }
 </script>
 
-<Section id={'channel-panel'}>
+<Section>
   <div slot="header" class="Viewer-ControlPanel__title">
     <svg
       width="20"
@@ -70,7 +77,7 @@
     {#each JSON.parse(channels) as channel, index}
       <li class="Viewer-ControlPanel__item">
         <div class="Viewer-ControlPanel__options">
-          <input type="color" value="{rgbToHex(channel.color[0], channel.color[1], channel.color[2])}" on:input={(e) => onColorChange(e, `c_${index}`)}/>
+          <input type="color" value="{rgbToHex(channel.color[0], channel.color[1], channel.color[2])}" on:input={(e) => onColorChange(e, index)}/>
           <button class="Viewer-ControlPanel__icon-wrapper" on:click={(e) => onVisibilityChange(e, index)}>
             {#if visibility[index]}
               <svg
@@ -106,7 +113,7 @@
           </button>
         </div>
         <Slider
-            id={`c_${index}`}
+            id={`channel_${index}`}
             label={channel.name}
             value={channel.intensity}
             min={channel.min}

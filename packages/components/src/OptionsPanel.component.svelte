@@ -1,13 +1,17 @@
-<svelte:options customElement="cache-control" />
+<svelte:options customElement="options-panel" />
 
-<script>
+<script lang="typescript">
   import Section from './Section.component.svelte';
+  import Slider from './Slider.component.svelte';
   import ToggleSwitch from './ToggleSwitch.component.svelte';
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events } from './constants/events';
+  import { GUIEvent, ButtonProps, TextInputProps } from './types/index';
 
   let tiles = 0;
   let diskSpace = 0; 
+  let cameraTargetX = 0;
+  let cameraTargetY = 0;
 
   function cacheInfoUpdate(e) {
     if (e.detail.type === 'CACHE_INFO')
@@ -17,12 +21,29 @@
     }
   }
 
-  function clearCache(e) {
+  function clearCache(event: Event) {
     window.dispatchEvent(
-      new CustomEvent(events.BUTTON_CLICK, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          id: 'cache_clear'
+          target: 'cache',
+          props: {
+            command: 'clear'
+          }
+        }
+      })
+    );
+  }
+
+  function updateCameraTarget(event: Event, axis: string) {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<TextInputProps>>(Events.TEXT_INPUT_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `camera_target_${axis}`,
+          props: {
+            value: (event.target as HTMLInputElement).value
+          }
         }
       })
     );
@@ -30,7 +51,7 @@
 
   onMount(() => {
     window.addEventListener(
-      events.ENGINE_INFO_UPDATE,
+      Events.ENGINE_INFO_UPDATE,
       cacheInfoUpdate,
       {
         capture: true
@@ -39,13 +60,13 @@
   });
 
   onDestroy(() => {
-    window.removeEventListener(events.ENGINE_INFO_UPDATE, cacheInfoUpdate, {
+    window.removeEventListener(Events.ENGINE_INFO_UPDATE, cacheInfoUpdate, {
       capture: true
     });
   });
 </script>
 
-<Section id={'cache-control'}>
+<Section>
   <div slot="header" class="Viewer-CacheControls__title">
     <svg
       width="24"
@@ -61,8 +82,8 @@
     </svg>
     Options
   </div>
-  <div slot="content">
-    <div class="Viewer-CacheControls__container">
+  <div class="Viewer-CacheControls__container" slot="content">
+    <div style="display: flex;">
       <div class="Viewer-CacheControls__group">
         <svg
           width="20"
@@ -120,13 +141,70 @@
         </p>
       </div>
     </div>
-    <ToggleSwitch id={'minimap'} label={'Display minimap'} value={true} />
+    <ToggleSwitch id={'minimap'} command={'visibility'} label={'Display minimap'} value={true} />
+    <div style="display: flex; flex-direction:column; gap: 8px;">
+      <div style="display: flex;">
+        <Slider
+          id={`camera_pitch`}
+          label={'Pitch'}
+          value={0}
+          min={0}
+          max={45}
+          step={0.1}
+          formatter={val => val.toFixed(1) + '\xB0'}
+        />
+      </div>
+      <div style="display: flex;">
+        <Slider
+          id={`camera_rotation`}
+          label={'Rotation'}
+          value={0}
+          min={0}
+          max={360}
+          step={0.1}
+          formatter={val => val.toFixed(1) + '\xB0'}
+        />
+      </div>
+    </div>
+    <div class="Viewer-CacheControls__option">
+      <div class="Viewer-CacheControls__label">Target</div>
+      <div class="Viewer-CacheControls__horizontalInputGroup">
+        <input type="number" placeholder="X" bind:value={cameraTargetX} on:change={(e) => updateCameraTarget(e, 'X')}/>
+        <input type="number" placeholder="Y" bind:value={cameraTargetY} on:change={(e) => updateCameraTarget(e, 'Z')}/>
+      </div>
+    </div>
   </div >
 </Section>
 
 <style lang="scss">
   .Viewer-CacheControls {
+    display: flex;
     font-family: Inter, Arial, 'sans-serif';
+    flex-direction: column;
+
+    &__option {
+      display: flex;
+      flex-direction: row;
+    }
+
+    &__horizontalInputGroup {
+      display: flex;
+      gap: 6px;
+      justify-content: space-evenly;
+
+      input {
+        border: 1px solid var(--viewer-border);
+        border-radius: 6px;
+        padding: 6px;
+        margin: 0;
+        height: 20px;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.87);
+        width: 100px;
+      }
+    }
 
     &__title {
       font-style: normal;
@@ -146,6 +224,7 @@
 
     &__container {
       display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 

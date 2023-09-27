@@ -1,10 +1,11 @@
 <svelte:options customElement="group-panel" />
 
-<script>
+<script lang="typescript">
   import { onMount } from 'svelte';
   import Section from './Section.component.svelte';
   import { rangeToPagination } from './utils/helpers';
-  import events from './constants/events';
+  import { Events } from './constants/events';
+  import { GUIEvent, ButtonProps } from './types';
 
   export let groups = '[]';
   export let itemsPerPage = 5;
@@ -37,14 +38,17 @@
 
   function onClick(namespace, groupID, arrayID) {
     window.dispatchEvent(
-      new CustomEvent(events.BUTTON_CLICK, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          id: 'asset_selection',
+          target: 'asset',
           props: {
-            namespace,
-            groupID,
-            arrayID
+            command: 'select',
+            data: {
+              namespace,
+              groupID,
+              arrayID
+            }
           }
         }
       })
@@ -52,7 +56,7 @@
   }
 </script>
 
-<Section id={'group-panel'}>
+<Section>
   <div slot="header" class="Viewer-GroupSelector__title">
     <svg
       width="24"

@@ -1,20 +1,26 @@
 <svelte:options customElement="toggle-switch" />
 
-<script>
-  import events from './constants/events';
+<script lang="typescript">
+  import { Events } from './constants/events';
+  import {GUIEvent, ButtonProps } from './types';
 
-  export let id = '';
-  export let label = '';
-  export let value = false;
+  export let id: string = '';
+  export let command: string = '';
+  export let label: string = '';
+  export let value: boolean = false;
 
-  function onClick(event) {
+  function onClick(event: Event) {
     value = !value;
+
     window.dispatchEvent(
-      new CustomEvent(events.TOGGLE_INPUT_CHANGE, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.TOGGLE_INPUT_CHANGE, {
         bubbles: true,
         detail: {
-          id,
-          value: value
+          target: id,
+          props: {
+            command: command,
+            data: value
+          }
         }
       })
     );

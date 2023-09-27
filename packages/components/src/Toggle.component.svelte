@@ -1,7 +1,7 @@
 <svelte:options customElement="toggle-input" />
 
 <script>
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   export let id = '';
   export let label;
@@ -11,7 +11,7 @@
 
   function onChange(event) {
     window.dispatchEvent(
-      new CustomEvent(events.TOGGLE_INPUT_CHANGE, {
+      new CustomEvent(Events.TOGGLE_INPUT_CHANGE, {
         bubbles: true,
         detail: {
           value: value

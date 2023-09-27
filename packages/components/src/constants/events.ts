@@ -1,4 +1,4 @@
-enum Events {
+export enum Events {
   TOGGLE_INPUT_CHANGE = 'toggle-input::change',
   RADIO_GROUP_CHANGE = 'radio-group::change',
   SLIDER_CHANGE = 'tdb-slider::change',
@@ -10,5 +10,3 @@ enum Events {
   ENGINE_INFO_UPDATE = 'engine-info::update',
   BUTTON_CLICK = 'button::clicked'
 }
-
-export default Events;

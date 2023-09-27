@@ -1,4 +1,6 @@
-export { default as Events } from './constants/events';
+import { Events } from './constants/events';
+import { GUIEvent } from './types/index';
+
 export { default as FloatingButton } from './FloatingButton.component.svelte';
 export { default as MenuPanel } from './Menu.component.svelte';
 export { default as Slider } from './Slider.component.svelte';
@@ -10,10 +12,13 @@ export { default as Sidebar } from './Sidebar.component.svelte';
 export { default as Header } from './Header.component.svelte';
 export { default as Section } from './Section.component.svelte';
 export { default as ZoomControl } from './ZoomControl.component.svelte';
-export { default as CacheControl } from './CacheControl.component.svelte';
+export { default as OptionsPanel } from './OptionsPanel.component.svelte';
 export { default as ChannelPanel } from './ChannelPanel.component.svelte'
 export { default as DimensionPanel } from './DimensionPanel.component.svelte';
 export { default as GroupPanel } from './GroupPanel.component.svelte';
 export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';
 export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
+
+export { Events }
+export type { GUIEvent }

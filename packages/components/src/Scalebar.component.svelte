@@ -3,7 +3,7 @@
 <script>
   import { unitFormatter, lengthConverter } from './utils/helpers';
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   export let basePhysicalSize = 0;
   export let basePhysicalSizeUnit = 'μm';
@@ -19,7 +19,7 @@
 
   onMount(() => {
     window.addEventListener(
-      events.ENGINE_INFO_UPDATE,
+      Events.ENGINE_INFO_UPDATE,
       zoomInfoUpdate,
       {
         capture: true
@@ -28,7 +28,7 @@
   });
 
   onDestroy(() => {
-    window.removeEventListener(events.ENGINE_INFO_UPDATE, zoomInfoUpdate, {
+    window.removeEventListener(Events.ENGINE_INFO_UPDATE, zoomInfoUpdate, {
       capture: true
     });
   });
