@@ -26,7 +26,7 @@ import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { MinimapManager } from './model/image/minimap';
 
-class TileDBTiledImageVisualization extends TileDBVisualization {
+export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
   private tileset!: ImageManager;
@@ -363,5 +363,3 @@ class TileDBTiledImageVisualization extends TileDBVisualization {
     clearMultiCache(this.levels.map(x => `${x.id}_${this.tileSize}`));
   }
 }
-
-export default TileDBTiledImageVisualization;
