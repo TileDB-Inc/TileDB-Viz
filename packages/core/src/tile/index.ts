@@ -1,7 +1,4 @@
-import TileDBTileImageVisualization from './tileImage';
-import type { TileDBTileImageOptions } from './types';
+export type { TileDBTileImageOptions } from './types';
 
-export { TileDBTileImageVisualization };
-export type { TileDBTileImageOptions };
-
+export * from './tileImage';
 export * from './types';
