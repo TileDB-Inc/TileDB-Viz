@@ -23,9 +23,6 @@ class TileImageGUI {
     arrayID?: string
   ) => void;
 
-  private sliderEventHandler;
-  private colorEventHandler;
-  private toggleEventHandler;
   private buttonEventHandler;
 
   constructor(
@@ -88,22 +85,8 @@ class TileImageGUI {
     </sidebar-menu>
       `;
 
-    this.sliderEventHandler = (e: Event) => this.sliderHandler(e);
-    this.colorEventHandler = (e: Event) => this.colorHandler(e);
-    this.toggleEventHandler = (e: Event) => this.toggleHandler(e);
     this.buttonEventHandler = (e: Event) => this.buttonHandler(e);
 
-    window.addEventListener(Events.SLIDER_CHANGE, this.sliderEventHandler, {
-      capture: true
-    });
-    window.addEventListener(Events.COLOR_CHANGE, this.colorEventHandler, {
-      capture: true
-    });
-    window.addEventListener(
-      Events.TOGGLE_INPUT_CHANGE,
-      this.toggleEventHandler,
-      { capture: true }
-    );
     window.addEventListener(Events.BUTTON_CLICK, this.buttonEventHandler, {
       capture: true
     });
@@ -113,121 +96,12 @@ class TileImageGUI {
 
   public dispose() {
     window.removeEventListener(
-      Events.SLIDER_CHANGE,
-      this.sliderEventHandler as any,
-      { capture: true }
-    );
-    window.removeEventListener(
-      Events.COLOR_CHANGE,
-      this.colorEventHandler as any,
-      {
-        capture: true
-      }
-    );
-    window.removeEventListener(
-      Events.TOGGLE_INPUT_CHANGE,
-      this.toggleEventHandler as any,
-      { capture: true }
-    );
-    window.removeEventListener(
       Events.BUTTON_CLICK,
       this.buttonEventHandler as any,
       { capture: true }
     );
 
     this.rootElement?.removeChild(this.uiWrapper);
-  }
-
-  private sliderHandler(event: Event) {
-    const customEvent = event as CustomEvent<{ id: string; value: number }>;
-
-    switch (customEvent.detail.id[0]) {
-      case 'c':
-        {
-          const channelIndex = Number(customEvent.detail.id.substring(2));
-          this.tileset.updateTiles(
-            new ImageManager.IntensityUpdate(
-              channelIndex,
-              Number(customEvent.detail.value)
-            )
-          );
-          this.minimap.updateTiles(
-            new MinimapManager.IntensityUpdate(
-              channelIndex,
-              Number(customEvent.detail.value)
-            )
-          );
-        }
-        break;
-      case 'd':
-        {
-          const dimensionIndex = Number(customEvent.detail.id.substring(2));
-          this.tileset.updateTiles(
-            new ImageManager.DimensionUpdate(
-              dimensionIndex,
-              Number(customEvent.detail.value)
-            )
-          );
-          this.minimap.updateTiles(
-            new MinimapManager.DimensionUpdate(
-              dimensionIndex,
-              Number(customEvent.detail.value)
-            )
-          );
-        }
-        break;
-      default:
-        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
-        break;
-    }
-  }
-
-  private colorHandler(event: Event) {
-    const customEvent = event as CustomEvent<{
-      id: string;
-      value: { r: number; g: number; b: number };
-    }>;
-
-    const channelIndex = Number(customEvent.detail.id.substring(2));
-    this.tileset.updateTiles(
-      new ImageManager.ColorUpdate(channelIndex, customEvent.detail.value)
-    );
-    this.minimap.updateTiles(
-      new MinimapManager.ColorUpdate(channelIndex, customEvent.detail.value)
-    );
-  }
-
-  private toggleHandler(event: Event) {
-    const customEvent = event as CustomEvent<{ id: string; value: any }>;
-    const id_parts = customEvent.detail.id.split('_');
-
-    switch (id_parts[0]) {
-      case 'c':
-        {
-          const channelIndex = Number(id_parts[1]);
-          this.tileset.updateTiles(
-            new ImageManager.ChannelUpdate(
-              channelIndex,
-              customEvent.detail.value
-            )
-          );
-          this.minimap.updateTiles(
-            new MinimapManager.ChannelUpdate(
-              channelIndex,
-              customEvent.detail.value
-            )
-          );
-        }
-        break;
-      case 'minimap':
-        this.minimap.updateTiles(
-          new MinimapManager.VisibilityUpdate(customEvent.detail.value)
-        );
-        break;
-      default:
-        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
-        break;
-    }
   }
 
   private buttonHandler(event: Event) {

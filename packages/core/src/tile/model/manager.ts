@@ -58,9 +58,16 @@ export abstract class Manager<T extends Tile<any>> {
   }
 
   /**
+   * Unregister all event listeners from the scene or the GUI.
+   */
+  protected stopEventListeners(): void {}
+
+  /**
    * Dispose all BabylonJS resources
    */
   public dispose() {
+    this.stopEventListeners();
+
     for (const [, status] of this.tileStatus) {
       status.tile?.dispose();
     }

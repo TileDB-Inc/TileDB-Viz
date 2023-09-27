@@ -10,10 +10,11 @@ import {
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, UpdateOperation, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus, TileState } from '../manager';
 import { ImageTile } from './image';
 import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
+import { Events, GUIEvent, ButtonProps, SliderProps } from '@tiledb-inc/viz-components';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -36,111 +37,6 @@ export class ImageManager extends Manager<ImageTile> {
   private namespace: string;
 
   private selectedAttribute!: Attribute;
-
-  public static readonly ColorUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public color: { r: number; g: number; b: number };
-
-    constructor(index: number, color: { r: number; g: number; b: number }) {
-      this.index = index;
-      this.color = color;
-    }
-
-    public apply(source: ImageManager): void {
-      source.colors[4 * this.index] = this.color.r / 255;
-      source.colors[4 * this.index + 1] = this.color.g / 255;
-      source.colors[4 * this.index + 2] = this.color.b / 255;
-
-      source.tileOptions.updateFloatArray(
-        'colors',
-        new Float32Array(source.colors)
-      );
-      source.tileOptions.update();
-    }
-  };
-
-  public static readonly IntensityUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public intensity: number;
-
-    constructor(index: number, intensity: number) {
-      this.index = index;
-      this.intensity = intensity;
-    }
-
-    apply(source: ImageManager): void {
-      source.intensityRanges[4 * this.index + 1] = this.intensity;
-
-      source.tileOptions.updateFloatArray(
-        'ranges',
-        new Float32Array(source.intensityRanges)
-      );
-      source.tileOptions.update();
-    }
-  };
-
-  public static readonly ChannelUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public visible: boolean;
-
-    constructor(index: number, visible: boolean) {
-      this.index = index;
-      this.visible = visible;
-    }
-
-    apply(source: ImageManager): void {
-      source.channelMapping[4 * this.index] = this.visible ? this.index : -1;
-      calculateChannelMapping(source.channelMapping);
-      source.channelRanges = calculateChannelRanges(source.channelMapping);
-
-      source.tileOptions = new UniformBuffer(source.scene.getEngine());
-      source.tileOptions.addUniform(
-        'channelMapping',
-        4,
-        source.channelMapping.length / 4
-      );
-      source.tileOptions.addUniform(
-        'ranges',
-        4,
-        source.intensityRanges.length / 4
-      );
-      source.tileOptions.addUniform('colors', 4, source.colors.length / 4);
-
-      source.tileOptions.updateIntArray(
-        'channelMapping',
-        source.channelMapping
-      );
-      source.tileOptions.updateFloatArray('ranges', source.intensityRanges);
-      source.tileOptions.updateFloatArray('colors', source.colors);
-
-      source.tileOptions.update();
-
-      source.update();
-    }
-  };
-
-  public static readonly DimensionUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public value: number;
-
-    constructor(index: number, value: number) {
-      this.index = index;
-      this.value = value;
-    }
-    apply(source: ImageManager): void {
-      source.dimensions[this.index].value = this.value;
-
-      source.update();
-    }
-  };
 
   constructor(
     scene: Scene,
@@ -204,6 +100,16 @@ export class ImageManager extends Manager<ImageTile> {
     this.tileOptions.updateFloatArray('colors', this.colors);
 
     this.tileOptions.update();
+
+    window.addEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
+      capture: true
+    });
+    window.addEventListener(Events.COLOR_CHANGE, this.buttonHandler.bind(this) as any, {
+      capture: true
+    });
+    window.addEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this) as any, {
+      capture: true
+    });
   }
 
   public loadTiles(camera: Camera, zoom: number): void {
@@ -375,6 +281,89 @@ export class ImageManager extends Manager<ImageTile> {
 
       this.updateLoadingStatus(false);
     }
+  }
+
+  protected stopEventListeners(): void {
+    window.removeEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
+      capture: true
+    });
+    window.removeEventListener(Events.COLOR_CHANGE, this.buttonHandler.bind(this) as any, {
+      capture: true
+    });
+    window.removeEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this) as any, {
+      capture: true
+    });
+  }
+
+  private initializeUniformBuffer() {
+    this.tileOptions = new UniformBuffer(this.scene.getEngine());
+    this.tileOptions.addUniform('channelMapping', 4, this.channelMapping.length / 4);
+    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
+    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
+
+    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+    this.tileOptions.updateFloatArray('colors', this.colors);
+
+    this.tileOptions.update();
+
+  }
+
+  private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'channel') return;
+
+    const index = Number(target[1]);
+
+    switch (event.detail.props.command) {
+      case 'color':
+        this.colors[4 * index] = event.detail.props.data.r / 255;
+        this.colors[4 * index + 1] = event.detail.props.data.g / 255;
+        this.colors[4 * index + 2] = event.detail.props.data.b / 255;
+  
+        this.tileOptions.updateFloatArray('colors', this.colors);
+        this.tileOptions.update();
+        break;
+      case 'visibility':
+        this.channelMapping[4 * index] = event.detail.props.data ? index : -1;
+        calculateChannelMapping(this.channelMapping);
+
+        this.channelRanges = calculateChannelRanges(this.channelMapping);
+        this.initializeUniformBuffer();
+        this.update();
+        break;
+    }
+    
+    event.stopPropagation();
+  }
+
+  private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
+    const target = event.detail.target.split('_');
+
+    switch (target[0]) {
+      case 'channel':
+        {
+          const index = Number(target[1]);
+
+          this.intensityRanges[4 * index + 1] = event.detail.props.value;
+          this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+          this.tileOptions.update();      
+        }
+        break;
+      case 'dimension':
+        {
+          const index = Number(target[1]);
+
+          this.dimensions[index].value = event.detail.props.value;
+          this.update();
+        }
+        break;
+      default: 
+        return;
+    }
+
+    event.stopPropagation();
   }
 }
 

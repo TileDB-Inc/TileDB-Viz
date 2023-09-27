@@ -1,5 +1,5 @@
 import { Events } from './constants/events';
-import { GUIEvent } from './types/index';
+import { GUIEvent, ButtonProps, SliderProps, TextBoxProps } from './types/index';
 
 export { default as FloatingButton } from './FloatingButton.component.svelte';
 export { default as MenuPanel } from './Menu.component.svelte';
@@ -21,4 +21,4 @@ export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
 
 export { Events }
-export type { GUIEvent }
+export type { GUIEvent, ButtonProps, SliderProps, TextBoxProps }
