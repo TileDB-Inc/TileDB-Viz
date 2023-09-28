@@ -1,4 +1,4 @@
-import { Scene, Camera, UniformBuffer } from '@babylonjs/core';
+import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
 import { Attribute, Dimension } from '../../../types';
 import {
   Channel,
@@ -29,7 +29,7 @@ export class ImageManager extends Manager<ImageTile> {
   private channelMapping: Int32Array;
   private intensityRanges: Float32Array;
   private colors: Float32Array;
-  private tileOptions: UniformBuffer;
+  private tileOptions!: UniformBuffer;
   private levels: LevelRecord[];
   private dimensions: Dimension[];
   private attributes: Attribute[];
@@ -37,6 +37,7 @@ export class ImageManager extends Manager<ImageTile> {
   private namespace: string;
 
   private selectedAttribute!: Attribute;
+  private hasMinimap: boolean;
 
   constructor(
     scene: Scene,
@@ -86,20 +87,10 @@ export class ImageManager extends Manager<ImageTile> {
         .flat() ?? []
     );
 
-    this.tileOptions = new UniformBuffer(scene.getEngine());
-    this.tileOptions.addUniform(
-      'channelMapping',
-      4,
-      this.channelMapping.length / 4
-    );
-    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
-    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
-
-    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
-    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
-    this.tileOptions.updateFloatArray('colors', this.colors);
-
-    this.tileOptions.update();
+    this.initializeUniformBuffer();
+    this.hasMinimap =
+      (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??
+        0) > 0;
 
     window.addEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
       capture: true
@@ -112,9 +103,9 @@ export class ImageManager extends Manager<ImageTile> {
     });
   }
 
-  public loadTiles(camera: Camera, zoom: number): void {
-    for (const [, value] of this.tileStatus) {
-      value.evict = true;
+  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+    for (const [key, value] of this.tileStatus) {
+      value.evict = this.hasMinimap ? !key.endsWith('0') : true;
     }
 
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
@@ -202,12 +193,6 @@ export class ImageManager extends Manager<ImageTile> {
     }
   }
 
-  public dispose(): void {
-    for (const [, status] of this.tileStatus) {
-      status.tile?.dispose();
-    }
-  }
-
   public onImageTileDataLoad(id: string, response: ImageResponse) {
     if (response.canceled) {
       return;
@@ -229,6 +214,7 @@ export class ImageManager extends Manager<ImageTile> {
         this.tileSize,
         this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0,
         this.tileOptions,
+        this.hasMinimap,
         response,
         this.scene
       );
@@ -306,7 +292,6 @@ export class ImageManager extends Manager<ImageTile> {
     this.tileOptions.updateFloatArray('colors', this.colors);
 
     this.tileOptions.update();
-
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
@@ -334,8 +319,6 @@ export class ImageManager extends Manager<ImageTile> {
         this.update();
         break;
     }
-    
-    event.stopPropagation();
   }
 
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
@@ -362,8 +345,6 @@ export class ImageManager extends Manager<ImageTile> {
       default: 
         return;
     }
-
-    event.stopPropagation();
   }
 }
 

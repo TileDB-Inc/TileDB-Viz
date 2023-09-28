@@ -3,7 +3,8 @@ import {
   VertexData,
   Scene,
   RawTexture2DArray,
-  UniformBuffer
+  UniformBuffer,
+  Vector3
 } from '@babylonjs/core';
 import { ImageShaderMaterial } from '../../materials/imageShaderMaterial';
 import { Tile, UpdateOptions } from '../tile';
@@ -20,6 +21,7 @@ export class ImageTile extends Tile<ImageResponse> {
     tileSize: number,
     channelCount: number,
     tileOptions: UniformBuffer,
+    hasMinimap: boolean,
     response: ImageResponse,
     scene: Scene
   ) {
@@ -35,23 +37,18 @@ export class ImageTile extends Tile<ImageResponse> {
 
     const vertexData = new VertexData();
     vertexData.positions = [
-      left,
-      -level,
-      bottom,
-      right,
-      -level,
-      bottom,
-      right,
-      -level,
-      top,
-      left,
-      -level,
-      top
+      left, 0, bottom,
+      right, 0, bottom,
+      right, 0, top,
+      left, 0, top
     ];
     vertexData.uvs = [0, 0, 1, 0, 1, 1, 0, 1];
-    vertexData.indices = [0, 3, 1, 1, 3, 2];
+    vertexData.indices = [0, 1, 3, 1, 2, 3];
 
     vertexData.applyToMesh(this.mesh);
+    this.mesh.position = new Vector3(0, level * 0.001, 0);
+    this.mesh.scaling.z = -1
+    this.mesh.layerMask = hasMinimap ? 5 : 1;
 
     this.update({ uniformBuffer: tileOptions, response: response });
   }

@@ -2,8 +2,6 @@ import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
 import { Dimension, AssetEntry } from '../../types';
-import { ImageManager } from '../model/image/imageManager';
-import { MinimapManager } from '../model/image/minimap';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -12,10 +10,7 @@ import { MinimapManager } from '../model/image/minimap';
 class TileImageGUI {
   private rootDiv?: HTMLDivElement;
   private rootElement?: HTMLElement;
-  private tileset: ImageManager;
-  private minimap: MinimapManager;
   private uiWrapper!: HTMLDivElement;
-  private zoomCallback: (step: number) => void;
   private clearCache: () => void;
   private assetSelectionCallback: (
     namespace: string,
@@ -26,13 +21,10 @@ class TileImageGUI {
   private buttonEventHandler;
 
   constructor(
-    tileset: ImageManager,
-    minimap: MinimapManager,
     rootElement: HTMLElement,
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
-    zoomCallback: (step: number) => void,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -41,9 +33,6 @@ class TileImageGUI {
     ) => void
   ) {
     this.rootElement = rootElement;
-    this.tileset = tileset;
-    this.minimap = minimap;
-    this.zoomCallback = zoomCallback;
     this.clearCache = clearCache;
     this.assetSelectionCallback = assetSelectionCallback;
 
@@ -108,15 +97,6 @@ class TileImageGUI {
     const customEvent = event as CustomEvent<{ id: string; props?: any }>;
 
     switch (customEvent.detail.id) {
-      case 'zoom_plus':
-        this.zoomCallback(0.25);
-        break;
-      case 'zoom_minus':
-        this.zoomCallback(-0.25);
-        break;
-      case 'zoom_reset':
-        this.zoomCallback(-1000);
-        break;
       case 'cache_clear':
         this.clearCache();
         break;

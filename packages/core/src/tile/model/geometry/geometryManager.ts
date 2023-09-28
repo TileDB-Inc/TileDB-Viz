@@ -5,7 +5,7 @@ import {
   RequestType
 } from '../../types';
 import { GeometryTile } from './geometry';
-import { Scene, Camera } from '@babylonjs/core';
+import { Scene, ArcRotateCamera } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
@@ -56,7 +56,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     );
   }
 
-  public loadTiles(camera: Camera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
     for (const [, value] of this.tileStatus) {
       value.evict = true;
     }
