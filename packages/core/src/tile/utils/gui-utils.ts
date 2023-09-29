@@ -69,8 +69,8 @@ class TileImageGUI {
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
           : ''
       }
-      <cache-control>
-      </cache-control>
+      <options-panel>
+      </options-panel>
     </sidebar-menu>
       `;
 

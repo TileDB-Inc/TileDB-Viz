@@ -107,7 +107,7 @@
             </defs>
           </svg>
         </button>
-        <p class="Viewer-ZoomControl__label">{pprintZoom(Number(zoom))}</p>
+        <p class="Viewer-ZoomControl__label">{Number(100 * zoom).toFixed(0) + ' %'}</p>
       </div>
       <div class="Viewer-ZoomControl__group">
         <p class="Viewer-ZoomControl__label">Reset view</p>

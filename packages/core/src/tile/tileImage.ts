@@ -1,5 +1,5 @@
 import { TileDBVisualization } from '../base';
-import { Scene } from '@babylonjs/core';
+import { Color3, DirectionalLight, HemisphericLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
@@ -17,6 +17,7 @@ import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { CameraManager } from './utils/camera-utils';
+import { GeometryPipeline } from './pipelines/pickingPipeline';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -82,6 +83,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     });
 
     if (this.options.geometryArrayID) {
+      const light = new DirectionalLight('light', new Vector3(0.5, -1, 0.5), this.scene);
+      light.diffuse = new Color3(0.2, 0.4, 0.8);
+      light.specular = new Color3(0, 0, 0.8);
+      light.intensity = 0.5;
+  
+      const ambient = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), this.scene);
+      ambient.diffuse = new Color3(0.2, 0.4, 0.8);
+      ambient.specular = new Color3(0, 0, 0.8);
+      ambient.intensity = 0.5;
+
       this.geometryMetadata = await getGeometryMetadata(this.options);
 
       const originalLevel = this.levels.at(-1);
@@ -91,11 +102,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           'Unable to construct geometry manager. Base image level is undefined'
         );
       } else {
+        const pipeline = new GeometryPipeline(this.scene);
+
         this.geometryManager = new GeometryManager(
           this.scene,
           this.workerPool,
           this.tileSize,
           {
+            renderTarget: pipeline.initializeRTT(),
             arrayID: this.options.geometryArrayID,
             namespace: this.options.namespace,
             metadata: this.geometryMetadata,
@@ -106,7 +120,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
               originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
             transformationCoefficients:
               this.metadata.transformationCoefficients ?? [],
-            nativeZoom: this.levels.length - 1
+            nativeZoom: this.levels.length - 1,
+            metersPerUnit: (this.metadata.transformationCoefficients?.at(1) ?? 1) * 2 ** (this.levels.length - 1)
           }
         );
 
