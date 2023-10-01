@@ -26,7 +26,7 @@ import {
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
-import { Events, GUIEvent } from '@tiledb-inc/viz-components';
+import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
 
 interface GeometryOptions {
   arrayID: string;
@@ -262,18 +262,24 @@ export class GeometryManager extends Manager<GeometryTile> {
     );
   }
 
-  private pickingHandler(e: CustomEvent<any>) {
-    switch (e.detail.type) {
-      case 'GEOMETRY_SELECT':
+  private pickingHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'geometry') return;
+
+    switch (event.detail.props.command) {
+      case 'clear':
         this.selectedPolygon?.dispose(false, true);
         this.highlightLayer.removeAllMeshes();
         break;
+      default: 
+        return;
     }
   }
 
   public setupEventListeners(): void {
     window.addEventListener(
-      Events.PICK_OBJECT,
+      Events.BUTTON_CLICK,
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
@@ -295,7 +301,7 @@ export class GeometryManager extends Manager<GeometryTile> {
 
   public stopEventListeners(): void {
     window.removeEventListener(
-      Events.PICK_OBJECT,
+      Events.BUTTON_CLICK,
       this.pickingHandler.bind(this) as any,
       { capture: true }
     ); 

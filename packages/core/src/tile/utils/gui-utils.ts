@@ -1,7 +1,7 @@
 import '@tiledb-inc/viz-components';
 import { Events } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
-import { Dimension, AssetEntry } from '../../types';
+import { Dimension, AssetEntry, Attribute } from '../../types';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -25,6 +25,7 @@ class TileImageGUI {
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
+    geometryAttributes: Attribute[] | undefined,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -67,6 +68,13 @@ class TileImageGUI {
       ${
         assets.length > 0
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
+          : ''
+      }
+      ${
+        geometryAttributes !== undefined
+          ? `<geometry-panel attributes='${JSON.stringify(
+              geometryAttributes
+            )}'></geometry-panel>`
           : ''
       }
       <options-panel>

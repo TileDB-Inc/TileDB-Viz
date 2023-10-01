@@ -36,6 +36,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private tileSize = 1024;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
+  private geometryAttributes?: Attribute[];
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -93,7 +94,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       ambient.specular = new Color3(0, 0, 0.8);
       ambient.intensity = 0.5;
 
-      this.geometryMetadata = await getGeometryMetadata(this.options);
+      [this.geometryMetadata, this.geometryAttributes] =
+        await getGeometryMetadata(this.options);
 
       const originalLevel = this.levels.at(-1);
 
@@ -181,6 +183,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       ) ?? [],
       this.dimensions,
       this.groupAssets,
+      this.geometryAttributes,
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)

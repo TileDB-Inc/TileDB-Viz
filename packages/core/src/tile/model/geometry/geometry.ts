@@ -18,10 +18,7 @@ export class GeometryTile extends Tile<GeometryResponse> {
     super(scene, response);
 
     const material = PolygonShaderMaterial(this.index.toString(), this.scene);
-    this.mesh.dispose();
 
-    this.mesh = new Mesh(this.index.toString(), this.scene);
-    this.mesh.alwaysSelectAsActiveMesh = true;
     this.mesh.scaling.z = -1;
     this.mesh.layerMask = 3;
     this.mesh.renderingGroupId = 1;
@@ -56,9 +53,5 @@ export class GeometryTile extends Tile<GeometryResponse> {
         )
       );
     }
-  }
-
-  public dispose() {
-    this.mesh.dispose(false, true);
   }
 }

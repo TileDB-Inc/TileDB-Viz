@@ -10,7 +10,8 @@ import {
   ImageResponse,
   GeometryResponse,
   GeometryMessage,
-  GeometryInfoMessage
+  GeometryInfoMessage,
+  GeometryInfoResponse
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
@@ -489,8 +490,6 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   const indices: number[] = [];
   const faceMapping: bigint[] = [];
 
-  console.time(`Tile ${id}`);
-
   switch (request.type) {
     case 'Polygon':
       for (let index = 0; index < wkbs.length; ++index) {
@@ -513,8 +512,6 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       console.warn(`Unknown geometry type "${request.type}"`);
       return;
   }
-
-  console.timeEnd(`Tile ${id}`);
 
   const rawPositions = Float32Array.from(positions);
   const rawIds = BigInt64Array.from(faceMapping);
@@ -562,4 +559,166 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       [rawPositions.buffer, rawNormals.buffer, rawIds.buffer, rawIndices.buffer] as any
     );
   }
+}
+
+async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
+  if (!tiledbClient) {
+    console.warn('TileDB client is not initialized');
+    return;
+  }
+
+  const [x, y] = request.index;
+  const tileSize = request.tileSize;
+
+  const cachedPositions = (await getQueryDataFromCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'position'}_${x}_${y}`
+  )) as Float32Array | undefined;
+
+  const cachedIds = (await getQueryDataFromCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'ids'}_${x}_${y}`
+  )) as BigInt64Array | undefined;
+
+  const cachedNormals = await getQueryDataFromCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'normal'}_${x}_${y}`
+  ) as Float32Array | undefined;
+
+  const cachedIndices = await getQueryDataFromCache(
+    `${request.arrayID}_${tileSize}`,
+    `${'indices'}_${x}_${y}`
+  ) as Int32Array | undefined;
+
+  if (cancelSignal || !(cachedPositions && cachedIds && cachedNormals && cachedIndices)) {
+    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    return;
+  }
+
+  let xRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  let yRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
+  let index = cachedIds.indexOf(request.id);
+  let startIndex = index;
+  let endIndex = index + 1;
+  while (index !== -1) {
+    const pointX = cachedPositions[3 * index];
+    const pointY = cachedPositions[3 * index + 2];
+
+    xRange[0] = Math.min(xRange[0], pointX);
+    xRange[1] = Math.max(xRange[1], pointX);
+    yRange[0] = Math.min(yRange[0], pointY);
+    yRange[1] = Math.max(yRange[1], pointY);
+
+    endIndex = index + 1;
+    index = cachedIds.indexOf(request.id, index + 1);
+  }
+
+  const converter = proj4(request.geometryCRS, request.imageCRS);
+  const geotransformCoefficients = request.geotransformCoefficients;
+
+  xRange[0] =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xRange[0] +
+    geotransformCoefficients[2] * yRange[0];
+
+  yRange[0] =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xRange[0] +
+    geotransformCoefficients[5] * yRange[0];
+
+  xRange[1] =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xRange[1] +
+    geotransformCoefficients[2] * yRange[1];
+
+  yRange[1] =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xRange[1] +
+    geotransformCoefficients[5] * yRange[1];
+
+  const minLimit = converter.inverse([xRange[0], yRange[0]]);
+  const maxLimit = converter.inverse([xRange[1], yRange[1]]);
+
+  xRange = [minLimit[0], maxLimit[0]].sort();
+  yRange = [minLimit[1], maxLimit[1]].sort();
+
+  const query = {
+    layout: Layout.Unordered,
+    ranges: [xRange, yRange],
+    bufferSize: 20_000_000,
+    cancelToken: tokenSource?.token
+  };
+
+  const generator = tiledbClient.query.ReadQuery(
+    request.namespace,
+    request.arrayID,
+    query
+  );
+
+  const info = {} as any;
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+  const faceMapping: bigint[] = [];
+
+  try {
+    for await (const result of generator) {
+      const index = (result as any)[request.idAttribute].indexOf(request.id);
+
+      if (index === -1) {
+        continue;
+      }
+      info['_raw'] = {};
+      for (const [key, val] of Object.entries(result)) {
+        info['_raw'][key] = {values: [val[index]]};
+
+        if (key === request.idAttribute) {
+          continue;
+        } else if (key === request.geometryAttribute) {
+          let heights: number[] = [0];
+          if (request.heightAttribute) {
+            heights = Array.from((types as any)[request.heightAttribute.type.toLowerCase()].create((result as any)[request.heightAttribute.name])[index]);
+          }
+
+          parsePolygon(
+            val[index],
+            heights,
+            BigUint64Array.from([0n]),
+            BigInt64Array.from([0n]),
+            positions,
+            normals,
+            indices,
+            faceMapping,
+            converter,
+            geotransformCoefficients,
+            request.metersPerUnit
+          );
+          continue;
+        }
+
+        info[key] = val[index];
+      }
+    }
+  } catch (e) {
+    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    return;
+  }
+
+  self.postMessage({
+    id: id,
+    type: RequestType.GEOMETRY_INFO,
+    response: {
+      index: [],
+      canceled: cancelSignal,
+      info: info,
+      positions: Float32Array.from(positions),
+      indices: Int32Array.from(indices),
+      normals: Float32Array.from(normals),
+      ids: BigInt64Array.from([request.id]),
+      gtype: request.type
+    } as GeometryInfoResponse
+  } as WorkerResponse);
+
+  return;
 }
