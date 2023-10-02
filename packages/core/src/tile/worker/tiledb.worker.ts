@@ -328,25 +328,19 @@ async function geometryRequest(id: string, request: GeometryMessage) {
 
   const [x, y] = request.index;
   const tileSize = request.tileSize;
+  const cacheTableID = `${request.arrayID}_${tileSize}`;
 
   const cachedPositions = await getQueryDataFromCache(
-    `${request.arrayID}_${tileSize}`,
+    cacheTableID,
     `${'position'}_${x}_${y}`
   );
 
   if (cachedPositions) {
-    const cachedNormals = await getQueryDataFromCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'normal'}_${x}_${y}`
-    );
-    const cachedIds = await getQueryDataFromCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'ids'}_${x}_${y}`
-    );
-    const cachedIndices = await getQueryDataFromCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'indices'}_${x}_${y}`
-    );
+    const [cachedNormals, cachedIds, cachedIndices] = await Promise.all([
+      getQueryDataFromCache(cacheTableID, `${'normal'}_${x}_${y}`),
+      getQueryDataFromCache(cacheTableID, `${'ids'}_${x}_${y}`),
+      getQueryDataFromCache(cacheTableID, `${'indices'}_${x}_${y}`)
+    ]);
 
     if (cancelSignal) {
       self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
@@ -465,26 +459,12 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   }
 
   if (wkbs.length === 0) {
-    await writeToCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'position'}_${x}_${y}`,
-      new Float32Array()
-    );
-    await writeToCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'normal'}_${x}_${y}`,
-      new Float32Array()
-    );
-    await writeToCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'ids'}_${x}_${y}`,
-      new BigInt64Array()
-    );
-    await writeToCache(
-      `${request.arrayID}_${tileSize}`,
-      `${'indices'}_${x}_${y}`,
-      new Int32Array()
-    );
+    await Promise.all([
+      writeToCache(cacheTableID, `${'position'}_${x}_${y}`, new Float32Array()),
+      writeToCache(cacheTableID, `${'normal'}_${x}_${y}`, new Float32Array()),
+      writeToCache(cacheTableID, `${'ids'}_${x}_${y}`, new BigInt64Array()),
+      writeToCache(cacheTableID, `${'indices'}_${x}_${y}`, new Int32Array())
+    ]);
 
     self.postMessage({
       id: id,
@@ -536,26 +516,12 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   const rawIndices = Int32Array.from(indices);
   const rawNormals = Float32Array.from(normals);
 
-  await writeToCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'position'}_${x}_${y}`,
-    rawPositions
-  );
-  await writeToCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'normal'}_${x}_${y}`,
-    rawNormals
-  );
-  await writeToCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'ids'}_${x}_${y}`,
-    rawIds
-  );
-  await writeToCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'indices'}_${x}_${y}`,
-    rawIndices
-  );
+  await Promise.all([
+    writeToCache(cacheTableID, `${'position'}_${x}_${y}`, rawPositions),
+    writeToCache(cacheTableID, `${'normal'}_${x}_${y}`, rawNormals),
+    writeToCache(cacheTableID, `${'ids'}_${x}_${y}`, rawIds),
+    writeToCache(cacheTableID, `${'indices'}_${x}_${y}`, rawIndices)
+  ]);
 
   if (cancelSignal) {
     self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
@@ -603,20 +569,7 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     `${'ids'}_${x}_${y}`
   )) as BigInt64Array | undefined;
 
-  const cachedNormals = (await getQueryDataFromCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'normal'}_${x}_${y}`
-  )) as Float32Array | undefined;
-
-  const cachedIndices = (await getQueryDataFromCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'indices'}_${x}_${y}`
-  )) as Int32Array | undefined;
-
-  if (
-    cancelSignal ||
-    !(cachedPositions && cachedIds && cachedNormals && cachedIndices)
-  ) {
+  if (cancelSignal || !(cachedPositions && cachedIds)) {
     self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
     return;
   }

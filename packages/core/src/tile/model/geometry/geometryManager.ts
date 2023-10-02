@@ -27,6 +27,7 @@ import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
 import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
+import { getCamera } from '../../utils/camera-utils';
 
 interface GeometryOptions {
   arrayID: string;
@@ -94,48 +95,44 @@ export class GeometryManager extends Manager<GeometryTile> {
       value.evict = true;
     }
 
-    if (zoom < this.nativeZoom) {
-      return;
-    }
+    if (zoom >= this.nativeZoom) {
+      const [minXIndex, maxXIndex, minYIndex, maxYIndex] =
+        this.getTileIndexRange(camera, this.nativeZoom);
 
-    const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
-      camera,
-      0
-    );
+      for (let x = minXIndex; x <= maxXIndex; ++x) {
+        for (let y = minYIndex; y <= maxYIndex; ++y) {
+          const tileIndex = `geometry_${x}_${y}`;
+          const status =
+            this.tileStatus.get(tileIndex) ??
+            ({ evict: false } as TileStatus<GeometryTile>);
 
-    for (let x = minXIndex; x <= maxXIndex; ++x) {
-      for (let y = minYIndex; y <= maxYIndex; ++y) {
-        const tileIndex = `geometry_${x}_${y}`;
-        const status =
-          this.tileStatus.get(tileIndex) ??
-          ({ evict: false } as TileStatus<GeometryTile>);
+          status.evict = false;
 
-        status.evict = false;
+          if (status.state === undefined) {
+            this.workerPool.postMessage({
+              type: RequestType.GEOMETRY,
+              id: tileIndex,
+              request: {
+                index: [x, y],
+                tileSize: this.tileSize / 2 ** this.nativeZoom,
+                arrayID: this.arrayID,
+                namespace: this.namespace,
+                idAttribute: this.metadata.idAttribute,
+                geometryAttribute: this.metadata.geometryAttribute,
+                pad: this.metadata.pad,
+                type: this.metadata.type,
+                imageCRS: this.baseCRS,
+                geometryCRS: this.metadata.crs,
+                geotransformCoefficients: this.transformationCoefficients,
+                metersPerUnit: this.metersPerUnit
+              } as GeometryMessage
+            } as DataRequest);
 
-        if (status.state === undefined) {
-          this.workerPool.postMessage({
-            type: RequestType.GEOMETRY,
-            id: tileIndex,
-            request: {
-              index: [x, y],
-              tileSize: this.tileSize,
-              arrayID: this.arrayID,
-              namespace: this.namespace,
-              idAttribute: this.metadata.idAttribute,
-              geometryAttribute: this.metadata.geometryAttribute,
-              pad: this.metadata.pad,
-              type: this.metadata.type,
-              imageCRS: this.baseCRS,
-              geometryCRS: this.metadata.crs,
-              geotransformCoefficients: this.transformationCoefficients,
-              metersPerUnit: this.metersPerUnit
-            } as GeometryMessage
-          } as DataRequest);
+            this.updateLoadingStatus(false);
 
-          this.updateLoadingStatus(false);
-
-          status.state = TileState.LOADING;
-          this.tileStatus.set(tileIndex, status);
+            status.state = TileState.LOADING;
+            this.tileStatus.set(tileIndex, status);
+          }
         }
       }
     }
@@ -187,7 +184,7 @@ export class GeometryManager extends Manager<GeometryTile> {
         request: {
           id: new BigInt64Array(buffer.buffer)[0],
           index: index,
-          tileSize: this.tileSize,
+          tileSize: this.tileSize / 2 ** this.nativeZoom,
           arrayID: this.arrayID,
           namespace: this.namespace,
           idAttribute: this.metadata.idAttribute,
@@ -292,15 +289,26 @@ export class GeometryManager extends Manager<GeometryTile> {
       (pointerInfo: PointerInfo) => {
         switch (pointerInfo.type) {
           case PointerEventTypes.POINTERTAP:
-            if (!pointerInfo.pickInfo?.pickedMesh) {
-              return;
-            }
+            {
+              const camera = getCamera(this.scene, 'Main');
+              const pickInfo = this.scene.pick(
+                pointerInfo.event.offsetX,
+                pointerInfo.event.offsetY,
+                undefined,
+                true,
+                camera
+              );
 
-            this.pickGeometry(
-              pointerInfo.pickInfo?.pickedMesh,
-              pointerInfo.event.offsetX,
-              pointerInfo.event.offsetY
-            );
+              if (!pickInfo.pickedMesh) {
+                return;
+              }
+
+              this.pickGeometry(
+                pickInfo.pickedMesh,
+                pointerInfo.event.offsetX,
+                pointerInfo.event.offsetY
+              );
+            }
             break;
         }
       }

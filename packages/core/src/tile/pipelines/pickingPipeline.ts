@@ -1,21 +1,30 @@
-import { Scene, RenderTargetTexture, Constants, Color4 } from '@babylonjs/core';
+import {
+  Scene,
+  RenderTargetTexture,
+  Constants,
+  Color4,
+  ArcRotateCamera
+} from '@babylonjs/core';
+import { getCamera } from '../utils/camera-utils';
 
 export class GeometryPipeline {
   private scene: Scene;
   public renderTargets: RenderTargetTexture[] = [];
+  private camera: ArcRotateCamera;
   private width!: number;
   private height!: number;
 
   constructor(scene: Scene) {
     this.scene = scene;
+    this.camera = getCamera(this.scene, 'Main') as ArcRotateCamera;
   }
 
   initializeRTT(): RenderTargetTexture {
     const geometryRenderTarget = new RenderTargetTexture(
       'geometryRenderTarget',
       {
-        width: this.scene.getEngine()._gl.canvas.width,
-        height: this.scene.getEngine()._gl.canvas.height
+        width: this.scene.getEngine().getRenderWidth(),
+        height: this.scene.getEngine().getRenderHeight()
       },
       this.scene,
       {
@@ -28,6 +37,7 @@ export class GeometryPipeline {
     );
 
     geometryRenderTarget.clearColor = new Color4(0, 0, 0, 0);
+    geometryRenderTarget.activeCamera = this.camera;
 
     if (!geometryRenderTarget.renderTarget) {
       throw new Error('Render target initialization failed');

@@ -57,6 +57,7 @@ export class ImageTile extends Tile<ImageResponse> {
     this.mesh.position = new Vector3(0, level * 0.001, 0);
     this.mesh.scaling.z = -1;
     this.mesh.layerMask = hasMinimap ? 5 : 1;
+    this.mesh.isPickable = false;
 
     this.update({ uniformBuffer: tileOptions, response: response });
   }

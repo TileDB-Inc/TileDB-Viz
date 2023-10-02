@@ -88,6 +88,21 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
+    this.baseWidth =
+      this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
+    this.baseHeight =
+      this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
+
+    this.scene.getEngine().disableUniformBuffers = false;
+
+    this.cameraManager = new CameraManager(
+      this.scene,
+      0.25,
+      this.baseWidth,
+      this.baseHeight
+    );
+    this.cameraManager.upperZoomLimit = 2 ** (this.levels.length + 1);
+
     if (this.options.geometryArrayID) {
       const light = new DirectionalLight(
         'light',
@@ -119,6 +134,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       } else {
         const pipeline = new GeometryPipeline(this.scene);
 
+        const transformationCoefficients =
+          this.metadata.transformationCoefficients ?? [];
+        const nativeZoom = this.levels.length - 1;
+        transformationCoefficients[1] *= 2 ** nativeZoom;
+        transformationCoefficients[2] *= 2 ** nativeZoom;
+        transformationCoefficients[4] *= 2 ** nativeZoom;
+        transformationCoefficients[5] *= 2 ** nativeZoom;
+
         this.geometryManager = new GeometryManager(
           this.scene,
           this.workerPool,
@@ -133,29 +156,18 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
               originalLevel.dimensions[originalLevel.axes.indexOf('X')],
             baseHeight:
               originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
-            transformationCoefficients:
-              this.metadata.transformationCoefficients ?? [],
-            nativeZoom: this.levels.length - 1,
-            metersPerUnit:
-              (this.metadata.transformationCoefficients?.at(1) ?? 1) *
-              2 ** (this.levels.length - 1)
+            transformationCoefficients: transformationCoefficients,
+            nativeZoom: nativeZoom,
+            metersPerUnit: transformationCoefficients[1]
           }
         );
 
         await initializeCacheDB([
-          `${this.options.geometryArrayID}_${this.tileSize}`
+          `${this.options.geometryArrayID}_${this.tileSize / 2 ** nativeZoom}`
         ]);
       }
     }
 
-    this.baseWidth =
-      this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
-    this.baseHeight =
-      this.levels[0].dimensions[this.levels[0].axes.indexOf('Y')];
-
-    await initializeCacheDB([
-      `${this.levels[0].id}_${Math.max(this.baseWidth, this.baseHeight)}`
-    ]);
     await initializeCacheDB(
       this.levels
         .map(x => `${x.id}_${this.tileSize}`)
@@ -164,20 +176,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             array.indexOf(value) === index
         )
     );
-
-    this.scene.getEngine().disableUniformBuffers = false;
-
-    this.cameraManager = new CameraManager(
-      this.scene,
-      0.25,
-      this.baseWidth,
-      this.baseHeight
-    );
-    this.cameraManager.upperZoomLimit = 2 ** (this.levels.length + 1);
-
-    if (this.scene.activeCamera === null) {
-      throw new Error('Failed to initialize camera');
-    }
 
     this.tileset = new ImageManager(
       this.scene,

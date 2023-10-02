@@ -52,7 +52,5 @@ export function PolygonShaderMaterial(
     }
   );
 
-  //material.backFaceCulling = false;
-
   return material;
 }

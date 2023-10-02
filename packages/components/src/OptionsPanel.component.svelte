@@ -146,7 +146,7 @@
         </p>
       </div>
     </div>
-    <ToggleSwitch id={'minimap'} command={'visibility'} label={'Display minimap'} value={true} />
+    <ToggleSwitch id={'camera_minimap'} command={'visibility'} label={'Display minimap'} value={true} />
     <div style="display: flex; flex-direction:column; gap: 8px;">
       <div style="display: flex;">
         <Slider
