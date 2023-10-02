@@ -99,7 +99,7 @@
             class="Viewer-GeometrySelector__button"
             on:click={() => clearSelectedGeometry()}
           >
-            Cancel
+            Clear
           </button>
         </div>
       </div>

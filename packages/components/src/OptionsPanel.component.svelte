@@ -6,18 +6,23 @@
   import ToggleSwitch from './ToggleSwitch.component.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { Events } from './constants/events';
-  import { GUIEvent, ButtonProps, TextInputProps } from './types/index';
+  import { GUIEvent, ButtonProps, TextBoxProps } from './types/index';
 
   let tiles = 0;
   let diskSpace = 0; 
   let cameraTargetX = 0;
   let cameraTargetY = 0;
 
-  function cacheInfoUpdate(e) {
-    if (e.detail.type === 'CACHE_INFO')
-    {
-      tiles = e.detail.tiles;
-      diskSpace = e.detail.diskSpace;
+  function optionsInfoUpdate(e) {
+    switch (e.detail.type) {
+      case 'CACHE_INFO':
+        tiles = e.detail.tiles;
+        diskSpace = e.detail.diskSpace;
+        break;
+      case 'CAMERA_POSITION':
+        cameraTargetX = e.detail.cameraTarget.x.toFixed(2);
+        cameraTargetY = e.detail.cameraTarget.z.toFixed(2);
+        break;
     }
   }
 
@@ -37,7 +42,7 @@
 
   function updateCameraTarget(event: Event, axis: string) {
     window.dispatchEvent(
-      new CustomEvent<GUIEvent<TextInputProps>>(Events.TEXT_INPUT_CHANGE, {
+      new CustomEvent<GUIEvent<TextBoxProps>>(Events.TEXT_INPUT_CHANGE, {
         bubbles: true,
         detail: {
           target: `camera_target_${axis}`,
@@ -52,7 +57,7 @@
   onMount(() => {
     window.addEventListener(
       Events.ENGINE_INFO_UPDATE,
-      cacheInfoUpdate,
+      optionsInfoUpdate,
       {
         capture: true
       }
@@ -60,7 +65,7 @@
   });
 
   onDestroy(() => {
-    window.removeEventListener(Events.ENGINE_INFO_UPDATE, cacheInfoUpdate, {
+    window.removeEventListener(Events.ENGINE_INFO_UPDATE, optionsInfoUpdate, {
       capture: true
     });
   });

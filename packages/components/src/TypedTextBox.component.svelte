@@ -11,7 +11,7 @@
   </div>
   <div class='Viewer-TypedInput__input'>
     <input type="text" value="{value}" placeholder="Empty" readonly={true}>
-    <div class='Viewer-TypedInput__pill'>{attribute.type}</div>
+    <div class='Viewer-TypedInput__pill' title={attribute.type}>{attribute.type}</div>
   </div>
 </div>
 

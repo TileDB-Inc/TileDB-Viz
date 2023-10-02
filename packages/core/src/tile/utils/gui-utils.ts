@@ -1,5 +1,5 @@
 import '@tiledb-inc/viz-components';
-import { Events } from '@tiledb-inc/viz-components';
+import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
 import { Dimension, AssetEntry, Attribute } from '../../types';
 
@@ -82,9 +82,9 @@ class TileImageGUI {
     </sidebar-menu>
       `;
 
-    this.buttonEventHandler = (e: Event) => this.buttonHandler(e);
+    this.buttonEventHandler = (e: CustomEvent<GUIEvent<ButtonProps>>) => this.buttonHandler(e);
 
-    window.addEventListener(Events.BUTTON_CLICK, this.buttonEventHandler, {
+    window.addEventListener(Events.BUTTON_CLICK, this.buttonEventHandler as any, {
       capture: true
     });
 
@@ -101,23 +101,28 @@ class TileImageGUI {
     this.rootElement?.removeChild(this.uiWrapper);
   }
 
-  private buttonHandler(event: Event) {
-    const customEvent = event as CustomEvent<{ id: string; props?: any }>;
-
-    switch (customEvent.detail.id) {
-      case 'cache_clear':
-        this.clearCache();
-        break;
-      case 'asset_selection':
-        this.assetSelectionCallback(
-          customEvent.detail.props.namespace,
-          customEvent.detail.props.groupID,
-          customEvent.detail.props.arrayID
-        );
-        break;
-      default:
-        console.warn(`Unrecognized event. Event ID: ${customEvent.detail.id}`);
-        break;
+  private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+    if (event.detail.target === 'cache') {
+      switch (event.detail.props.command) {
+        case 'clear':
+          this.clearCache();
+          break;
+        default:
+          return;
+      }
+    }
+    else if (event.detail.target === 'asset') {
+      switch (event.detail.props.command) {
+        case 'select':
+          this.assetSelectionCallback(
+            event.detail.props.data.namespace,
+            event.detail.props.data.groupID,
+            event.detail.props.data.arrayID
+          );
+          break;
+        default:
+          return;
+      }
     }
   }
 }

@@ -1,5 +1,4 @@
 import {
-  Mesh,
   VertexData,
   Scene,
   RenderTargetTexture,
