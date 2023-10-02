@@ -14,7 +14,12 @@ import { Manager, TileStatus, TileState } from '../manager';
 import { ImageTile } from './image';
 import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
-import { Events, GUIEvent, ButtonProps, SliderProps } from '@tiledb-inc/viz-components';
+import {
+  Events,
+  GUIEvent,
+  ButtonProps,
+  SliderProps
+} from '@tiledb-inc/viz-components';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -92,15 +97,27 @@ export class ImageManager extends Manager<ImageTile> {
       (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??
         0) > 0;
 
-    window.addEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
-      capture: true
-    });
-    window.addEventListener(Events.COLOR_CHANGE, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
-    window.addEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
   }
 
   public loadTiles(camera: ArcRotateCamera, zoom: number): void {
@@ -270,20 +287,36 @@ export class ImageManager extends Manager<ImageTile> {
   }
 
   protected stopEventListeners(): void {
-    window.removeEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
-      capture: true
-    });
-    window.removeEventListener(Events.COLOR_CHANGE, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
-    window.removeEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
   }
 
   private initializeUniformBuffer() {
     this.tileOptions = new UniformBuffer(this.scene.getEngine());
-    this.tileOptions.addUniform('channelMapping', 4, this.channelMapping.length / 4);
+    this.tileOptions.addUniform(
+      'channelMapping',
+      4,
+      this.channelMapping.length / 4
+    );
     this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
     this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
 
@@ -297,7 +330,9 @@ export class ImageManager extends Manager<ImageTile> {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'channel') return;
+    if (target[0] !== 'channel') {
+      return;
+    }
 
     const index = Number(target[1]);
 
@@ -306,7 +341,7 @@ export class ImageManager extends Manager<ImageTile> {
         this.colors[4 * index] = event.detail.props.data.r / 255;
         this.colors[4 * index + 1] = event.detail.props.data.g / 255;
         this.colors[4 * index + 2] = event.detail.props.data.b / 255;
-  
+
         this.tileOptions.updateFloatArray('colors', this.colors);
         this.tileOptions.update();
         break;
@@ -331,7 +366,7 @@ export class ImageManager extends Manager<ImageTile> {
 
           this.intensityRanges[4 * index + 1] = event.detail.props.value;
           this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
-          this.tileOptions.update();      
+          this.tileOptions.update();
         }
         break;
       case 'dimension':
@@ -342,7 +377,7 @@ export class ImageManager extends Manager<ImageTile> {
           this.update();
         }
         break;
-      default: 
+      default:
         return;
     }
   }

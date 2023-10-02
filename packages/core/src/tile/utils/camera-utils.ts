@@ -8,7 +8,13 @@ import {
   Quaternion
 } from '@babylonjs/core';
 import { MinimapPipeline } from '../pipelines/minimapPostProcess';
-import { Events, GUIEvent, ButtonProps, SliderProps, TextBoxProps } from '@tiledb-inc/viz-components';
+import {
+  Events,
+  GUIEvent,
+  ButtonProps,
+  SliderProps,
+  TextBoxProps
+} from '@tiledb-inc/viz-components';
 
 const MINIMAP_OFFSET = 20;
 const MINIMAP_MAX_SIZE = 200;
@@ -87,18 +93,34 @@ export class CameraManager {
       minimapPipeline.initializePostProcess();
     }
 
-    window.addEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this) as any, {
-      capture: true
-    });
-    window.addEventListener(Events.TEXT_INPUT_CHANGE, this.textboxHandler.bind(this) as any, {
-      capture: true
-    });
-    window.addEventListener(Events.BUTTON_CLICK, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
-    window.addEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this) as any, {
-      capture: true
-    });
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.TEXT_INPUT_CHANGE,
+      this.textboxHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.BUTTON_CLICK,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
 
     this.resizeCameraViewport();
     this.setupCameraInput();
@@ -144,11 +166,13 @@ export class CameraManager {
   private textboxHandler(event: CustomEvent<GUIEvent<TextBoxProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'camera') return;
+    if (target[0] !== 'camera') {
+      return;
+    }
 
     switch (target[1]) {
       case 'target':
-        this.targetUpdate(target[2], Number(event.detail.props.value))
+        this.targetUpdate(target[2], Number(event.detail.props.value));
         break;
     }
 
@@ -156,7 +180,7 @@ export class CameraManager {
   }
 
   private targetUpdate(axis: string, value: number) {
-    let offset = Vector3.Zero();
+    const offset = Vector3.Zero();
 
     switch (axis) {
       case 'X':
@@ -174,15 +198,29 @@ export class CameraManager {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'camera') return;
+    if (target[0] !== 'camera') {
+      return;
+    }
 
     if (target[1] === 'zoom') {
       switch (event.detail.props.command) {
         case 'in':
-          this.zoom = Math.max(this.lowerZoomLimit, Math.min(this.upperZoomLimit, 2 ** (Math.log2(this.zoom) + ZOOM_STEP)));
+          this.zoom = Math.max(
+            this.lowerZoomLimit,
+            Math.min(
+              this.upperZoomLimit,
+              2 ** (Math.log2(this.zoom) + ZOOM_STEP)
+            )
+          );
           break;
         case 'out':
-          this.zoom = Math.max(this.lowerZoomLimit, Math.min(this.upperZoomLimit, 2 ** (Math.log2(this.zoom) - ZOOM_STEP)));
+          this.zoom = Math.max(
+            this.lowerZoomLimit,
+            Math.min(
+              this.upperZoomLimit,
+              2 ** (Math.log2(this.zoom) - ZOOM_STEP)
+            )
+          );
           break;
         case 'reset':
           this.zoom = this.lowerZoomLimit;
@@ -214,7 +252,9 @@ export class CameraManager {
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'camera') return;
+    if (target[0] !== 'camera') {
+      return;
+    }
 
     switch (target[1]) {
       case 'pitch':
@@ -299,10 +339,7 @@ export class CameraManager {
 
             this.zoom = Math.max(
               this.lowerZoomLimit,
-              Math.min(
-                this.upperZoomLimit,
-                2 ** (Math.log2(this.zoom) + delta)
-              )
+              Math.min(this.upperZoomLimit, 2 ** (Math.log2(this.zoom) + delta))
             );
 
             this.resizeCameraViewport();
@@ -322,18 +359,34 @@ export class CameraManager {
   }
 
   public dispose() {
-    window.removeEventListener(Events.SLIDER_CHANGE, this.sliderHandler.bind(this)  as any, {
-      capture: true
-    });
-    window.removeEventListener(Events.TEXT_INPUT_CHANGE, this.textboxHandler.bind(this)  as any, {
-      capture: true
-    });
-    window.removeEventListener(Events.BUTTON_CLICK, this.buttonHandler.bind(this)  as any, {
-      capture: true
-    });
-    window.removeEventListener(Events.TOGGLE_INPUT_CHANGE, this.buttonHandler.bind(this)  as any, {
-      capture: true
-    });
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.TEXT_INPUT_CHANGE,
+      this.textboxHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.BUTTON_CLICK,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
 
     this.mainCamera.dispose();
     this.minimapCamera?.dispose();
@@ -348,7 +401,10 @@ export class CameraManager {
   }
 }
 
-export function getCamera(scene: Scene, name: string): ArcRotateCamera | undefined {
+export function getCamera(
+  scene: Scene,
+  name: string
+): ArcRotateCamera | undefined {
   const cameras = scene.activeCameras?.filter(x => x.name === name);
 
   if (!cameras?.length) {

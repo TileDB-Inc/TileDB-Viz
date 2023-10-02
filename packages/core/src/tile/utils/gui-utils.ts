@@ -54,7 +54,7 @@ class TileImageGUI {
     <status-overlay>
     </status-overlay>
     <sidebar-menu>
-      <zoom-control zoom='-2'>
+      <zoom-control zoom='0.25'>
       </zoom-control>
       <channel-panel channels='${JSON.stringify(channels)}'>
       </channel-panel>
@@ -82,11 +82,16 @@ class TileImageGUI {
     </sidebar-menu>
       `;
 
-    this.buttonEventHandler = (e: CustomEvent<GUIEvent<ButtonProps>>) => this.buttonHandler(e);
+    this.buttonEventHandler = (e: CustomEvent<GUIEvent<ButtonProps>>) =>
+      this.buttonHandler(e);
 
-    window.addEventListener(Events.BUTTON_CLICK, this.buttonEventHandler as any, {
-      capture: true
-    });
+    window.addEventListener(
+      Events.BUTTON_CLICK,
+      this.buttonEventHandler as any,
+      {
+        capture: true
+      }
+    );
 
     this.rootElement.appendChild(this.uiWrapper);
   }
@@ -110,8 +115,7 @@ class TileImageGUI {
         default:
           return;
       }
-    }
-    else if (event.detail.target === 'asset') {
+    } else if (event.detail.target === 'asset') {
       switch (event.detail.props.command) {
         case 'select':
           this.assetSelectionCallback(

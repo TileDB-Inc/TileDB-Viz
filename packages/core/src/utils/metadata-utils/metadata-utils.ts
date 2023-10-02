@@ -227,13 +227,15 @@ export async function getGeometryMetadata(
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {
   switch (type) {
-    case 'STRING_UTF8':
+    case 'STRING_UTF8': {
       let result = '';
-      for (let i = 0; i < Math.ceil(buffer.length / 1000); ++i)
-      {
-        result += String.fromCharCode(...buffer.slice(i * 1000, Math.min((i + 1) * 1000, buffer.length)));
+      for (let i = 0; i < Math.ceil(buffer.length / 1000); ++i) {
+        result += String.fromCharCode(
+          ...buffer.slice(i * 1000, Math.min((i + 1) * 1000, buffer.length))
+        );
       }
       return result;
+    }
     case 'INT64':
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
     default:

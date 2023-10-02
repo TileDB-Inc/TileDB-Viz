@@ -1,5 +1,11 @@
 import { TileDBVisualization } from '../base';
-import { Color3, DirectionalLight, HemisphericLight, Scene, Vector3 } from '@babylonjs/core';
+import {
+  Color3,
+  DirectionalLight,
+  HemisphericLight,
+  Scene,
+  Vector3
+} from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
@@ -66,7 +72,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private async initializeScene() {
-
     [this.metadata, this.attributes, this.dimensions, this.levels] =
       (await getAssetMetadata({
         token: this.options.token,
@@ -84,12 +89,20 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     });
 
     if (this.options.geometryArrayID) {
-      const light = new DirectionalLight('light', new Vector3(0.5, -1, 0.5), this.scene);
+      const light = new DirectionalLight(
+        'light',
+        new Vector3(0.5, -1, 0.5),
+        this.scene
+      );
       light.diffuse = new Color3(0.2, 0.4, 0.8);
       light.specular = new Color3(0, 0, 0.8);
       light.intensity = 0.5;
-  
-      const ambient = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), this.scene);
+
+      const ambient = new HemisphericLight(
+        'HemiLight',
+        new Vector3(0, 1, 0),
+        this.scene
+      );
       ambient.diffuse = new Color3(0.2, 0.4, 0.8);
       ambient.specular = new Color3(0, 0, 0.8);
       ambient.intensity = 0.5;
@@ -123,7 +136,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             transformationCoefficients:
               this.metadata.transformationCoefficients ?? [],
             nativeZoom: this.levels.length - 1,
-            metersPerUnit: (this.metadata.transformationCoefficients?.at(1) ?? 1) * 2 ** (this.levels.length - 1)
+            metersPerUnit:
+              (this.metadata.transformationCoefficients?.at(1) ?? 1) *
+              2 ** (this.levels.length - 1)
           }
         );
 
@@ -152,7 +167,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
     this.scene.getEngine().disableUniformBuffers = false;
 
-    this.cameraManager = new CameraManager(this.scene, 0.25, this.baseWidth, this.baseHeight);
+    this.cameraManager = new CameraManager(
+      this.scene,
+      0.25,
+      this.baseWidth,
+      this.baseHeight
+    );
     this.cameraManager.upperZoomLimit = 2 ** (this.levels.length + 1);
 
     if (this.scene.activeCamera === null) {
@@ -248,17 +268,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private fetchTiles() {
     const integerZoom = Math.max(
       0,
-      Math.min(this.levels.length - 1, Math.ceil(Math.log2(this.cameraManager.getZoom())))
+      Math.min(
+        this.levels.length - 1,
+        Math.ceil(Math.log2(this.cameraManager.getZoom()))
+      )
     );
 
     this.tileset.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
-    this.geometryManager?.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+    this.geometryManager?.loadTiles(
+      this.cameraManager.getMainCamera(),
+      integerZoom
+    );
   }
 
   private resizeViewport() {
     this.cameraManager.resizeCameraViewport();
   }
-
 
   private onAssetSelection(
     namespace: string,

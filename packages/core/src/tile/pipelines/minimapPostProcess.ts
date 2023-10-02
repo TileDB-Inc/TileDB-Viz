@@ -1,4 +1,10 @@
-import { Scene, Camera, Effect, PostProcess, ArcRotateCamera } from '@babylonjs/core';
+import {
+  Scene,
+  Camera,
+  Effect,
+  PostProcess,
+  ArcRotateCamera
+} from '@babylonjs/core';
 import { getCamera } from '../utils/camera-utils';
 import { getViewArea } from '../utils/helpers';
 
@@ -73,11 +79,23 @@ export class MinimapPipeline {
         return;
       }
 
-      const pointTR = {x: mainCamera?.orthoRight?? 0, z: mainCamera?.orthoTop ?? 0};
-      const pointBR = {x: mainCamera?.orthoRight?? 0, z: mainCamera?.orthoBottom ?? 0};
-      const center = {x: mainCamera.target.x, z: -mainCamera.target.z};
-  
-      let [bottom, top, left, right] = getViewArea(pointTR, pointBR, center, mainCamera.beta, mainCamera.alpha); 
+      const pointTR = {
+        x: mainCamera?.orthoRight ?? 0,
+        z: mainCamera?.orthoTop ?? 0
+      };
+      const pointBR = {
+        x: mainCamera?.orthoRight ?? 0,
+        z: mainCamera?.orthoBottom ?? 0
+      };
+      const center = { x: mainCamera.target.x, z: -mainCamera.target.z };
+
+      let [bottom, top, left, right] = getViewArea(
+        pointTR,
+        pointBR,
+        center,
+        mainCamera.beta,
+        mainCamera.alpha
+      );
 
       top = Math.max(Math.min(this.baseHeight, top), 0) / this.baseHeight;
       bottom = Math.max(Math.min(this.baseHeight, bottom), 0) / this.baseHeight;

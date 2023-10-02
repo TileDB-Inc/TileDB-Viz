@@ -79,7 +79,9 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.pointerHandler = null;
     this.metersPerUnit = geometryOptions.metersPerUnit;
 
-    this.workerPool.callbacks.geometry.push( this.onGeometryTileDataLoad.bind(this));
+    this.workerPool.callbacks.geometry.push(
+      this.onGeometryTileDataLoad.bind(this)
+    );
     this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
 
     this.highlightLayer = new HighlightLayer('GeometryHighlight', scene);
@@ -214,7 +216,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     if (status.tile) {
       status.tile.update({ response });
     } else {
-      status.tile = new GeometryTile(response, this.renderTarget,  this.scene);
+      status.tile = new GeometryTile(response, this.renderTarget, this.scene);
     }
 
     status.state = TileState.VISIBLE;
@@ -265,14 +267,16 @@ export class GeometryManager extends Manager<GeometryTile> {
   private pickingHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') return;
+    if (target[0] !== 'geometry') {
+      return;
+    }
 
     switch (event.detail.props.command) {
       case 'clear':
         this.selectedPolygon?.dispose(false, true);
         this.highlightLayer.removeAllMeshes();
         break;
-      default: 
+      default:
         return;
     }
   }
@@ -284,19 +288,23 @@ export class GeometryManager extends Manager<GeometryTile> {
       { capture: true }
     );
 
-    this.pointerHandler = this.scene.onPointerObservable.add((pointerInfo: PointerInfo) => {
-      switch (pointerInfo.type) {
-        case PointerEventTypes.POINTERTAP:
-          if (!pointerInfo.pickInfo?.pickedMesh) return;
+    this.pointerHandler = this.scene.onPointerObservable.add(
+      (pointerInfo: PointerInfo) => {
+        switch (pointerInfo.type) {
+          case PointerEventTypes.POINTERTAP:
+            if (!pointerInfo.pickInfo?.pickedMesh) {
+              return;
+            }
 
-          this.pickGeometry(
-            pointerInfo.pickInfo?.pickedMesh,
-            pointerInfo.event.offsetX,
-            pointerInfo.event.offsetY
-          );
-          break;
+            this.pickGeometry(
+              pointerInfo.pickInfo?.pickedMesh,
+              pointerInfo.event.offsetX,
+              pointerInfo.event.offsetY
+            );
+            break;
+        }
       }
-    });
+    );
   }
 
   public stopEventListeners(): void {
@@ -304,7 +312,7 @@ export class GeometryManager extends Manager<GeometryTile> {
       Events.BUTTON_CLICK,
       this.pickingHandler.bind(this) as any,
       { capture: true }
-    ); 
+    );
 
     this.scene.onPointerObservable.remove(this.pointerHandler);
   }

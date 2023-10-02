@@ -49,7 +49,9 @@ export abstract class Manager<T extends Tile<any>> {
   /**
    * Unregister all event listeners from the scene or the GUI.
    */
-  protected stopEventListeners(): void {}
+  protected stopEventListeners(): void {
+    /* Empty */
+  }
 
   /**
    * Dispose all BabylonJS resources
@@ -62,18 +64,27 @@ export abstract class Manager<T extends Tile<any>> {
     }
   }
 
-  protected getTileIndexRange(camera: ArcRotateCamera, zoomLevel: number): number[] {
+  protected getTileIndexRange(
+    camera: ArcRotateCamera,
+    zoomLevel: number
+  ): number[] {
     const maxTileX =
       Math.ceil(this.baseWidth / (this.tileSize / 2 ** zoomLevel)) - 1;
     const maxTileY =
       Math.ceil(this.baseHeight / (this.tileSize / 2 ** zoomLevel)) - 1;
 
     // construct 2 consecutive points of the viewport
-    const pointTR = {x: camera?.orthoRight?? 0, z: camera?.orthoTop ?? 0};
-    const pointBR = {x: camera?.orthoRight?? 0, z: camera?.orthoBottom ?? 0};
-    const center = {x: camera.target.x, z: -camera.target.z};
+    const pointTR = { x: camera?.orthoRight ?? 0, z: camera?.orthoTop ?? 0 };
+    const pointBR = { x: camera?.orthoRight ?? 0, z: camera?.orthoBottom ?? 0 };
+    const center = { x: camera.target.x, z: -camera.target.z };
 
-    const [bottom, top, left, right] = getViewArea(pointTR, pointBR, center, camera.beta, camera.alpha); 
+    const [bottom, top, left, right] = getViewArea(
+      pointTR,
+      pointBR,
+      center,
+      camera.beta,
+      camera.alpha
+    );
 
     if (
       top < 0 ||

@@ -365,7 +365,12 @@ async function geometryRequest(id: string, request: GeometryMessage) {
             canceled: cancelSignal
           } as GeometryResponse
         } as WorkerResponse,
-        [cachedPositions.buffer, cachedNormals.buffer, cachedIds.buffer, cachedIndices.buffer] as any
+        [
+          cachedPositions.buffer,
+          cachedNormals.buffer,
+          cachedIds.buffer,
+          cachedIndices.buffer
+        ] as any
       );
     }
 
@@ -408,7 +413,11 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       [yRange[0] - request.pad[1], yRange[1] + request.pad[1]]
     ],
     bufferSize: 20_000_000,
-    attributes: [request.geometryAttribute, request.idAttribute, ... request.heightAttribute ? [request.heightAttribute.name] : []],
+    attributes: [
+      request.geometryAttribute,
+      request.idAttribute,
+      ...(request.heightAttribute ? [request.heightAttribute.name] : [])
+    ],
     returnRawBuffers: true,
     ignoreOffsets: true,
     returnOffsets: true,
@@ -431,10 +440,19 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       if ((result as any)['__offsets'][request.geometryAttribute]) {
         ids.push(new BigInt64Array((result as any)[request.idAttribute]));
         if (request.heightAttribute) {
-          heights.push(Array.from((types as any)[request.heightAttribute.type.toLowerCase()].create((result as any)[request.heightAttribute.name])));
-        }
-        else {
-          heights.push(new Array(ids.at(-1)?.length ?? 0).map(x => Math.pow(Math.random(), 2) * 60));
+          heights.push(
+            Array.from(
+              (types as any)[request.heightAttribute.type.toLowerCase()].create(
+                (result as any)[request.heightAttribute.name]
+              )
+            )
+          );
+        } else {
+          heights.push(
+            new Array(ids.at(-1)?.length ?? 0).map(
+              x => Math.pow(Math.random(), 2) * 60
+            )
+          );
         }
 
         wkbs.push((result as any)[request.geometryAttribute]);
@@ -556,7 +574,12 @@ async function geometryRequest(id: string, request: GeometryMessage) {
           canceled: cancelSignal
         } as GeometryResponse
       } as WorkerResponse,
-      [rawPositions.buffer, rawNormals.buffer, rawIds.buffer, rawIndices.buffer] as any
+      [
+        rawPositions.buffer,
+        rawNormals.buffer,
+        rawIds.buffer,
+        rawIndices.buffer
+      ] as any
     );
   }
 }
@@ -580,17 +603,20 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     `${'ids'}_${x}_${y}`
   )) as BigInt64Array | undefined;
 
-  const cachedNormals = await getQueryDataFromCache(
+  const cachedNormals = (await getQueryDataFromCache(
     `${request.arrayID}_${tileSize}`,
     `${'normal'}_${x}_${y}`
-  ) as Float32Array | undefined;
+  )) as Float32Array | undefined;
 
-  const cachedIndices = await getQueryDataFromCache(
+  const cachedIndices = (await getQueryDataFromCache(
     `${request.arrayID}_${tileSize}`,
     `${'indices'}_${x}_${y}`
-  ) as Int32Array | undefined;
+  )) as Int32Array | undefined;
 
-  if (cancelSignal || !(cachedPositions && cachedIds && cachedNormals && cachedIndices)) {
+  if (
+    cancelSignal ||
+    !(cachedPositions && cachedIds && cachedNormals && cachedIndices)
+  ) {
     self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
     return;
   }
@@ -599,8 +625,6 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
   let yRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
 
   let index = cachedIds.indexOf(request.id);
-  let startIndex = index;
-  let endIndex = index + 1;
   while (index !== -1) {
     const pointX = cachedPositions[3 * index];
     const pointY = cachedPositions[3 * index + 2];
@@ -610,7 +634,6 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     yRange[0] = Math.min(yRange[0], pointY);
     yRange[1] = Math.max(yRange[1], pointY);
 
-    endIndex = index + 1;
     index = cachedIds.indexOf(request.id, index + 1);
   }
 
@@ -671,14 +694,18 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
       }
       info['_raw'] = {};
       for (const [key, val] of Object.entries(result)) {
-        info['_raw'][key] = {values: [val[index]]};
+        info['_raw'][key] = { values: [val[index]] };
 
         if (key === request.idAttribute) {
           continue;
         } else if (key === request.geometryAttribute) {
           let heights: number[] = [0];
           if (request.heightAttribute) {
-            heights = Array.from((types as any)[request.heightAttribute.type.toLowerCase()].create((result as any)[request.heightAttribute.name])[index]);
+            heights = Array.from(
+              (types as any)[request.heightAttribute.type.toLowerCase()].create(
+                (result as any)[request.heightAttribute.name]
+              )[index]
+            );
           }
 
           parsePolygon(
