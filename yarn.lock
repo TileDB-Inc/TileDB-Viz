@@ -6084,15 +6084,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@syncpoint/wkx@npm:0.5.2":
-  version: 0.5.2
-  resolution: "@syncpoint/wkx@npm:0.5.2"
-  dependencies:
-    "@types/node": ^15.0.2
-  checksum: 0d28d2f7b05c1b7e52975ce2beb28de231baaef3f8a3c2829f47355b872dffe16319a4d299c42259ac93148291a169ee58795fe384bb2208d954072fc2f20ed8
-  languageName: node
-  linkType: hard
-
 "@testing-library/dom@npm:^8.3.0":
   version: 8.20.1
   resolution: "@testing-library/dom@npm:8.20.1"
@@ -6164,7 +6155,6 @@ __metadata:
     "@babylonjs/loaders": ^6.20.2
     "@babylonjs/materials": ^6.20.2
     "@babylonjs/serializers": ^6.20.2
-    "@syncpoint/wkx": 0.5.2
     "@tiledb-inc/tiledb-cloud": 1.0.14
     "@tiledb-inc/viz-components": "workspace:packages/components"
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx"
@@ -6174,7 +6164,6 @@ __metadata:
     earcut: 2.2.4
     geometry-extrude: 0.2.1
     idb: ^7.0.2
-    node-buffer: "npm:buffer@6.0.3"
     parcel: ^2.9.3
     proj4: ^2.9.0
   languageName: unknown
@@ -8627,7 +8616,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"buffer@npm:^6.0.3, node-buffer@npm:buffer@6.0.3":
+"buffer@npm:^6.0.3":
   version: 6.0.3
   resolution: "buffer@npm:6.0.3"
   dependencies:

@@ -28,7 +28,15 @@ export function parsePolygon(
     //   )
     // );
 
-    const entry = Parser.parse(new DataView(wkbs, Number(offset), geometryIndex === offsets.length - 1 ? undefined : Number(offsets[geometryIndex + 1] - offset))) as Polygon;
+    const entry = Parser.parse(
+      new DataView(
+        wkbs,
+        Number(offset),
+        geometryIndex === offsets.length - 1
+          ? undefined
+          : Number(offsets[geometryIndex + 1] - offset)
+      )
+    ) as Polygon;
 
     const data: number[][][] = [];
     const shape: number[][] = [];
