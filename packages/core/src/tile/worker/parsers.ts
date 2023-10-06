@@ -1,7 +1,6 @@
-import { Buffer as NodeBuffer } from 'node-buffer';
-import wkx from '@syncpoint/wkx';
 import { extrudePolygon } from 'geometry-extrude';
 import proj4 from 'proj4';
+import { Parser, Polygon } from '@tiledb-inc/wkx';
 
 export function parsePolygon(
   wkbs: ArrayBuffer,
@@ -19,15 +18,17 @@ export function parsePolygon(
   let positionOffset = positions.length;
 
   for (const [geometryIndex, offset] of offsets.entries()) {
-    const entry = wkx.Geometry.parse(
-      NodeBuffer.from(
-        wkbs,
-        Number(offset),
-        geometryIndex === offsets.length - 1
-          ? undefined
-          : Number(offsets[geometryIndex + 1] - offset)
-      )
-    );
+    // const entry = wkx.Geometry.parse(
+    //   NodeBuffer.from(
+    //     wkbs,
+    //     Number(offset),
+    //     geometryIndex === offsets.length - 1
+    //       ? undefined
+    //       : Number(offsets[geometryIndex + 1] - offset)
+    //   )
+    // );
+
+    const entry = Parser.parse(new DataView(wkbs, Number(offset), geometryIndex === offsets.length - 1 ? undefined : Number(offsets[geometryIndex + 1] - offset))) as Polygon;
 
     const data: number[][][] = [];
     const shape: number[][] = [];

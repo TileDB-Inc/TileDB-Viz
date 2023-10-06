@@ -49,6 +49,7 @@
     "@syncpoint/wkx": "0.5.2",
     "@tiledb-inc/tiledb-cloud": "1.0.14",
     "@tiledb-inc/viz-components": "workspace:packages/components",
+    "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",
     "axios": "^0.21.1",
     "babylonjs-gui": "^6.20.2",
     "babylonjs-materials": "^6.20.2",

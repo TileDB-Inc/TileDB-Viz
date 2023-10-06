@@ -6167,6 +6167,7 @@ __metadata:
     "@syncpoint/wkx": 0.5.2
     "@tiledb-inc/tiledb-cloud": 1.0.14
     "@tiledb-inc/viz-components": "workspace:packages/components"
+    "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx"
     axios: ^0.21.1
     babylonjs-gui: ^6.20.2
     babylonjs-materials: ^6.20.2
@@ -6239,6 +6240,16 @@ __metadata:
       unplugged: true
   languageName: unknown
   linkType: soft
+
+"@tiledb-inc/wkx@https://github.com/TileDB-Inc/wkx":
+  version: 0.6.0
+  resolution: "@tiledb-inc/wkx@https://github.com/TileDB-Inc/wkx.git#commit=a6b561327baf40282b523c49ca0b573e49665c5b"
+  dependencies:
+    "@types/geojson": ^7946.0.11
+    "@types/node": ^15.0.2
+  checksum: 05d6daffbb543a64ce62afb673f092b002b4320567b9bbda157b0dafcddb773750080f963c7a9909ff0692d5cccc143e2f03d464f933ec6ee405412bba5c4db7
+  languageName: node
+  linkType: hard
 
 "@tootallnate/once@npm:1":
   version: 1.1.2
@@ -6382,6 +6393,13 @@ __metadata:
   version: 0.0.51
   resolution: "@types/estree@npm:0.0.51"
   checksum: e56a3bcf759fd9185e992e7fdb3c6a5f81e8ff120e871641607581fb3728d16c811702a7d40fa5f869b7f7b4437ab6a87eb8d98ffafeee51e85bbe955932a189
+  languageName: node
+  linkType: hard
+
+"@types/geojson@npm:^7946.0.11":
+  version: 7946.0.11
+  resolution: "@types/geojson@npm:7946.0.11"
+  checksum: 93fe7e9c5d16b0a836058ee4b87f8b022d53893d5a8e7ab52c8bf64d12039d076df99f3764c1c4da13abaa1001115fd899330edba4d8d8fa4a4feb162650b22c
   languageName: node
   linkType: hard
 
