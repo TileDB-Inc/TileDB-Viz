@@ -56,7 +56,6 @@ export class CameraManager {
 
     scene.activeCamera = this.mainCamera;
 
-    this.mainCamera.attachControl(false);
     this.mainCamera.lowerAlphaLimit = -Math.PI;
     this.mainCamera.upperAlphaLimit = Math.PI;
     this.mainCamera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
@@ -353,6 +352,7 @@ export class CameraManager {
               })
             );
           }
+          pointerInfo.event.preventDefault();
           break;
       }
     });
