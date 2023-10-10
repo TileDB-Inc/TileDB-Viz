@@ -71,11 +71,16 @@ export class ImageManager extends Manager<ImageTile> {
     const channelCount =
       this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
 
-    this.channelRanges = [0, channelCount - 1];
     this.channelMapping = new Int32Array(
       range(0, channelCount)
         .map(x => [x, 0, 0, 0])
         .flat()
+    );
+    this.channelMapping = new Int32Array(
+      this.metadata.channels
+        .get(this.selectedAttribute.name)
+        ?.map((x: Channel, index: number) => [x.visible ? index : -1, 0, 0, 0])
+        .flat() ?? []
     );
     this.intensityRanges = new Float32Array(
       this.metadata.channels
@@ -92,6 +97,8 @@ export class ImageManager extends Manager<ImageTile> {
         .flat() ?? []
     );
 
+    calculateChannelMapping(this.channelMapping);
+    this.channelRanges = calculateChannelRanges(this.channelMapping);
     this.initializeUniformBuffer();
     this.hasMinimap =
       (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??

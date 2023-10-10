@@ -10,6 +10,11 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
+  defaultChannels?: {
+    index: number;
+    color?: { r: number; g: number; b: number };
+    intensity?: number;
+  }[];
 }
 
 export interface Channel {

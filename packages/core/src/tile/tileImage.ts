@@ -66,7 +66,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      // this.scene.debugLayer.show();
 
       return scene;
     });
@@ -88,6 +87,30 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       namespace: this.options.namespace,
       baseGroup: this.options.baseGroup
     });
+
+    if (this.options.defaultChannels) {
+      const defaultAttribute = this.attributes.filter(x => x.visible)[0].name;
+
+      for (const entry of this.metadata.channels.get(defaultAttribute) ?? []) {
+        entry.visible = false;
+      }
+
+      for (const entry of this.options.defaultChannels) {
+        const channel = this.metadata.channels
+          .get(defaultAttribute)
+          ?.at(entry.index);
+
+        if (!channel) {
+          continue;
+        }
+
+        channel.visible = true;
+        channel.intensity = entry.intensity ?? channel.intensity;
+        channel.color = entry.color
+          ? [entry.color.r, entry.color.g, entry.color.b]
+          : channel.color;
+      }
+    }
 
     this.baseWidth =
       this.levels[0].dimensions[this.levels[0].axes.indexOf('X')];
