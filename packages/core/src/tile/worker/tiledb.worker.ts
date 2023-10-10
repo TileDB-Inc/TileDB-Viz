@@ -222,7 +222,7 @@ async function imageRequest(id: string, request: ImageMessage) {
       query
     );
 
-    if (cancelSignal) {
+    if (tokenSource?.token.reason !== undefined) {
       self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
       return;
     }
@@ -298,7 +298,7 @@ async function imageRequest(id: string, request: ImageMessage) {
     }
   }
 
-  if (cancelSignal) {
+  if (tokenSource?.token.reason !== undefined) {
     self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
   } else {
     self.postMessage(
@@ -312,7 +312,8 @@ async function imageRequest(id: string, request: ImageMessage) {
           height: height,
           channels: channelSlices.size,
           dtype: format,
-          canceled: cancelSignal
+          canceled: tokenSource?.token.reason !== undefined,
+          nonce: request.nonce
         } as ImageResponse
       } as WorkerResponse,
       [imageData.buffer] as any
@@ -356,7 +357,8 @@ async function geometryRequest(id: string, request: GeometryMessage) {
             ids: cachedIds,
             indices: cachedIndices,
             gtype: request.type,
-            canceled: cancelSignal
+            canceled: cancelSignal,
+            nonce: request.nonce
           } as GeometryResponse
         } as WorkerResponse,
         [
@@ -476,7 +478,8 @@ async function geometryRequest(id: string, request: GeometryMessage) {
         ids: new BigInt64Array(),
         indices: new Int32Array(),
         gtype: request.type,
-        canceled: cancelSignal
+        canceled: cancelSignal,
+        nonce: request.nonce
       } as GeometryResponse
     } as WorkerResponse);
 
@@ -537,7 +540,8 @@ async function geometryRequest(id: string, request: GeometryMessage) {
           ids: rawIds,
           indices: rawIndices,
           gtype: request.type,
-          canceled: cancelSignal
+          canceled: cancelSignal,
+          nonce: request.nonce
         } as GeometryResponse
       } as WorkerResponse,
       [
@@ -696,7 +700,8 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
       indices: Int32Array.from(indices),
       normals: Float32Array.from(normals),
       ids: BigInt64Array.from([request.id]),
-      gtype: request.type
+      gtype: request.type,
+      nonce: request.nonce
     } as GeometryInfoResponse
   } as WorkerResponse);
 

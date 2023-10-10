@@ -96,7 +96,7 @@ export class WorkerPool {
     }
   }
 
-  public cancelRequest(request: DataRequest): boolean {
+  public cancelRequest(request: DataRequest) {
     const workerIndex = this.taskMap.get(request.id);
     const index = this.messageQueue.findIndex(
       (item: DataRequest) => item.id === request.id
@@ -112,8 +112,6 @@ export class WorkerPool {
     if (index !== -1) {
       this.messageQueue.splice(index, 1);
     }
-
-    return workerIndex !== undefined || index !== -1;
   }
 
   public postMessage(request: DataRequest) {

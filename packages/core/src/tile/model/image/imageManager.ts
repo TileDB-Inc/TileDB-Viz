@@ -135,7 +135,7 @@ export class ImageManager extends Manager<ImageTile> {
         const tileIndex = `image_${x}_${y}_${zoom}`;
         const status =
           this.tileStatus.get(tileIndex) ??
-          ({ evict: false, type: 'IMAGE' } as TileStatus<ImageTile>);
+          ({ evict: false, type: 'IMAGE', nonce: 0 } as TileStatus<ImageTile>);
 
         status.evict = false;
 
@@ -163,11 +163,13 @@ export class ImageManager extends Manager<ImageTile> {
               namespace: this.namespace,
               attribute: this.selectedAttribute,
               channelRanges: this.channelRanges,
-              dimensions: this.dimensions
+              dimensions: this.dimensions,
+              nonce: ++this.nonce
             } as ImageMessage
           } as DataRequest);
 
           status.state = TileState.LOADING;
+          status.nonce = this.nonce;
           this.tileStatus.set(tileIndex, status);
 
           this.updateLoadingStatus(false);
@@ -193,15 +195,13 @@ export class ImageManager extends Manager<ImageTile> {
         continue;
       }
 
-      if (status.state === TileState.LOADING) {
-        const canceled = this.workerPool.cancelRequest({
+      if (status.state !== TileState.VISIBLE) {
+        this.workerPool.cancelRequest({
           type: RequestType.CANCEL,
           id: key
         } as DataRequest);
 
-        if (canceled) {
-          this.updateLoadingStatus(true);
-        }
+        this.updateLoadingStatus(true);
       } else if (status.state === TileState.VISIBLE) {
         status.tile?.dispose();
       }
@@ -215,10 +215,9 @@ export class ImageManager extends Manager<ImageTile> {
       return;
     }
 
-    const tileIndex = `image_${response.index[0]}_${response.index[1]}_${response.index[2]}`;
     const status = this.tileStatus.get(id);
 
-    if (!status) {
+    if (!status || status.nonce !== response.nonce) {
       // Tile was removed from the tileset but canceling missed timing
       return;
     }
@@ -239,7 +238,6 @@ export class ImageManager extends Manager<ImageTile> {
 
     status.state = TileState.VISIBLE;
     status.evict = false;
-    this.tileStatus.set(tileIndex, status);
     this.updateLoadingStatus(true);
   }
 
@@ -257,16 +255,16 @@ export class ImageManager extends Manager<ImageTile> {
         continue;
       }
 
-      status.state = TileState.LOADING;
+      if (status.state === TileState.LOADING) {
+        this.workerPool.cancelRequest({
+          type: RequestType.CANCEL,
+          id: key
+        } as DataRequest);
 
-      const canceled = this.workerPool.cancelRequest({
-        type: RequestType.CANCEL,
-        id: key
-      } as DataRequest);
-
-      if (canceled) {
         this.updateLoadingStatus(true);
       }
+
+      status.state = TileState.LOADING;
 
       this.workerPool.postMessage({
         id: key,
@@ -278,10 +276,12 @@ export class ImageManager extends Manager<ImageTile> {
           namespace: this.namespace,
           attribute: this.selectedAttribute,
           channelRanges: this.channelRanges,
-          dimensions: this.dimensions
+          dimensions: this.dimensions,
+          nonce: ++this.nonce
         }
       });
 
+      status.nonce = this.nonce;
       this.updateLoadingStatus(false);
     }
   }

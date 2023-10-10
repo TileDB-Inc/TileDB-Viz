@@ -190,6 +190,7 @@ export interface ImageMessage {
   token: string;
   basePath: string;
   dimensions: Dimension[];
+  nonce: number;
 }
 
 export interface GeometryMessage {
@@ -207,6 +208,7 @@ export interface GeometryMessage {
   geometryCRS: string;
   geotransformCoefficients: number[];
   metersPerUnit: number;
+  nonce: number;
 }
 
 export interface GeometryInfoMessage extends GeometryMessage {
@@ -222,6 +224,7 @@ export interface WorkerResponse {
 export interface BaseResponse {
   index: number[];
   canceled: boolean;
+  nonce: number;
 }
 
 export interface ImageResponse extends BaseResponse {

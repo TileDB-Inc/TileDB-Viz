@@ -11,6 +11,7 @@ export const enum TileState {
 
 export interface TileStatus<T> {
   tile?: T;
+  nonce: number;
   state?: TileState;
   evict: boolean;
 }
@@ -22,6 +23,7 @@ export abstract class Manager<T extends Tile<any>> {
   protected tileStatus: Map<string, TileStatus<T>>;
   protected baseWidth: number;
   protected baseHeight: number;
+  protected nonce: number;
 
   constructor(
     scene: Scene,
@@ -37,6 +39,7 @@ export abstract class Manager<T extends Tile<any>> {
     this.baseHeight = baseHeight;
 
     this.tileStatus = new Map();
+    this.nonce = 0;
   }
 
   /**

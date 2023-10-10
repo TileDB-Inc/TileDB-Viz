@@ -54,6 +54,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   private selectedPolygon?: Mesh;
   private pointerHandler: Nullable<Observer<PointerInfo>>;
   private metersPerUnit: number;
+  private pickedMeshNonce: number;
 
   constructor(
     scene: Scene,
@@ -69,6 +70,7 @@ export class GeometryManager extends Manager<GeometryTile> {
       geometryOptions.baseHeight
     );
 
+    this.pickedMeshNonce = 0;
     this.metadata = geometryOptions.metadata;
     this.baseCRS = geometryOptions.baseCRS;
     this.transformationCoefficients =
@@ -124,12 +126,14 @@ export class GeometryManager extends Manager<GeometryTile> {
                 imageCRS: this.baseCRS,
                 geometryCRS: this.metadata.crs,
                 geotransformCoefficients: this.transformationCoefficients,
-                metersPerUnit: this.metersPerUnit
+                metersPerUnit: this.metersPerUnit,
+                nonce: ++this.nonce
               } as GeometryMessage
             } as DataRequest);
 
             this.updateLoadingStatus(false);
 
+            status.nonce = this.nonce;
             status.state = TileState.LOADING;
             this.tileStatus.set(tileIndex, status);
           }
@@ -143,15 +147,13 @@ export class GeometryManager extends Manager<GeometryTile> {
         continue;
       }
 
-      if (status.state === TileState.LOADING) {
-        const canceled = this.workerPool.cancelRequest({
+      if (status.state !== TileState.VISIBLE) {
+        this.workerPool.cancelRequest({
           type: RequestType.CANCEL,
           id: key
         } as DataRequest);
 
-        if (canceled) {
-          this.updateLoadingStatus(true);
-        }
+        this.updateLoadingStatus(true);
       } else if (status.state === TileState.VISIBLE) {
         status.tile?.dispose();
       }
@@ -191,9 +193,12 @@ export class GeometryManager extends Manager<GeometryTile> {
           geometryAttribute: this.metadata.geometryAttribute,
           imageCRS: this.baseCRS,
           geometryCRS: this.metadata.crs,
-          geotransformCoefficients: this.transformationCoefficients
+          geotransformCoefficients: this.transformationCoefficients,
+          nonce: ++this.nonce
         } as GeometryInfoMessage
       } as DataRequest);
+
+      this.pickedMeshNonce = this.nonce;
     }
   }
 
@@ -202,13 +207,17 @@ export class GeometryManager extends Manager<GeometryTile> {
       return;
     }
 
-    const tileIndex = `geometry_${response.index[0]}_${response.index[1]}`;
     const status =
-      this.tileStatus.get(tileIndex) ??
+      this.tileStatus.get(id) ??
       ({
         evict: false,
         state: TileState.VISIBLE
       } as TileStatus<GeometryTile>);
+
+    if (!status || status.nonce !== response.nonce) {
+      // Tile was removed from the tileset but canceling missed timing
+      return;
+    }
 
     if (status.tile) {
       status.tile.update({ response });
@@ -217,12 +226,15 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
 
     status.state = TileState.VISIBLE;
-    this.tileStatus.set(tileIndex, status);
     this.updateLoadingStatus(true);
   }
 
   private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
-    if (response.canceled || id !== 'geometry_info') {
+    if (
+      response.canceled ||
+      id !== 'geometry_info' ||
+      response.nonce !== this.pickedMeshNonce
+    ) {
       return;
     }
 
