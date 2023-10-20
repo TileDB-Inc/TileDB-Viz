@@ -15,9 +15,19 @@
   --viewer-text-primary: hsla(0deg, 0%, 0%, 0.87);
   --viewer-text-tertiary: hsla(0deg, 0%, 0%, 0.49);
   --viewer-text-disabled: hsla(0deg, 0%, 0%, 0.38);
+  --viewer-text-error: hsla(0, 100%, 62%, 1);
 
   /** border colors **/
   --viewer-border: hsla(212deg, 18%, 84%, 1);
+
+  /** highlight colors **/
+  --viewer-accent: hsla(212, 100%, 65%, 1);
+  --viewer-accent-80: hsla(212, 100%, 65%, 0.8);
+  --viewer-accent-60: hsla(212, 100%, 65%, 0.6);
+  --viewer-accent-40: hsla(212, 100%, 65%, 0.4);
+  --viewer-accent-20: hsla(212, 100%, 65%, 0.2);
+  --viewer-accent-10: hsla(212, 100%, 65%, 0.1);
+  --viewer-accent-05: hsla(212, 100%, 65%, 0.05);
 
   --viewer-border-disabled: hsla(0deg, 0%, 90%, 1);
 }
