@@ -216,8 +216,20 @@ export interface GeometryMessage {
   nonce: number;
 }
 
-export interface GeometryInfoMessage extends GeometryMessage {
-  id: bigint;
+export interface GeometryInfoMessage {
+  tileSize: number;
+  texture: Uint32Array;
+  worldBbox: number[];
+  screenBbox: number[];
+  selectionPath?: number[];
+  arrayID: string;
+  namespace: string;
+  idAttribute: string;
+  pad: number[];
+  imageCRS: string;
+  geometryCRS: string;
+  tiles?: number[][];
+  geotransformCoefficients: number[];
 }
 
 export interface WorkerResponse {
@@ -248,8 +260,9 @@ export interface GeometryResponse extends BaseResponse {
   gtype: string;
 }
 
-export interface GeometryInfoResponse extends GeometryResponse {
-  info: any;
+export interface GeometryInfoResponse {
+  info: any[];
+  ids: bigint[];
 }
 
 export interface ResponseCallback {

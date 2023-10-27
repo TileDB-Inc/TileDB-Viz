@@ -11,6 +11,7 @@ export function parsePolygon(
   normals: number[],
   indices: number[],
   faceMapping: bigint[],
+  vertexMap: Map<bigint, number[]>,
   converter: proj4.Converter,
   geotransformCoefficients: number[],
   metersPerUnit: number
@@ -18,16 +19,6 @@ export function parsePolygon(
   let positionOffset = positions.length;
 
   for (const [geometryIndex, offset] of offsets.entries()) {
-    // const entry = wkx.Geometry.parse(
-    //   NodeBuffer.from(
-    //     wkbs,
-    //     Number(offset),
-    //     geometryIndex === offsets.length - 1
-    //       ? undefined
-    //       : Number(offsets[geometryIndex + 1] - offset)
-    //   )
-    // );
-
     const entry = Parser.parse(
       new DataView(
         wkbs,
@@ -79,6 +70,11 @@ export function parsePolygon(
       excludeBottom: true
     });
 
+    vertexMap.set(ids[geometryIndex], [
+      faceMapping.length,
+      polygon.position.length / 3
+    ]);
+
     for (let index = 0; index < polygon.position.length / 3; ++index) {
       [polygon.position[3 * index + 1], polygon.position[3 * index + 2]] = [
         polygon.position[3 * index + 2],
@@ -95,6 +91,10 @@ export function parsePolygon(
     indices.push(
       ...Array.from(polygon.indices).map((x: number) => x + positionOffset / 3)
     );
+    vertexMap.set(ids[geometryIndex], [
+      faceMapping.length,
+      polygon.position.length / 3
+    ]);
     faceMapping.push(
       ...new Array(polygon.position.length / 3).fill(ids[geometryIndex])
     );

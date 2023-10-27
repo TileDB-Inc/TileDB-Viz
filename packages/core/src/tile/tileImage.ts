@@ -1,11 +1,5 @@
 import { TileDBVisualization } from '../base';
-import {
-  Color3,
-  DirectionalLight,
-  HemisphericLight,
-  Scene,
-  Vector3
-} from '@babylonjs/core';
+import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
@@ -24,6 +18,7 @@ import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { CameraManager } from './utils/camera-utils';
 import { GeometryPipeline } from './pipelines/pickingPipeline';
+import { PickingTool } from './utils/picking-tool';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -43,6 +38,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
   private geometryAttributes?: Attribute[];
+  private pickingTool!: PickingTool;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -66,6 +62,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
+      this.scene.debugLayer.show();
 
       return scene;
     });
@@ -125,7 +122,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.baseWidth,
       this.baseHeight
     );
-    this.cameraManager.upperZoomLimit = 2 ** (this.levels.length + 1);
+    this.cameraManager.upperZoomLimit = 2 ** (this.levels.length + 3);
+
+    this.pickingTool = new PickingTool(this.scene);
 
     if (this.options.geometryArrayID) {
       const light = new DirectionalLight(
@@ -133,18 +132,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         new Vector3(0.5, -1, 0.5),
         this.scene
       );
-      light.diffuse = new Color3(0.2, 0.4, 0.8);
-      light.specular = new Color3(0, 0, 0.8);
-      light.intensity = 0.5;
-
-      const ambient = new HemisphericLight(
-        'HemiLight',
-        new Vector3(0, 1, 0),
-        this.scene
-      );
-      ambient.diffuse = new Color3(0.2, 0.4, 0.8);
-      ambient.specular = new Color3(0, 0, 0.8);
-      ambient.intensity = 0.5;
+      light.diffuse = new Color3(1, 1, 1);
+      light.specular = new Color3(0.1, 0.1, 0.1);
+      light.intensity = 1;
 
       [this.geometryMetadata, this.geometryAttributes] =
         await getGeometryMetadata(this.options);
@@ -169,6 +159,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.geometryManager = new GeometryManager(
           this.scene,
           this.workerPool,
+          this.pickingTool,
           this.tileSize,
           {
             renderTarget: pipeline.initializeRTT(),
@@ -226,6 +217,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.dimensions,
       this.groupAssets,
       this.geometryAttributes,
+      this.geometryMetadata,
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)
@@ -242,6 +234,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.workerPool.dispose();
       this.gui.dispose();
       this.cameraManager.dispose();
+      this.pickingTool.dispose();
     });
 
     this.scene.onBeforeRenderObservable.add(() => {
@@ -258,6 +251,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.workerPool.cleanUp();
     this.gui.dispose();
     this.cameraManager.dispose();
+    this.pickingTool.dispose();
     this.scene.getEngine().clearInternalTexturesCache();
   }
 

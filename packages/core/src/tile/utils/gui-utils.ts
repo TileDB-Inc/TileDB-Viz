@@ -1,7 +1,12 @@
 import '@tiledb-inc/viz-components';
 import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
-import { Dimension, AssetEntry, Attribute } from '../../types';
+import {
+  Dimension,
+  AssetEntry,
+  Attribute,
+  GeometryMetadata
+} from '../../types';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -26,6 +31,7 @@ class TileImageGUI {
     dimensions: Dimension[],
     assets: AssetEntry[],
     geometryAttributes: Attribute[] | undefined,
+    geometryMetadata: GeometryMetadata | undefined,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -53,6 +59,17 @@ class TileImageGUI {
     this.uiWrapper.innerHTML = `
     <status-overlay>
     </status-overlay>
+    ${
+      geometryAttributes && geometryMetadata
+        ? `
+        <sidebar-menu anchorLeft=true expandedMaxWidth=600>
+          <info-panel attributes='${JSON.stringify(
+            geometryAttributes
+          )}' idAttribute='${geometryMetadata.idAttribute}'>
+          </info-panel>
+        </sidebar-menu>`
+        : ''
+    }
     <sidebar-menu>
       <zoom-control zoom='0.25'>
       </zoom-control>
@@ -68,13 +85,6 @@ class TileImageGUI {
       ${
         assets.length > 0
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
-          : ''
-      }
-      ${
-        geometryAttributes !== undefined
-          ? `<geometry-panel attributes='${JSON.stringify(
-              geometryAttributes
-            )}'></geometry-panel>`
           : ''
       }
       <options-panel>
