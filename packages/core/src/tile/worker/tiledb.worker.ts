@@ -45,9 +45,9 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       cancelSignal = false;
       currentId = event.data.id;
       tokenSource = CancelToken.source();
-      geometryInfoRequestV2(
+      geometryInfoRequest(
         event.data.id,
-        event.data.request as GeometryInfoMessageV2
+        event.data.request as GeometryInfoMessage
       );
       break;
     case RequestType.CANCEL:
@@ -555,7 +555,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   }
 }
 
-async function geometryInfoRequestV2(id: string, request: GeometryInfoMessage) {
+async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
   if (!tiledbClient) {
     console.warn('TileDB client is not initialized');
     return;
