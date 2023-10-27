@@ -269,4 +269,5 @@ export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
   info: { (id: string, response: GeometryInfoResponse): void }[];
+  cancel: { (id: string, response: BaseResponse): void }[];
 }

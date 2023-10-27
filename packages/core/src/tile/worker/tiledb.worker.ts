@@ -11,7 +11,8 @@ import {
   GeometryResponse,
   GeometryMessage,
   GeometryInfoMessage,
-  GeometryInfoResponse
+  GeometryInfoResponse,
+  BaseResponse
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
@@ -143,7 +144,11 @@ async function imageRequest(id: string, request: ImageMessage) {
   }
 
   if (cancelSignal) {
-    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    self.postMessage({
+      id: id,
+      type: RequestType.CANCEL,
+      response: { nonce: request.nonce } as BaseResponse
+    } as WorkerResponse);
     return;
   }
 
@@ -223,7 +228,11 @@ async function imageRequest(id: string, request: ImageMessage) {
     );
 
     if (tokenSource?.token.reason !== undefined) {
-      self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+      self.postMessage({
+        id: id,
+        type: RequestType.CANCEL,
+        response: { nonce: request.nonce } as BaseResponse
+      } as WorkerResponse);
       return;
     }
 
@@ -239,7 +248,11 @@ async function imageRequest(id: string, request: ImageMessage) {
         offset += result.length;
       }
     } catch (e) {
-      self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+      self.postMessage({
+        id: id,
+        type: RequestType.CANCEL,
+        response: { nonce: request.nonce } as BaseResponse
+      } as WorkerResponse);
       return;
     }
 
@@ -299,7 +312,11 @@ async function imageRequest(id: string, request: ImageMessage) {
   }
 
   if (tokenSource?.token.reason !== undefined) {
-    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    self.postMessage({
+      id: id,
+      type: RequestType.CANCEL,
+      response: { nonce: request.nonce } as BaseResponse
+    } as WorkerResponse);
   } else {
     self.postMessage(
       {
@@ -344,7 +361,11 @@ async function geometryRequest(id: string, request: GeometryMessage) {
     ]);
 
     if (cancelSignal) {
-      self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+      self.postMessage({
+        id: id,
+        type: RequestType.CANCEL,
+        response: { nonce: request.nonce } as BaseResponse
+      } as WorkerResponse);
     } else {
       self.postMessage(
         {
@@ -455,7 +476,11 @@ async function geometryRequest(id: string, request: GeometryMessage) {
       }
     }
   } catch (e) {
-    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    self.postMessage({
+      id: id,
+      type: RequestType.CANCEL,
+      response: { nonce: request.nonce } as BaseResponse
+    } as WorkerResponse);
     return;
   }
 
@@ -527,7 +552,11 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   ]);
 
   if (cancelSignal) {
-    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    self.postMessage({
+      id: id,
+      type: RequestType.CANCEL,
+      response: { nonce: request.nonce } as BaseResponse
+    } as WorkerResponse);
   } else {
     self.postMessage(
       {
@@ -716,7 +745,11 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
       }
     }
   } catch (e) {
-    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    self.postMessage({
+      id: id,
+      type: RequestType.CANCEL,
+      response: { nonce: request.nonce } as BaseResponse
+    } as WorkerResponse);
     return;
   }
 

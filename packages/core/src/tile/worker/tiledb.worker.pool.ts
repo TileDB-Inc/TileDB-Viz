@@ -31,7 +31,8 @@ export class WorkerPool {
     this.callbacks = options?.callbacks ?? {
       image: [],
       geometry: [],
-      info: []
+      info: [],
+      cancel: []
     };
     this.taskMap = new Map<string, number>();
     this.initilizeMessage = {
@@ -81,6 +82,9 @@ export class WorkerPool {
         }
         break;
       case RequestType.CANCEL:
+        for (const callback of this.callbacks.cancel) {
+          callback(response.id, response.response);
+        }
         break;
       default:
         console.warn(`Unknown response type ${response.type}`);

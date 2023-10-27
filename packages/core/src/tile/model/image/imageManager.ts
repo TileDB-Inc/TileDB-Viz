@@ -1,6 +1,7 @@
 import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
 import { Attribute, Dimension } from '../../../types';
 import {
+  BaseResponse,
   Channel,
   DataRequest,
   ImageMessage,
@@ -59,6 +60,7 @@ export class ImageManager extends Manager<ImageTile> {
     super(scene, workerPool, tileSize, baseWidth, baseHeight);
 
     this.workerPool.callbacks.image.push(this.onImageTileDataLoad.bind(this));
+    this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
     this.levels = imageOptions.levels;
     this.dimensions = imageOptions.dimensions;
@@ -386,6 +388,37 @@ export class ImageManager extends Manager<ImageTile> {
         break;
       default:
         return;
+    }
+  }
+
+  private onCancel(id: string, response: BaseResponse) {
+    const tile = this.tileStatus.get(id);
+    if (
+      tile &&
+      tile.state === TileState.LOADING &&
+      tile.nonce === response.nonce
+    ) {
+      console.warn(`Tile '${id}' aborted unexpectedly. Retrying...`);
+
+      const index = id
+        .split('_')
+        .map(x => parseInt(x))
+        .filter(x => !Number.isNaN(x));
+
+      this.workerPool.postMessage({
+        id: id,
+        type: RequestType.IMAGE,
+        request: {
+          index: index,
+          tileSize: this.tileSize,
+          levelRecord: this.levels[index[2]],
+          namespace: this.namespace,
+          attribute: this.selectedAttribute,
+          channelRanges: this.channelRanges,
+          dimensions: this.dimensions,
+          nonce: response.nonce
+        }
+      });
     }
   }
 }

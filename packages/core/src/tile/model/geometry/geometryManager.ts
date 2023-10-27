@@ -4,7 +4,8 @@ import {
   GeometryResponse,
   RequestType,
   GeometryInfoMessage,
-  GeometryInfoResponse
+  GeometryInfoResponse,
+  BaseResponse
 } from '../../types';
 import { GeometryTile } from './geometry';
 import { Scene, RenderTargetTexture, ArcRotateCamera } from '@babylonjs/core';
@@ -68,6 +69,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.workerPool.callbacks.geometry.push(
       this.onGeometryTileDataLoad.bind(this)
     );
+    this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
     this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
     this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
 
@@ -285,6 +287,42 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
+  }
+
+  private onCancel(id: string, response: BaseResponse) {
+    const tile = this.tileStatus.get(id);
+    if (
+      tile &&
+      tile.state === TileState.LOADING &&
+      tile.nonce === response.nonce
+    ) {
+      console.warn(`Tile '${id}' aborted unexpectedly. Retrying...`);
+
+      const index = id
+        .split('_')
+        .map(x => parseInt(x))
+        .filter(x => !Number.isNaN(x));
+
+      this.workerPool.postMessage({
+        type: RequestType.GEOMETRY,
+        id: id,
+        request: {
+          index: index,
+          tileSize: this.tileSize / 2 ** this.nativeZoom,
+          arrayID: this.arrayID,
+          namespace: this.namespace,
+          idAttribute: this.metadata.idAttribute,
+          geometryAttribute: this.metadata.geometryAttribute,
+          pad: this.metadata.pad,
+          type: this.metadata.type,
+          imageCRS: this.baseCRS,
+          geometryCRS: this.metadata.crs,
+          geotransformCoefficients: this.transformationCoefficients,
+          metersPerUnit: this.metersPerUnit,
+          nonce: response.nonce
+        } as GeometryMessage
+      } as DataRequest);
+    }
   }
 }
 
