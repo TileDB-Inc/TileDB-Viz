@@ -3,16 +3,18 @@
 <script>
   import { onMount } from 'svelte';
 
-  let active = true;
-  let width, maxWidth;
+	export let anchorLeft = false;
+	export let expandedMaxWidth = 360;
+  let active = false;
+  let element, maxWidth;
 
   onMount(() => {
-    maxWidth = width;
+    maxWidth = element.scrollWidth;
   });
 </script>
 
-<div class="Viewer-SidebarContainer">
-  <button class="Viewer-ToggleMenu" title="Toggle sidebar" on:click={() => active = !active}>
+<div class="Viewer-SidebarContainer" class:anchorLeft={anchorLeft} class:anchorRight={!anchorLeft}>
+  <button class="Viewer-SidebarContainer__toggle" title="Toggle sidebar" on:click={() => active = !active}>
     <svg
       width="16"
       height="16"
@@ -28,8 +30,8 @@
       />
     </svg>
   </button>
-  <div bind:clientWidth={width} style="max-width: {active ? maxWidth : 0}px; transition: 0.8s max-width; overflow: hidden;">
-    <div class="Viewer-Sidebar">
+  <div bind:this={element} style="max-width: {active ? maxWidth : 0}px; transition: 0.8s max-width; overflow: hidden;">
+    <div class="Viewer-Sidebar" class:leftSidebar={anchorLeft} class:rightSidebar={!anchorLeft} style='--expanded-width: {expandedMaxWidth}px'>
       <slot />
     </div>
   </div>
@@ -40,11 +42,20 @@
     display: flex;
     position: absolute;
     top: 16px;
-    right: 0px;
-    flex-direction: row;
   }
 
-  .Viewer-ToggleMenu {
+	.anchorLeft {
+		left: 0px;
+		direction: rtl;
+	}
+	
+	.anchorRight {
+		right: 0px;
+		flex-direction: row;
+	}
+	
+
+  .Viewer-SidebarContainer__toggle {
     background-color: var(--viewer-background-primary);
     box-shadow: var(--viewer-shadow-small);
     padding: 8px;
@@ -59,13 +70,22 @@
   }
 
   .Viewer-Sidebar {
-    width: 360px;
-    border-radius: 8px 0px 0px 8px;
-    border-left: 1px solid var(--viewer-border-disabled, #e6e6e6);
+    width: var(--expanded-width);
     background-color: var(--viewer-surface-primary);
     box-shadow: var(--viewer-shadow-small);
     overflow-y: auto;
     padding: 16px 10px;
     max-height: calc(100vh - 32px);
+		direction: ltr;
   }
+
+	.leftSidebar {
+		border-right: 1px solid var(--viewer-border-disabled, #e6e6e6);
+		border-radius: 0px 8px 8px 0px;
+	}
+	
+	.rightSidebar {
+		border-left: 1px solid var(--viewer-border-disabled, #e6e6e6);
+		border-radius: 8px 0px 0px 8px;
+	}
 </style>
