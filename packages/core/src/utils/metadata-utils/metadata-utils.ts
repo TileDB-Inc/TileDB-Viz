@@ -4,7 +4,8 @@ import {
   Attribute,
   Dimension,
   AssetEntry,
-  GeometryMetadata
+  GeometryMetadata,
+  PointCloudMetadata
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -17,6 +18,7 @@ import {
   LevelRecord
 } from '../../tile/types';
 import { GroupContents } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { DeepImmutableObject, Vector3 } from '@babylonjs/core';
 
 export async function getGroupContents(
   options: AssetOptions
@@ -223,6 +225,116 @@ export async function getGeometryMetadata(
   } as GeometryMetadata;
 
   return [geometryMetadata, attributes];
+}
+
+export async function getPointCloudMetadata(options: AssetOptions): Promise<[PointCloudMetadata, Attribute[], string[]]> {
+  const client = getTileDBClient({
+    ...(options.token ? { apiKey: options.token } : {}),
+    ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
+  });
+
+  let pointMetadata: PointCloudMetadata;
+  let uris: string[];
+
+  if (options.groupID && options.arrayID) {
+    throw new Error(
+      'Both groupID and arrayID specified. Please select only one asset.'
+    );
+  } else if (options.pointCloudGroupID) {
+    [pointMetadata, uris] = await getPointCloudGroupMetadata(options);
+  } else if (options.pointCloudArrayID) {
+    [pointMetadata, uris] = await getPointCloudArrayMetadata(options);
+  } else {
+    throw new Error('No point cloud selected.');
+  }
+
+  const arraySchemaResponse = await client.ArrayApi.getArray(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    options.namespace,
+    uris[0],
+    'application/json'
+  );
+
+  const attributes = arraySchemaResponse.data.attributes.map((value,) => {
+    return {
+      name: value.name,
+      type: value.type as string,
+      visible: false
+    } as Attribute;
+  });
+
+  return [pointMetadata, attributes, uris];
+}
+
+async function getPointCloudArrayMetadata(options: AssetOptions): Promise<[PointCloudMetadata, string[]]> {
+  const client = getTileDBClient({
+    ...(options.token ? { apiKey: options.token } : {}),
+    ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
+  });
+
+  if (!options.pointCloudArrayID) {
+    throw new Error('Pointcloud Group ID is undefined');
+  }
+
+  const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
+    options.namespace,
+    options.pointCloudArrayID
+  ).then((response: any) => response.data);
+
+  const bounds = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds']));
+
+  const metadata: PointCloudMetadata = {
+    minPoint: Vector3.FromArray(bounds, 0),
+    maxPoint: Vector3.FromArray(bounds, 3),
+    octreeData: JSON.parse(arrayMetadata['octant-data'])
+  };
+
+  if ('octree-bounds-conforming' in arrayMetadata) {
+    const boundsConforming = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds-conforming']));
+
+    metadata.minPointConforming = Vector3.FromArray(boundsConforming, 0);
+    metadata.maxPointConforming = Vector3.FromArray(boundsConforming, 3);
+  }
+
+  return [metadata, [options.pointCloudArrayID]];
+}
+
+async function getPointCloudGroupMetadata(options: AssetOptions): Promise<[PointCloudMetadata, string[]]> {
+  const client = getTileDBClient({
+    ...(options.token ? { apiKey: options.token } : {}),
+    ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
+  });
+
+  if (!options.pointCloudGroupID) {
+    throw new Error('Pointcloud Group ID is undefined');
+  }
+
+  const members = await client.groups.getGroupContents(options.namespace, options.pointCloudGroupID);
+  const uris = members.entries?.filter(x => x.array).map(x => {
+    return { lod: Number.parseInt(x.array?.name?.split('_').at(-1) ?? ''), id: x.array?.id ?? '' };
+  }).sort((a, b) => a.lod - b.lod).map(x => x.id) ?? [];
+
+  const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
+    options.namespace,
+    uris[0]
+  ).then((response: any) => response.data);
+
+  const bounds = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds']));
+
+  const metadata: PointCloudMetadata = {
+    minPoint: Vector3.FromArray(bounds, 0),
+    maxPoint: Vector3.FromArray(bounds, 3),
+    octreeData: JSON.parse(arrayMetadata['octant-data'])
+  };
+
+  if ('octree-bounds-conforming' in arrayMetadata) {
+    const boundsConforming = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds-conforming']));
+
+    metadata.minPointConforming = Vector3.FromArray(boundsConforming, 0);
+    metadata.maxPointConforming = Vector3.FromArray(boundsConforming, 3);
+  }
+
+  return [metadata, uris];
 }
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {
