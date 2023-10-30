@@ -1,3 +1,4 @@
+import { Attribute } from '../../types';
 import { TypedArray, TypedArrayInterface } from '../types';
 
 export class Axes {
@@ -301,4 +302,68 @@ export function sliceRanges(
   }
 
   return [ranges, size];
+}
+
+export function toTypedArray(
+  buffer: ArrayBuffer,
+  attribute: Attribute
+): TypedArray {
+  switch (attribute.type.toLowerCase()) {
+    case 'int8':
+      return new Int8Array(buffer);
+    case 'uint8':
+      return new Uint8Array(buffer);
+    case 'int16':
+      return new Int16Array(buffer);
+    case 'uint16':
+      return new Uint16Array(buffer);
+    case 'int32':
+      return new Int32Array(buffer);
+    case 'uint32':
+      return new Uint32Array(buffer);
+    case 'int64':
+      return new BigInt64Array(buffer);
+    case 'uint64':
+      return new BigUint64Array(buffer);
+    case 'float32':
+      return new Float32Array(buffer);
+    case 'float64':
+      return new Float64Array(buffer);
+    default:
+      console.warn(`Unsupported buffer type ${attribute.type.toLowerCase()}`);
+      return new Uint8Array();
+  }
+}
+
+export function concatBuffers(a: ArrayBuffer, b?: ArrayBuffer) {
+  if (!b) {
+    return a;
+  }
+
+  const result = new Uint8Array(a.byteLength + b.byteLength);
+
+  result.set(new Uint8Array(a));
+  result.set(new Uint8Array(b), a.byteLength);
+
+  return result.buffer;
+}
+
+export function interleaveTypedArrays(...arrays: TypedArray[]): TypedArray {
+  const sizes = arrays.map(x => x.length);
+  if (!sizes.every((value, index, array) => value === array[0])) {
+    console.error(`Arrays are of incompatible sizes. ${sizes.toString()}`);
+  }
+
+  const result = new (arrays[0].constructor as TypedArrayInterface)(
+    sizes.length * sizes[0]
+  );
+  for (let index = 0; index < sizes.length; ++index) {
+    for (let arrayIndex = 0; arrayIndex < sizes[index]; ++arrayIndex) {
+      const position = arrayIndex * sizes.length + index;
+
+      result[position] = arrays[index][arrayIndex];
+    }
+  }
+
+  return result;
 }

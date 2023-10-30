@@ -1,5 +1,5 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
-import { Constants, Texture } from '@babylonjs/core';
+import { Constants, Texture, Vector3 } from '@babylonjs/core';
 import { Attribute, Dimension, AssetMetadata } from '../../types';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
@@ -98,7 +98,9 @@ export type TypedArray =
   | Uint32Array
   | Uint8ClampedArray
   | Float32Array
-  | Float64Array;
+  | Float64Array
+  | BigInt64Array
+  | BigUint64Array;
 
 export type TypedArrayInterface =
   | typeof Int8Array
@@ -109,7 +111,9 @@ export type TypedArrayInterface =
   | typeof Uint32Array
   | typeof Uint8ClampedArray
   | typeof Float32Array
-  | typeof Float64Array;
+  | typeof Float64Array
+  | typeof BigInt64Array
+  | typeof BigUint64Array;
 
 export const types = {
   uint8: {
@@ -169,6 +173,8 @@ export const enum RequestType {
   IMAGE = 1,
   GEOMETRY = 2,
   GEOMETRY_INFO = 3,
+  POINT_CLOUD = 4,
+  MESH = 5,
 
   INITIALIZE = 100
 }
@@ -232,6 +238,23 @@ export interface GeometryInfoMessage {
   geotransformCoefficients: number[];
 }
 
+export type Feature = {
+  name: string;
+  attributes: string[];
+  interleaved: boolean;
+};
+
+export interface PointMessage {
+  nonce: number;
+  arrayID: string;
+  namespace: string;
+  index: number[];
+  minPoint: Vector3;
+  maxPoint: Vector3;
+  features: Feature[];
+  attributes: Map<string, Attribute>;
+}
+
 export interface WorkerResponse {
   type: RequestType;
   id: string;
@@ -269,5 +292,10 @@ export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
   info: { (id: string, response: GeometryInfoResponse): void }[];
+  point: { (id: string, response: PointResponse): void }[];
   cancel: { (id: string, response: BaseResponse): void }[];
+}
+
+export interface PointResponse extends BaseResponse {
+  attributes: { [attribute: string]: TypedArray };
 }

@@ -18,7 +18,7 @@ import {
   LevelRecord
 } from '../../tile/types';
 import { GroupContents } from '@tiledb-inc/tiledb-cloud/lib/v1';
-import { DeepImmutableObject, Vector3 } from '@babylonjs/core';
+import { Vector3 } from '@babylonjs/core';
 
 export async function getGroupContents(
   options: AssetOptions
@@ -227,7 +227,9 @@ export async function getGeometryMetadata(
   return [geometryMetadata, attributes];
 }
 
-export async function getPointCloudMetadata(options: AssetOptions): Promise<[PointCloudMetadata, Attribute[], string[]]> {
+export async function getPointCloudMetadata(
+  options: AssetOptions
+): Promise<PointCloudMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -255,18 +257,28 @@ export async function getPointCloudMetadata(options: AssetOptions): Promise<[Poi
     'application/json'
   );
 
-  const attributes = arraySchemaResponse.data.attributes.map((value,) => {
-    return {
-      name: value.name,
-      type: value.type as string,
-      visible: false
-    } as Attribute;
-  });
+  pointMetadata.attributes = new Map<string, Attribute>(
+    arraySchemaResponse.data.attributes.map(value => {
+      return [
+        value.name,
+        {
+          name: value.name,
+          type: value.type as string,
+          visible: false
+        } as Attribute
+      ];
+    })
+  );
 
-  return [pointMetadata, attributes, uris];
+  pointMetadata.attributes;
+  pointMetadata.uris = uris;
+
+  return pointMetadata;
 }
 
-async function getPointCloudArrayMetadata(options: AssetOptions): Promise<[PointCloudMetadata, string[]]> {
+async function getPointCloudArrayMetadata(
+  options: AssetOptions
+): Promise<[PointCloudMetadata, string[]]> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -290,7 +302,9 @@ async function getPointCloudArrayMetadata(options: AssetOptions): Promise<[Point
   };
 
   if ('octree-bounds-conforming' in arrayMetadata) {
-    const boundsConforming = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds-conforming']));
+    const boundsConforming = Float64Array.from(
+      JSON.parse(arrayMetadata['octree-bounds-conforming'])
+    );
 
     metadata.minPointConforming = Vector3.FromArray(boundsConforming, 0);
     metadata.maxPointConforming = Vector3.FromArray(boundsConforming, 3);
@@ -299,7 +313,9 @@ async function getPointCloudArrayMetadata(options: AssetOptions): Promise<[Point
   return [metadata, [options.pointCloudArrayID]];
 }
 
-async function getPointCloudGroupMetadata(options: AssetOptions): Promise<[PointCloudMetadata, string[]]> {
+async function getPointCloudGroupMetadata(
+  options: AssetOptions
+): Promise<[PointCloudMetadata, string[]]> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -309,10 +325,21 @@ async function getPointCloudGroupMetadata(options: AssetOptions): Promise<[Point
     throw new Error('Pointcloud Group ID is undefined');
   }
 
-  const members = await client.groups.getGroupContents(options.namespace, options.pointCloudGroupID);
-  const uris = members.entries?.filter(x => x.array).map(x => {
-    return { lod: Number.parseInt(x.array?.name?.split('_').at(-1) ?? ''), id: x.array?.id ?? '' };
-  }).sort((a, b) => a.lod - b.lod).map(x => x.id) ?? [];
+  const members = await client.groups.getGroupContents(
+    options.namespace,
+    options.pointCloudGroupID
+  );
+  const uris =
+    members.entries
+      ?.filter(x => x.array)
+      .map(x => {
+        return {
+          lod: Number.parseInt(x.array?.name?.split('_').at(-1) ?? ''),
+          id: x.array?.id ?? ''
+        };
+      })
+      .sort((a, b) => a.lod - b.lod)
+      .map(x => x.id) ?? [];
 
   const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
     options.namespace,
@@ -328,7 +355,9 @@ async function getPointCloudGroupMetadata(options: AssetOptions): Promise<[Point
   };
 
   if ('octree-bounds-conforming' in arrayMetadata) {
-    const boundsConforming = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds-conforming']));
+    const boundsConforming = Float64Array.from(
+      JSON.parse(arrayMetadata['octree-bounds-conforming'])
+    );
 
     metadata.minPointConforming = Vector3.FromArray(boundsConforming, 0);
     metadata.maxPointConforming = Vector3.FromArray(boundsConforming, 3);

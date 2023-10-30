@@ -1,6 +1,11 @@
-import { Vector3 } from "@babylonjs/core";
+import { Vector3 } from '@babylonjs/core';
 
 type octreeIndex = `${number}-${number}-${number}-${number}`;
+
+export type SceneMetadata = {
+  crs?: string;
+  transformation?: number[];
+};
 
 export interface AssetMetadata {
   dataset_type: string;
@@ -23,7 +28,10 @@ export type PointCloudMetadata = {
   maxPointConforming?: Vector3;
 
   octreeData: { [index: octreeIndex]: number };
-}
+
+  attributes: Map<string, Attribute>;
+  uris: string[];
+};
 
 export interface AssetEntry {
   namespace: string;
