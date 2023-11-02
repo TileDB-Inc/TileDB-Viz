@@ -1,7 +1,7 @@
 <svelte:options customElement="info-panel" />
 
 <script lang="ts">
-  import { Events } from './constants/events';
+  import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
   import { ButtonProps, GUIEvent } from './types';
 
@@ -40,7 +40,7 @@
         detail: {
           target: 'geometry',
           props: {
-            command: 'clear'
+            command: Commands.CLEAR
           }
         }
       })
@@ -60,7 +60,7 @@
         detail: {
           target: 'geometry',
           props: {
-            command: 'select',
+            command: Commands.SELECT,
             data: {
               id: -1n,
               previousID
@@ -84,7 +84,7 @@
         detail: {
           target: 'geometry',
           props: {
-            command: 'select',
+            command: Commands.SELECT,
             data: {
               id: results[selectedItemIndex][idAttribute],
               previousID
