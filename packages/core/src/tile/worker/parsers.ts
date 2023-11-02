@@ -18,16 +18,6 @@ export function parsePolygon(
   let positionOffset = positions.length;
 
   for (const [geometryIndex, offset] of offsets.entries()) {
-    // const entry = wkx.Geometry.parse(
-    //   NodeBuffer.from(
-    //     wkbs,
-    //     Number(offset),
-    //     geometryIndex === offsets.length - 1
-    //       ? undefined
-    //       : Number(offsets[geometryIndex + 1] - offset)
-    //   )
-    // );
-
     const entry = Parser.parse(
       new DataView(
         wkbs,
