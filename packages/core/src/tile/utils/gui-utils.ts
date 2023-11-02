@@ -1,5 +1,10 @@
 import '@tiledb-inc/viz-components';
-import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
+import {
+  ButtonProps,
+  Commands,
+  Events,
+  GUIEvent
+} from '@tiledb-inc/viz-components';
 import { Channel } from '../types';
 import { Dimension, AssetEntry, Attribute } from '../../types';
 
@@ -109,7 +114,7 @@ class TileImageGUI {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     if (event.detail.target === 'cache') {
       switch (event.detail.props.command) {
-        case 'clear':
+        case Commands.CLEAR:
           this.clearCache();
           break;
         default:
@@ -117,7 +122,7 @@ class TileImageGUI {
       }
     } else if (event.detail.target === 'asset') {
       switch (event.detail.props.command) {
-        case 'select':
+        case Commands.SELECT:
           this.assetSelectionCallback(
             event.detail.props.data.namespace,
             event.detail.props.data.groupID,

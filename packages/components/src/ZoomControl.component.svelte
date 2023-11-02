@@ -2,9 +2,8 @@
 
 <script lang="typescript">
   import Section from './Section.component.svelte';
-  import { pprintZoom } from './utils/helpers';
   import { onMount, onDestroy } from 'svelte';
-  import { Events } from './constants/events';
+  import { Events, Commands } from './constants/events';
   import {  GUIEvent, ButtonProps } from './types';
 
   export let zoom = 0.25;
@@ -65,7 +64,7 @@
     </div>
     <div class="Viewer-ZoomControl__content" slot="content">
       <div class="Viewer-ZoomControl__group">
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('in')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.ZOOMIN)}>
           <svg
             width="20"
             height="20"
@@ -80,7 +79,7 @@
             />
           </svg>
         </button>
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('out')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.ZOOMOUT)}>
           <svg
             width="20"
             height="20"
@@ -111,7 +110,7 @@
       </div>
       <div class="Viewer-ZoomControl__group">
         <p class="Viewer-ZoomControl__label">Reset view</p>
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('reset')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.RESET)}>
           <svg
             width="20"
             height="20"

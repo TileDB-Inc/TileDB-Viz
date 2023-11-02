@@ -5,7 +5,7 @@
   import Slider from './Slider.component.svelte';
   import ToggleSwitch from './ToggleSwitch.component.svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { Events } from './constants/events';
+  import { Commands, Events } from './constants/events';
   import { GUIEvent, ButtonProps, TextBoxProps } from './types/index';
 
   let tiles = 0;
@@ -33,7 +33,7 @@
         detail: {
           target: 'cache',
           props: {
-            command: 'clear'
+            command: Commands.CLEAR
           }
         }
       })
@@ -146,7 +146,7 @@
         </p>
       </div>
     </div>
-    <ToggleSwitch id={'camera_minimap'} command={'visibility'} label={'Display minimap'} value={true} />
+    <ToggleSwitch id={'camera_minimap'} command={Commands.VISIBILITY} label={'Display minimap'} value={true} />
     <div style="display: flex; flex-direction:column; gap: 8px;">
       <div style="display: flex;">
         <Slider

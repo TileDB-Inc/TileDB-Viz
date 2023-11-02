@@ -4,7 +4,7 @@
   import Section from './Section.component.svelte';
   import Slider from './Slider.component.svelte';
   import { rgbToHex, hexToRgb } from './utils/helpers';
-  import { Events } from './constants/events';
+  import { Events, Commands } from './constants/events';
   import { ButtonProps, GUIEvent } from './types';
 
   export let channels = '[]';
@@ -17,7 +17,7 @@
         detail: {
           target: `channel_${index}`,
           props: {
-            command: 'color',
+            command: Commands.COLOR,
             data: hexToRgb((event.target as HTMLInputElement).value)
           }
         }
@@ -34,7 +34,7 @@
         detail: {
           target: `channel_${index}`,
           props: {
-            command: 'visibility',
+            command: Commands.VISIBILITY,
             data: visibility[index]
           }
         }

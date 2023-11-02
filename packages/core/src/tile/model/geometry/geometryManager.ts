@@ -27,7 +27,12 @@ import {
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
-import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
+import {
+  ButtonProps,
+  Events,
+  GUIEvent,
+  Commands
+} from '@tiledb-inc/viz-components';
 import { getCamera } from '../../utils/camera-utils';
 
 interface GeometryOptions {
@@ -283,7 +288,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
 
     switch (event.detail.props.command) {
-      case 'clear':
+      case Commands.CLEAR:
         this.selectedPolygon?.dispose(false, true);
         this.highlightLayer.removeAllMeshes();
         break;

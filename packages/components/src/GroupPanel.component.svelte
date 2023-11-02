@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import Section from './Section.component.svelte';
   import { rangeToPagination } from './utils/helpers';
-  import { Events } from './constants/events';
+  import { Commands, Events } from './constants/events';
   import { GUIEvent, ButtonProps } from './types';
 
   export let groups = '[]';
@@ -43,7 +43,7 @@
         detail: {
           target: 'asset',
           props: {
-            command: 'select',
+            command: Commands.SELECT,
             data: {
               namespace,
               groupID,

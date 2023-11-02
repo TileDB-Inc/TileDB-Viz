@@ -1,4 +1,4 @@
-import { Events } from './constants/events';
+import { Events, Commands } from './constants/events';
 import { GUIEvent, ButtonProps, SliderProps, TextBoxProps } from './types/index';
 
 export { default as FloatingButton } from './FloatingButton.component.svelte';
@@ -21,5 +21,5 @@ export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
 export { default as GeometryPanel } from './GeometryPanel.component.svelte';
 
-export { Events }
+export { Events, Commands }
 export type { GUIEvent, ButtonProps, SliderProps, TextBoxProps }

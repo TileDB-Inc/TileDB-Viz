@@ -12,3 +12,13 @@ export enum Events {
   PICK_OBJECT = 'picking::object',
   TEXT_INPUT_CHANGE = 'text-input::change'
 }
+
+export enum Commands {
+  CLEAR = 'command::clear',
+  SELECT = 'command::select',
+  VISIBILITY = 'command::visibility',
+  COLOR = 'command::color',
+  ZOOMIN = 'command::zoomin',
+  ZOOMOUT = 'command::zoomout',
+  RESET = 'command::reset'
+}

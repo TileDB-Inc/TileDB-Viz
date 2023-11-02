@@ -13,7 +13,8 @@ import {
   GUIEvent,
   ButtonProps,
   SliderProps,
-  TextBoxProps
+  TextBoxProps,
+  Commands
 } from '@tiledb-inc/viz-components';
 
 const MINIMAP_OFFSET = 20;
@@ -203,7 +204,7 @@ export class CameraManager {
 
     if (target[1] === 'zoom') {
       switch (event.detail.props.command) {
-        case 'in':
+        case Commands.ZOOMIN:
           this.zoom = Math.max(
             this.lowerZoomLimit,
             Math.min(
@@ -212,7 +213,7 @@ export class CameraManager {
             )
           );
           break;
-        case 'out':
+        case Commands.ZOOMOUT:
           this.zoom = Math.max(
             this.lowerZoomLimit,
             Math.min(
@@ -221,7 +222,7 @@ export class CameraManager {
             )
           );
           break;
-        case 'reset':
+        case Commands.RESET:
           this.zoom = this.lowerZoomLimit;
           this.mainCamera.target.x = this.baseWidth / 2;
           this.mainCamera.target.z = -this.baseHeight / 2;

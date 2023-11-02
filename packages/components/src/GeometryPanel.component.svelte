@@ -4,7 +4,7 @@
   import { onMount, onDestroy } from 'svelte';
   import Section from './Section.component.svelte';
   import TypedTextBox from './TypedTextBox.component.svelte';
-  import { Events } from './constants/events';
+  import { Commands, Events } from './constants/events';
   import { ButtonProps, GUIEvent } from './types';
 
   export let attributes = '[]';
@@ -14,7 +14,10 @@
   function loadPickedObject(event: CustomEvent<GUIEvent>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') return;
+    if (target[0] !== 'geometry') 
+    {
+      return;
+    }
 
     selectedGeometry = event.detail.props;
 
@@ -30,7 +33,7 @@
         detail: {
           target: 'geometry',
           props: {
-            command: 'clear'
+            command: Commands.CLEAR
           }
         }
       })
