@@ -19,7 +19,8 @@ import {
   Events,
   GUIEvent,
   ButtonProps,
-  SliderProps
+  SliderProps,
+  Commands
 } from '@tiledb-inc/viz-components';
 
 interface ImageOptions {
@@ -346,7 +347,7 @@ export class ImageManager extends Manager<ImageTile> {
     const index = Number(target[1]);
 
     switch (event.detail.props.command) {
-      case 'color':
+      case Commands.COLOR:
         this.colors[4 * index] = event.detail.props.data.r / 255;
         this.colors[4 * index + 1] = event.detail.props.data.g / 255;
         this.colors[4 * index + 2] = event.detail.props.data.b / 255;
@@ -354,7 +355,7 @@ export class ImageManager extends Manager<ImageTile> {
         this.tileOptions.updateFloatArray('colors', this.colors);
         this.tileOptions.update();
         break;
-      case 'visibility':
+      case Commands.VISIBILITY:
         this.channelMapping[4 * index] = event.detail.props.data ? index : -1;
         calculateChannelMapping(this.channelMapping);
 

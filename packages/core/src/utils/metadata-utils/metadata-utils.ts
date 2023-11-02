@@ -16,7 +16,7 @@ import {
   RasterAssetMetadata,
   LevelRecord
 } from '../../tile/types';
-import { GroupContents } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 export async function getGroupContents(
   options: AssetOptions
@@ -227,7 +227,7 @@ export async function getGeometryMetadata(
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {
   switch (type) {
-    case 'STRING_UTF8': {
+    case Datatype.StringUtf8: {
       let result = '';
       for (let i = 0; i < Math.ceil(buffer.length / 1000); ++i) {
         result += String.fromCharCode(
@@ -236,7 +236,7 @@ function deserializeBuffer(type: string, buffer: Array<number>): any {
       }
       return result;
     }
-    case 'INT64':
+    case Datatype.Int64:
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
     default:
       console.error(`Cannot deserialize type '${type}'`);

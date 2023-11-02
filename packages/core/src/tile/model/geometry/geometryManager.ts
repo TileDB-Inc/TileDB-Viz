@@ -12,7 +12,12 @@ import { Scene, RenderTargetTexture, ArcRotateCamera } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
-import { ButtonProps, Events, GUIEvent } from '@tiledb-inc/viz-components';
+import {
+  ButtonProps,
+  Events,
+  GUIEvent,
+  Commands
+} from '@tiledb-inc/viz-components';
 import { getCamera } from '../../utils/camera-utils';
 import { PickingTool } from '../../utils/picking-tool';
 
@@ -251,14 +256,14 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
 
     switch (event.detail.props.command) {
-      case 'clear':
+      case Commands.CLEAR:
         for (const [, status] of this.tileStatus) {
           if (status.state === TileState.VISIBLE) {
             status.tile?.updateSelection([]);
           }
         }
         break;
-      case 'select':
+      case Commands.SELECT:
         for (const [, status] of this.tileStatus) {
           if (status.state === TileState.VISIBLE) {
             status.tile?.updatePicked(
