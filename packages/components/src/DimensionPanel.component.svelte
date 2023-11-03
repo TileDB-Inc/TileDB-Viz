@@ -27,7 +27,7 @@
     {#each JSON.parse(dimensions) as dimension, index}
       <li class="Viewer-ControlPanel__item">
         <Slider
-          id={`d_${index}`}
+          id={`dimension_${index}`}
           label={dimension.name}
           value={dimension.value}
           min={dimension.min}

@@ -1,4 +1,4 @@
-enum Events {
+export enum Events {
   TOGGLE_INPUT_CHANGE = 'toggle-input::change',
   RADIO_GROUP_CHANGE = 'radio-group::change',
   SLIDER_CHANGE = 'tdb-slider::change',
@@ -8,7 +8,17 @@ enum Events {
   DUAL_SLIDER_CHANGE = 'dual-slider::change',
   COLOR_CHANGE = 'color-input::change',
   ENGINE_INFO_UPDATE = 'engine-info::update',
-  BUTTON_CLICK = 'button::clicked'
+  BUTTON_CLICK = 'button::clicked',
+  PICK_OBJECT = 'picking::object',
+  TEXT_INPUT_CHANGE = 'text-input::change'
 }
 
-export default Events;
+export enum Commands {
+  CLEAR = 'command::clear',
+  SELECT = 'command::select',
+  VISIBILITY = 'command::visibility',
+  COLOR = 'command::color',
+  ZOOMIN = 'command::zoomin',
+  ZOOMOUT = 'command::zoomout',
+  RESET = 'command::reset'
+}

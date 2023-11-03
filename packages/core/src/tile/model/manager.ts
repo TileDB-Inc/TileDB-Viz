@@ -1,7 +1,8 @@
-import { Camera, Scene } from '@babylonjs/core';
+import { ArcRotateCamera, Scene } from '@babylonjs/core';
 import { WorkerPool } from '../worker/tiledb.worker.pool';
 import { Tile } from './tile';
 import { Events } from '@tiledb-inc/viz-components';
+import { getViewArea } from '../utils/helpers';
 
 export const enum TileState {
   LOADING,
@@ -10,12 +11,9 @@ export const enum TileState {
 
 export interface TileStatus<T> {
   tile?: T;
+  nonce: number;
   state?: TileState;
   evict: boolean;
-}
-
-export interface UpdateOperation<T> {
-  apply(source: T): void;
 }
 
 export abstract class Manager<T extends Tile<any>> {
@@ -25,6 +23,7 @@ export abstract class Manager<T extends Tile<any>> {
   protected tileStatus: Map<string, TileStatus<T>>;
   protected baseWidth: number;
   protected baseHeight: number;
+  protected nonce: number;
 
   constructor(
     scene: Scene,
@@ -40,6 +39,7 @@ export abstract class Manager<T extends Tile<any>> {
     this.baseHeight = baseHeight;
 
     this.tileStatus = new Map();
+    this.nonce = 0;
   }
 
   /**
@@ -47,35 +47,47 @@ export abstract class Manager<T extends Tile<any>> {
    * @param camera The main orthographic camera
    * @param zoom The logarithmic camera zoom level
    */
-  public abstract loadTiles(camera: Camera, zoom: number): void;
+  public abstract loadTiles(camera: ArcRotateCamera, zoom: number): void;
 
   /**
-   * Update the already visible or currently loading tiles
-   * @param options The update options
+   * Unregister all event listeners from the scene or the GUI.
    */
-  public updateTiles(operation: UpdateOperation<Manager<T>>): void {
-    operation.apply(this);
+  protected stopEventListeners(): void {
+    /* Empty */
   }
 
   /**
    * Dispose all BabylonJS resources
    */
   public dispose() {
+    this.stopEventListeners();
+
     for (const [, status] of this.tileStatus) {
       status.tile?.dispose();
     }
   }
 
-  protected getTileIndexRange(camera: Camera, zoomLevel: number): number[] {
+  protected getTileIndexRange(
+    camera: ArcRotateCamera,
+    zoomLevel: number
+  ): number[] {
     const maxTileX =
       Math.ceil(this.baseWidth / (this.tileSize / 2 ** zoomLevel)) - 1;
     const maxTileY =
       Math.ceil(this.baseHeight / (this.tileSize / 2 ** zoomLevel)) - 1;
 
-    const top = camera.position.z + (camera?.orthoTop ?? 0);
-    const bottom = camera.position.z + (camera?.orthoBottom ?? 0);
-    const left = camera.position.x + (camera?.orthoLeft ?? 0);
-    const right = camera.position.x + (camera?.orthoRight ?? 0);
+    // construct 2 consecutive points of the viewport
+    const pointTR = { x: camera?.orthoRight ?? 0, z: camera?.orthoTop ?? 0 };
+    const pointBR = { x: camera?.orthoRight ?? 0, z: camera?.orthoBottom ?? 0 };
+    const center = { x: camera.target.x, z: -camera.target.z };
+
+    const [bottom, top, left, right] = getViewArea(
+      pointTR,
+      pointBR,
+      center,
+      camera.beta,
+      camera.alpha
+    );
 
     if (
       top < 0 ||

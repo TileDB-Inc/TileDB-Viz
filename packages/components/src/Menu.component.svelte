@@ -2,7 +2,7 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   export let id;
 
@@ -17,13 +17,13 @@
   }
 
   onMount(() => {
-    window.addEventListener(events.FLOATING_BUTTON_CLICK, toggleVissible, {
+    window.addEventListener(Events.FLOATING_BUTTON_CLICK, toggleVissible, {
       capture: true
     });
   });
 
   onDestroy(() => {
-    window.removeEventListener(events.FLOATING_BUTTON_CLICK, toggleVissible, {
+    window.removeEventListener(Events.FLOATING_BUTTON_CLICK, toggleVissible, {
       capture: true
     });
   });

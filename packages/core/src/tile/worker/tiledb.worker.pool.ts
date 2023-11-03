@@ -5,7 +5,8 @@ import {
   WorkerResponse,
   ImageResponse,
   ResponseCallback,
-  GeometryResponse
+  GeometryResponse,
+  GeometryInfoResponse
 } from '../types';
 
 export interface WorkerPoolOptions {
@@ -27,7 +28,12 @@ export class WorkerPool {
 
   constructor(options?: WorkerPoolOptions) {
     this.poolSize = options?.poolSize ?? window.navigator.hardwareConcurrency;
-    this.callbacks = options?.callbacks ?? { image: [], geometry: [] };
+    this.callbacks = options?.callbacks ?? {
+      image: [],
+      geometry: [],
+      info: [],
+      cancel: []
+    };
     this.taskMap = new Map<string, number>();
     this.initilizeMessage = {
       type: RequestType.INITIALIZE,
@@ -70,7 +76,15 @@ export class WorkerPool {
           callback(response.id, response.response as GeometryResponse);
         }
         break;
+      case RequestType.GEOMETRY_INFO:
+        for (const callback of this.callbacks.info) {
+          callback(response.id, response.response as GeometryInfoResponse);
+        }
+        break;
       case RequestType.CANCEL:
+        for (const callback of this.callbacks.cancel) {
+          callback(response.id, response.response);
+        }
         break;
       default:
         console.warn(`Unknown response type ${response.type}`);
@@ -86,7 +100,7 @@ export class WorkerPool {
     }
   }
 
-  public cancelRequest(request: DataRequest): boolean {
+  public cancelRequest(request: DataRequest) {
     const workerIndex = this.taskMap.get(request.id);
     const index = this.messageQueue.findIndex(
       (item: DataRequest) => item.id === request.id
@@ -102,8 +116,6 @@ export class WorkerPool {
     if (index !== -1) {
       this.messageQueue.splice(index, 1);
     }
-
-    return workerIndex !== undefined || index !== -1;
   }
 
   public postMessage(request: DataRequest) {

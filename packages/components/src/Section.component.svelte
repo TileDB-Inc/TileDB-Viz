@@ -1,15 +1,25 @@
 <svelte:options customElement="section-menu" />
 
+<svelte:head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</svelte:head>
+
 <script>
   import Header from './Header.component.svelte';
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate  } from 'svelte';
 
-  let height;
+  let element;
   let maxHeight;
   let visible = true;
 
   onMount(() => {
-    maxHeight = height;
+    maxHeight = element.scrollHeight;
+  });
+
+  afterUpdate(() => {
+    maxHeight = element.scrollHeight;
   });
 </script>
 
@@ -18,7 +28,7 @@
     <slot name="header" />
   </Header>
   <div
-    bind:clientHeight={height}
+  bind:this={element}
     class="Viewer-Section__container"
     style="max-height: {visible ? maxHeight : 0}px;"
   >

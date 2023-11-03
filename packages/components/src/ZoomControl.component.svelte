@@ -1,12 +1,12 @@
 <svelte:options customElement="zoom-control" />
 
-<script>
+<script lang="typescript">
   import Section from './Section.component.svelte';
-  import { pprintZoom } from './utils/helpers';
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events, Commands } from './constants/events';
+  import {  GUIEvent, ButtonProps } from './types';
 
-  export let zoom = 0;
+  export let zoom = 0.25;
 
   function zoomInfoUpdate(e) {
     if (e.detail.type === 'ZOOM_INFO')
@@ -15,12 +15,15 @@
     }
   }
 
-  function onClick(id) {
+  function onClick(command: string) {
     window.dispatchEvent(
-      new CustomEvent(events.BUTTON_CLICK, {
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          id
+          target: 'camera_zoom',
+          props: {
+            command: command
+          }
         }
       })
     );
@@ -28,7 +31,7 @@
 
   onMount(() => {
     window.addEventListener(
-      events.ENGINE_INFO_UPDATE,
+      Events.ENGINE_INFO_UPDATE,
       zoomInfoUpdate,
       {
         capture: true
@@ -37,7 +40,7 @@
   });
 
   onDestroy(() => {
-    window.removeEventListener(events.ENGINE_INFO_UPDATE, zoomInfoUpdate, {
+    window.removeEventListener(Events.ENGINE_INFO_UPDATE, zoomInfoUpdate, {
       capture: true
     });
   });
@@ -61,7 +64,7 @@
     </div>
     <div class="Viewer-ZoomControl__content" slot="content">
       <div class="Viewer-ZoomControl__group">
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_plus')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.ZOOMIN)}>
           <svg
             width="20"
             height="20"
@@ -76,7 +79,7 @@
             />
           </svg>
         </button>
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_minus')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.ZOOMOUT)}>
           <svg
             width="20"
             height="20"
@@ -103,11 +106,11 @@
             </defs>
           </svg>
         </button>
-        <p class="Viewer-ZoomControl__label">{pprintZoom(Number(zoom))}</p>
+        <p class="Viewer-ZoomControl__label">{Number(100 * zoom).toFixed(0) + ' %'}</p>
       </div>
       <div class="Viewer-ZoomControl__group">
         <p class="Viewer-ZoomControl__label">Reset view</p>
-        <button class="Viewer-ZoomControl__button" on:click={() => onClick('zoom_reset')}>
+        <button class="Viewer-ZoomControl__button" on:click={() => onClick(Commands.RESET)}>
           <svg
             width="20"
             height="20"

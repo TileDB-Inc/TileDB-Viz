@@ -16,7 +16,7 @@ import {
   RasterAssetMetadata,
   LevelRecord
 } from '../../tile/types';
-import { GroupContents } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 export async function getGroupContents(
   options: AssetOptions
@@ -176,7 +176,9 @@ async function getGroupMetadata(
   return [groupMetadata, memberUris];
 }
 
-export async function getGeometryMetadata(options: AssetOptions) {
+export async function getGeometryMetadata(
+  options: AssetOptions
+): Promise<[GeometryMetadata, Attribute[]]> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -185,6 +187,21 @@ export async function getGeometryMetadata(options: AssetOptions) {
   if (!options.geometryArrayID) {
     throw new Error('Geometry array ID is undefined');
   }
+
+  const arraySchemaResponse = await client.ArrayApi.getArray(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    options.namespace,
+    options.geometryArrayID,
+    'application/json'
+  );
+
+  const attributes = arraySchemaResponse.data.attributes.map((value, index) => {
+    return {
+      name: value.name,
+      type: value.type as string,
+      visible: index === 0 ? true : false
+    } as Attribute;
+  });
 
   const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
     options.namespace,
@@ -205,14 +222,21 @@ export async function getGeometryMetadata(options: AssetOptions) {
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
   } as GeometryMetadata;
 
-  return geometryMetadata;
+  return [geometryMetadata, attributes];
 }
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {
   switch (type) {
-    case 'STRING_UTF8':
-      return String.fromCharCode(...buffer);
-    case 'INT64':
+    case Datatype.StringUtf8: {
+      let result = '';
+      for (let i = 0; i < Math.ceil(buffer.length / 1000); ++i) {
+        result += String.fromCharCode(
+          ...buffer.slice(i * 1000, Math.min((i + 1) * 1000, buffer.length))
+        );
+      }
+      return result;
+    }
+    case Datatype.Int64:
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
     default:
       console.error(`Cannot deserialize type '${type}'`);

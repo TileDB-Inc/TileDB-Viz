@@ -1,6 +1,7 @@
-import { Scene, Camera, UniformBuffer } from '@babylonjs/core';
+import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
 import { Attribute, Dimension } from '../../../types';
 import {
+  BaseResponse,
   Channel,
   DataRequest,
   ImageMessage,
@@ -10,10 +11,17 @@ import {
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, UpdateOperation, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus, TileState } from '../manager';
 import { ImageTile } from './image';
 import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
+import {
+  Events,
+  GUIEvent,
+  ButtonProps,
+  SliderProps,
+  Commands
+} from '@tiledb-inc/viz-components';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -28,7 +36,7 @@ export class ImageManager extends Manager<ImageTile> {
   private channelMapping: Int32Array;
   private intensityRanges: Float32Array;
   private colors: Float32Array;
-  private tileOptions: UniformBuffer;
+  private tileOptions!: UniformBuffer;
   private levels: LevelRecord[];
   private dimensions: Dimension[];
   private attributes: Attribute[];
@@ -36,111 +44,7 @@ export class ImageManager extends Manager<ImageTile> {
   private namespace: string;
 
   private selectedAttribute!: Attribute;
-
-  public static readonly ColorUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public color: { r: number; g: number; b: number };
-
-    constructor(index: number, color: { r: number; g: number; b: number }) {
-      this.index = index;
-      this.color = color;
-    }
-
-    public apply(source: ImageManager): void {
-      source.colors[4 * this.index] = this.color.r / 255;
-      source.colors[4 * this.index + 1] = this.color.g / 255;
-      source.colors[4 * this.index + 2] = this.color.b / 255;
-
-      source.tileOptions.updateFloatArray(
-        'colors',
-        new Float32Array(source.colors)
-      );
-      source.tileOptions.update();
-    }
-  };
-
-  public static readonly IntensityUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public intensity: number;
-
-    constructor(index: number, intensity: number) {
-      this.index = index;
-      this.intensity = intensity;
-    }
-
-    apply(source: ImageManager): void {
-      source.intensityRanges[4 * this.index + 1] = this.intensity;
-
-      source.tileOptions.updateFloatArray(
-        'ranges',
-        new Float32Array(source.intensityRanges)
-      );
-      source.tileOptions.update();
-    }
-  };
-
-  public static readonly ChannelUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public visible: boolean;
-
-    constructor(index: number, visible: boolean) {
-      this.index = index;
-      this.visible = visible;
-    }
-
-    apply(source: ImageManager): void {
-      source.channelMapping[4 * this.index] = this.visible ? this.index : -1;
-      calculateChannelMapping(source.channelMapping);
-      source.channelRanges = calculateChannelRanges(source.channelMapping);
-
-      source.tileOptions = new UniformBuffer(source.scene.getEngine());
-      source.tileOptions.addUniform(
-        'channelMapping',
-        4,
-        source.channelMapping.length / 4
-      );
-      source.tileOptions.addUniform(
-        'ranges',
-        4,
-        source.intensityRanges.length / 4
-      );
-      source.tileOptions.addUniform('colors', 4, source.colors.length / 4);
-
-      source.tileOptions.updateIntArray(
-        'channelMapping',
-        source.channelMapping
-      );
-      source.tileOptions.updateFloatArray('ranges', source.intensityRanges);
-      source.tileOptions.updateFloatArray('colors', source.colors);
-
-      source.tileOptions.update();
-
-      source.update();
-    }
-  };
-
-  public static readonly DimensionUpdate = class
-    implements UpdateOperation<ImageManager>
-  {
-    public index: number;
-    public value: number;
-
-    constructor(index: number, value: number) {
-      this.index = index;
-      this.value = value;
-    }
-    apply(source: ImageManager): void {
-      source.dimensions[this.index].value = this.value;
-
-      source.update();
-    }
-  };
+  private hasMinimap: boolean;
 
   constructor(
     scene: Scene,
@@ -157,6 +61,7 @@ export class ImageManager extends Manager<ImageTile> {
     super(scene, workerPool, tileSize, baseWidth, baseHeight);
 
     this.workerPool.callbacks.image.push(this.onImageTileDataLoad.bind(this));
+    this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
     this.levels = imageOptions.levels;
     this.dimensions = imageOptions.dimensions;
@@ -169,11 +74,16 @@ export class ImageManager extends Manager<ImageTile> {
     const channelCount =
       this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
 
-    this.channelRanges = [0, channelCount - 1];
     this.channelMapping = new Int32Array(
       range(0, channelCount)
         .map(x => [x, 0, 0, 0])
         .flat()
+    );
+    this.channelMapping = new Int32Array(
+      this.metadata.channels
+        .get(this.selectedAttribute.name)
+        ?.map((x: Channel, index: number) => [x.visible ? index : -1, 0, 0, 0])
+        .flat() ?? []
     );
     this.intensityRanges = new Float32Array(
       this.metadata.channels
@@ -190,25 +100,39 @@ export class ImageManager extends Manager<ImageTile> {
         .flat() ?? []
     );
 
-    this.tileOptions = new UniformBuffer(scene.getEngine());
-    this.tileOptions.addUniform(
-      'channelMapping',
-      4,
-      this.channelMapping.length / 4
+    calculateChannelMapping(this.channelMapping);
+    this.channelRanges = calculateChannelRanges(this.channelMapping);
+    this.initializeUniformBuffer();
+    this.hasMinimap =
+      (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??
+        0) > 0;
+
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
     );
-    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
-    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
-
-    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
-    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
-    this.tileOptions.updateFloatArray('colors', this.colors);
-
-    this.tileOptions.update();
+    window.addEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.addEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
   }
 
-  public loadTiles(camera: Camera, zoom: number): void {
-    for (const [, value] of this.tileStatus) {
-      value.evict = true;
+  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+    for (const [key, value] of this.tileStatus) {
+      value.evict = this.hasMinimap ? !key.endsWith('0') : true;
     }
 
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
@@ -221,7 +145,7 @@ export class ImageManager extends Manager<ImageTile> {
         const tileIndex = `image_${x}_${y}_${zoom}`;
         const status =
           this.tileStatus.get(tileIndex) ??
-          ({ evict: false, type: 'IMAGE' } as TileStatus<ImageTile>);
+          ({ evict: false, type: 'IMAGE', nonce: 0 } as TileStatus<ImageTile>);
 
         status.evict = false;
 
@@ -249,11 +173,13 @@ export class ImageManager extends Manager<ImageTile> {
               namespace: this.namespace,
               attribute: this.selectedAttribute,
               channelRanges: this.channelRanges,
-              dimensions: this.dimensions
+              dimensions: this.dimensions,
+              nonce: ++this.nonce
             } as ImageMessage
           } as DataRequest);
 
           status.state = TileState.LOADING;
+          status.nonce = this.nonce;
           this.tileStatus.set(tileIndex, status);
 
           this.updateLoadingStatus(false);
@@ -279,15 +205,13 @@ export class ImageManager extends Manager<ImageTile> {
         continue;
       }
 
-      if (status.state === TileState.LOADING) {
-        const canceled = this.workerPool.cancelRequest({
+      if (status.state !== TileState.VISIBLE) {
+        this.workerPool.cancelRequest({
           type: RequestType.CANCEL,
           id: key
         } as DataRequest);
 
-        if (canceled) {
-          this.updateLoadingStatus(true);
-        }
+        this.updateLoadingStatus(true);
       } else if (status.state === TileState.VISIBLE) {
         status.tile?.dispose();
       }
@@ -296,21 +220,14 @@ export class ImageManager extends Manager<ImageTile> {
     }
   }
 
-  public dispose(): void {
-    for (const [, status] of this.tileStatus) {
-      status.tile?.dispose();
-    }
-  }
-
   public onImageTileDataLoad(id: string, response: ImageResponse) {
     if (response.canceled) {
       return;
     }
 
-    const tileIndex = `image_${response.index[0]}_${response.index[1]}_${response.index[2]}`;
     const status = this.tileStatus.get(id);
 
-    if (!status) {
+    if (!status || status.nonce !== response.nonce) {
       // Tile was removed from the tileset but canceling missed timing
       return;
     }
@@ -323,6 +240,7 @@ export class ImageManager extends Manager<ImageTile> {
         this.tileSize,
         this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0,
         this.tileOptions,
+        this.hasMinimap,
         response,
         this.scene
       );
@@ -330,7 +248,6 @@ export class ImageManager extends Manager<ImageTile> {
 
     status.state = TileState.VISIBLE;
     status.evict = false;
-    this.tileStatus.set(tileIndex, status);
     this.updateLoadingStatus(true);
   }
 
@@ -348,16 +265,16 @@ export class ImageManager extends Manager<ImageTile> {
         continue;
       }
 
-      status.state = TileState.LOADING;
+      if (status.state === TileState.LOADING) {
+        this.workerPool.cancelRequest({
+          type: RequestType.CANCEL,
+          id: key
+        } as DataRequest);
 
-      const canceled = this.workerPool.cancelRequest({
-        type: RequestType.CANCEL,
-        id: key
-      } as DataRequest);
-
-      if (canceled) {
         this.updateLoadingStatus(true);
       }
+
+      status.state = TileState.LOADING;
 
       this.workerPool.postMessage({
         id: key,
@@ -369,11 +286,140 @@ export class ImageManager extends Manager<ImageTile> {
           namespace: this.namespace,
           attribute: this.selectedAttribute,
           channelRanges: this.channelRanges,
-          dimensions: this.dimensions
+          dimensions: this.dimensions,
+          nonce: ++this.nonce
         }
       });
 
+      status.nonce = this.nonce;
       this.updateLoadingStatus(false);
+    }
+  }
+
+  protected stopEventListeners(): void {
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+    window.removeEventListener(
+      Events.TOGGLE_INPUT_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+  }
+
+  private initializeUniformBuffer() {
+    this.tileOptions = new UniformBuffer(this.scene.getEngine());
+    this.tileOptions.addUniform(
+      'channelMapping',
+      4,
+      this.channelMapping.length / 4
+    );
+    this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
+    this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
+
+    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+    this.tileOptions.updateFloatArray('colors', this.colors);
+
+    this.tileOptions.update();
+  }
+
+  private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'channel') {
+      return;
+    }
+
+    const index = Number(target[1]);
+
+    switch (event.detail.props.command) {
+      case Commands.COLOR:
+        this.colors[4 * index] = event.detail.props.data.r / 255;
+        this.colors[4 * index + 1] = event.detail.props.data.g / 255;
+        this.colors[4 * index + 2] = event.detail.props.data.b / 255;
+
+        this.tileOptions.updateFloatArray('colors', this.colors);
+        this.tileOptions.update();
+        break;
+      case Commands.VISIBILITY:
+        this.channelMapping[4 * index] = event.detail.props.data ? index : -1;
+        calculateChannelMapping(this.channelMapping);
+
+        this.channelRanges = calculateChannelRanges(this.channelMapping);
+        this.initializeUniformBuffer();
+        this.update();
+        break;
+    }
+  }
+
+  private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
+    const target = event.detail.target.split('_');
+
+    switch (target[0]) {
+      case 'channel':
+        {
+          const index = Number(target[1]);
+
+          this.intensityRanges[4 * index + 1] = event.detail.props.value;
+          this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
+          this.tileOptions.update();
+        }
+        break;
+      case 'dimension':
+        {
+          const index = Number(target[1]);
+
+          this.dimensions[index].value = event.detail.props.value;
+          this.update();
+        }
+        break;
+      default:
+        return;
+    }
+  }
+
+  private onCancel(id: string, response: BaseResponse) {
+    const tile = this.tileStatus.get(id);
+    if (
+      tile &&
+      tile.state === TileState.LOADING &&
+      tile.nonce === response.nonce
+    ) {
+      console.warn(`Tile '${id}' aborted unexpectedly. Retrying...`);
+
+      const index = id
+        .split('_')
+        .map(x => parseInt(x))
+        .filter(x => !Number.isNaN(x));
+
+      this.workerPool.postMessage({
+        id: id,
+        type: RequestType.IMAGE,
+        request: {
+          index: index,
+          tileSize: this.tileSize,
+          levelRecord: this.levels[index[2]],
+          namespace: this.namespace,
+          attribute: this.selectedAttribute,
+          channelRanges: this.channelRanges,
+          dimensions: this.dimensions,
+          nonce: response.nonce
+        }
+      });
     }
   }
 }

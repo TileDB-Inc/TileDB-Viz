@@ -1,7 +1,8 @@
 <svelte:options customElement="slider-menu" />
 
-<script>
-  import events from './constants/events';
+<script lang="typescript">
+  import { Events } from './constants/events';
+  import { GUIEvent, SliderProps } from './types';
 
   export let id;
   export let label = '';
@@ -9,17 +10,20 @@
   export let step = 0.1;
   export let min = 0;
   export let max = 255;
+  export let formatter = (val: number) => val.toFixed(2);
     
 
-  $: valueRounded = Number(value).toFixed(2);
+  $: valueRounded = formatter(Number(value));
 
-  function onChange(event) {
+  function onChange(event: Event) {
     window.dispatchEvent(
-      new CustomEvent(events.SLIDER_CHANGE, {
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
         bubbles: true,
         detail: {
-          id,
-          value: value
+          target: id,
+          props: {
+            value: value 
+          }
         }
       })
     );

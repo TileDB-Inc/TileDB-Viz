@@ -1,7 +1,7 @@
 <svelte:options customElement="dual-slider" />
 
 <script>
-  import Events from './constants/events';
+  import { Events } from './constants/events';
 
   export let label, min, max, id;
 

@@ -3,7 +3,7 @@
   "display": "Svelte",
   "_version": "5.0.0",
   "compilerOptions": {
-    "moduleResolution": "node16",
+    "moduleResolution": "node",
     "target": "es2022",
     
     /**

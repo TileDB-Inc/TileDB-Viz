@@ -1,7 +1,7 @@
 <svelte:options customElement="floating-button" />
 
 <script>
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   export let backgroundimage,
     id,
@@ -9,7 +9,7 @@
 
   function handleClick() {
     window.dispatchEvent(
-      new CustomEvent(events.FLOATING_BUTTON_CLICK, {
+      new CustomEvent(Events.FLOATING_BUTTON_CLICK, {
         bubbles: true,
         detail: {
           id

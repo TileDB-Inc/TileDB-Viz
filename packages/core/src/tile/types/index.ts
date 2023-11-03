@@ -10,6 +10,11 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
+  defaultChannels?: {
+    index: number;
+    color?: { r: number; g: number; b: number };
+    intensity?: number;
+  }[];
 }
 
 export interface Channel {
@@ -163,6 +168,7 @@ export const enum RequestType {
   CANCEL = 0,
   IMAGE = 1,
   GEOMETRY = 2,
+  GEOMETRY_INFO = 3,
 
   INITIALIZE = 100
 }
@@ -189,6 +195,7 @@ export interface ImageMessage {
   token: string;
   basePath: string;
   dimensions: Dimension[];
+  nonce: number;
 }
 
 export interface GeometryMessage {
@@ -198,12 +205,19 @@ export interface GeometryMessage {
   namespace: string;
   idAttribute: string;
   geometryAttribute: string;
+  heightAttribute?: Attribute;
   pad: number[];
   extraAttributes?: string[];
   type: string;
   imageCRS: string;
   geometryCRS: string;
   geotransformCoefficients: number[];
+  metersPerUnit: number;
+  nonce: number;
+}
+
+export interface GeometryInfoMessage extends GeometryMessage {
+  id: bigint;
 }
 
 export interface WorkerResponse {
@@ -215,6 +229,7 @@ export interface WorkerResponse {
 export interface BaseResponse {
   index: number[];
   canceled: boolean;
+  nonce: number;
 }
 
 export interface ImageResponse extends BaseResponse {
@@ -227,12 +242,19 @@ export interface ImageResponse extends BaseResponse {
 
 export interface GeometryResponse extends BaseResponse {
   positions: Float32Array;
-  colors: Float32Array;
+  ids: BigInt64Array;
   indices: Int32Array;
+  normals?: Float32Array;
   gtype: string;
+}
+
+export interface GeometryInfoResponse extends GeometryResponse {
+  info: any;
 }
 
 export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
+  info: { (id: string, response: GeometryInfoResponse): void }[];
+  cancel: { (id: string, response: BaseResponse): void }[];
 }

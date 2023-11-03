@@ -2,7 +2,7 @@
 
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import events from './constants/events';
+  import { Events } from './constants/events';
 
   let tiles = 0;
 
@@ -13,13 +13,13 @@
   }
 
   onMount(() => {
-    window.addEventListener(events.ENGINE_INFO_UPDATE, loadingTilesUpdate, {
+    window.addEventListener(Events.ENGINE_INFO_UPDATE, loadingTilesUpdate, {
       capture: true
     });
   });
 
   onDestroy(() => {
-    window.removeEventListener(events.ENGINE_INFO_UPDATE, loadingTilesUpdate, {
+    window.removeEventListener(Events.ENGINE_INFO_UPDATE, loadingTilesUpdate, {
       capture: true
     });
   });
