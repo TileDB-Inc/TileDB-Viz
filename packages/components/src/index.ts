@@ -20,6 +20,7 @@ export { default as ToggleSwitch } from './ToggleSwitch.component.svelte';
 export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
 export { default as InfoPanel } from './InfoPanel.component.svelte';
+export { default as PointCloudPanel } from './PointCloudPanel.component.svelte';
 
 export { Events }
 export type { GUIEvent, ButtonProps, SliderProps, TextBoxProps }
