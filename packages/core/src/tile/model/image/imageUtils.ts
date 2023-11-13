@@ -1,8 +1,8 @@
-export function calculateChannelRanges(channelMapping: Int32Array): number[] {
+export function calculateChannelRanges(channelMapping: Uint32Array): number[] {
   let range: number[] = [];
   const channelRanges = [];
   for (let index = 0; index < channelMapping.length / 4; ++index) {
-    if (channelMapping[4 * index] === -1) {
+    if (channelMapping[4 * index] === 0x7fffffff) {
       continue;
     }
 
@@ -22,10 +22,10 @@ export function calculateChannelRanges(channelMapping: Int32Array): number[] {
   return channelRanges;
 }
 
-export function calculateChannelMapping(channelMapping: Int32Array) {
+export function calculateChannelMapping(channelMapping: Uint32Array) {
   let visibleCounter = 0;
   for (let index = 0; index < channelMapping.length / 4; ++index) {
-    if (channelMapping[4 * index] === -1) {
+    if (channelMapping[4 * index] === 0x7fffffff) {
       continue;
     }
 

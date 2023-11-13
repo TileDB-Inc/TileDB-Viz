@@ -33,7 +33,7 @@ interface ImageOptions {
 
 export class ImageManager extends Manager<ImageTile> {
   private channelRanges: number[] = [];
-  private channelMapping: Int32Array;
+  private channelMapping: Uint32Array;
   private intensityRanges: Float32Array;
   private colors: Float32Array;
   private tileOptions!: UniformBuffer;
@@ -74,15 +74,20 @@ export class ImageManager extends Manager<ImageTile> {
     const channelCount =
       this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
 
-    this.channelMapping = new Int32Array(
+    this.channelMapping = new Uint32Array(
       range(0, channelCount)
         .map(x => [x, 0, 0, 0])
         .flat()
     );
-    this.channelMapping = new Int32Array(
+    this.channelMapping = new Uint32Array(
       this.metadata.channels
         .get(this.selectedAttribute.name)
-        ?.map((x: Channel, index: number) => [x.visible ? index : -1, 0, 0, 0])
+        ?.map((x: Channel, index: number) => [
+          x.visible ? index : 0x7fffffff,
+          0,
+          0,
+          0
+        ])
         .flat() ?? []
     );
     this.intensityRanges = new Float32Array(
@@ -330,7 +335,7 @@ export class ImageManager extends Manager<ImageTile> {
     this.tileOptions.addUniform('ranges', 4, this.intensityRanges.length / 4);
     this.tileOptions.addUniform('colors', 4, this.colors.length / 4);
 
-    this.tileOptions.updateIntArray('channelMapping', this.channelMapping);
+    this.tileOptions.updateUIntArray('channelMapping', this.channelMapping);
     this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
     this.tileOptions.updateFloatArray('colors', this.colors);
 
@@ -356,7 +361,9 @@ export class ImageManager extends Manager<ImageTile> {
         this.tileOptions.update();
         break;
       case Commands.VISIBILITY:
-        this.channelMapping[4 * index] = event.detail.props.data ? index : -1;
+        this.channelMapping[4 * index] = event.detail.props.data
+          ? index
+          : 0x7fffffff;
         calculateChannelMapping(this.channelMapping);
 
         this.channelRanges = calculateChannelRanges(this.channelMapping);
