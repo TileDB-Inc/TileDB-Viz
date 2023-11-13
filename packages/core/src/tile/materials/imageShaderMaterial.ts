@@ -35,7 +35,7 @@ export function ImageShaderMaterial(
     precision highp int;
 
     layout(std140) uniform tileOptions {
-      ivec4 channelMapping[${channelCount.toFixed(0)}];
+      uvec4 channelMapping[${channelCount.toFixed(0)}];
       vec4 ranges[${channelCount.toFixed(0)}]; 
       vec4 colors[${channelCount.toFixed(0)}];
     };
@@ -49,7 +49,7 @@ export function ImageShaderMaterial(
       
       for (int i = 0; i < ${channelCount.toFixed(0)}; ++i)
       {
-        if (channelMapping[i].r == -1) continue;
+        if (channelMapping[i].r > ${channelCount.toFixed(0)}u) continue;
         float intensity = float(texture(texture_arr, vec3(vTexCoord.xy, channelMapping[i].r)).r);
         color += colors[i] * clamp((intensity - ranges[i].x) / (ranges[i].y - ranges[i].x + 0.01), 0.0, 1.0);
       }
