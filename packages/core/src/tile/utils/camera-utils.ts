@@ -62,7 +62,7 @@ export class CameraManager {
     this.mainCamera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
     this.mainCamera.lowerBetaLimit = 0;
     this.mainCamera.upperBetaLimit = Math.PI / 4;
-    this.mainCamera.layerMask = 1;
+    this.mainCamera.layerMask = 0x0fffffff;
     for (const [, input] of Object.entries(this.mainCamera.inputs.attached)) {
       input.detachControl();
     }
@@ -80,7 +80,7 @@ export class CameraManager {
       );
 
       this.minimapCamera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
-      this.minimapCamera.layerMask = 1;
+      this.minimapCamera.layerMask = 0b100;
       this.minimapCamera.detachControl();
 
       this.scene.activeCameras?.push(this.minimapCamera);

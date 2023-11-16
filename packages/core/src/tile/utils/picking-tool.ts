@@ -13,6 +13,7 @@ import {
   VertexBuffer
 } from '@babylonjs/core';
 import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
+import { getCamera } from './camera-utils';
 
 enum PickingMode {
   NONE = 0,
@@ -50,6 +51,7 @@ export class PickingTool {
     this.mode = PickingMode.NONE;
     this.scene = scene;
     this.utilityLayer = new UtilityLayerRenderer(this.scene, false);
+    this.utilityLayer.setRenderCamera(getCamera(this.scene, 'Main')!);
     this.selectionRenderVertexData = new VertexData();
     this.selectionRenderMesh = new Mesh(
       'selection',

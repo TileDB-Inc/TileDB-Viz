@@ -37,7 +37,7 @@ export class GeometryTile extends Tile<GeometryResponse> {
 
     this.mesh.material = material;
     this.mesh.scaling.z = -1;
-    this.mesh.layerMask = 3;
+    this.mesh.layerMask = 1;
     this.mesh.renderingGroupId = 1;
 
     renderTarget.renderList?.push(this.mesh);
