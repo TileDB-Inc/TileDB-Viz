@@ -5,10 +5,16 @@ import {
   RequestType,
   GeometryInfoMessage,
   GeometryInfoResponse,
-  BaseResponse
+  BaseResponse,
+  GeometryStyle
 } from '../../types';
 import { GeometryTile } from './geometry';
-import { Scene, RenderTargetTexture, ArcRotateCamera } from '@babylonjs/core';
+import {
+  Scene,
+  RenderTargetTexture,
+  ArcRotateCamera,
+  Color3
+} from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
@@ -16,7 +22,9 @@ import {
   ButtonProps,
   Events,
   GUIEvent,
-  Commands
+  Commands,
+  SliderProps,
+  SelectProps
 } from '@tiledb-inc/viz-components';
 import { getCamera } from '../../utils/camera-utils';
 import { PickingTool } from '../../utils/picking-tool';
@@ -44,6 +52,12 @@ export class GeometryManager extends Manager<GeometryTile> {
   private renderTarget: RenderTargetTexture;
   private metersPerUnit: number;
   private pickingTool: PickingTool;
+  private styleOptions = {
+    style: GeometryStyle.FILLED,
+    fillOpacity: 1,
+    fillColor: new Color3(0, 0, 1),
+    outlineThickness: 1
+  };
 
   constructor(
     scene: Scene,
@@ -220,6 +234,7 @@ export class GeometryManager extends Manager<GeometryTile> {
       status.tile.update({ response });
     } else {
       status.tile = new GeometryTile(response, this.renderTarget, this.scene);
+      status.tile.update(this.styleOptions);
     }
 
     status.state = TileState.VISIBLE;
@@ -267,8 +282,8 @@ export class GeometryManager extends Manager<GeometryTile> {
         for (const [, status] of this.tileStatus) {
           if (status.state === TileState.VISIBLE) {
             status.tile?.updatePicked(
-              event.detail.props.data?.id,
-              event.detail.props.data?.previousID
+              BigInt(event.detail.props.data?.id),
+              BigInt(event.detail.props.data?.previousID ?? -1)
             );
           }
         }
@@ -284,6 +299,16 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
+    window.addEventListener(
+      Events.SELECT_INPUT_CHANGE,
+      this.selectHandler.bind(this) as any,
+      { capture: true }
+    );
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      { capture: true }
+    );
   }
 
   public stopEventListeners(): void {
@@ -292,6 +317,64 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
+    window.removeEventListener(
+      Events.SELECT_INPUT_CHANGE,
+      this.selectHandler.bind(this) as any,
+      { capture: true }
+    );
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      { capture: true }
+    );
+  }
+
+  private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'geometry') {
+      return;
+    }
+
+    switch (target[1]) {
+      case 'style':
+        this.styleOptions.style = event.detail.props.value + 1;
+        break;
+      default:
+        return;
+    }
+
+    for (const [, status] of this.tileStatus) {
+      if (status.state === TileState.VISIBLE) {
+        status.tile?.update(this.styleOptions);
+      }
+    }
+  }
+
+  private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'geometry') {
+      return;
+    }
+
+    switch (target[1]) {
+      case 'fillOpacity':
+        this.styleOptions.fillOpacity = Math.max(
+          event.detail.props.value,
+          0.01
+        );
+        break;
+      case 'lineThickness':
+        this.styleOptions.outlineThickness = event.detail.props.value;
+        break;
+    }
+
+    for (const [, status] of this.tileStatus) {
+      if (status.state === TileState.VISIBLE) {
+        status.tile?.update(this.styleOptions);
+      }
+    }
   }
 
   private onCancel(id: string, response: BaseResponse) {
