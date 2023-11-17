@@ -5,7 +5,7 @@ import {
   Events,
   GUIEvent
 } from '@tiledb-inc/viz-components';
-import { Channel } from '../types';
+import { Channel, ImageMetadata } from '../types';
 import {
   Dimension,
   AssetEntry,
@@ -35,6 +35,7 @@ class TileImageGUI {
     channels: Channel[],
     dimensions: Dimension[],
     assets: AssetEntry[],
+    imageMetadata: ImageMetadata,
     geometryAttributes: Attribute[] | undefined,
     geometryMetadata: GeometryMetadata | undefined,
     clearCache: () => void,
@@ -97,6 +98,12 @@ class TileImageGUI {
       <options-panel>
       </options-panel>
     </sidebar-menu>
+    <scale-bar basePhysicalSize='${
+      imageMetadata.physicalSizeX
+    }' basePhysicalSizeUnit='${imageMetadata.physicalSizeXUnit}' levels='${
+      imageMetadata.axes.length - 1
+    }' zoom='-2'>
+    </scale-bar>
       `;
 
     this.buttonEventHandler = (e: CustomEvent<GUIEvent<ButtonProps>>) =>

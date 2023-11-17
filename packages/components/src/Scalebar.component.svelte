@@ -8,12 +8,13 @@
   export let basePhysicalSize = 0;
   export let basePhysicalSizeUnit = 'μm';
   export let zoom = -2;
+  export let levels = 1;
   export let scalebarLength = 160;
 
   function zoomInfoUpdate(e) {
     if (e.detail.type === 'ZOOM_INFO')
     {
-      zoom = e.detail.zoom;
+      zoom = Math.log2(e.detail.zoom);
     }
   }
 
@@ -39,7 +40,7 @@
     <p class="ViewerScalebar__text">
       {unitFormatter(
         ...lengthConverter(
-          Number(basePhysicalSize) * Math.pow(2, 5 - zoom) * scalebarLength,
+          Number(basePhysicalSize) * Math.pow(2, levels - zoom) * scalebarLength,
           basePhysicalSizeUnit
         )
       )}
