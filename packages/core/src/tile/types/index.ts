@@ -98,7 +98,9 @@ export type TypedArray =
   | Uint32Array
   | Uint8ClampedArray
   | Float32Array
-  | Float64Array;
+  | Float64Array
+  | BigInt64Array
+  | BigUint64Array;
 
 export type TypedArrayInterface =
   | typeof Int8Array
@@ -109,7 +111,9 @@ export type TypedArrayInterface =
   | typeof Uint32Array
   | typeof Uint8ClampedArray
   | typeof Float32Array
-  | typeof Float64Array;
+  | typeof Float64Array
+  | typeof BigInt64Array
+  | typeof BigUint64Array;
 
 export const types = {
   uint8: {
@@ -203,14 +207,14 @@ export interface GeometryMessage {
   tileSize: number;
   arrayID: string;
   namespace: string;
-  idAttribute: string;
-  geometryAttribute: string;
+  idAttribute: Attribute;
+  geometryAttribute: Attribute;
   heightAttribute?: Attribute;
   pad: number[];
   extraAttributes?: string[];
   type: string;
-  imageCRS: string;
-  geometryCRS: string;
+  imageCRS?: string;
+  geometryCRS?: string;
   geotransformCoefficients: number[];
   metersPerUnit: number;
   nonce: number;
@@ -224,10 +228,10 @@ export interface GeometryInfoMessage {
   selectionPath?: number[];
   arrayID: string;
   namespace: string;
-  idAttribute: string;
+  idAttribute: Attribute;
   pad: number[];
-  imageCRS: string;
-  geometryCRS: string;
+  imageCRS?: string;
+  geometryCRS?: string;
   tiles?: number[][];
   geotransformCoefficients: number[];
 }
@@ -253,11 +257,8 @@ export interface ImageResponse extends BaseResponse {
 }
 
 export interface GeometryResponse extends BaseResponse {
-  positions: Float32Array;
-  ids: BigInt64Array;
-  indices: Int32Array;
-  normals?: Float32Array;
-  gtype: string;
+  type: GeometryType;
+  attributes: { [attribute: string]: TypedArray };
 }
 
 export interface GeometryInfoResponse {
@@ -270,4 +271,16 @@ export interface ResponseCallback {
   geometry: { (id: string, response: GeometryResponse): void }[];
   info: { (id: string, response: GeometryInfoResponse): void }[];
   cancel: { (id: string, response: BaseResponse): void }[];
+}
+
+export enum GeometryType {
+  NONE = 0,
+  POLYGON = 1,
+  POLYGON_3D = 2
+}
+
+export enum GeometryStyle {
+  FILLED = 0b01,
+  OUTLINED = 0b10,
+  FILLED_OUTLINED = 0b11
 }
