@@ -1,4 +1,5 @@
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Range } from '@tiledb-inc/tiledb-cloud';
 import {
   DataRequest,
   ImageMessage,
@@ -20,7 +21,7 @@ import axios, { CancelTokenSource } from 'axios';
 import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
 import proj4 from 'proj4';
-import { parsePolygon } from './parsers';
+import { geometryRequest } from './loaders/geometryLoader';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -37,10 +38,29 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       imageRequest(event.data.id, event.data.request as ImageMessage);
       break;
     case RequestType.GEOMETRY:
+      if (!tiledbClient) {
+        break;
+      }
+
       cancelSignal = false;
       currentId = event.data.id;
       tokenSource = CancelToken.source();
-      geometryRequest(event.data.id, event.data.request as GeometryMessage);
+      geometryRequest(
+        event.data.id,
+        tiledbClient,
+        tokenSource,
+        event.data.request as GeometryMessage
+      )
+        .then(response => {
+          self.postMessage(
+            response,
+            Object.values(
+              (response.response as GeometryResponse).attributes
+            ).map(x => x.buffer) as any
+          );
+        })
+        .catch(x => console.log(x));
+      break;
       break;
     case RequestType.GEOMETRY_INFO:
       cancelSignal = false;
@@ -338,252 +358,6 @@ async function imageRequest(id: string, request: ImageMessage) {
   }
 }
 
-async function geometryRequest(id: string, request: GeometryMessage) {
-  if (!tiledbClient) {
-    console.warn('TileDB client is not initialized');
-    return;
-  }
-
-  const [x, y] = request.index;
-  const tileSize = request.tileSize;
-  const cacheTableID = `${request.arrayID}_${tileSize}`;
-
-  const cachedPositions = await getQueryDataFromCache(
-    cacheTableID,
-    `${'position'}_${x}_${y}`
-  );
-
-  if (cachedPositions) {
-    const [cachedNormals, cachedIds, cachedIndices] = await Promise.all([
-      getQueryDataFromCache(cacheTableID, `${'normal'}_${x}_${y}`),
-      getQueryDataFromCache(cacheTableID, `${'ids'}_${x}_${y}`),
-      getQueryDataFromCache(cacheTableID, `${'indices'}_${x}_${y}`)
-    ]);
-
-    if (cancelSignal) {
-      self.postMessage({
-        id: id,
-        type: RequestType.CANCEL,
-        response: { nonce: request.nonce } as BaseResponse
-      } as WorkerResponse);
-    } else {
-      self.postMessage(
-        {
-          id: id,
-          type: RequestType.GEOMETRY,
-          response: {
-            index: request.index,
-            positions: cachedPositions,
-            normals: cachedNormals,
-            ids: cachedIds,
-            indices: cachedIndices,
-            gtype: request.type,
-            canceled: cancelSignal,
-            nonce: request.nonce
-          } as GeometryResponse
-        } as WorkerResponse,
-        [
-          cachedPositions.buffer,
-          cachedNormals.buffer,
-          cachedIds.buffer,
-          cachedIndices.buffer
-        ] as any
-      );
-    }
-
-    return;
-  }
-
-  const converter = proj4(request.geometryCRS, request.imageCRS);
-  const geotransformCoefficients = request.geotransformCoefficients;
-
-  const xPixelLimits = [x * tileSize, (x + 1) * tileSize];
-  const yPixelLimits = [y * tileSize, (y + 1) * tileSize];
-
-  const geoXMin =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xPixelLimits[0] +
-    geotransformCoefficients[2] * yPixelLimits[0];
-  const geoYMin =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xPixelLimits[0] +
-    geotransformCoefficients[5] * yPixelLimits[0];
-  const geoXMax =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xPixelLimits[1] +
-    geotransformCoefficients[2] * yPixelLimits[1];
-  const geoYMax =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xPixelLimits[1] +
-    geotransformCoefficients[5] * yPixelLimits[1];
-
-  const minLimit = converter.inverse([geoXMin, geoYMin]);
-  const maxLimit = converter.inverse([geoXMax, geoYMax]);
-
-  const xRange = [minLimit[0], maxLimit[0]].sort();
-  const yRange = [minLimit[1], maxLimit[1]].sort();
-
-  const query = {
-    layout: Layout.Unordered,
-    ranges: [
-      [xRange[0] - request.pad[0], xRange[1] + request.pad[0]],
-      [yRange[0] - request.pad[1], yRange[1] + request.pad[1]]
-    ],
-    bufferSize: 20_000_000,
-    attributes: [
-      request.geometryAttribute,
-      request.idAttribute,
-      ...(request.heightAttribute ? [request.heightAttribute.name] : [])
-    ],
-    returnRawBuffers: true,
-    ignoreOffsets: true,
-    returnOffsets: true,
-    cancelToken: tokenSource?.token
-  };
-
-  const generator = tiledbClient.query.ReadQuery(
-    request.namespace,
-    request.arrayID,
-    query
-  );
-
-  const ids: BigInt64Array[] = [];
-  const heights: number[][] = [];
-  const wkbs: ArrayBuffer[] = [];
-  const offsets: BigUint64Array[] = [];
-  const vertexMap: Map<bigint, number[]> = new Map<bigint, number[]>();
-
-  try {
-    for await (const result of generator) {
-      if ((result as any)['__offsets'][request.geometryAttribute]) {
-        ids.push(new BigInt64Array((result as any)[request.idAttribute]));
-        if (request.heightAttribute) {
-          heights.push(
-            Array.from(
-              new Float64Array((result as any)[request.heightAttribute.name])
-            )
-          );
-        } else {
-          heights.push(
-            new Array(ids.at(-1)?.length ?? 0).map(
-              x => Math.pow(Math.random(), 2) * 60
-            )
-          );
-        }
-
-        wkbs.push((result as any)[request.geometryAttribute]);
-        offsets.push((result as any)['__offsets'][request.geometryAttribute]);
-      }
-    }
-  } catch (e) {
-    self.postMessage({
-      id: id,
-      type: RequestType.CANCEL,
-      response: { nonce: request.nonce } as BaseResponse
-    } as WorkerResponse);
-    return;
-  }
-
-  if (wkbs.length === 0) {
-    await Promise.all([
-      writeToCache(cacheTableID, `${'position'}_${x}_${y}`, new Float32Array()),
-      writeToCache(cacheTableID, `${'normal'}_${x}_${y}`, new Float32Array()),
-      writeToCache(cacheTableID, `${'ids'}_${x}_${y}`, new BigInt64Array()),
-      writeToCache(cacheTableID, `${'indices'}_${x}_${y}`, new Int32Array())
-    ]);
-
-    self.postMessage({
-      id: id,
-      type: RequestType.GEOMETRY,
-      response: {
-        index: request.index,
-        positions: new Float32Array(),
-        normals: new Float32Array(),
-        ids: new BigInt64Array(),
-        indices: new Int32Array(),
-        gtype: request.type,
-        canceled: cancelSignal,
-        nonce: request.nonce
-      } as GeometryResponse
-    } as WorkerResponse);
-
-    return;
-  }
-
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const indices: number[] = [];
-  const faceMapping: bigint[] = [];
-
-  switch (request.type) {
-    case 'Polygon':
-      for (let index = 0; index < wkbs.length; ++index) {
-        parsePolygon(
-          wkbs[index],
-          heights[index],
-          offsets[index],
-          ids[index],
-          positions,
-          normals,
-          indices,
-          faceMapping,
-          vertexMap,
-          converter,
-          geotransformCoefficients,
-          request.metersPerUnit
-        );
-      }
-      break;
-    default:
-      console.warn(`Unknown geometry type "${request.type}"`);
-      return;
-  }
-
-  const rawPositions = Float32Array.from(positions);
-  const rawIds = BigInt64Array.from(faceMapping);
-  const rawIndices = Int32Array.from(indices);
-  const rawNormals = Float32Array.from(normals);
-
-  await Promise.all([
-    writeToCache(cacheTableID, `${'position'}_${x}_${y}`, rawPositions),
-    writeToCache(cacheTableID, `${'normal'}_${x}_${y}`, rawNormals),
-    writeToCache(cacheTableID, `${'ids'}_${x}_${y}`, rawIds),
-    writeToCache(cacheTableID, `${'indices'}_${x}_${y}`, rawIndices)
-  ]);
-
-  if (cancelSignal) {
-    self.postMessage({
-      id: id,
-      type: RequestType.CANCEL,
-      response: { nonce: request.nonce } as BaseResponse
-    } as WorkerResponse);
-  } else {
-    self.postMessage(
-      {
-        id: id,
-        type: RequestType.GEOMETRY,
-        response: {
-          index: request.index,
-          positions: rawPositions,
-          normals: rawNormals,
-          ids: rawIds,
-          indices: rawIndices,
-          vertexMap: vertexMap,
-          gtype: request.type,
-          canceled: cancelSignal,
-          nonce: request.nonce
-        } as GeometryResponse
-      } as WorkerResponse,
-      [
-        rawPositions.buffer,
-        rawNormals.buffer,
-        rawIds.buffer,
-        rawIndices.buffer
-      ] as any
-    );
-  }
-}
-
 async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
   if (!tiledbClient) {
     console.warn('TileDB client is not initialized');
@@ -593,7 +367,6 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
   const height = Math.max(request.screenBbox[3] - request.screenBbox[1], 1);
   const width = Math.max(request.screenBbox[2] - request.screenBbox[0], 1);
 
-  const converter = proj4(request.geometryCRS, request.imageCRS);
   const geotransformCoefficients = request.geotransformCoefficients;
 
   let queryPoints = [];
@@ -634,76 +407,67 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     return;
   }
 
-  let xRange = [-Number.MAX_VALUE, Number.MAX_VALUE];
-  let yRange = [-Number.MAX_VALUE, Number.MAX_VALUE];
+  let xPixelLimits = [-Number.MAX_VALUE, Number.MAX_VALUE];
+  let yPixelLimits = [-Number.MAX_VALUE, Number.MAX_VALUE];
 
   if (request.tiles && request.tiles.length) {
-    [xRange, yRange] = await calculateTileBbox(
+    [xPixelLimits, yPixelLimits] = await calculateTileBbox(
       request.tiles,
       ids,
       request.arrayID,
       request.tileSize,
       id
     );
-
-    xRange[0] =
-      geotransformCoefficients[0] +
-      geotransformCoefficients[1] * xRange[0] +
-      geotransformCoefficients[2] * yRange[0];
-
-    yRange[0] =
-      geotransformCoefficients[3] +
-      geotransformCoefficients[4] * xRange[0] +
-      geotransformCoefficients[5] * yRange[0];
-
-    xRange[1] =
-      geotransformCoefficients[0] +
-      geotransformCoefficients[1] * xRange[1] +
-      geotransformCoefficients[2] * yRange[1];
-
-    yRange[1] =
-      geotransformCoefficients[3] +
-      geotransformCoefficients[4] * xRange[1] +
-      geotransformCoefficients[5] * yRange[1];
   } else {
-    xRange[0] =
-      geotransformCoefficients[0] +
-      geotransformCoefficients[1] * request.worldBbox[0] +
-      geotransformCoefficients[2] * request.worldBbox[1];
-
-    yRange[0] =
-      geotransformCoefficients[3] +
-      geotransformCoefficients[4] * request.worldBbox[0] +
-      geotransformCoefficients[5] * request.worldBbox[1];
-
-    xRange[1] =
-      geotransformCoefficients[0] +
-      geotransformCoefficients[1] * request.worldBbox[2] +
-      geotransformCoefficients[2] * request.worldBbox[3];
-
-    yRange[1] =
-      geotransformCoefficients[3] +
-      geotransformCoefficients[4] * request.worldBbox[2] +
-      geotransformCoefficients[5] * request.worldBbox[3];
+    xPixelLimits = [request.worldBbox[0], request.worldBbox[2]];
+    yPixelLimits = [request.worldBbox[1], request.worldBbox[3]];
   }
 
-  const minLimit = converter.inverse([xRange[0], yRange[0]]);
-  const maxLimit = converter.inverse([xRange[1], yRange[1]]);
+  let ranges: (Range | Range[])[] = [];
+  let converter = undefined;
 
-  xRange = [minLimit[0], maxLimit[0]].sort();
-  yRange = [minLimit[1], maxLimit[1]].sort();
+  let geoXMin =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xPixelLimits[0] +
+    geotransformCoefficients[2] * yPixelLimits[0];
+  let geoYMin =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xPixelLimits[0] +
+    geotransformCoefficients[5] * yPixelLimits[0];
+  let geoXMax =
+    geotransformCoefficients[0] +
+    geotransformCoefficients[1] * xPixelLimits[1] +
+    geotransformCoefficients[2] * yPixelLimits[1];
+  let geoYMax =
+    geotransformCoefficients[3] +
+    geotransformCoefficients[4] * xPixelLimits[1] +
+    geotransformCoefficients[5] * yPixelLimits[1];
+
+  if (request.geometryCRS) {
+    converter = proj4(request.geometryCRS, request.imageCRS);
+
+    [geoXMin, geoYMin] = converter.inverse([geoXMin, geoYMin]);
+    [geoXMax, geoYMax] = converter.inverse([geoXMax, geoYMax]);
+  }
+
+  const xRange = [geoXMin, geoXMax].sort();
+  const yRange = [geoYMin, geoYMax].sort();
 
   if (request.tiles?.length) {
-    xRange = [xRange[0], xRange[1]];
-    yRange = [yRange[0], yRange[1]];
+    ranges = [
+      [xRange[0], xRange[1]],
+      [yRange[0], yRange[1]]
+    ];
   } else {
-    xRange = [xRange[0] - request.pad[0], xRange[1] + request.pad[0]];
-    yRange = [yRange[0] - request.pad[1], yRange[1] + request.pad[1]];
+    ranges = [
+      [xRange[0] - request.pad[0], xRange[1] + request.pad[0]],
+      [yRange[0] - request.pad[1], yRange[1] + request.pad[1]]
+    ];
   }
 
   const query = {
     layout: Layout.Unordered,
-    ranges: [xRange, yRange],
+    ranges: ranges,
     bufferSize: 20_000_000,
     cancelToken: tokenSource?.token
   };
@@ -721,10 +485,12 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     for await (const result of generator) {
       for (
         let index = 0;
-        index < (result as any)[request.idAttribute].length;
+        index < (result as any)[request.idAttribute.name].length;
         ++index
       ) {
-        const entryID = (result as any)[request.idAttribute][index] as bigint;
+        const entryID = BigInt(
+          (result as any)[request.idAttribute.name][index]
+        );
         if (!ids.has(entryID)) {
           continue;
         }
