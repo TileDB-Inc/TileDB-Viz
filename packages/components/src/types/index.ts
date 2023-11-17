@@ -17,4 +17,7 @@ export interface ButtonProps {
   command: string;
   data?: any;
 }
-  
+
+export type SelectProps = {
+  value: number;
+}

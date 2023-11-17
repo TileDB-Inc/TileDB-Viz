@@ -216,8 +216,12 @@ export async function getGeometryMetadata(
       arrayMetadata['LAYER_EXTENT_MAXY']
     ],
     type: arrayMetadata['GeometryType'],
-    idAttribute: arrayMetadata['FID_ATTRIBUTE_NAME'],
-    geometryAttribute: arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'],
+    idAttribute: attributes.find(
+      x => x.name === arrayMetadata['FID_ATTRIBUTE_NAME']
+    ),
+    geometryAttribute: attributes.find(
+      x => x.name === arrayMetadata['GEOMETRY_ATTRIBUTE_NAME']
+    ),
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
   } as GeometryMetadata;

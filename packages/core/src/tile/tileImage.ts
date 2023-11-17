@@ -215,6 +215,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       ) ?? [],
       this.dimensions,
       this.groupAssets,
+      this.metadata,
       this.geometryAttributes,
       this.geometryMetadata,
       () => this.clearCache(),

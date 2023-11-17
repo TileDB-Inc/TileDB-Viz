@@ -6,10 +6,20 @@ import {
   StandardMaterial,
   Color3
 } from '@babylonjs/core';
-import { GeometryResponse } from '../../types';
+import { GeometryResponse, GeometryStyle } from '../../types';
 import { PolygonShaderMaterial } from '../../materials/polygonShaderMaterial';
 import { SelectionMaterialPlugin } from '../../materials/plugins/selectionPlugin';
 import { Tile, UpdateOptions } from '../tile';
+
+export interface GeometryUpdateOptions extends UpdateOptions<GeometryResponse> {
+  style?: GeometryStyle;
+
+  outlineThickness?: number;
+  outlineColor?: Color3;
+
+  fillOpacity?: number;
+  fillColor?: Color3;
+}
 
 export class GeometryTile extends Tile<GeometryResponse> {
   private vertexMap: Map<bigint, number[]>;
@@ -48,23 +58,30 @@ export class GeometryTile extends Tile<GeometryResponse> {
     this.update({ response });
   }
 
-  public update(updateOptions: UpdateOptions<GeometryResponse>) {
-    if (updateOptions.response && updateOptions.response.positions.length) {
+  public update(updateOptions: GeometryUpdateOptions) {
+    if (
+      updateOptions.response &&
+      updateOptions.response.attributes['positions'].length
+    ) {
       const vertexData = new VertexData();
 
-      vertexData.positions = updateOptions.response.positions;
-      vertexData.indices = updateOptions.response.indices;
+      vertexData.positions = updateOptions.response.attributes[
+        'positions'
+      ] as Float32Array;
+      vertexData.indices = updateOptions.response.attributes[
+        'indices'
+      ] as Int32Array;
 
-      if (updateOptions.response.normals) {
-        vertexData.normals = updateOptions.response.normals;
-      }
+      // if ('normals' in updateOptions.response.attributes) {
+      //   vertexData.normals = updateOptions.response.attributes['normals'] as Float32Array;
+      // }
 
       vertexData.applyToMesh(this.mesh, true);
 
       this.mesh.setVerticesBuffer(
         new VertexBuffer(
           this.scene.getEngine(),
-          new Uint32Array(updateOptions.response.ids.buffer),
+          new Uint32Array(updateOptions.response.attributes['ids'].buffer),
           'id',
           false,
           false,
@@ -72,14 +89,15 @@ export class GeometryTile extends Tile<GeometryResponse> {
         )
       );
 
-      if (updateOptions.response.ids.length) {
-        let lastID = updateOptions.response.ids[0];
+      if (updateOptions.response.attributes['ids'].length) {
+        const ids = updateOptions.response.attributes['ids'] as BigInt64Array;
+        let lastID = ids[0];
         let currentId;
         let start = 0,
           size = 0;
         let index = 0;
         do {
-          currentId = updateOptions.response.ids[index];
+          currentId = ids[index];
 
           if (lastID !== currentId) {
             this.vertexMap.set(lastID, [start, size]);
@@ -90,20 +108,36 @@ export class GeometryTile extends Tile<GeometryResponse> {
           lastID = currentId;
           ++size;
           ++index;
-        } while (index < updateOptions.response.ids.length);
+        } while (index < ids.length);
       }
 
       this.mesh.setVerticesBuffer(
         new VertexBuffer(
           this.scene.getEngine(),
-          new Float32Array(updateOptions.response.ids.length),
+          new Float32Array(updateOptions.response.attributes['ids'].length),
           'state',
           true,
           false,
           1
         )
       );
+
+      this.mesh.enableEdgesRendering();
+      this.mesh.edgesRenderer!.isEnabled = false;
     }
+
+    if (updateOptions.style) {
+      this.mesh.material!.disableColorWrite = !(
+        updateOptions.style & GeometryStyle.FILLED
+      );
+      this.mesh.edgesRenderer!.isEnabled = Boolean(
+        updateOptions.style & GeometryStyle.OUTLINED
+      );
+    }
+
+    this.mesh.visibility = updateOptions.fillOpacity ?? this.mesh.visibility;
+    this.mesh.edgesWidth =
+      updateOptions.outlineThickness ?? this.mesh.outlineWidth;
   }
 
   public updateSelection(ids: bigint[]) {

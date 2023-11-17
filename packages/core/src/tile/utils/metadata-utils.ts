@@ -179,6 +179,15 @@ export function getBiomedicalMetadata(
     });
   });
 
+  imageMetadata.transformationCoefficients = [
+    0,
+    imageMetadata.physicalSizeX ?? 1,
+    0,
+    0,
+    0,
+    imageMetadata.physicalSizeY ?? 1
+  ];
+
   return [imageMetadata, attributes, dimensions, levelRecords];
 }
 

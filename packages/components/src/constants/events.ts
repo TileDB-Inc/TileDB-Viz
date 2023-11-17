@@ -10,7 +10,8 @@ export enum Events {
   ENGINE_INFO_UPDATE = 'engine-info::update',
   BUTTON_CLICK = 'button::clicked',
   PICK_OBJECT = 'picking::object',
-  TEXT_INPUT_CHANGE = 'text-input::change'
+  TEXT_INPUT_CHANGE = 'text-input::change',
+  SELECT_INPUT_CHANGE = 'select::change'
 }
 
 export enum Commands {
