@@ -118,11 +118,11 @@ export class WorkerPool {
     }
   }
 
-  public postMessage(request: DataRequest) {
+  public postMessage(request: DataRequest, transferables?: Transferable[]) {
     let dispached = false;
     for (const [index, status] of this.status.entries()) {
       if (!status) {
-        this.workers[index].postMessage(request);
+        this.workers[index].postMessage(request, transferables ?? []);
         this.status[index] = true;
         this.taskMap.set(request.id, index);
 

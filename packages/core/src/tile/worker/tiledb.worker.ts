@@ -451,6 +451,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
   const heights: number[][] = [];
   const wkbs: ArrayBuffer[] = [];
   const offsets: BigUint64Array[] = [];
+  const vertexMap: Map<bigint, number[]> = new Map<bigint, number[]>();
 
   try {
     for await (const result of generator) {
@@ -459,9 +460,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
         if (request.heightAttribute) {
           heights.push(
             Array.from(
-              (types as any)[request.heightAttribute.type.toLowerCase()].create(
-                (result as any)[request.heightAttribute.name]
-              )
+              new Float64Array((result as any)[request.heightAttribute.name])
             )
           );
         } else {
@@ -528,6 +527,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
           normals,
           indices,
           faceMapping,
+          vertexMap,
           converter,
           geotransformCoefficients,
           request.metersPerUnit
@@ -568,6 +568,7 @@ async function geometryRequest(id: string, request: GeometryMessage) {
           normals: rawNormals,
           ids: rawIds,
           indices: rawIndices,
+          vertexMap: vertexMap,
           gtype: request.type,
           canceled: cancelSignal,
           nonce: request.nonce
@@ -589,72 +590,116 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     return;
   }
 
-  const [x, y] = request.index;
-  const tileSize = request.tileSize;
-
-  const cachedPositions = (await getQueryDataFromCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'position'}_${x}_${y}`
-  )) as Float32Array | undefined;
-
-  const cachedIds = (await getQueryDataFromCache(
-    `${request.arrayID}_${tileSize}`,
-    `${'ids'}_${x}_${y}`
-  )) as BigInt64Array | undefined;
-
-  if (cancelSignal || !(cachedPositions && cachedIds)) {
-    self.postMessage({
-      id: id,
-      type: RequestType.CANCEL,
-      response: { nonce: request.nonce } as BaseResponse
-    } as WorkerResponse);
-    return;
-  }
-
-  let xRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  let yRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-
-  let index = cachedIds.indexOf(request.id);
-  while (index !== -1) {
-    const pointX = cachedPositions[3 * index];
-    const pointY = cachedPositions[3 * index + 2];
-
-    xRange[0] = Math.min(xRange[0], pointX);
-    xRange[1] = Math.max(xRange[1], pointX);
-    yRange[0] = Math.min(yRange[0], pointY);
-    yRange[1] = Math.max(yRange[1], pointY);
-
-    index = cachedIds.indexOf(request.id, index + 1);
-  }
+  const height = Math.max(request.screenBbox[3] - request.screenBbox[1], 1);
+  const width = Math.max(request.screenBbox[2] - request.screenBbox[0], 1);
 
   const converter = proj4(request.geometryCRS, request.imageCRS);
   const geotransformCoefficients = request.geotransformCoefficients;
 
-  xRange[0] =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xRange[0] +
-    geotransformCoefficients[2] * yRange[0];
+  let queryPoints = [];
 
-  yRange[0] =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xRange[0] +
-    geotransformCoefficients[5] * yRange[0];
+  for (let x = request.screenBbox[0]; x < request.screenBbox[0] + width; ++x) {
+    for (
+      let y = request.screenBbox[1];
+      y < request.screenBbox[1] + height;
+      ++y
+    ) {
+      queryPoints.push(x, y);
+    }
+  }
 
-  xRange[1] =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xRange[1] +
-    geotransformCoefficients[2] * yRange[1];
+  if (request.selectionPath) {
+    queryPoints = windingNumber(request.selectionPath, queryPoints);
+  }
 
-  yRange[1] =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xRange[1] +
-    geotransformCoefficients[5] * yRange[1];
+  const ids: Set<bigint> = new Set<bigint>();
+
+  // Extract visible id values from the query points
+  for (let index = 0; index < queryPoints.length; index += 2) {
+    const [x, y] = [queryPoints[index], queryPoints[index + 1]];
+    const screenIndex =
+      ((y - request.screenBbox[1]) * width + (x - request.screenBbox[0])) * 4;
+
+    const id = new BigInt64Array(
+      request.texture.slice(screenIndex, screenIndex + 2).buffer
+    )[0];
+
+    if (id !== 0n) {
+      ids.add(id);
+    }
+  }
+
+  if (ids.size === 0) {
+    self.postMessage({ id: id, type: RequestType.CANCEL } as WorkerResponse);
+    return;
+  }
+
+  let xRange = [-Number.MAX_VALUE, Number.MAX_VALUE];
+  let yRange = [-Number.MAX_VALUE, Number.MAX_VALUE];
+
+  if (request.tiles && request.tiles.length) {
+    [xRange, yRange] = await calculateTileBbox(
+      request.tiles,
+      ids,
+      request.arrayID,
+      request.tileSize,
+      id
+    );
+
+    xRange[0] =
+      geotransformCoefficients[0] +
+      geotransformCoefficients[1] * xRange[0] +
+      geotransformCoefficients[2] * yRange[0];
+
+    yRange[0] =
+      geotransformCoefficients[3] +
+      geotransformCoefficients[4] * xRange[0] +
+      geotransformCoefficients[5] * yRange[0];
+
+    xRange[1] =
+      geotransformCoefficients[0] +
+      geotransformCoefficients[1] * xRange[1] +
+      geotransformCoefficients[2] * yRange[1];
+
+    yRange[1] =
+      geotransformCoefficients[3] +
+      geotransformCoefficients[4] * xRange[1] +
+      geotransformCoefficients[5] * yRange[1];
+  } else {
+    xRange[0] =
+      geotransformCoefficients[0] +
+      geotransformCoefficients[1] * request.worldBbox[0] +
+      geotransformCoefficients[2] * request.worldBbox[1];
+
+    yRange[0] =
+      geotransformCoefficients[3] +
+      geotransformCoefficients[4] * request.worldBbox[0] +
+      geotransformCoefficients[5] * request.worldBbox[1];
+
+    xRange[1] =
+      geotransformCoefficients[0] +
+      geotransformCoefficients[1] * request.worldBbox[2] +
+      geotransformCoefficients[2] * request.worldBbox[3];
+
+    yRange[1] =
+      geotransformCoefficients[3] +
+      geotransformCoefficients[4] * request.worldBbox[2] +
+      geotransformCoefficients[5] * request.worldBbox[3];
+  }
 
   const minLimit = converter.inverse([xRange[0], yRange[0]]);
   const maxLimit = converter.inverse([xRange[1], yRange[1]]);
 
   xRange = [minLimit[0], maxLimit[0]].sort();
   yRange = [minLimit[1], maxLimit[1]].sort();
+
+  if (request.tiles?.length) {
+    xRange = [xRange[0], xRange[1]];
+    yRange = [yRange[0], yRange[1]];
+  } else {
+    xRange = [xRange[0] - request.pad[0], xRange[1] + request.pad[0]];
+    yRange = [yRange[0] - request.pad[1], yRange[1] + request.pad[1]];
+  }
 
   const query = {
     layout: Layout.Unordered,
@@ -669,52 +714,34 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     query
   );
 
-  const info = {} as any;
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const indices: number[] = [];
-  const faceMapping: bigint[] = [];
+  const pickedResult: any[] = [];
+  const pickedIds: bigint[] = [];
 
   try {
     for await (const result of generator) {
-      const index = (result as any)[request.idAttribute].indexOf(request.id);
-
-      if (index === -1) {
-        continue;
-      }
-      info['_raw'] = {};
-      for (const [key, val] of Object.entries(result)) {
-        info['_raw'][key] = { values: [val[index]] };
-
-        if (key === request.idAttribute) {
-          continue;
-        } else if (key === request.geometryAttribute) {
-          let heights: number[] = [0];
-          if (request.heightAttribute) {
-            heights = Array.from(
-              (types as any)[request.heightAttribute.type.toLowerCase()].create(
-                (result as any)[request.heightAttribute.name]
-              )[index]
-            );
-          }
-
-          parsePolygon(
-            val[index],
-            heights,
-            BigUint64Array.from([0n]),
-            BigInt64Array.from([0n]),
-            positions,
-            normals,
-            indices,
-            faceMapping,
-            converter,
-            geotransformCoefficients,
-            request.metersPerUnit
-          );
+      for (
+        let index = 0;
+        index < (result as any)[request.idAttribute].length;
+        ++index
+      ) {
+        const entryID = (result as any)[request.idAttribute][index] as bigint;
+        if (!ids.has(entryID)) {
           continue;
         }
 
-        info[key] = val[index];
+        pickedIds.push(entryID);
+        ids.delete(entryID);
+
+        const info = {};
+        for (const [key, val] of Object.entries(result)) {
+          info[key] = val[index];
+        }
+
+        pickedResult.push(info);
+
+        if (ids.size === 0) {
+          break;
+        }
       }
     }
   } catch (e) {
@@ -730,17 +757,95 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     id: id,
     type: RequestType.GEOMETRY_INFO,
     response: {
-      index: [],
-      canceled: cancelSignal,
-      info: info,
-      positions: Float32Array.from(positions),
-      indices: Int32Array.from(indices),
-      normals: Float32Array.from(normals),
-      ids: BigInt64Array.from([request.id]),
-      gtype: request.type,
-      nonce: request.nonce
+      ids: pickedIds,
+      info: pickedResult
     } as GeometryInfoResponse
   } as WorkerResponse);
+}
 
-  return;
+function windingNumber(path: number[], queryPoints: number[]) {
+  // Sunday's variation
+
+  // Close path
+  path.push(path[0], path[1]);
+
+  const insidePoints: number[] = [];
+
+  for (let pointIndex = 0; pointIndex < queryPoints.length; pointIndex += 2) {
+    let winding = 0;
+    const [x, y] = [queryPoints[pointIndex], queryPoints[pointIndex + 1]];
+
+    for (let pathIndex = 0; pathIndex < path.length - 2; pathIndex += 2) {
+      const [startX, startY] = [path[pathIndex], path[pathIndex + 1]];
+      const [endX, endY] = [path[pathIndex + 2], path[pathIndex + 3]];
+
+      if (
+        y >= startY &&
+        y < endY &&
+        (endX - startX) * (y - startY) - (x - startX) * (endY - startY) > 0
+      ) {
+        winding += 1;
+      } else if (
+        y >= endY &&
+        y < startY &&
+        (endX - startX) * (y - startY) - (x - startX) * (endY - startY) < 0
+      ) {
+        winding -= 1;
+      }
+    }
+
+    if (winding !== 0) {
+      insidePoints.push(x, y);
+    }
+  }
+
+  return insidePoints;
+}
+
+async function calculateTileBbox(
+  tiles: number[][],
+  ids: Set<bigint>,
+  arrayID: string,
+  tileSize: number,
+  requestID: string
+) {
+  const xRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  const yRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
+  for (const [x, y] of tiles) {
+    const cachedPositions = (await getQueryDataFromCache(
+      `${arrayID}_${tileSize}`,
+      `${'position'}_${x}_${y}`
+    )) as Float32Array | undefined;
+
+    const cachedIds = (await getQueryDataFromCache(
+      `${arrayID}_${tileSize}`,
+      `${'ids'}_${x}_${y}`
+    )) as BigInt64Array | undefined;
+
+    if (cancelSignal || !(cachedPositions && cachedIds)) {
+      self.postMessage({
+        id: requestID,
+        type: RequestType.CANCEL
+      } as WorkerResponse);
+      return [];
+    }
+
+    for (const id of ids) {
+      let index = cachedIds.indexOf(id);
+      while (index !== -1) {
+        const pointX = cachedPositions[3 * index];
+        const pointY = cachedPositions[3 * index + 2];
+
+        xRange[0] = Math.min(xRange[0], pointX);
+        xRange[1] = Math.max(xRange[1], pointX);
+        yRange[0] = Math.min(yRange[0], pointY);
+        yRange[1] = Math.max(yRange[1], pointY);
+
+        index = cachedIds.indexOf(id, index + 1);
+      }
+    }
+  }
+
+  return [xRange, yRange];
 }

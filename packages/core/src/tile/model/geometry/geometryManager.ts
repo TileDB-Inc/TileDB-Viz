@@ -8,22 +8,7 @@ import {
   BaseResponse
 } from '../../types';
 import { GeometryTile } from './geometry';
-import {
-  Scene,
-  RenderTargetTexture,
-  AbstractMesh,
-  HighlightLayer,
-  Color3,
-  Mesh,
-  VertexData,
-  StandardMaterial,
-  PointerInfo,
-  PointerEventTypes,
-  Nullable,
-  Observer,
-  Constants,
-  ArcRotateCamera
-} from '@babylonjs/core';
+import { Scene, RenderTargetTexture, ArcRotateCamera } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
 import { GeometryMetadata } from '../../../types';
@@ -34,6 +19,7 @@ import {
   Commands
 } from '@tiledb-inc/viz-components';
 import { getCamera } from '../../utils/camera-utils';
+import { PickingTool } from '../../utils/picking-tool';
 
 interface GeometryOptions {
   arrayID: string;
@@ -56,15 +42,13 @@ export class GeometryManager extends Manager<GeometryTile> {
   private namespace: string;
   private nativeZoom: number;
   private renderTarget: RenderTargetTexture;
-  private highlightLayer: HighlightLayer;
-  private selectedPolygon?: Mesh;
-  private pointerHandler: Nullable<Observer<PointerInfo>>;
   private metersPerUnit: number;
-  private pickedMeshNonce: number;
+  private pickingTool: PickingTool;
 
   constructor(
     scene: Scene,
     workerPool: WorkerPool,
+    pickingTool: PickingTool,
     tileSize: number,
     geometryOptions: GeometryOptions
   ) {
@@ -76,7 +60,6 @@ export class GeometryManager extends Manager<GeometryTile> {
       geometryOptions.baseHeight
     );
 
-    this.pickedMeshNonce = 0;
     this.metadata = geometryOptions.metadata;
     this.baseCRS = geometryOptions.baseCRS;
     this.transformationCoefficients =
@@ -85,7 +68,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.namespace = geometryOptions.namespace;
     this.nativeZoom = geometryOptions.nativeZoom;
     this.renderTarget = geometryOptions.renderTarget;
-    this.pointerHandler = null;
+    this.pickingTool = pickingTool;
     this.metersPerUnit = geometryOptions.metersPerUnit;
 
     this.workerPool.callbacks.geometry.push(
@@ -93,8 +76,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     );
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
     this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
-
-    this.highlightLayer = new HighlightLayer('GeometryHighlight', scene);
+    this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
 
     this.setupEventListeners();
   }
@@ -169,44 +151,52 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
   }
 
-  public pickGeometry(pickedMesh: AbstractMesh, x: number, y: number) {
-    const buffer = new Uint32Array(4);
+  public pickGeometry(
+    bbox: number[],
+    constraints?: { path?: number[]; tiles?: number[][] }
+  ) {
+    // calculate width and height of bbox
+    const height = Math.max(bbox[3] - bbox[1], 1);
+    const width = Math.max(bbox[2] - bbox[0], 1);
+
+    // read screen texture buffer using the calculated bbox to read visible geometry id
+    const buffer = new Uint32Array(width * height * 4);
     const gl = this.scene.getEngine()._gl;
 
     this.renderTarget._bindFrameBuffer();
     gl.readPixels(
-      x,
-      this.renderTarget.getRenderHeight() - y,
-      1,
-      1,
+      bbox[0],
+      bbox[1],
+      width,
+      height,
       gl.RGBA_INTEGER,
       gl.UNSIGNED_INT,
       buffer
     );
 
-    if (buffer[3] === 1) {
-      const index =
-        pickedMesh.name.split(',').map(x => Number.parseInt(x)) ?? [];
-      this.workerPool.postMessage({
+    this.workerPool.postMessage(
+      {
         type: RequestType.GEOMETRY_INFO,
         id: 'geometry_info',
         request: {
-          id: new BigInt64Array(buffer.buffer)[0],
-          index: index,
-          tileSize: this.tileSize / 2 ** this.nativeZoom,
+          tileSize: this.tileSize,
+          worldBbox: screenToWorldSpaceBbox(this.scene, bbox),
+          screenBbox: bbox,
+          idAttribute: this.metadata.idAttribute,
+          texture: buffer,
           arrayID: this.arrayID,
           namespace: this.namespace,
-          idAttribute: this.metadata.idAttribute,
-          geometryAttribute: this.metadata.geometryAttribute,
           imageCRS: this.baseCRS,
+          pad: this.metadata.pad,
+          tiles: constraints?.tiles,
+          selectionPath: constraints?.path,
           geometryCRS: this.metadata.crs,
           geotransformCoefficients: this.transformationCoefficients,
           nonce: ++this.nonce
         } as GeometryInfoMessage
-      } as DataRequest);
-
-      this.pickedMeshNonce = this.nonce;
-    }
+      } as DataRequest,
+      [buffer.buffer]
+    );
   }
 
   private onGeometryTileDataLoad(id: string, response: GeometryResponse) {
@@ -237,37 +227,15 @@ export class GeometryManager extends Manager<GeometryTile> {
   }
 
   private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
-    if (
-      response.canceled ||
-      id !== 'geometry_info' ||
-      response.nonce !== this.pickedMeshNonce
-    ) {
+    if (id !== 'geometry_info') {
       return;
     }
 
-    this.highlightLayer.removeAllMeshes();
-    this.selectedPolygon?.dispose(false, true);
-
-    const material = new StandardMaterial(
-      'SelectedPolygonMaterial',
-      this.scene
-    );
-    material.diffuseColor = new Color3(0.2, 1, 0.2);
-    material.depthFunction = Constants.LEQUAL;
-
-    this.selectedPolygon = new Mesh('SelectedPolygon', this.scene);
-    this.selectedPolygon.alwaysSelectAsActiveMesh = true;
-    this.selectedPolygon.scaling.z = -1;
-    this.selectedPolygon.material = material;
-    this.selectedPolygon.layerMask = 1;
-    this.selectedPolygon.renderingGroupId = 1;
-
-    const vertexData = new VertexData();
-    vertexData.positions = response.positions;
-    vertexData.indices = response.indices;
-    vertexData.applyToMesh(this.selectedPolygon, false);
-
-    this.highlightLayer.addMesh(this.selectedPolygon, new Color3(0, 1, 0));
+    for (const [, status] of this.tileStatus) {
+      if (status.state === TileState.VISIBLE) {
+        status.tile?.updateSelection(response.ids);
+      }
+    }
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent>(Events.PICK_OBJECT, {
@@ -289,11 +257,24 @@ export class GeometryManager extends Manager<GeometryTile> {
 
     switch (event.detail.props.command) {
       case Commands.CLEAR:
-        this.selectedPolygon?.dispose(false, true);
-        this.highlightLayer.removeAllMeshes();
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updateSelection([]);
+          }
+        }
+        break;
+      case Commands.SELECT:
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updatePicked(
+              event.detail.props.data?.id,
+              event.detail.props.data?.previousID
+            );
+          }
+        }
         break;
       default:
-        return;
+        break;
     }
   }
 
@@ -303,35 +284,6 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
-
-    this.pointerHandler = this.scene.onPointerObservable.add(
-      (pointerInfo: PointerInfo) => {
-        switch (pointerInfo.type) {
-          case PointerEventTypes.POINTERTAP:
-            {
-              const camera = getCamera(this.scene, 'Main');
-              const pickInfo = this.scene.pick(
-                pointerInfo.event.offsetX,
-                pointerInfo.event.offsetY,
-                undefined,
-                true,
-                camera
-              );
-
-              if (!pickInfo.pickedMesh) {
-                return;
-              }
-
-              this.pickGeometry(
-                pickInfo.pickedMesh,
-                pointerInfo.event.offsetX,
-                pointerInfo.event.offsetY
-              );
-            }
-            break;
-        }
-      }
-    );
   }
 
   public stopEventListeners(): void {
@@ -340,8 +292,6 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.pickingHandler.bind(this) as any,
       { capture: true }
     );
-
-    this.scene.onPointerObservable.remove(this.pointerHandler);
   }
 
   private onCancel(id: string, response: BaseResponse) {
@@ -379,4 +329,34 @@ export class GeometryManager extends Manager<GeometryTile> {
       } as DataRequest);
     }
   }
+}
+
+function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
+  // calculate world space bbox to use for geometry query
+  const camera = getCamera(scene, 'Main');
+
+  const screenBbox = [
+    scene.getEngine().getRenderWidth(),
+    scene.getEngine().getRenderHeight()
+  ];
+  const offset = [
+    (camera?.target.x ?? 0) + (camera?.orthoLeft ?? 0),
+    -(camera?.target.z ?? 0) + (camera?.orthoTop ?? 0)
+  ];
+  const worldBbox = [
+    (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0),
+    (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0)
+  ];
+
+  const selectionWorldBbox = new Array(4);
+  [selectionWorldBbox[0], selectionWorldBbox[2]] = [
+    offset[0] + (bbox[0] / screenBbox[0]) * worldBbox[0],
+    offset[0] + (bbox[2] / screenBbox[0]) * worldBbox[0]
+  ];
+  [selectionWorldBbox[1], selectionWorldBbox[3]] = [
+    offset[1] - (bbox[1] / screenBbox[1]) * worldBbox[1],
+    offset[1] - (bbox[3] / screenBbox[1]) * worldBbox[1]
+  ];
+
+  return selectionWorldBbox;
 }
