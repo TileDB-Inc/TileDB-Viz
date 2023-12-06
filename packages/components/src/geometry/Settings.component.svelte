@@ -3,14 +3,17 @@
 	import { GUIEvent, SliderProps } from '../types';
   import { Events } from '../constants/events';
 
-	export let renderStyle = 0;
+  export let target = '';
+  export let state: {renderStyle: number, fillOpacity: number, outlineWidth: number} = {renderStyle: 0, fillOpacity: 1, outlineWidth: 1};
 
 	function fillopacityOnChange(value: number) {
+    state.fillOpacity = value;
+
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
         bubbles: true,
         detail: {
-          target: 'geometry_fillOpacity',
+          target: `${target}_fillOpacity`,
           props: {
             value: value
           }
@@ -20,11 +23,13 @@
   }
 
 	function lineThicknessOnChange(value: number) {
+    state.outlineWidth = value;
+    
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
         bubbles: true,
         detail: {
-          target: 'geometry_lineThickness',
+          target: `${target}_lineThickness`,
           props: {
             value: value
           }
@@ -35,11 +40,11 @@
 </script>
 
 <div class='Viewer-RenderSettings'>
-	{#if renderStyle == 0 || renderStyle == 2}
-		<Slider id={'fillopacity'} label={'Fill opacity'} min={0} max={1} value={1} step={0.01} callback={fillopacityOnChange}/>
+	{#if state.renderStyle == 0 || state.renderStyle == 2}
+		<Slider id={'fillopacity'} label={'Fill opacity'} min={0} max={1} value={state.fillOpacity} step={0.01} callback={fillopacityOnChange}/>
 	{/if}
-	{#if renderStyle == 1 || renderStyle == 2}
-		<Slider id={'linethickness'} label={'Line thickness'} min={0} max={10} value={1} step={0.01} callback={lineThicknessOnChange}/>
+	{#if state.renderStyle == 1 || state.renderStyle == 2}
+		<Slider id={'linethickness'} label={'Line thickness'} min={0} max={10} value={state.outlineWidth} step={0.01} callback={lineThicknessOnChange}/>
 	{/if}
 </div>
 

@@ -21,5 +21,6 @@ export enum Commands {
   COLOR = 'command::color',
   ZOOMIN = 'command::zoomin',
   ZOOMOUT = 'command::zoomout',
-  RESET = 'command::reset'
+  RESET = 'command::reset',
+  GROUP = 'command::group'
 }
