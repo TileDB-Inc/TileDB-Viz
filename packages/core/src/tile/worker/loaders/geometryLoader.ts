@@ -2,19 +2,28 @@ import {
   GeometryMessage,
   GeometryResponse,
   GeometryType,
+  TypedArray,
   WorkerResponse
 } from '../../types';
 import Client, { QueryData, Range } from '@tiledb-inc/tiledb-cloud';
 import { Datatype, Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
-import { RequestType } from '../../types';
+import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
+import { parsePolygon } from '../parsers';
 import {
-  parsePolygon,
-  parsePolygonExtruded,
-  parseStringPolygon
-} from '../parsers';
+  MathArray,
+  matrix,
+  Matrix,
+  min,
+  max,
+  multiply,
+  add,
+  index,
+  inv
+} from 'mathjs';
+import { Attribute, Feature, FeatureType } from '../../../types';
 
 export async function geometryRequest(
   id: string,
@@ -29,34 +38,39 @@ export async function geometryRequest(
     index: request.index,
     nonce: request.nonce,
     canceled: false,
-    type: request.heightAttribute
-      ? GeometryType.POLYGON_3D
-      : GeometryType.POLYGON,
+    type: GeometryType.POLYGON,
     attributes: {}
   };
 
-  const cachedPositions = await getQueryDataFromCache(
-    cacheTableID,
-    `${'position'}_${x}_${y}`
+  const geotransformCoefficients = request.geotransformCoefficients;
+  const affineMatrix = matrix([
+    [
+      geotransformCoefficients[1],
+      geotransformCoefficients[2],
+      geotransformCoefficients[0]
+    ],
+    [
+      geotransformCoefficients[4],
+      geotransformCoefficients[5],
+      geotransformCoefficients[3]
+    ],
+    [0, 0, 1]
+  ] as MathArray);
+  const buffers: { [attribute: string]: ArrayBuffer } = {};
+  const arrays: { [attribute: string]: TypedArray } = {};
+  const uniqueAttributes = new Set<string>(
+    request.features.flatMap(x => x.attributes)
   );
 
-  if (cachedPositions) {
-    const [cachedNormals, cachedIds, cachedIndices] = await Promise.all([
-      getQueryDataFromCache(cacheTableID, `${'normal'}_${x}_${y}`),
-      getQueryDataFromCache(cacheTableID, `${'ids'}_${x}_${y}`),
-      getQueryDataFromCache(cacheTableID, `${'indices'}_${x}_${y}`)
-    ]);
+  const cachedArrays = await loadCachedGeometry(cacheTableID, x, y, [
+    ...request.features.filter(x => x.attributes.length).map(x => x.name),
+    'positions',
+    'ids',
+    'indices'
+  ]);
 
-    result.attributes['positions'] = cachedPositions;
-    result.attributes['ids'] = cachedIds;
-    result.attributes['indices'] = cachedIndices;
-
-    if (cachedNormals) {
-      result.attributes['normals'] = cachedNormals;
-      result.type = GeometryType.POLYGON_3D;
-    } else {
-      result.type = GeometryType.POLYGON;
-    }
+  if (cachedArrays) {
+    result.attributes = cachedArrays;
 
     return {
       id: id,
@@ -65,63 +79,31 @@ export async function geometryRequest(
     } as WorkerResponse;
   }
 
-  const xPixelLimits = [x * tileSize, (x + 1) * tileSize];
-  const yPixelLimits = [y * tileSize, (y + 1) * tileSize];
+  const ranges = calculateQueryRanges(
+    request.index,
+    tileSize,
+    affineMatrix,
+    request.imageCRS,
+    request.geometryCRS
+  );
 
-  let ranges: (Range | Range[])[] = [];
-  let converter = undefined;
-  const geotransformCoefficients = request.geotransformCoefficients!;
-
-  let geoXMin =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xPixelLimits[0] +
-    geotransformCoefficients[2] * yPixelLimits[0];
-  let geoYMin =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xPixelLimits[0] +
-    geotransformCoefficients[5] * yPixelLimits[0];
-  let geoXMax =
-    geotransformCoefficients[0] +
-    geotransformCoefficients[1] * xPixelLimits[1] +
-    geotransformCoefficients[2] * yPixelLimits[1];
-  let geoYMax =
-    geotransformCoefficients[3] +
-    geotransformCoefficients[4] * xPixelLimits[1] +
-    geotransformCoefficients[5] * yPixelLimits[1];
-
-  if (request.geometryCRS) {
-    converter = proj4(request.geometryCRS, request.imageCRS);
-
-    [geoXMin, geoYMin] = converter.inverse([geoXMin, geoYMin]);
-    [geoXMax, geoYMax] = converter.inverse([geoXMax, geoYMax]);
+  // Add additional attributes
+  uniqueAttributes.add(request.geometryAttribute.name);
+  uniqueAttributes.add(request.idAttribute.name);
+  if (request.heightAttribute) {
+    uniqueAttributes.add(request.heightAttribute.name);
   }
 
-  const xRange = [geoXMin, geoXMax].sort();
-  const yRange = [geoYMin, geoYMax].sort();
-
-  // ranges = [
-  //   [xRange[0] - request.pad[0], xRange[1] + request.pad[0]],
-  //   [yRange[0] - request.pad[1], yRange[1] + request.pad[1]]
-  // ];
-  // Remove padding to avoid overlapping polygon when using transparency
-
-  ranges = [
-    [xRange[0], xRange[1]],
-    [yRange[0], yRange[1]]
-  ];
+  const isBinary = request.geometryAttribute.type === Datatype.Blob;
 
   const query = {
     layout: Layout.Unordered,
     ranges: ranges,
     bufferSize: 20_000_000,
-    attributes: [
-      request.geometryAttribute.name,
-      request.idAttribute.name,
-      ...(request.heightAttribute ? [request.heightAttribute.name] : [])
-    ],
-    returnRawBuffers: request.geometryAttribute.type === Datatype.Blob,
-    ignoreOffsets: request.geometryAttribute.type === Datatype.Blob,
-    returnOffsets: request.geometryAttribute.type === Datatype.Blob,
+    attributes: Array.from(uniqueAttributes),
+    returnRawBuffers: isBinary,
+    ignoreOffsets: isBinary,
+    returnOffsets: isBinary,
     cancelToken: tokenSource?.token
   } as QueryData;
 
@@ -131,112 +113,359 @@ export async function geometryRequest(
     query
   );
 
-  const vertexMap: Map<bigint, number[]> = new Map<bigint, number[]>();
+  const attributes = {
+    geometry: request.geometryAttribute,
+    height: request.heightAttribute,
+    id: request.idAttribute
+  };
 
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const indices: number[] = [];
-  const faceMapping: bigint[] = [];
+  for (const feature of request.features) {
+    for (const attribute of feature.attributes) {
+      attributes[attribute] = request.additionalAttributes?.filter(
+        x => x.name === attribute
+      )[0];
+    }
+  }
+
+  const geometryOutput = {
+    positions: [] as number[],
+    normals: [] as number[],
+    indices: [] as number[],
+    faceMapping: [] as bigint[],
+    vertexMap: new Map<bigint, number[]>()
+  };
 
   try {
     for await (const result of generator) {
-      if (request.geometryAttribute.type === Datatype.Blob) {
-        if ((result as any)['__offsets'][request.geometryAttribute.name]) {
-          const ids = new BigInt64Array(
-            (result as any)[request.idAttribute.name]
+      switch (request.geometryAttribute.type) {
+        case Datatype.Blob:
+          loadBinaryGeometry(
+            result,
+            attributes,
+            request.features,
+            request.type,
+            inv(affineMatrix),
+            geometryOutput
           );
-          const wkbs = (result as any)[
-            request.geometryAttribute.name
-          ] as ArrayBuffer;
-          const offsets = (result as any)['__offsets'][
-            request.geometryAttribute.name
-          ];
-
-          switch (request.type) {
-            case 'Polygon':
-              if (
-                request.heightAttribute &&
-                request.heightAttribute?.name in result
-              ) {
-                const heights = Array.from(
-                  new Float64Array(
-                    (result as any)[request.heightAttribute.name]
-                  )
-                );
-                parsePolygonExtruded(
-                  wkbs,
-                  heights,
-                  offsets,
-                  ids,
-                  positions,
-                  normals,
-                  indices,
-                  faceMapping,
-                  vertexMap,
-                  geotransformCoefficients,
-                  converter
-                );
-              } else {
-                parsePolygon(
-                  wkbs,
-                  offsets,
-                  ids,
-                  positions,
-                  normals,
-                  indices,
-                  faceMapping,
-                  vertexMap,
-                  geotransformCoefficients,
-                  converter
-                );
-              }
-              break;
-            default:
-              throw new Error(`Unknown geometry type "${request.type}"`);
-          }
-        }
-      } else if (request.geometryAttribute.type === Datatype.StringUtf8) {
-        parseStringPolygon(
-          (result as any)[request.geometryAttribute.name],
-          (result as any)[request.idAttribute.name],
-          positions,
-          normals,
-          indices,
-          faceMapping,
-          vertexMap,
-          geotransformCoefficients,
-          converter
-        );
-      } else {
-        throw new Error(
-          `Unknown geometry attribute "${request.geometryAttribute.type}"`
-        );
+          break;
+        case Datatype.StringUtf8:
+          loadStringGeometry(
+            result,
+            attributes,
+            request.features,
+            request.type,
+            inv(affineMatrix),
+            geometryOutput
+          );
+          break;
+        default:
+          throw new Error(
+            `Unknown geometry attribute "${request.geometryAttribute.type}"`
+          );
       }
     }
   } catch (e) {
     throw new Error('Request cancelled by the user');
   }
 
-  const rawPositions = Float32Array.from(positions);
-  const rawIds = BigInt64Array.from(faceMapping);
-  const rawIndices = Int32Array.from(indices);
-  const rawNormals = Float32Array.from(normals);
-
-  await Promise.all([
-    writeToCache(cacheTableID, `${'position'}_${x}_${y}`, rawPositions),
-    writeToCache(cacheTableID, `${'normal'}_${x}_${y}`, rawNormals),
-    writeToCache(cacheTableID, `${'ids'}_${x}_${y}`, rawIds),
-    writeToCache(cacheTableID, `${'indices'}_${x}_${y}`, rawIndices)
-  ]);
+  const rawPositions = Float32Array.from(geometryOutput.positions);
+  const rawIds = BigInt64Array.from(geometryOutput.faceMapping);
+  const rawIndices = Int32Array.from(geometryOutput.indices);
 
   result.attributes['positions'] = rawPositions;
   result.attributes['ids'] = rawIds;
-  result.attributes['normals'] = rawNormals;
   result.attributes['indices'] = rawIndices;
+
+  for (const feature of request.features) {
+    switch (feature.type) {
+      case FeatureType.CATEGORICAL:
+        result.attributes[feature.name] = Int32Array.from(
+          geometryOutput[feature.name]
+        );
+        break;
+      case FeatureType.FLAT_COLOR:
+        // skip
+        break;
+      default:
+        throw new Error(`Unsupported feature type ${feature.type}`);
+    }
+  }
+
+  await Promise.all(
+    Object.entries(result.attributes).map(([name, array]) => {
+      return writeToCache(cacheTableID, `${name}_${x}_${y}`, array);
+    })
+  );
 
   return {
     id: id,
     type: RequestType.GEOMETRY,
     response: result
   } as WorkerResponse;
+}
+
+async function loadCachedGeometry(
+  arrayID: string,
+  x: number,
+  y: number,
+  features: string[]
+): Promise<{ [attribute: string]: TypedArray } | undefined> {
+  const cachedArrays = await Promise.all(
+    features.map(feature => {
+      return getQueryDataFromCache(arrayID, `${feature}_${x}_${y}`);
+    })
+  );
+
+  if (cachedArrays.filter(x => x === undefined).length) {
+    return undefined;
+  }
+
+  const result: { [attribute: string]: TypedArray } = {};
+
+  for (const [index, attribute] of features.entries()) {
+    result[attribute] = cachedArrays[index];
+  }
+
+  return result;
+}
+
+function calculateQueryRanges(
+  tileIndex: number[],
+  tilesize: number,
+  affineMatrix: Matrix,
+  pad?: number[],
+  baseCRS?: string,
+  sourceCRS?: string
+): (Range | Range[])[] {
+  const [x, y] = tileIndex;
+
+  let minPoint = matrix([x * tilesize, y * tilesize, 1]);
+  let maxPoint = matrix([(x + 1) * tilesize, (y + 1) * tilesize, 1]);
+
+  minPoint = multiply(minPoint, affineMatrix);
+  maxPoint = multiply(maxPoint, affineMatrix);
+
+  if (baseCRS && sourceCRS) {
+    const converter = proj4(baseCRS, sourceCRS);
+
+    minPoint.subset(
+      index([true, true, false]),
+      converter.forward(minPoint.subset(index([true, true, false])).toArray())
+    );
+    maxPoint.subset(
+      index([true, true, false]),
+      converter.forward(maxPoint.subset(index([true, true, false])).toArray())
+    );
+  }
+
+  [minPoint, maxPoint] = [
+    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
+    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
+  ];
+
+  if (pad) {
+    minPoint.subset(
+      index([true, true, false]),
+      add(
+        minPoint.subset(index([true, true, false])),
+        matrix([-pad[0], -pad[1]])
+      )
+    );
+    maxPoint.subset(
+      index([true, true, false]),
+      add(maxPoint.subset(index([true, true, false])), matrix([pad[0], pad[1]]))
+    );
+  }
+
+  return [
+    [minPoint.get([0]), maxPoint.get([0])],
+    [minPoint.get([1]), maxPoint.get([1])]
+  ];
+}
+
+function loadBinaryGeometry(
+  data: Record<string, any>,
+  attributes: Record<string, Attribute>,
+  features: Feature[],
+  geometryType: string,
+  affineTransform: Matrix,
+  outputGeometry: OutputGeometry
+) {
+  const offsets = data['__offsets'][attributes.geometry.name] as BigUint64Array;
+
+  if (!offsets) {
+    return;
+  }
+
+  const extraAttributes: Record<string, number[]> = {};
+  const featureData: Record<string, number[]> = {};
+
+  for (const feature of features) {
+    for (const attribute of feature.attributes) {
+      if (attribute in extraAttributes) {
+        continue;
+      }
+
+      extraAttributes[attribute] = toNumericalArray(
+        data[attribute],
+        attributes[attribute]
+      );
+    }
+
+    if (feature.interleaved) {
+      // All attributes should have the same size
+      // TODO: Add explicit check
+      const elementCount = extraAttributes[feature.attributes[0]].length;
+      const attCount = feature.attributes.length;
+
+      // I use an typed array to work on a continuous block of memory
+      const interleavedData = Float64Array(
+        elementCount * feature.attributes.length
+      );
+
+      for (const [idx, attribute] of feature.attributes.entries) {
+        for (let index = 0; index < elementCount; ++index) {
+          interleavedData[index * attCount + idx] =
+            extraAttributes[attribute][index];
+        }
+      }
+
+      featureData[feature.name] = Array.from(interleavedData);
+    } else {
+      if (extraAttributes[feature.attributes[0]]) {
+        featureData[feature.name] = extraAttributes[feature.attributes[0]];
+      }
+    }
+  }
+
+  const wkb = data[attributes.geometry.name] as ArrayBuffer;
+  const id = transformBufferToInt64(data[attributes.id.name], attributes.id);
+  const height = new Float64Array(
+    attributes.height ? data[attributes.height.name] : undefined
+  );
+
+  switch (geometryType) {
+    case 'Polygon':
+      parsePolygon(
+        wkb,
+        height,
+        offsets,
+        id,
+        outputGeometry,
+        featureData,
+        affineTransform
+      );
+      break;
+    default:
+      throw new TypeError(`Unsupported geometry type ${geometryType}`);
+  }
+}
+
+function loadStringGeometry(
+  data: Record<string, any>,
+  attributes: Record<string, Attribute>,
+  features: Feature[],
+  geometryType: string,
+  affineTransform: Matrix,
+  outputGeometry: OutputGeometry
+) {
+  const wkt = data[attributes.geometry.name] as string[];
+  const id = transformBufferToInt64(data[attributes.id.name], attributes.id);
+  const height = new Float64Array(
+    attributes.height ? data[attributes.height.name] : undefined
+  );
+
+  const extraAttributes: Record<string, number[]> = {};
+  const featureData: Record<string, number[]> = {};
+
+  for (const feature of features) {
+    for (const attribute of feature.attributes) {
+      if (attribute in extraAttributes) {
+        continue;
+      }
+
+      extraAttributes[attribute] = toNumericalArray(
+        data[attribute],
+        attributes[attribute]
+      );
+    }
+
+    if (feature.interleaved) {
+      // All attributes should have the same size
+      // TODO: Add explicit check
+      const elementCount = extraAttributes[feature.attributes[0]].length;
+      const attCount = feature.attributes.length;
+
+      // I use an typed array to work on a continuous block of memory
+      const interleavedData = Float64Array(
+        elementCount * feature.attributes.length
+      );
+
+      for (const [idx, attribute] of feature.attributes.entries) {
+        for (let index = 0; index < elementCount; ++index) {
+          interleavedData[index * attCount + idx] =
+            extraAttributes[attribute][index];
+        }
+      }
+
+      featureData[feature.name] = Array.from(interleavedData);
+    } else {
+      if (extraAttributes[feature.attributes[0]]) {
+        featureData[feature.name] = extraAttributes[feature.attributes[0]];
+      }
+    }
+  }
+
+  switch (geometryType) {
+    case 'Polygon':
+      parsePolygon(
+        wkt,
+        height,
+        new BigUint64Array(),
+        id,
+        outputGeometry,
+        featureData,
+        affineTransform
+      );
+      break;
+    default:
+      throw new TypeError(`Unsupported geometry type ${geometryType}`);
+  }
+}
+
+function transformBufferToInt64(
+  buffer: ArrayBuffer,
+  attribute: Attribute
+): BigInt64Array {
+  switch (attribute.type) {
+    case Datatype.Int32:
+      return BigInt64Array.from(
+        Array.from(new Int32Array(buffer)).map(x => BigInt(x))
+      );
+    case Datatype.Int64:
+      return new BigInt64Array(buffer);
+  }
+}
+
+function toNumericalArray(buffer: ArrayBuffer, attribute: Attribute): number[] {
+  switch (attribute.type) {
+    case Datatype.Uint8:
+      return Array.from(new Uint8Array(buffer));
+    case Datatype.Uint16:
+      return Array.from(new Uint16Array(buffer));
+    case Datatype.Uint32:
+      return Array.from(new Uint32Array(buffer));
+    case Datatype.Int8:
+      return Array.from(new Int8Array(buffer));
+    case Datatype.Int16:
+      return Array.from(new Int16Array(buffer));
+    case Datatype.Int32:
+      return Array.from(new Int32Array(buffer));
+    case Datatype.Float32:
+      return Array.from(new Float32Array(buffer));
+    case Datatype.Float64:
+      return Array.from(new Float64Array(buffer));
+    default:
+      throw new TypeError(`Cannot convert ${attribute.type} to 'Number'`);
+  }
 }

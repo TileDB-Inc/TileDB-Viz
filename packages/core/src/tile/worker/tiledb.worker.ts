@@ -59,8 +59,13 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
             ).map(x => x.buffer) as any
           );
         })
-        .catch(x => console.log(x));
-      break;
+        .catch(x => {
+          self.postMessage({
+            id: event.data.id,
+            type: RequestType.CANCEL,
+            response: { nonce: event.data.request.nonce } as BaseResponse
+          } as WorkerResponse);
+        });
       break;
     case RequestType.GEOMETRY_INFO:
       cancelSignal = false;
