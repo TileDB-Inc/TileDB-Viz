@@ -46,7 +46,7 @@
     "@babylonjs/loaders": "^6.20.2",
     "@babylonjs/materials": "^6.20.2",
     "@babylonjs/serializers": "^6.20.2",
-    "@tiledb-inc/tiledb-cloud": "1.0.14",
+    "@tiledb-inc/tiledb-cloud": "1.0.15-alpha.1",
     "@tiledb-inc/viz-components": "workspace:packages/components",
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",
     "axios": "^0.21.1",
@@ -55,6 +55,7 @@
     "earcut": "2.2.4",
     "geometry-extrude": "0.2.1",
     "idb": "^7.0.2",
+    "mathjs": "^12.1.0",
     "proj4": "^2.9.0"
   },
   "devDependencies": {
