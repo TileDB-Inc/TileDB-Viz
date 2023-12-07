@@ -6,12 +6,7 @@ import {
   GUIEvent
 } from '@tiledb-inc/viz-components';
 import { Channel, ImageMetadata } from '../types';
-import {
-  Dimension,
-  AssetEntry,
-  Attribute,
-  GeometryMetadata
-} from '../../types';
+import { Dimension, AssetEntry, GeometryMetadata } from '../../types';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -36,8 +31,7 @@ class TileImageGUI {
     dimensions: Dimension[],
     assets: AssetEntry[],
     imageMetadata: ImageMetadata,
-    geometryAttributes: Attribute[] | undefined,
-    geometryMetadata: GeometryMetadata | undefined,
+    geometryMetadata: Map<string, GeometryMetadata>,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -61,17 +55,31 @@ class TileImageGUI {
     }
 
     this.uiWrapper = document.createElement('div');
-
     this.uiWrapper.innerHTML = `
     <status-overlay>
     </status-overlay>
     ${
-      geometryAttributes && geometryMetadata
+      geometryMetadata.size
         ? `
         <sidebar-menu anchorLeft=true expandedMaxWidth=600>
-          <info-panel attributes='${JSON.stringify(
-            geometryAttributes
-          )}' idAttribute='${geometryMetadata.idAttribute.name}'>
+          <info-panel 
+            attributes='${JSON.stringify(
+              Object.fromEntries(
+                Array.from(geometryMetadata.values()).map(x => [
+                  x.name,
+                  x.attributes
+                ])
+              )
+            )}'
+            idAttribute='${JSON.stringify(
+              Object.fromEntries(
+                Array.from(geometryMetadata.entries()).map(([id, value]) => [
+                  id,
+                  value.idAttribute.name
+                ])
+              )
+            )}'
+          >
           </info-panel>
         </sidebar-menu>`
         : ''
@@ -93,8 +101,27 @@ class TileImageGUI {
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
           : ''
       }
-      <geometry-panel>
-      </geometry-panel>
+      ${
+        geometryMetadata.size
+          ? `<geometry-panel 
+          attributes='${JSON.stringify(
+            Array.from(geometryMetadata.entries()).map(x => x[1].attributes)
+          )}' 
+          categories='${JSON.stringify(
+            Array.from(geometryMetadata.entries()).map(x =>
+              Object.fromEntries(x[1].categories)
+            )
+          )}' 
+          features='${JSON.stringify(
+            Array.from(geometryMetadata.entries()).map(x => x[1].features)
+          )}'
+          targets='${JSON.stringify(
+            Array.from(geometryMetadata.entries()).map(x => [x[0], x[1].name])
+          )}'
+        >
+        </geometry-panel>`
+          : ''
+      }
       <options-panel>
       </options-panel>
     </sidebar-menu>

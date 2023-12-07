@@ -6,9 +6,10 @@ import {
   GeometryInfoMessage,
   GeometryInfoResponse,
   BaseResponse,
-  GeometryStyle
+  GeometryStyle,
+  colorScheme
 } from '../../types';
-import { GeometryTile } from './geometry';
+import { GeometryTile, GeometryUpdateOptions } from './geometry';
 import {
   Scene,
   RenderTargetTexture,
@@ -17,7 +18,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { GeometryMetadata } from '../../../types';
+import { Feature, GeometryMetadata } from '../../../types';
 import {
   ButtonProps,
   Events,
@@ -28,6 +29,7 @@ import {
 } from '@tiledb-inc/viz-components';
 import { getCamera } from '../../utils/camera-utils';
 import { PickingTool } from '../../utils/picking-tool';
+import { hexToRgb } from '../../utils/helpers';
 
 interface GeometryOptions {
   arrayID: string;
@@ -56,8 +58,25 @@ export class GeometryManager extends Manager<GeometryTile> {
     style: GeometryStyle.FILLED,
     fillOpacity: 1,
     fillColor: new Color3(0, 0, 1),
-    outlineThickness: 1
+    outlineThickness: 1,
+    outlineColor: new Color3(1, 0, 0),
+    renderingGroup: 1,
+
+    // This array is shared by reference so changing a value
+    // should automatically update the uniform value
+    colorScheme: Float32Array.from(
+      colorScheme
+        .map(x => [...Object.values(hexToRgb(x)!), 255])
+        .flatMap(x => x)
+        .map(x => x / 255)
+    ),
+
+    // This map is shared by reference and will be updated
+    // automatically for all geometry tiles.
+    // It is only used when the active attribute is changed
+    groupState: new Map<string, Map<number, number>>()
   };
+  private activeFeature: Feature;
 
   constructor(
     scene: Scene,
@@ -84,6 +103,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.renderTarget = geometryOptions.renderTarget;
     this.pickingTool = pickingTool;
     this.metersPerUnit = geometryOptions.metersPerUnit;
+    this.activeFeature = this.metadata.features[0];
 
     this.workerPool.callbacks.geometry.push(
       this.onGeometryTileDataLoad.bind(this)
@@ -106,7 +126,7 @@ export class GeometryManager extends Manager<GeometryTile> {
 
       for (let x = minXIndex; x <= maxXIndex; ++x) {
         for (let y = minYIndex; y <= maxYIndex; ++y) {
-          const tileIndex = `geometry_${x}_${y}`;
+          const tileIndex = `${this.arrayID}_${x}_${y}`;
           const status =
             this.tileStatus.get(tileIndex) ??
             ({ evict: false } as TileStatus<GeometryTile>);
@@ -130,7 +150,9 @@ export class GeometryManager extends Manager<GeometryTile> {
                 geometryCRS: this.metadata.crs,
                 geotransformCoefficients: this.transformationCoefficients,
                 metersPerUnit: this.metersPerUnit,
-                nonce: ++this.nonce
+                nonce: ++this.nonce,
+                features: this.metadata.features,
+                additionalAttributes: this.metadata.attributes
               } as GeometryMessage
             } as DataRequest);
 
@@ -191,7 +213,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.workerPool.postMessage(
       {
         type: RequestType.GEOMETRY_INFO,
-        id: 'geometry_info',
+        id: this.arrayID,
         request: {
           tileSize: this.tileSize,
           worldBbox: screenToWorldSpaceBbox(this.scene, bbox),
@@ -233,8 +255,12 @@ export class GeometryManager extends Manager<GeometryTile> {
     if (status.tile) {
       status.tile.update({ response });
     } else {
-      status.tile = new GeometryTile(response, this.renderTarget, this.scene);
-      status.tile.update(this.styleOptions);
+      status.tile = new GeometryTile(
+        this.arrayID,
+        { ...this.styleOptions, response, feature: this.activeFeature },
+        this.renderTarget,
+        this.scene
+      );
     }
 
     status.state = TileState.VISIBLE;
@@ -242,7 +268,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   }
 
   private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
-    if (id !== 'geometry_info') {
+    if (id !== this.arrayID) {
       return;
     }
 
@@ -256,17 +282,17 @@ export class GeometryManager extends Manager<GeometryTile> {
       new CustomEvent<GUIEvent>(Events.PICK_OBJECT, {
         bubbles: true,
         detail: {
-          target: 'geometry_info',
+          target: `geometry_info_${this.arrayID}`,
           props: response.info
         }
       })
     );
   }
 
-  private pickingHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+  private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') {
+    if (target[0] !== this.arrayID) {
       return;
     }
 
@@ -288,6 +314,56 @@ export class GeometryManager extends Manager<GeometryTile> {
           }
         }
         break;
+      case Commands.COLOR:
+        {
+          if (target[1] === 'fillColor' || target[1] === 'outlineColor') {
+            const color: { r: number; g: number; b: number } =
+              event.detail.props.data;
+            this.styleOptions[target[1]] = new Color3(
+              color.r / 255,
+              color.g / 255,
+              color.b / 255
+            );
+          } else {
+            const groupIndex = Number.parseInt(target[1]);
+            const color: { r: number; g: number; b: number } =
+              event.detail.props.data;
+
+            this.styleOptions.colorScheme[4 * groupIndex] = color.r / 255;
+            this.styleOptions.colorScheme[4 * groupIndex + 1] = color.g / 255;
+            this.styleOptions.colorScheme[4 * groupIndex + 2] = color.b / 255;
+          }
+
+          for (const [, status] of this.tileStatus) {
+            if (status.state === TileState.VISIBLE) {
+              status.tile?.update(this.styleOptions);
+            }
+          }
+        }
+        break;
+      case Commands.GROUP:
+        {
+          let state = this.styleOptions.groupState.get(this.activeFeature.name);
+          if (!state) {
+            state = new Map<number, number>();
+            this.styleOptions.groupState.set(this.activeFeature.name, state);
+          }
+          state.set(
+            event.detail.props.data.category,
+            event.detail.props.data.group
+          );
+
+          for (const [, status] of this.tileStatus) {
+            status.tile?.update({
+              ...this.styleOptions,
+              groupUpdate: {
+                categoryIndex: event.detail.props.data.category,
+                group: event.detail.props.data.group
+              }
+            });
+          }
+        }
+        break;
       default:
         break;
     }
@@ -296,7 +372,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   public setupEventListeners(): void {
     window.addEventListener(
       Events.BUTTON_CLICK,
-      this.pickingHandler.bind(this) as any,
+      this.buttonHandler.bind(this) as any,
       { capture: true }
     );
     window.addEventListener(
@@ -307,6 +383,11 @@ export class GeometryManager extends Manager<GeometryTile> {
     window.addEventListener(
       Events.SLIDER_CHANGE,
       this.sliderHandler.bind(this) as any,
+      { capture: true }
+    );
+    window.addEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
       { capture: true }
     );
   }
@@ -314,7 +395,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   public stopEventListeners(): void {
     window.removeEventListener(
       Events.BUTTON_CLICK,
-      this.pickingHandler.bind(this) as any,
+      this.buttonHandler.bind(this) as any,
       { capture: true }
     );
     window.removeEventListener(
@@ -327,18 +408,34 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.sliderHandler.bind(this) as any,
       { capture: true }
     );
+    window.removeEventListener(
+      Events.COLOR_CHANGE,
+      this.buttonHandler.bind(this) as any,
+      { capture: true }
+    );
   }
 
   private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') {
+    let updateOptions: GeometryUpdateOptions = { ...this.styleOptions };
+
+    if (target[0] !== this.arrayID) {
       return;
     }
 
     switch (target[1]) {
       case 'style':
         this.styleOptions.style = event.detail.props.value + 1;
+        updateOptions = { ...this.styleOptions };
+        break;
+      case 'feature':
+        this.activeFeature = this.metadata.features[event.detail.props.value];
+        updateOptions.feature = this.activeFeature;
+        break;
+      case 'renderingGroup':
+        this.styleOptions.renderingGroup = event.detail.props.value + 1;
+        updateOptions = { ...this.styleOptions };
         break;
       default:
         return;
@@ -346,7 +443,7 @@ export class GeometryManager extends Manager<GeometryTile> {
 
     for (const [, status] of this.tileStatus) {
       if (status.state === TileState.VISIBLE) {
-        status.tile?.update(this.styleOptions);
+        status.tile?.update(updateOptions);
       }
     }
   }
@@ -354,7 +451,7 @@ export class GeometryManager extends Manager<GeometryTile> {
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') {
+    if (target[0] !== this.arrayID) {
       return;
     }
 
