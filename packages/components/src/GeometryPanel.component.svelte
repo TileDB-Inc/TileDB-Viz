@@ -27,8 +27,6 @@
 	let categoryState: Record<string, Record<string, Record<string, { group: number, selected: boolean }>>> = {};
 	let flatColorState: Record<string, Record<string, {fillColor: string, outlineColor: string}>> = {}
 
-	let enumeration: string | undefined;
-
 	for (const [idx, target] of targets.entries()) {
 		categoryState[target[0]] = {};
 		colorGroups[target[0]] = JSON.parse(JSON.stringify(colorScheme));
