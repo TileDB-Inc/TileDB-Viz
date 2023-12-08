@@ -7,6 +7,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string[];
+  pointGroupID?: string[];
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -263,6 +264,10 @@ export interface GeometryResponse extends BaseResponse {
   attributes: { [attribute: string]: TypedArray };
 }
 
+export interface PointResponse extends BaseResponse {
+  attributes: { [attribute: string]: TypedArray };
+}
+
 export interface GeometryInfoResponse {
   info: any[];
   ids: bigint[];
@@ -279,6 +284,12 @@ export enum GeometryType {
   NONE = 0,
   POLYGON = 1,
   POLYGON_3D = 2
+}
+
+export enum PointShape {
+  SQUARE = 0b1,
+  CIRCLE = 0b10,
+  PARABOLA = 0b100
 }
 
 export enum GeometryStyle {

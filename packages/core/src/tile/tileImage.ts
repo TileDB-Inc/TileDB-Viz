@@ -3,7 +3,13 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Attribute, Dimension, GeometryMetadata } from '../types';
+import {
+  AssetEntry,
+  Attribute,
+  Dimension,
+  GeometryMetadata,
+  PointCloudMetadata
+} from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -13,7 +19,10 @@ import {
   initializeCacheDB
 } from '../utils/cache';
 import { WorkerPool } from './worker/tiledb.worker.pool';
-import { getGeometryMetadata } from '../utils/metadata-utils/metadata-utils';
+import {
+  getGeometryMetadata,
+  getPointCloudMetadata
+} from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { CameraManager } from './utils/camera-utils';
@@ -39,6 +48,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private cameraManager!: CameraManager;
   private pickingTool!: PickingTool;
   private geometryMetadata: Map<string, GeometryMetadata>;
+  private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: Manager<Tile<any>>[];
 
   constructor(options: TileDBTileImageOptions) {
@@ -59,6 +69,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     });
 
     this.geometryMetadata = new Map<string, GeometryMetadata>();
+    this.pointMetadata = new Map<string, PointCloudMetadata>();
     this.assetManagers = [];
   }
 
@@ -66,7 +77,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      this.scene.debugLayer.show();
 
       return scene;
     });
@@ -159,7 +169,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
       for (const geometryArrayID of this.options.geometryArrayID) {
         const metadata = await getGeometryMetadata({
-          ...this.options,
+          namespace: this.options.namespace,
+          token: this.options.token,
+          tiledbEnv: this.options.tiledbEnv,
           geometryArrayID
         });
 
@@ -190,6 +202,19 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         await initializeCacheDB([
           `${geometryArrayID}_${this.tileSize / 2 ** nativeZoom}`
         ]);
+      }
+    }
+
+    if (this.options.pointGroupID) {
+      for (const pointGroupID of this.options.pointGroupID) {
+        const metadata = await getPointCloudMetadata({
+          namespace: this.options.namespace,
+          token: this.options.token,
+          tiledbEnv: this.options.tiledbEnv,
+          pointGroupID
+        });
+
+        this.pointMetadata.set(pointGroupID, metadata);
       }
     }
 
@@ -228,6 +253,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.groupAssets,
       this.metadata,
       this.geometryMetadata,
+      this.pointMetadata,
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)
