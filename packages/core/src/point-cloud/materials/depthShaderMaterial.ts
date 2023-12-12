@@ -97,18 +97,22 @@ export function PointCloudDepthMaterial(
     {
       vec4 worldPos = world * vec4(position, 1.0);
       gl_Position = viewProjection * worldPos;
-
       linearDepth = (gl_Position.w - ${nearPlane.toFixed(
         1
       )}) / (${farPlane.toFixed(1)} - ${nearPlane.toFixed(1)});
       float originalDepth = gl_Position.w;
-      float adjustedDepth = originalDepth + ${blendDistance.toFixed(1)};
-      float adjust = adjustedDepth / originalDepth;
 
-      vec4 wvPosition = worldView * vec4(position, 1.0);
-      wvPosition.xyz = wvPosition.xyz * adjust;
+      if (originalDepth >= ${nearPlane.toFixed(
+        1
+      )} && originalDepth <= ${farPlane.toFixed(1)}) {
+        float adjustedDepth = originalDepth + ${blendDistance.toFixed(1)};
+        float adjust = adjustedDepth / originalDepth;
 
-      gl_Position = projection * wvPosition;
+        vec4 wvPosition = worldView * vec4(position, 1.0);
+        wvPosition.xyz = wvPosition.xyz * adjust;
+
+        gl_Position = projection * wvPosition;
+      }
 
       #include<clipPlaneVertex>
 
