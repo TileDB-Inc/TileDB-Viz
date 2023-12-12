@@ -24,6 +24,7 @@ import {
   inv
 } from 'mathjs';
 import { Attribute, Feature, FeatureType } from '../../../types';
+import { toNumericalArray, transformBufferToInt64 } from './utils';
 
 export async function geometryRequest(
   id: string,
@@ -56,8 +57,7 @@ export async function geometryRequest(
     ],
     [0, 0, 1]
   ] as MathArray);
-  const buffers: { [attribute: string]: ArrayBuffer } = {};
-  const arrays: { [attribute: string]: TypedArray } = {};
+
   const uniqueAttributes = new Set<string>(
     request.features.flatMap(x => x.attributes)
   );
@@ -319,11 +319,11 @@ function loadBinaryGeometry(
       const attCount = feature.attributes.length;
 
       // I use an typed array to work on a continuous block of memory
-      const interleavedData = Float64Array(
+      const interleavedData = new Float64Array(
         elementCount * feature.attributes.length
       );
 
-      for (const [idx, attribute] of feature.attributes.entries) {
+      for (const [idx, attribute] of feature.attributes.entries()) {
         for (let index = 0; index < elementCount; ++index) {
           interleavedData[index * attCount + idx] =
             extraAttributes[attribute][index];
@@ -397,11 +397,11 @@ function loadStringGeometry(
       const attCount = feature.attributes.length;
 
       // I use an typed array to work on a continuous block of memory
-      const interleavedData = Float64Array(
+      const interleavedData = new Float64Array(
         elementCount * feature.attributes.length
       );
 
-      for (const [idx, attribute] of feature.attributes.entries) {
+      for (const [idx, attribute] of feature.attributes.entries()) {
         for (let index = 0; index < elementCount; ++index) {
           interleavedData[index * attCount + idx] =
             extraAttributes[attribute][index];
@@ -430,42 +430,5 @@ function loadStringGeometry(
       break;
     default:
       throw new TypeError(`Unsupported geometry type ${geometryType}`);
-  }
-}
-
-function transformBufferToInt64(
-  buffer: ArrayBuffer,
-  attribute: Attribute
-): BigInt64Array {
-  switch (attribute.type) {
-    case Datatype.Int32:
-      return BigInt64Array.from(
-        Array.from(new Int32Array(buffer)).map(x => BigInt(x))
-      );
-    case Datatype.Int64:
-      return new BigInt64Array(buffer);
-  }
-}
-
-function toNumericalArray(buffer: ArrayBuffer, attribute: Attribute): number[] {
-  switch (attribute.type) {
-    case Datatype.Uint8:
-      return Array.from(new Uint8Array(buffer));
-    case Datatype.Uint16:
-      return Array.from(new Uint16Array(buffer));
-    case Datatype.Uint32:
-      return Array.from(new Uint32Array(buffer));
-    case Datatype.Int8:
-      return Array.from(new Int8Array(buffer));
-    case Datatype.Int16:
-      return Array.from(new Int16Array(buffer));
-    case Datatype.Int32:
-      return Array.from(new Int32Array(buffer));
-    case Datatype.Float32:
-      return Array.from(new Float32Array(buffer));
-    case Datatype.Float64:
-      return Array.from(new Float64Array(buffer));
-    default:
-      throw new TypeError(`Cannot convert ${attribute.type} to 'Number'`);
   }
 }

@@ -7,7 +7,8 @@ import {
   GeometryMetadata,
   PointCloudMetadata,
   Feature,
-  FeatureType
+  FeatureType,
+  Domain
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -310,7 +311,7 @@ export async function getPointCloudMetadata(
   const uris =
     members.entries
       ?.filter(x => x.array)
-      .sort((a, b) => a.array?.name?.localeCompare(b.array?.name))
+      .sort((a, b) => a.array?.name?.localeCompare(b.array?.name ?? '') ?? 0)
       .map(x => x.array?.id as string) ?? [];
 
   const [arrayMetadata, arraySchemaResponse] = await Promise.all([
@@ -332,6 +333,16 @@ export async function getPointCloudMetadata(
       visible: index === 0 ? true : false,
       enumeration: value.enumerationName
     } as Attribute;
+  });
+
+  const domain: Domain[] = arraySchemaResponse.domain.dimensions.map(value => {
+    const extent: number[] = Object.values(value.domain).filter(x => x)[0];
+    return {
+      name: value.name ?? '',
+      type: value.type as string,
+      min: extent[0],
+      max: extent[1]
+    };
   });
 
   const bounds = Float64Array.from(JSON.parse(arrayMetadata['octree-bounds']));
@@ -362,12 +373,14 @@ export async function getPointCloudMetadata(
   );
 
   const metadata: PointCloudMetadata = {
+    groupID: options.pointGroupID,
     minPoint: Vector3.FromArray(bounds, 0),
     maxPoint: Vector3.FromArray(bounds, 3),
     octreeData: JSON.parse(arrayMetadata['octant-data']),
     name: info.data.name ?? options.pointGroupID,
     levels: uris,
     attributes: attributes,
+    domain: domain,
     features: features,
     categories: new Map<string, string[]>()
   };

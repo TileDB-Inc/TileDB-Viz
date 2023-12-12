@@ -302,3 +302,36 @@ export function sliceRanges(
 
   return [ranges, size];
 }
+
+export function concatBuffers(a: ArrayBuffer, b?: ArrayBuffer) {
+  if (!b) {
+    return a;
+  }
+
+  const result = new Uint8Array(a.byteLength + b.byteLength);
+
+  result.set(new Uint8Array(a));
+  result.set(new Uint8Array(b), a.byteLength);
+
+  return result.buffer;
+}
+
+export function interleaveTypedArrays(...arrays: TypedArray[]): TypedArray {
+  const sizes = arrays.map(x => x.length);
+  if (!sizes.every((value, index, array) => value === array[0])) {
+    console.error(`Arrays are of incompatible sizes. ${sizes.toString()}`);
+  }
+
+  const result = new (arrays[0].constructor as TypedArrayInterface)(
+    sizes.length * sizes[0]
+  );
+  for (let index = 0; index < sizes.length; ++index) {
+    for (let arrayIndex = 0; arrayIndex < sizes[index]; ++arrayIndex) {
+      const position = arrayIndex * sizes.length + index;
+
+      result[position] = arrays[index][arrayIndex];
+    }
+  }
+
+  return result;
+}

@@ -29,9 +29,11 @@ export interface PointCloudMetadata {
   octreeData: { [index: octreeIndex]: number };
 
   name: string;
+  groupID: string;
   levels: string[];
   categories: Map<string, string[]>;
   attributes: Attribute[];
+  domain: Domain[];
   features: Feature[];
   crs?: string;
 }
@@ -73,6 +75,13 @@ export interface Attribute {
   type: string;
   visible: boolean;
   enumeration?: string;
+}
+
+export interface Domain {
+  name: string;
+  type: string;
+  min: number;
+  max: number;
 }
 
 export interface Dimension {
