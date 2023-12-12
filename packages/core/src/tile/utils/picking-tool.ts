@@ -21,6 +21,36 @@ enum PickingMode {
   LASSO = 3
 }
 
+export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
+  // calculate world space bbox to use for geometry query
+  const camera = getCamera(scene, 'Main');
+
+  const screenBbox = [
+    scene.getEngine().getRenderWidth(),
+    scene.getEngine().getRenderHeight()
+  ];
+  const offset = [
+    (camera?.target.x ?? 0) + (camera?.orthoLeft ?? 0),
+    -(camera?.target.z ?? 0) + (camera?.orthoTop ?? 0)
+  ];
+  const worldBbox = [
+    (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0),
+    (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0)
+  ];
+
+  const selectionWorldBbox = new Array(4);
+  [selectionWorldBbox[0], selectionWorldBbox[2]] = [
+    offset[0] + (bbox[0] / screenBbox[0]) * worldBbox[0],
+    offset[0] + (bbox[2] / screenBbox[0]) * worldBbox[0]
+  ];
+  [selectionWorldBbox[1], selectionWorldBbox[3]] = [
+    offset[1] - (bbox[1] / screenBbox[1]) * worldBbox[1],
+    offset[1] - (bbox[3] / screenBbox[1]) * worldBbox[1]
+  ];
+
+  return selectionWorldBbox;
+}
+
 export class PickingTool {
   public pickCallbacks: {
     (

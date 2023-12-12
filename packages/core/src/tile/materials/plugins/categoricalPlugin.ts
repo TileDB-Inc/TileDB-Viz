@@ -35,7 +35,7 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
   }
 
   constructor(material: Material, feature: Feature) {
-    super(material, 'Categorical', 300, {
+    super(material, 'Categorical', 199, {
       FEATURE_TYPE: feature.type
     });
 

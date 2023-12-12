@@ -27,8 +27,7 @@ import {
   SliderProps,
   SelectProps
 } from '@tiledb-inc/viz-components';
-import { getCamera } from '../../utils/camera-utils';
-import { PickingTool } from '../../utils/picking-tool';
+import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
 
 interface GeometryOptions {
@@ -509,34 +508,4 @@ export class GeometryManager extends Manager<GeometryTile> {
       } as DataRequest);
     }
   }
-}
-
-function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
-  // calculate world space bbox to use for geometry query
-  const camera = getCamera(scene, 'Main');
-
-  const screenBbox = [
-    scene.getEngine().getRenderWidth(),
-    scene.getEngine().getRenderHeight()
-  ];
-  const offset = [
-    (camera?.target.x ?? 0) + (camera?.orthoLeft ?? 0),
-    -(camera?.target.z ?? 0) + (camera?.orthoTop ?? 0)
-  ];
-  const worldBbox = [
-    (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0),
-    (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0)
-  ];
-
-  const selectionWorldBbox = new Array(4);
-  [selectionWorldBbox[0], selectionWorldBbox[2]] = [
-    offset[0] + (bbox[0] / screenBbox[0]) * worldBbox[0],
-    offset[0] + (bbox[2] / screenBbox[0]) * worldBbox[0]
-  ];
-  [selectionWorldBbox[1], selectionWorldBbox[3]] = [
-    offset[1] - (bbox[1] / screenBbox[1]) * worldBbox[1],
-    offset[1] - (bbox[3] / screenBbox[1]) * worldBbox[1]
-  ];
-
-  return selectionWorldBbox;
 }
