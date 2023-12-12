@@ -23,7 +23,7 @@
             command: Commands.GROUP,
             data: {
               category: categories.indexOf(name),
-              group: state[name].selected ? state[name].group : 0xffffffff
+              group: state[name].selected ? state[name].group : 32
             }
           }
         }
@@ -61,7 +61,7 @@
             command: Commands.GROUP,
             data: {
               category: categories.indexOf(name),
-              group: state[name].selected ? state[name].group : 0xffffffff
+              group: state[name].selected ? state[name].group : 32
             }
           }
         }

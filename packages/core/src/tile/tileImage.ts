@@ -30,6 +30,7 @@ import { GeometryPipeline } from './pipelines/pickingPipeline';
 import { PickingTool } from './utils/picking-tool';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
+import { PointManager } from './model/point/pointManager';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -140,6 +141,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
     this.pickingTool = new PickingTool(this.scene);
 
+    const pipeline = new GeometryPipeline(this.scene);
+    const renderTarget = pipeline.initializeRTT();
+
     if (this.options.geometryArrayID) {
       const light = new DirectionalLight(
         'light',
@@ -157,10 +161,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         );
       }
 
-      const pipeline = new GeometryPipeline(this.scene);
-      const renderTarget = pipeline.initializeRTT();
-      const transformationCoefficients =
-        this.metadata.transformationCoefficients ?? [];
+      const transformationCoefficients = [
+        ...(this.metadata.transformationCoefficients ?? [])
+      ];
       const nativeZoom = this.levels.length - 1;
       transformationCoefficients[1] *= 2 ** nativeZoom;
       transformationCoefficients[2] *= 2 ** nativeZoom;
@@ -206,6 +209,15 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     }
 
     if (this.options.pointGroupID) {
+      const transformationCoefficients = [
+        ...(this.metadata.transformationCoefficients ?? [])
+      ];
+      const nativeZoom = this.levels.length - 1;
+      transformationCoefficients[1] *= 2 ** nativeZoom;
+      transformationCoefficients[2] *= 2 ** nativeZoom;
+      transformationCoefficients[4] *= 2 ** nativeZoom;
+      transformationCoefficients[5] *= 2 ** nativeZoom;
+
       for (const pointGroupID of this.options.pointGroupID) {
         const metadata = await getPointCloudMetadata({
           namespace: this.options.namespace,
@@ -215,6 +227,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         });
 
         this.pointMetadata.set(pointGroupID, metadata);
+        this.assetManagers.push(
+          new PointManager(this.scene, this.workerPool, {
+            namespace: this.options.namespace,
+            transformationCoefficients: transformationCoefficients,
+            metadata: metadata
+          })
+        );
+
+        await initializeCacheDB(
+          metadata.levels
+            .map(x => `${x}`)
+            .filter(
+              (value: string, index: number, array: string[]) =>
+                array.indexOf(value) === index
+            )
+        );
       }
     }
 
