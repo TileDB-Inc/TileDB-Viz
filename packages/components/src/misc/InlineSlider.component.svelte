@@ -7,7 +7,9 @@
   export let step = 0.1;
 
   export let callback = (value: number) => {};
-  export let formatter = (value: number) => { return value.toFixed(2)};
+  export let formatter = (value: number) => {
+    return value.toFixed(2);
+  };
 </script>
 
 <div class="Viewer-Slider">
@@ -77,8 +79,11 @@
       margin-top: -7px;
       box-shadow: var(--viewer-shadow-medium);
 
-      transition: background 0.2s ease-in-out, width 0.2s ease-in-out,
-        height 0.2s ease-in-out, margin-top 0.2s ease-in-out;
+      transition:
+        background 0.2s ease-in-out,
+        width 0.2s ease-in-out,
+        height 0.2s ease-in-out,
+        margin-top 0.2s ease-in-out;
     }
 
     input[type='range']::-webkit-slider-runnable-track {

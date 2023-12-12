@@ -6,7 +6,7 @@
   import { hexToRgb } from '../utils/helpers';
 
   export let target = '';
-  export let state: Record<string, { group: number, selected: boolean }> = {};
+  export let state: Record<string, { group: number; selected: boolean }> = {};
   export let color_groups: string[] = [];
 
   let searchText = '';
