@@ -12,12 +12,16 @@
   "scripts": {
     "build": "vite build",
     "build:types": "yarn g:tsc --declaration --allowJs false --emitDeclarationOnly",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "storybook": "yarn g:storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.4.3",
     "@tsconfig/svelte": "^5.0.0",
     "esbuild": "^0.18.13",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "svelte": "^4.1.2",
     "svelte-check": "^3.4.6",
     "svelte-preprocess": "^5.0.4",
