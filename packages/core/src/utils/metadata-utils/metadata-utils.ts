@@ -4,7 +4,9 @@ import {
   Attribute,
   Dimension,
   AssetEntry,
-  GeometryMetadata
+  GeometryMetadata,
+  Feature,
+  FeatureType
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -178,7 +180,7 @@ async function getGroupMetadata(
 
 export async function getGeometryMetadata(
   options: AssetOptions
-): Promise<[GeometryMetadata, Attribute[]]> {
+): Promise<GeometryMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -188,27 +190,56 @@ export async function getGeometryMetadata(
     throw new Error('Geometry array ID is undefined');
   }
 
-  const arraySchemaResponse = await client.ArrayApi.getArray(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    options.namespace,
-    options.geometryArrayID,
-    'application/json'
-  );
+  const [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
+    client.ArrayApi.getArray(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.namespace,
+      options.geometryArrayID,
+      'application/json'
+    ).then(x => x.data),
+    client.info(options.namespace, options.geometryArrayID).then(x => x.data),
+    client.ArrayApi.getArrayMetaDataJson(
+      options.namespace,
+      options.geometryArrayID
+    ).then(x => x.data as any)
+  ]);
 
-  const attributes = arraySchemaResponse.data.attributes.map((value, index) => {
+  const attributes = arraySchemaResponse.attributes.map((value, index) => {
     return {
       name: value.name,
       type: value.type as string,
-      visible: index === 0 ? true : false
+      visible: index === 0 ? true : false,
+      enumeration: value.enumerationName
     } as Attribute;
   });
 
-  const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
-    options.namespace,
-    options.geometryArrayID
-  ).then((response: any) => response.data);
+  const features = [
+    {
+      name: 'Default',
+      attributes: [],
+      interleaved: false,
+      type: FeatureType.FLAT_COLOR
+    } as Feature
+  ];
+  features.push(
+    ...(attributes
+      .map(x => {
+        if (x.enumeration) {
+          return {
+            name: x.name,
+            attributes: [x.name],
+            interleaved: false,
+            type: FeatureType.CATEGORICAL
+          };
+        }
+
+        return undefined;
+      })
+      .filter(x => x !== undefined) as Feature[])
+  );
 
   const geometryMetadata = {
+    name: info.name,
     extent: [
       arrayMetadata['LAYER_EXTENT_MINX'],
       arrayMetadata['LAYER_EXTENT_MINY'],
@@ -223,10 +254,38 @@ export async function getGeometryMetadata(
       x => x.name === arrayMetadata['GEOMETRY_ATTRIBUTE_NAME']
     ),
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
-    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined
+    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined,
+    features: features,
+    attributes
   } as GeometryMetadata;
 
-  return [geometryMetadata, attributes];
+  const enumarations = new Set(
+    [...attributes.values()]
+      .map(x => x.enumeration)
+      .filter(x => x !== undefined) as string[]
+  );
+
+  geometryMetadata.categories =
+    enumarations.size === 0
+      ? new Map()
+      : new Map(
+          (
+            await client.loadEnumerationsRequest(
+              options.namespace,
+              options.geometryArrayID,
+              { enumerations: [...enumarations.values()] }
+            )
+          ).map(x => {
+            return [
+              x.name,
+              (x.values as any[]).map(x => {
+                return x.toString();
+              })
+            ];
+          })
+        );
+
+  return geometryMetadata;
 }
 
 function deserializeBuffer(type: string, buffer: Array<number>): any {

@@ -1,12 +1,12 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
-import { Attribute, Dimension, AssetMetadata } from '../../types';
+import { Attribute, Dimension, AssetMetadata, Feature } from '../../types';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   arrayID?: string;
   groupID?: string;
-  geometryArrayID?: string;
+  geometryArrayID?: string[];
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -15,6 +15,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
     color?: { r: number; g: number; b: number };
     intensity?: number;
   }[];
+  features?: Feature[];
 }
 
 export interface Channel {
@@ -211,13 +212,14 @@ export interface GeometryMessage {
   geometryAttribute: Attribute;
   heightAttribute?: Attribute;
   pad: number[];
-  extraAttributes?: string[];
+  additionalAttributes?: Attribute[];
   type: string;
   imageCRS?: string;
   geometryCRS?: string;
   geotransformCoefficients: number[];
   metersPerUnit: number;
   nonce: number;
+  features: Feature[];
 }
 
 export interface GeometryInfoMessage {
@@ -284,3 +286,46 @@ export enum GeometryStyle {
   OUTLINED = 0b10,
   FILLED_OUTLINED = 0b11
 }
+
+export type OutputGeometry = {
+  positions: number[];
+  indices: number[];
+  faceMapping: bigint[];
+  vertexMap: Map<bigint, number[]>;
+  features: Record<string, number[]>;
+};
+
+export const colorScheme = [
+  '#20603D',
+  '#9E9764',
+  '#F4A900',
+  '#FF2301',
+  '#434B4D',
+  '#A18594',
+  '#252850',
+  '#A5A5A5',
+  '#C51D34',
+  '#4D5645',
+  '#FF7514',
+  '#79553D',
+  '#31372B',
+  '#9E9764',
+  '#E7EBDA',
+  '#212121',
+  '#464531',
+  '#84C3BE',
+  '#B44C43',
+  '#A18594',
+  '#193737',
+  '#20214F',
+  '#1D1E33',
+  '#316650',
+  '#474B4E',
+  '#403A3A',
+  '#5D9B9B',
+  '#1C542D',
+  '#D84B20',
+  '#5E2129',
+  '#2A6478',
+  '#BDECB6'
+];

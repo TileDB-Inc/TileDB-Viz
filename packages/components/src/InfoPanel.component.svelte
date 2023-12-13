@@ -1,15 +1,32 @@
-<svelte:options customElement="info-panel" />
+<svelte:options
+  customElement={{
+    tag: 'info-panel'
+  }}
+/>
 
 <script lang="ts">
   import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
   import { ButtonProps, GUIEvent } from './types';
 
-  export let attributes = '[]';
-  export let idAttribute = '';
+  export let attributes = '{}';
+  export let idAttribute = '{}';
 
   let results: any[] = [];
-  let headings = JSON.parse(attributes ?? '[]') as any[];
+  let idMap = JSON.parse(idAttribute);
+  let headings = [];
+  for (const attribute of Object.values(JSON.parse(attributes || '{}')).flatMap(
+    x => x
+  )) {
+    if (
+      headings.findIndex(
+        x => x.name === attribute.name && x.type === attribute.type
+      ) === -1
+    ) {
+      headings.push(attribute);
+    }
+  }
+
   let itemsPerPage: number = 10;
   let page: number = 0;
 
@@ -34,23 +51,29 @@
   function clear() {
     results = [];
 
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-        bubbles: true,
-        detail: {
-          target: 'geometry',
-          props: {
-            command: Commands.CLEAR
+    for (const [key] of Object.entries(idMap)) {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+          bubbles: true,
+          detail: {
+            target: key,
+            props: {
+              command: Commands.CLEAR
+            }
           }
-        }
-      })
-    );
+        })
+      );
+    }
   }
 
   function clearSelection() {
+    const previousDataset =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex]['dataset']
+        : undefined;
     const previousID =
       selectedItemIndex !== -1
-        ? results[selectedItemIndex][idAttribute]
+        ? results[selectedItemIndex][idMap[previousDataset]]
         : undefined;
     selectedItemIndex = -1;
 
@@ -58,7 +81,7 @@
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: 'geometry',
+          target: previousDataset,
           props: {
             command: Commands.SELECT,
             data: {
@@ -72,27 +95,67 @@
   }
 
   function itemOnSelect(page: number, index: number) {
+    const previousDataset =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex]['dataset']
+        : undefined;
     const previousID =
       selectedItemIndex !== -1
-        ? results[selectedItemIndex][idAttribute]
+        ? results[selectedItemIndex][idMap[previousDataset]]
         : undefined;
-    selectedItemIndex = page * itemsPerPage + index;
 
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-        bubbles: true,
-        detail: {
-          target: 'geometry',
-          props: {
-            command: Commands.SELECT,
-            data: {
-              id: results[selectedItemIndex][idAttribute],
-              previousID
+    selectedItemIndex = page * itemsPerPage + index;
+    const selectedDataset = results[selectedItemIndex]['dataset'];
+
+    if (previousDataset === selectedDataset || previousDataset === undefined) {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+          bubbles: true,
+          detail: {
+            target: selectedDataset,
+            props: {
+              command: Commands.SELECT,
+              data: {
+                id: results[selectedItemIndex][idMap[selectedDataset]],
+                previousID
+              }
             }
           }
-        }
-      })
-    );
+        })
+      );
+    } else {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+          bubbles: true,
+          detail: {
+            target: previousDataset,
+            props: {
+              command: Commands.SELECT,
+              data: {
+                id: -1n,
+                previousID
+              }
+            }
+          }
+        })
+      );
+
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+          bubbles: true,
+          detail: {
+            target: selectedDataset,
+            props: {
+              command: Commands.SELECT,
+              data: {
+                id: results[selectedItemIndex][idMap[selectedDataset]],
+                previousID: undefined
+              }
+            }
+          }
+        })
+      );
+    }
   }
 
   function itemOnPick(event: CustomEvent<GUIEvent<any[]>>) {
@@ -100,7 +163,13 @@
 
     if (target[0] !== 'geometry') return;
 
-    results = [...results, ...event.detail.props];
+    results = [
+      ...results,
+      ...event.detail.props.map(x => {
+        x['dataset'] = target[2];
+        return x;
+      })
+    ];
 
     event.stopPropagation();
   }

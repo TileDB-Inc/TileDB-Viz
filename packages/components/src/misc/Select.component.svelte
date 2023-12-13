@@ -1,6 +1,7 @@
 <script lang="ts">
   export let label = '';
   export let options = [];
+  export let defaultIndex = 0;
 
   export let callback = (value: number) => {};
 </script>
@@ -13,7 +14,7 @@
       on:change={event => callback(Number.parseInt(event.target.value))}
     >
       {#each options as name, index}
-        <option selected={index === 0} value={index}>{name}</option>
+        <option selected={index === defaultIndex} value={index}>{name}</option>
       {/each}
     </select>
     <svg

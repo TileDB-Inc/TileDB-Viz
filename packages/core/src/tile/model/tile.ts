@@ -11,10 +11,10 @@ export abstract class Tile<T extends BaseResponse> {
 
   public readonly index: number[];
 
-  constructor(scene: Scene, response: T) {
+  constructor(scene: Scene, response: T, uniqueID?: string) {
     this.index = response.index;
     this.scene = scene;
-    this.mesh = new Mesh(this.index.toString(), this.scene);
+    this.mesh = new Mesh(`${this.index.toString()}_${uniqueID}`, this.scene);
     this.mesh.alwaysSelectAsActiveMesh = true;
   }
 

@@ -19,26 +19,27 @@ import { GeometryManager } from './model/geometry/geometryManager';
 import { CameraManager } from './utils/camera-utils';
 import { GeometryPipeline } from './pipelines/pickingPipeline';
 import { PickingTool } from './utils/picking-tool';
+import { Manager } from './model/manager';
+import { Tile } from './model/tile';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
   private tileset!: ImageManager;
-  private geometryManager?: GeometryManager;
   private baseWidth!: number;
   private baseHeight!: number;
   private metadata!: ImageMetadata;
   private attributes!: Attribute[];
   private dimensions!: Dimension[];
-  private geometryMetadata?: GeometryMetadata;
   private levels!: LevelRecord[];
   private groupAssets!: AssetEntry[];
   private gui!: TileImageGUI;
   private tileSize = 1024;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
-  private geometryAttributes?: Attribute[];
   private pickingTool!: PickingTool;
+  private geometryMetadata: Map<string, GeometryMetadata>;
+  private assetManagers: Manager<Tile<any>>[];
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -56,6 +57,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       token: options.token,
       basePath: options.tiledbEnv
     });
+
+    this.geometryMetadata = new Map<string, GeometryMetadata>();
+    this.assetManagers = [];
   }
 
   protected async createScene(): Promise<Scene> {
@@ -135,49 +139,55 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       light.specular = new Color3(0.1, 0.1, 0.1);
       light.intensity = 1;
 
-      [this.geometryMetadata, this.geometryAttributes] =
-        await getGeometryMetadata(this.options);
-
       const originalLevel = this.levels.at(-1);
-
       if (!originalLevel) {
-        console.warn(
+        throw new Error(
           'Unable to construct geometry manager. Base image level is undefined'
         );
-      } else {
-        const pipeline = new GeometryPipeline(this.scene);
+      }
 
-        const transformationCoefficients =
-          this.metadata.transformationCoefficients ?? [];
-        const nativeZoom = this.levels.length - 1;
-        transformationCoefficients[1] *= 2 ** nativeZoom;
-        transformationCoefficients[2] *= 2 ** nativeZoom;
-        transformationCoefficients[4] *= 2 ** nativeZoom;
-        transformationCoefficients[5] *= 2 ** nativeZoom;
+      const pipeline = new GeometryPipeline(this.scene);
+      const renderTarget = pipeline.initializeRTT();
+      const transformationCoefficients =
+        this.metadata.transformationCoefficients ?? [];
+      const nativeZoom = this.levels.length - 1;
+      transformationCoefficients[1] *= 2 ** nativeZoom;
+      transformationCoefficients[2] *= 2 ** nativeZoom;
+      transformationCoefficients[4] *= 2 ** nativeZoom;
+      transformationCoefficients[5] *= 2 ** nativeZoom;
 
-        this.geometryManager = new GeometryManager(
-          this.scene,
-          this.workerPool,
-          this.pickingTool,
-          this.tileSize,
-          {
-            renderTarget: pipeline.initializeRTT(),
-            arrayID: this.options.geometryArrayID,
-            namespace: this.options.namespace,
-            metadata: this.geometryMetadata,
-            baseCRS: this.metadata.crs ?? '',
-            baseWidth:
-              originalLevel.dimensions[originalLevel.axes.indexOf('X')],
-            baseHeight:
-              originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
-            transformationCoefficients: transformationCoefficients,
-            nativeZoom: nativeZoom,
-            metersPerUnit: transformationCoefficients[1]
-          }
+      for (const geometryArrayID of this.options.geometryArrayID) {
+        const metadata = await getGeometryMetadata({
+          ...this.options,
+          geometryArrayID
+        });
+
+        this.geometryMetadata.set(geometryArrayID, metadata);
+        this.assetManagers.push(
+          new GeometryManager(
+            this.scene,
+            this.workerPool,
+            this.pickingTool,
+            this.tileSize,
+            {
+              renderTarget: renderTarget,
+              arrayID: geometryArrayID,
+              namespace: this.options.namespace,
+              metadata: metadata,
+              baseCRS: this.metadata.crs ?? '',
+              baseWidth:
+                originalLevel.dimensions[originalLevel.axes.indexOf('X')],
+              baseHeight:
+                originalLevel.dimensions[originalLevel.axes.indexOf('Y')],
+              transformationCoefficients: transformationCoefficients,
+              nativeZoom: nativeZoom,
+              metersPerUnit: transformationCoefficients[1]
+            }
+          )
         );
 
         await initializeCacheDB([
-          `${this.options.geometryArrayID}_${this.tileSize / 2 ** nativeZoom}`
+          `${geometryArrayID}_${this.tileSize / 2 ** nativeZoom}`
         ]);
       }
     }
@@ -216,7 +226,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.dimensions,
       this.groupAssets,
       this.metadata,
-      this.geometryAttributes,
       this.geometryMetadata,
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
@@ -229,8 +238,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
     this.scene.onDisposeObservable.add(() => {
       clearInterval(intervalID);
+
+      for (const manager of this.assetManagers) {
+        manager.dispose();
+      }
       this.tileset.dispose();
-      this.geometryManager?.dispose();
       this.workerPool.dispose();
       this.gui.dispose();
       this.cameraManager.dispose();
@@ -246,8 +258,10 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.scene.onDisposeObservable.clear();
     this.scene.onBeforeRenderObservable.clear();
 
+    for (const manager of this.assetManagers) {
+      manager.dispose();
+    }
     this.tileset.dispose();
-    this.geometryManager?.dispose();
     this.workerPool.cleanUp();
     this.gui.dispose();
     this.cameraManager.dispose();
@@ -291,10 +305,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     );
 
     this.tileset.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
-    this.geometryManager?.loadTiles(
-      this.cameraManager.getMainCamera(),
-      integerZoom
-    );
+    for (const manager of this.assetManagers) {
+      manager.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+    }
   }
 
   private resizeViewport() {
