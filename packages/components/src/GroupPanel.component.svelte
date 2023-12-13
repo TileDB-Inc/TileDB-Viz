@@ -82,7 +82,11 @@
     <ul class="Viewer-GroupSelector__list">
       {#each filteredGroups.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage) as group}
         <li class="Viewer-GroupSelector__item">
-          <button class="Viewer-GroupSelector__item-content" on:click={() => onClick(group.namespace, group.groupID, group.arrayID)}>
+          <button
+            class="Viewer-GroupSelector__item-content"
+            on:click={() =>
+              onClick(group.namespace, group.groupID, group.arrayID)}
+          >
             <div class="Viewer-GroupSelector__item-icon">
               <svg
                 width="32"
@@ -197,7 +201,6 @@
     }
 
     &__item {
-
       &-content {
         align-items: center;
         background-color: var(--viewer-surface-primary);

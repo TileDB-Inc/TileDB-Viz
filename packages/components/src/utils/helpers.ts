@@ -98,3 +98,11 @@ export function lengthConverter(
 export function unitFormatter(value: number, unit: string): string {
   return `${value.toFixed(2)} ${unit}`;
 }
+
+export function clone<T>(object: T): T {
+  return JSON.parse(JSON.stringify(object));
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}

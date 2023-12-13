@@ -3,8 +3,11 @@
   import { ButtonProps, GUIEvent } from '../types';
   import { hexToRgb } from '../utils/helpers';
 
-  export let state: {fillColor: string, outlineColor: string} = {fillColor: '#0000FF', outlineColor: '#FF0000'};
-	export let target = '';
+  export let state: { fillColor: string; outlineColor: string } = {
+    fillColor: '#0000FF',
+    outlineColor: '#FF0000'
+  };
+  export let target = '';
 
   function onColorChange(name: string) {
     window.dispatchEvent(
@@ -57,47 +60,47 @@
     margin-top: 10px;
     padding: 8px 0px;
     font-family: Inter, Arial, 'sans-serif';
-  }
 
-  .Viewer-ColorPanel__section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+    &__section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-  .Viewer-ColorPanel__section-header {
-    font-weight: 600;
-    padding: 4px 0px;
-  }
+    &__section-header {
+      font-weight: 600;
+      padding: 4px 0px;
+    }
 
-  .Viewer-ColorPanel__color {
-    display: flex;
+    &__color {
+      display: flex;
+    }
+
+    &__color input[type='color'] {
+      cursor: pointer;
+      -webkit-appearance: none;
+      padding: 0;
+      border: 1px solid var(--viewer-border);
+      border-radius: 4px;
+      width: 48px;
+      height: 16px;
+      margin: auto 0px auto 8px;
+    }
+
+    &__color input[type='color']::-webkit-color-swatch {
+      border: none;
+      border-radius: 4px;
+      padding: 0;
+    }
+
+    &__color input[type='color']::-webkit-color-swatch-wrapper {
+      border: none;
+      border-radius: 4px;
+      padding: 0;
+    }
   }
 
   label {
     min-width: 100px;
-  }
-
-  .Viewer-ColorPanel__color input[type='color'] {
-    cursor: pointer;
-    -webkit-appearance: none;
-    padding: 0;
-    border: 1px solid var(--viewer-border);
-    border-radius: 4px;
-    width: 48px;
-    height: 16px;
-    margin: auto 0px auto 8px;
-  }
-
-  .Viewer-ColorPanel__color input[type='color']::-webkit-color-swatch {
-    border: none;
-    border-radius: 4px;
-    padding: 0;
-  }
-
-  .Viewer-ColorPanel__color input[type='color']::-webkit-color-swatch-wrapper {
-    border: none;
-    border-radius: 4px;
-    padding: 0;
   }
 </style>

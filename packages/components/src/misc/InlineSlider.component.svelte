@@ -76,8 +76,11 @@
       margin-top: -7px;
       box-shadow: var(--viewer-shadow-medium);
 
-      transition: background 0.2s ease-in-out, width 0.2s ease-in-out,
-        height 0.2s ease-in-out, margin-top 0.2s ease-in-out;
+      transition:
+        background 0.2s ease-in-out,
+        width 0.2s ease-in-out,
+        height 0.2s ease-in-out,
+        margin-top 0.2s ease-in-out;
     }
 
     input[type='range']::-webkit-slider-runnable-track {
