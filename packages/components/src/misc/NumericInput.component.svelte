@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { clamp } from '../utils/helpers';
+
   export let value = 0;
   export let min = 0;
   export let max = 0;
   export let callback = (value: number) => {};
 
   function changeGroup(offset: number) {
-    value = Math.min(Math.max(value + offset, min), max);
+    value = clamp(value + offset, min, max);
 
     callback(value);
   }

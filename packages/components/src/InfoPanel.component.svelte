@@ -15,8 +15,14 @@
   let results: any[] = [];
   let idMap = JSON.parse(idAttribute);
   let headings = [];
-  for (const attribute of Object.values(JSON.parse(attributes || '{}')).flatMap(x => x)) {
-    if (headings.findIndex(x => x.name === attribute.name && x.type === attribute.type) === -1) {
+  for (const attribute of Object.values(JSON.parse(attributes || '{}')).flatMap(
+    x => x
+  )) {
+    if (
+      headings.findIndex(
+        x => x.name === attribute.name && x.type === attribute.type
+      ) === -1
+    ) {
       headings.push(attribute);
     }
   }
@@ -45,24 +51,30 @@
   function clear() {
     results = [];
 
-    for (const [key, ] of Object.entries(idMap)) {
+    for (const [key] of Object.entries(idMap)) {
       window.dispatchEvent(
-      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-        bubbles: true,
-        detail: {
-          target: key,
-          props: {
-            command: Commands.CLEAR
+        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+          bubbles: true,
+          detail: {
+            target: key,
+            props: {
+              command: Commands.CLEAR
+            }
           }
-        }
-      })
-    );
+        })
+      );
     }
   }
 
   function clearSelection() {
-    const previousDataset = selectedItemIndex !== -1 ? results[selectedItemIndex]['dataset'] : undefined;
-    const previousID = selectedItemIndex !== -1 ? results[selectedItemIndex][idMap[previousDataset]] : undefined;
+    const previousDataset =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex]['dataset']
+        : undefined;
+    const previousID =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex][idMap[previousDataset]]
+        : undefined;
     selectedItemIndex = -1;
 
     window.dispatchEvent(
@@ -83,8 +95,14 @@
   }
 
   function itemOnSelect(page: number, index: number) {
-    const previousDataset = selectedItemIndex !== -1 ? results[selectedItemIndex]['dataset'] : undefined;
-    const previousID = selectedItemIndex !== -1 ? results[selectedItemIndex][idMap[previousDataset]] : undefined;
+    const previousDataset =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex]['dataset']
+        : undefined;
+    const previousID =
+      selectedItemIndex !== -1
+        ? results[selectedItemIndex][idMap[previousDataset]]
+        : undefined;
 
     selectedItemIndex = page * itemsPerPage + index;
     const selectedDataset = results[selectedItemIndex]['dataset'];
@@ -105,8 +123,7 @@
           }
         })
       );
-    }
-    else {
+    } else {
       window.dispatchEvent(
         new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
           bubbles: true,
@@ -146,12 +163,13 @@
 
     if (target[0] !== 'geometry') return;
 
-
-
-    results = [...results, ...event.detail.props.map(x => {
-      x['dataset'] = target[2];
-      return x;
-    })];
+    results = [
+      ...results,
+      ...event.detail.props.map(x => {
+        x['dataset'] = target[2];
+        return x;
+      })
+    ];
 
     event.stopPropagation();
   }

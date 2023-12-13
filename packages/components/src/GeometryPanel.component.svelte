@@ -18,6 +18,7 @@
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
   import { GUIEvent, SelectProps, colorScheme } from './types';
   import { Events } from './constants/events';
+  import { clone } from './utils/helpers';
 
   export let features = [];
   export let attributes = [];
@@ -31,12 +32,14 @@
   > = {};
   let flatColorState: Record<
     string,
-    Record<string, { fillColor?: string; outlineColor?: string }>
+    Record<string, { fillColor: string; outlineColor: string }>
   > = {};
+
+  let enumeration: string | undefined;
 
   for (const [idx, target] of targets.entries()) {
     categoryState[target[0]] = {};
-    colorGroups[target[0]] = JSON.parse(JSON.stringify(colorScheme));
+    colorGroups[target[0]] = clone(colorScheme);
     for (const [key, values] of Object.entries(categories[idx])) {
       categoryState[target[0]][key] = {};
       for (const name of values as string[]) {
@@ -70,7 +73,7 @@
 
   function geometryStyleOnChange(style: number) {
     state.options[state.selectedDataset].renderStyle = style;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
@@ -87,7 +90,7 @@
 
   function featureOnChange(index: number) {
     state.options[state.selectedDataset].selectedFeature = index;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
@@ -105,12 +108,12 @@
   function datasetOnChange(index: number) {
     state.selectedDataset = index;
 
-    state = { ...state };
+    state = state;
   }
 
   function renderingGroupOnChange(renderingGroup: number) {
     state.options[state.selectedDataset].renderingGroup = renderingGroup;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
