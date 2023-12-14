@@ -87,7 +87,7 @@ export async function loadCachedGeometry(
     })
   );
 
-  if (cachedArrays.filter(x => x === undefined).length) {
+  if (cachedArrays.some(x => x === undefined)) {
     return undefined;
   }
 
