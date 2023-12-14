@@ -1,3 +1,7 @@
+import { Vector3 } from '@babylonjs/core';
+
+type octreeIndex = `${number}-${number}-${number}-${number}`;
+
 export interface AssetMetadata {
   dataset_type: string;
 }
@@ -13,6 +17,25 @@ export interface GeometryMetadata {
   pad: number[]; // [padX, padY]
   attributes: Attribute[];
   features: Feature[];
+}
+
+export interface PointCloudMetadata {
+  minPoint: Vector3;
+  maxPoint: Vector3;
+
+  minPointConforming?: Vector3;
+  maxPointConforming?: Vector3;
+
+  octreeData: { [index: octreeIndex]: number };
+
+  name: string;
+  groupID: string;
+  levels: string[];
+  categories: Map<string, string[]>;
+  attributes: Attribute[];
+  domain: Domain[];
+  features: Feature[];
+  crs?: string;
 }
 
 export enum FeatureType {
@@ -43,6 +66,7 @@ export interface AssetOptions {
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string;
+  pointGroupID?: string;
   baseGroup?: string;
 }
 
@@ -51,6 +75,13 @@ export interface Attribute {
   type: string;
   visible: boolean;
   enumeration?: string;
+}
+
+export interface Domain {
+  name: string;
+  type: string;
+  min: number;
+  max: number;
 }
 
 export interface Dimension {

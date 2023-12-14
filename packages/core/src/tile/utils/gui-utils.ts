@@ -6,7 +6,12 @@ import {
   GUIEvent
 } from '@tiledb-inc/viz-components';
 import { Channel, ImageMetadata } from '../types';
-import { Dimension, AssetEntry, GeometryMetadata } from '../../types';
+import {
+  Dimension,
+  AssetEntry,
+  GeometryMetadata,
+  PointCloudMetadata
+} from '../../types';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -32,6 +37,7 @@ class TileImageGUI {
     assets: AssetEntry[],
     imageMetadata: ImageMetadata,
     geometryMetadata: Map<string, GeometryMetadata>,
+    pointMetadata: Map<string, PointCloudMetadata>,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -120,6 +126,28 @@ class TileImageGUI {
           )}'
         >
         </geometry-panel>`
+          : ''
+      }
+      ${
+        pointMetadata.size
+          ? `<point-panel
+          attributes='${JSON.stringify(
+            Array.from(pointMetadata.entries()).map(x => x[1].attributes)
+          )}' 
+          categories='${JSON.stringify(
+            Array.from(pointMetadata.entries()).map(x =>
+              Object.fromEntries(x[1].categories)
+            )
+          )}' 
+          features='${JSON.stringify(
+            Array.from(pointMetadata.entries()).map(x => x[1].features)
+          )}'
+          targets='${JSON.stringify(
+            Array.from(pointMetadata.entries()).map(x => [x[0], x[1].name])
+          )}'
+        >
+        </point-panel>
+        `
           : ''
       }
       <options-panel>

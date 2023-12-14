@@ -13,7 +13,10 @@ import {
   GeometryMessage,
   GeometryInfoMessage,
   GeometryInfoResponse,
-  BaseResponse
+  BaseResponse,
+  PointMessage,
+  PointResponse,
+  PointInfoMessage
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
@@ -22,6 +25,7 @@ import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
 import proj4 from 'proj4';
 import { geometryRequest } from './loaders/geometryLoader';
+import { pointRequest } from './loaders/pointLoader';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -66,6 +70,43 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
             response: { nonce: event.data.request.nonce } as BaseResponse
           } as WorkerResponse);
         });
+      break;
+    case RequestType.POINT:
+      if (!tiledbClient) {
+        break;
+      }
+
+      cancelSignal = false;
+      currentId = event.data.id;
+      tokenSource = CancelToken.source();
+      pointRequest(
+        event.data.id,
+        tiledbClient,
+        tokenSource,
+        event.data.request as PointMessage
+      )
+        .then(response => {
+          self.postMessage(
+            response,
+            Object.values((response.response as PointResponse).attributes).map(
+              x => x.buffer
+            ) as any
+          );
+        })
+        .catch(x => {
+          self.postMessage({
+            id: event.data.id,
+            type: RequestType.CANCEL,
+            response: { nonce: event.data.request.nonce } as BaseResponse
+          } as WorkerResponse);
+        });
+      break;
+    case RequestType.POINT_INFO:
+      cancelSignal = false;
+      currentId = event.data.id;
+      tokenSource = CancelToken.source();
+      pointInfoRequest(event.data.id, event.data.request as PointInfoMessage);
+      break;
       break;
     case RequestType.GEOMETRY_INFO:
       cancelSignal = false;

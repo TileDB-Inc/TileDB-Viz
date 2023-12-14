@@ -6,7 +6,8 @@ import {
   ImageResponse,
   ResponseCallback,
   GeometryResponse,
-  GeometryInfoResponse
+  GeometryInfoResponse,
+  PointResponse
 } from '../types';
 
 export interface WorkerPoolOptions {
@@ -31,6 +32,8 @@ export class WorkerPool {
     this.callbacks = options?.callbacks ?? {
       image: [],
       geometry: [],
+      point: [],
+      pointInfo: [],
       info: [],
       cancel: []
     };
@@ -79,6 +82,11 @@ export class WorkerPool {
       case RequestType.GEOMETRY_INFO:
         for (const callback of this.callbacks.info) {
           callback(response.id, response.response as GeometryInfoResponse);
+        }
+        break;
+      case RequestType.POINT:
+        for (const callback of this.callbacks.point) {
+          callback(response.id, response.response as PointResponse);
         }
         break;
       case RequestType.CANCEL:

@@ -1,12 +1,19 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
-import { Attribute, Dimension, AssetMetadata, Feature } from '../../types';
+import {
+  Attribute,
+  Dimension,
+  AssetMetadata,
+  Feature,
+  Domain
+} from '../../types';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string[];
+  pointGroupID?: string[];
   baseGroup?: string;
   token: string;
   tiledbEnv?: string;
@@ -174,6 +181,8 @@ export const enum RequestType {
   IMAGE = 1,
   GEOMETRY = 2,
   GEOMETRY_INFO = 3,
+  POINT = 4,
+  POINT_INFO = 5,
 
   INITIALIZE = 100
 }
@@ -238,6 +247,34 @@ export interface GeometryInfoMessage {
   geotransformCoefficients: number[];
 }
 
+export interface PointMessage {
+  index: number[];
+  arrayID: string;
+  namespace: string;
+  imageCRS?: string;
+  pointCRS?: string;
+  geotransformCoefficients: number[];
+  features: Feature[];
+  attributes: Attribute[];
+  nonce: number;
+  minPoint: number[];
+  maxPoint: number[];
+  domain: Domain[];
+}
+
+export interface PointInfoMessage {
+  namespace: string;
+  imageCRS?: string;
+  pointCRS?: string;
+  geotransformCoefficients: number[];
+  levels: string[];
+  worldBbox: number[];
+  screenBbox: number[];
+  selectionPath?: number[];
+  domain: Domain[];
+  nonce: number;
+}
+
 export interface WorkerResponse {
   type: RequestType;
   id: string;
@@ -263,14 +300,24 @@ export interface GeometryResponse extends BaseResponse {
   attributes: { [attribute: string]: TypedArray };
 }
 
+export interface PointResponse extends BaseResponse {
+  attributes: { [attribute: string]: TypedArray };
+}
+
 export interface GeometryInfoResponse {
   info: any[];
   ids: bigint[];
 }
 
+export interface PointInfoResponse {
+  info: any[];
+}
+
 export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
+  point: { (id: string, response: PointResponse): void }[];
+  pointInfo: { (id: string, response: PointInfoResponse): void }[];
   info: { (id: string, response: GeometryInfoResponse): void }[];
   cancel: { (id: string, response: BaseResponse): void }[];
 }
@@ -279,6 +326,12 @@ export enum GeometryType {
   NONE = 0,
   POLYGON = 1,
   POLYGON_3D = 2
+}
+
+export enum PointShape {
+  SQUARE = 0b1,
+  CIRCLE = 0b10,
+  PARABOLA = 0b100
 }
 
 export enum GeometryStyle {

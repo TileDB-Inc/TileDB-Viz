@@ -7,6 +7,9 @@
   export let step = 0.1;
 
   export let callback = (value: number) => {};
+  export let formatter = (value: number) => {
+    return value.toFixed(2);
+  };
 </script>
 
 <div class="Viewer-Slider">
@@ -20,7 +23,7 @@
     bind:value
     on:input={() => callback(value)}
   />
-  <p class="Viewer-Slider__collapsable">{value.toFixed(2)}</p>
+  <p class="Viewer-Slider__collapsable">{formatter(value)}</p>
 </div>
 
 <style lang="scss">
@@ -56,7 +59,7 @@
     }
 
     &:hover &__collapsable {
-      max-width: 28px;
+      max-width: 30px;
     }
 
     input[type='range']::-webkit-slider-thumb:hover {

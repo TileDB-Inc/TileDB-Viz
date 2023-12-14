@@ -21,6 +21,7 @@ export { default as StatusOverlay } from './StatusOverlay.component.svelte';
 export { default as Scalebar } from './Scalebar.component.svelte';
 export { default as InfoPanel } from './InfoPanel.component.svelte';
 export { default as GeometryPanel } from './GeometryPanel.component.svelte';
+export { default as PointPanel } from './PointPanel.component.svelte';
 
 export { Events, Commands }
 export type { GUIEvent, ButtonProps, SliderProps, TextBoxProps, SelectProps }

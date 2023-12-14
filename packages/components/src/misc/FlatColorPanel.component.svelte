@@ -30,24 +30,28 @@
     <div class="Viewer-ColorPanel__section-header">
       Coloring mode - Flat Color
     </div>
-    <fragment class="Viewer-ColorPanel__color">
-      <label for="fillcolor">Fill Color</label>
-      <input
-        name="fillcolor"
-        type="color"
-        bind:value={state.fillColor}
-        on:input={e => onColorChange('fillColor')}
-      />
-    </fragment>
-    <fragment class="Viewer-ColorPanel__color">
-      <label for="outlinecolor">Outline Color</label>
-      <input
-        name="outlinecolor"
-        type="color"
-        bind:value={state.outlineColor}
-        on:input={e => onColorChange('outlineColor')}
-      />
-    </fragment>
+    {#if state.fillColor}
+      <fragment class="Viewer-ColorPanel__color">
+        <label for="fillcolor">Fill Color</label>
+        <input
+          name="fillcolor"
+          type="color"
+          bind:value={state.fillColor}
+          on:input={e => onColorChange('fillColor')}
+        />
+      </fragment>
+    {/if}
+    {#if state.outlineColor}
+      <fragment class="Viewer-ColorPanel__color">
+        <label for="outlinecolor">Outline Color</label>
+        <input
+          name="outlinecolor"
+          type="color"
+          bind:value={state.outlineColor}
+          on:input={e => onColorChange('outlineColor')}
+        />
+      </fragment>
+    {/if}
   </div>
 </div>
 

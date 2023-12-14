@@ -1,6 +1,6 @@
 <svelte:options
   customElement={{
-    tag: 'geometry-panel',
+    tag: 'point-panel',
     props: {
       features: { type: 'Array' },
       categories: { type: 'Array' },
@@ -13,16 +13,16 @@
 <script lang="ts">
   import Section from './Section.component.svelte';
   import Select from './misc/Select.component.svelte';
-  import RenderingSettings from './geometry/Settings.component.svelte';
-  import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
+  import Slider from './misc/InlineSlider.component.svelte';
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
-  import { GUIEvent, SelectProps, colorScheme } from './types';
+  import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
+  import { GUIEvent, SelectProps, SliderProps, colorScheme } from './types';
   import { Events } from './constants/events';
-  import { clone } from './utils/helpers';
+    import { clone } from './utils/helpers';
 
   export let features = [];
-  export let attributes = [];
   export let categories = [];
+  export let attributes = [];
   export let targets = [];
 
   let colorGroups: Record<string, string[]> = {};
@@ -32,10 +32,8 @@
   > = {};
   let flatColorState: Record<
     string,
-    Record<string, { fillColor: string; outlineColor: string }>
+    Record<string, { fillColor?: string; outlineColor?: string }>
   > = {};
-
-  let enumeration: string | undefined;
 
   for (const [idx, target] of targets.entries()) {
     categoryState[target[0]] = {};
@@ -50,10 +48,7 @@
     flatColorState[target[0]] = {};
     for (const feature of features[idx]) {
       if (feature.type === 3) {
-        flatColorState[target[0]][feature.name] = {
-          fillColor: '#0000FF',
-          outlineColor: '#FF0000'
-        };
+        flatColorState[target[0]][feature.name] = { fillColor: '#FF007F' };
       }
     }
   }
@@ -62,26 +57,83 @@
     selectedDataset: 0,
     options: new Array(targets.length).fill(0).map(() => {
       return {
-        renderStyle: 0,
         selectedFeature: 0,
-        renderingGroup: 0,
-        fillOpacity: 1,
-        outlineWidth: 1
+        selectedAttribute: attributes[0],
+        pointShape: 1,
+        pointSize: 4,
+        pointBudget: 100_000,
+        quality: 10
       };
     })
   };
 
-  function geometryStyleOnChange(style: number) {
-    state.options[state.selectedDataset].renderStyle = style;
+  function datasetOnChange(index: number) {
+    state.selectedDataset = index;
+    state = state;
+  }
+
+  function pointShapeOnChange(index: number) {
+    state.options[state.selectedDataset].pointShape = index;
     state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
         bubbles: true,
         detail: {
-          target: `${targets[state.selectedDataset][0]}_style`,
+          target: `${targets[state.selectedDataset][0]}_shape`,
           props: {
-            value: state.options[state.selectedDataset].renderStyle
+            value: state.options[state.selectedDataset].pointShape
+          }
+        }
+      })
+    );
+  }
+
+  function pointSizeOnChange(size: number) {
+    state.options[state.selectedDataset].pointSize = size;
+    state = state;
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${targets[state.selectedDataset][0]}_pointSize`,
+          props: {
+            value: size
+          }
+        }
+      })
+    );
+  }
+
+  function pointBudgetOnChange(budget: number) {
+    state.options[state.selectedDataset].pointBudget = budget;
+    state = state;
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${targets[state.selectedDataset][0]}_pointBudget`,
+          props: {
+            value: budget
+          }
+        }
+      })
+    );
+  }
+
+  function qualityOnChange(quality: number) {
+    state.options[state.selectedDataset].quality = quality;
+    state = state;
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${targets[state.selectedDataset][0]}_quality`,
+          props: {
+            value: quality
           }
         }
       })
@@ -89,6 +141,14 @@
   }
 
   function featureOnChange(index: number) {
+    const feature = features[state.selectedDataset][index];
+
+    if (feature.type === 2) {
+      state.options[state.selectedDataset].selectedAttribute = attributes[
+        state.selectedDataset
+      ].find(x => x.name === feature.attributes[0]);
+    }
+
     state.options[state.selectedDataset].selectedFeature = index;
     state = state;
 
@@ -105,40 +165,14 @@
     );
   }
 
-  function datasetOnChange(index: number) {
-    state.selectedDataset = index;
-
-    state = state;
-  }
-
-  function renderingGroupOnChange(renderingGroup: number) {
-    state.options[state.selectedDataset].renderingGroup = renderingGroup;
-    state = state;
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_renderingGroup`,
-          props: {
-            value: state.options[state.selectedDataset].renderingGroup
-          }
-        }
-      })
-    );
-  }
-
   $: currentFeature =
     features[state.selectedDataset][
       state.options[state.selectedDataset].selectedFeature
     ];
-  $: attribute = attributes[state.selectedDataset].filter(
-    x => x.name === currentFeature.attributes[0]
-  )[0];
 </script>
 
 <Section>
-  <div slot="header" class="Viewer-Geometry__title">
+  <div slot="header" class="Viewer-PointCloud__title">
     <svg
       width="24"
       height="24"
@@ -149,35 +183,53 @@
       <path
         fill-rule="evenodd"
         clip-rule="evenodd"
-        d="M46.3289 24.6851L29.2878 41.7261C29.1234 41.8906 28.9589 41.9453 28.7398 41.9453L19.6441 42C19.4249 42 19.2057 41.8903 19.096 41.7808L1.67123 24.3561C1.39735 24.0272 1.39735 23.5888 1.67123 23.2602L18.7123 6.21917C18.8767 6.10942 19.0412 6 19.2604 6H28.356C28.5752 6 28.7944 6.10974 28.9041 6.21917L46.3289 23.6439C46.6028 23.9178 46.6028 24.4112 46.3289 24.6851ZM25.9454 8.46618H21.6715L23.8085 10.5484L25.9454 8.46618ZM25.8907 35.6985L28.9044 38.7122L42.2193 25.3972H36.1919L25.8907 35.6985ZM25.5618 12.3017L36.1924 22.9322H42.2197L28.5211 9.28831L25.5618 12.3017ZM14.0006 23.8083L24.1927 33.9449L34.0011 24.1911L23.809 13.999L14.0006 23.8074V23.8083ZM5.78154 22.6027H11.8089L22.1104 12.3011L19.0968 9.28749L5.78154 22.6027ZM22.0551 39.5343H26.3291L24.1921 37.3973L22.0551 39.5343ZM22.4388 35.6987L11.8082 25.0134H5.78087L19.4795 38.7121L22.4388 35.6987Z"
+        d="M24 4.01001C24.6562 4.01001 25.2706 4.33177 25.6443 4.87153L43.6444 30.8713C43.9658 31.3357 44.076 31.9139 43.9477 32.464C43.8198 33.0138 43.4649 33.4839 42.9714 33.7582L24.9713 43.7585C24.3673 44.094 23.6327 44.094 23.0287 43.7585L5.02865 33.7582C4.53512 33.4839 4.18055 33.0138 4.05228 32.464C3.92404 31.9139 4.0342 31.3357 4.35563 30.8713L22.3557 4.87153C22.7293 4.33179 23.3437 4.01001 24 4.01001ZM8.90053 31.3332L21.9994 38.6105V12.4119L8.90053 31.3332ZM25.9997 12.4117V38.6104L39.0986 31.333L25.9997 12.4117Z"
         fill="var(--viewer-text-disabled)"
       />
     </svg>
-    Geometry
+    Point Cloud
   </div>
-  <div class="Viewer-Geometry_main" slot="content">
+  <div class="Viewer-PointCloud_main" slot="content">
     <Select
       label={'Dataset'}
       options={targets.map(x => x[1])}
       defaultIndex={0}
       callback={datasetOnChange}
     />
-    <Select label={'Geometry type'} options={['Polygon']} />
-    <Select
-      label={'Rendering Group'}
-      options={['Layer 1', 'Layer 2', 'Layer 3']}
-      defaultIndex={state.options[state.selectedDataset].renderingGroup}
-      callback={renderingGroupOnChange}
+    <Slider
+      id={'pointBudget'}
+      label={'Point budget'}
+      min={100_000}
+      max={10_000_000}
+      value={state.options[state.selectedDataset].pointBudget}
+      step={10_000}
+      callback={pointBudgetOnChange}
+      formatter={value => `${(value / 1_000_000).toFixed(1)}M`}
+    />
+    <Slider
+      id={'quality'}
+      label={'Quality'}
+      min={1}
+      max={50}
+      value={state.options[state.selectedDataset].quality}
+      step={1}
+      callback={qualityOnChange}
+      formatter={value => value.toFixed(0)}
     />
     <Select
-      label={'Rendering style'}
-      options={['Filled', 'Outline', 'Filled + Outline']}
-      defaultIndex={state.options[state.selectedDataset].renderStyle}
-      callback={geometryStyleOnChange}
+      label={'Point shape'}
+      options={['Square', 'Circle']}
+      defaultIndex={1}
+      callback={pointShapeOnChange}
     />
-    <RenderingSettings
-      state={state.options[state.selectedDataset]}
-      target={targets[state.selectedDataset][0]}
+    <Slider
+      id={'pointSize'}
+      label={'Point size'}
+      min={1}
+      max={10}
+      value={state.options[state.selectedDataset].pointSize}
+      step={0.01}
+      callback={pointSizeOnChange}
     />
     {#if features[state.selectedDataset].length === 0}
       No Available Features
@@ -198,7 +250,7 @@
       {:else if currentFeature.type === 2}
         <CategoricalPanel
           state={categoryState[targets[state.selectedDataset][0]][
-            attribute.enumeration
+            state.options[state.selectedDataset].selectedAttribute.enumeration
           ]}
           target={targets[state.selectedDataset][0]}
           color_groups={colorGroups[targets[state.selectedDataset][0]]}
@@ -209,7 +261,7 @@
 </Section>
 
 <style lang="scss">
-  .Viewer-Geometry {
+  .Viewer-PointCloud {
     width: 320px;
     height: 600px;
     background-color: var(--viewer-background-primary);
