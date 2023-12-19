@@ -24,8 +24,8 @@
     "g:eslint": "cd $INIT_CWD && eslint",
     "g:parcel": "cd $INIT_CWD && parcel",
     "storybook": "yarn workspace @tiledb-inc/viz-react storybook",
-    "lint": "yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
-    "lint:fix": "yarn workspace @tiledb-inc/viz-core lint:fix"
+    "lint": "yarn workspace @tiledb-inc/viz-types lint && yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
+    "lint:fix": "yarn workspace @tiledb-inc/viz-types lint:fix && yarn workspace @tiledb-inc/viz-core lint:fix"
   },
   "devDependencies": {
     "@babel/core": "^7.18.13",
@@ -44,6 +44,7 @@
     "jest-environment-jsdom": "^29.0.1",
     "parcel": "2.9.3",
     "prettier": "^2.7.1",
+    "run-script-os": "^1.1.6",
     "sass": "^1.64.1",
     "ts-node": "^10.9.1",
     "typedoc": "^0.23.24",

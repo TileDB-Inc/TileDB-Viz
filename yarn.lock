@@ -5422,6 +5422,7 @@ __metadata:
   resolution: "@tiledb-inc/viz-components@workspace:packages/components"
   dependencies:
     "@sveltejs/vite-plugin-svelte": ^2.4.3
+    "@tiledb-inc/viz-types": "workspace:packages/types"
     "@tsconfig/svelte": ^5.0.0
     esbuild: ^0.18.13
     svelte: ^4.1.2
@@ -5450,6 +5451,7 @@ __metadata:
     "@babylonjs/serializers": ^6.20.2
     "@tiledb-inc/tiledb-cloud": 1.0.15-alpha.1
     "@tiledb-inc/viz-components": "workspace:packages/components"
+    "@tiledb-inc/viz-types": "workspace:packages/types"
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx"
     axios: ^0.21.1
     babylonjs-gui: ^6.20.2
@@ -5460,6 +5462,8 @@ __metadata:
     mathjs: ^12.1.0
     parcel: ^2.9.3
     proj4: ^2.9.0
+    rimraf: ^5.0.5
+    run-script-os: ^1.1.6
   languageName: unknown
   linkType: soft
 
@@ -5488,6 +5492,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@tiledb-inc/viz-types@workspace:packages/types":
+  version: 0.0.0-use.local
+  resolution: "@tiledb-inc/viz-types@workspace:packages/types"
+  dependencies:
+    "@babylonjs/core": ^6.20.2
+    "@tiledb-inc/tiledb-cloud": 1.0.15-alpha.1
+  languageName: unknown
+  linkType: soft
+
 "@tiledb-inc/viz@workspace:.":
   version: 0.0.0-use.local
   resolution: "@tiledb-inc/viz@workspace:."
@@ -5509,6 +5522,7 @@ __metadata:
     node-sass: ^9.0.0
     parcel: 2.9.3
     prettier: ^2.7.1
+    run-script-os: ^1.1.6
     sass: ^1.64.1
     svelte-preprocess: ^5.0.4
     ts-node: ^10.9.1
@@ -11271,6 +11285,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"glob@npm:^10.3.7":
+  version: 10.3.10
+  resolution: "glob@npm:10.3.10"
+  dependencies:
+    foreground-child: ^3.1.0
+    jackspeak: ^2.3.5
+    minimatch: ^9.0.1
+    minipass: ^5.0.0 || ^6.0.2 || ^7.0.0
+    path-scurry: ^1.10.1
+  bin:
+    glob: dist/esm/bin.mjs
+  checksum: 4f2fe2511e157b5a3f525a54092169a5f92405f24d2aed3142f4411df328baca13059f4182f1db1bf933e2c69c0bd89e57ae87edd8950cba8c7ccbe84f721cf3
+  languageName: node
+  linkType: hard
+
 "glob@npm:^7.0.0, glob@npm:^7.0.3, glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:^7.1.6":
   version: 7.2.3
   resolution: "glob@npm:7.2.3"
@@ -12888,6 +12917,19 @@ __metadata:
     "@pkgjs/parseargs":
       optional: true
   checksum: 7b1468dd910afc00642db87448f24b062346570b8b47531409aa9012bcb95fdf7ec2b1c48edbb8b57a938c08391f8cc01b5034fc335aa3a2e74dbcc0ee5c555a
+  languageName: node
+  linkType: hard
+
+"jackspeak@npm:^2.3.5":
+  version: 2.3.6
+  resolution: "jackspeak@npm:2.3.6"
+  dependencies:
+    "@isaacs/cliui": ^8.0.2
+    "@pkgjs/parseargs": ^0.11.0
+  dependenciesMeta:
+    "@pkgjs/parseargs":
+      optional: true
+  checksum: 57d43ad11eadc98cdfe7496612f6bbb5255ea69fe51ea431162db302c2a11011642f50cfad57288bd0aea78384a0612b16e131944ad8ecd09d619041c8531b54
   languageName: node
   linkType: hard
 
@@ -17398,6 +17440,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rimraf@npm:^5.0.5":
+  version: 5.0.5
+  resolution: "rimraf@npm:5.0.5"
+  dependencies:
+    glob: ^10.3.7
+  bin:
+    rimraf: dist/esm/bin.mjs
+  checksum: d66eef829b2e23b16445f34e73d75c7b7cf4cbc8834b04720def1c8f298eb0753c3d76df77325fad79d0a2c60470525d95f89c2475283ad985fd7441c32732d1
+  languageName: node
+  linkType: hard
+
 "ripemd160@npm:^2.0.0, ripemd160@npm:^2.0.1":
   version: 2.0.2
   resolution: "ripemd160@npm:2.0.2"
@@ -17444,6 +17497,16 @@ __metadata:
   dependencies:
     aproba: ^1.1.1
   checksum: c4541e18b5e056af60f398f2f1b3d89aae5c093d1524bf817c5ee68bcfa4851ad9976f457a9aea135b1d0d72ee9a91c386e3d136bcd95b699c367cd09c70be53
+  languageName: node
+  linkType: hard
+
+"run-script-os@npm:^1.1.6":
+  version: 1.1.6
+  resolution: "run-script-os@npm:1.1.6"
+  bin:
+    run-os: index.js
+    run-script-os: index.js
+  checksum: 395c9576c1645867897901bb7f16406a7da06de8962b23e9879c91790248f6b3fb0b2a9dff6821cd77f3a9fb284e956118e39a57aa40280f71b12119555dad84
   languageName: node
   linkType: hard
 
@@ -19422,31 +19485,31 @@ __metadata:
 
 "typescript@patch:typescript@^4.2.4#~builtin<compat/typescript>":
   version: 4.9.5
-  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=289587"
+  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=23ec76"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 1f8f3b6aaea19f0f67cba79057674ba580438a7db55057eb89cc06950483c5d632115c14077f6663ea76fd09fce3c190e6414bb98582ec80aa5a4eaf345d5b68
+  checksum: ab417a2f398380c90a6cf5a5f74badd17866adf57f1165617d6a551f059c3ba0a3e4da0d147b3ac5681db9ac76a303c5876394b13b3de75fdd5b1eaa06181c9d
   languageName: node
   linkType: hard
 
 "typescript@patch:typescript@^5.0.3#~builtin<compat/typescript>, typescript@patch:typescript@^5.1.6#~builtin<compat/typescript>":
   version: 5.1.6
-  resolution: "typescript@patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"
+  resolution: "typescript@patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=1f5320"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: f53bfe97f7c8b2b6d23cf572750d4e7d1e0c5fff1c36d859d0ec84556a827b8785077bc27676bf7e71fae538e517c3ecc0f37e7f593be913d884805d931bc8be
+  checksum: 21e88b0a0c0226f9cb9fd25b9626fb05b4c0f3fddac521844a13e1f30beb8f14e90bd409a9ac43c812c5946d714d6e0dee12d5d02dfc1c562c5aacfa1f49b606
   languageName: node
   linkType: hard
 
 "typescript@patch:typescript@~5.0.4#~builtin<compat/typescript>":
   version: 5.0.4
-  resolution: "typescript@patch:typescript@npm%3A5.0.4#~builtin<compat/typescript>::version=5.0.4&hash=b5f058"
+  resolution: "typescript@patch:typescript@npm%3A5.0.4#~builtin<compat/typescript>::version=5.0.4&hash=1f5320"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: d26b6ba97b6d163c55dbdffd9bbb4c211667ebebc743accfeb2c8c0154aace7afd097b51165a72a5bad2cf65a4612259344ff60f8e642362aa1695c760d303ac
+  checksum: 6a1fe9a77bb9c5176ead919cc4a1499ee63e46b4e05bf667079f11bf3a8f7887f135aa72460a4c3b016e6e6bb65a822cb8689a6d86cbfe92d22cc9f501f09213
   languageName: node
   linkType: hard
 

@@ -1,0 +1,12 @@
+{
+  "name": "@tiledb-inc/viz-types",
+  "version": "0.0.1",
+  "scripts": {
+    "lint": "yarn g:eslint ./index.d.ts",
+    "lint:fix": "yarn g:eslint ./index.d.ts --fix"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^6.20.2",
+    "@tiledb-inc/tiledb-cloud": "1.0.15-alpha.1"
+  }
+}
