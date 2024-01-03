@@ -21,7 +21,8 @@ import {
 import { WorkerPool } from './worker/tiledb.worker.pool';
 import {
   getGeometryMetadata,
-  getPointCloudMetadata
+  getPointCloudMetadata,
+  tileDBUriParser
 } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { GeometryManager } from './model/geometry/geometryManager';
@@ -84,13 +85,29 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private async initializeScene() {
+    let imageNamespace = this.options.namespace;
+    let imageArrayID: string | undefined = undefined;
+    let imageGroupID: string | undefined = undefined;
+
+    if (this.options.arrayID) {
+      ({ namespace: imageNamespace, id: imageArrayID } = tileDBUriParser(
+        this.options.arrayID,
+        this.options.namespace
+      ));
+    } else if (this.options.groupID) {
+      ({ namespace: imageNamespace, id: imageGroupID } = tileDBUriParser(
+        this.options.groupID,
+        this.options.namespace
+      ));
+    }
+
     [this.metadata, this.attributes, this.dimensions, this.levels] =
       (await getAssetMetadata({
         token: this.options.token,
         tiledbEnv: this.options.tiledbEnv,
-        namespace: this.options.namespace,
-        arrayID: this.options.arrayID,
-        groupID: this.options.groupID
+        namespace: imageNamespace,
+        arrayID: imageArrayID,
+        groupID: imageGroupID
       })) as [ImageMetadata, Attribute[], Dimension[], LevelRecord[]];
 
     this.groupAssets = await getGroupContents({
@@ -171,14 +188,19 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       transformationCoefficients[5] *= 2 ** nativeZoom;
 
       for (const geometryArrayID of this.options.geometryArrayID) {
+        const { namespace, id } = tileDBUriParser(
+          geometryArrayID,
+          this.options.namespace
+        );
+
         const metadata = await getGeometryMetadata({
-          namespace: this.options.namespace,
+          namespace: namespace,
           token: this.options.token,
           tiledbEnv: this.options.tiledbEnv,
-          geometryArrayID
+          geometryArrayID: id
         });
 
-        this.geometryMetadata.set(geometryArrayID, metadata);
+        this.geometryMetadata.set(id, metadata);
         this.assetManagers.push(
           new GeometryManager(
             this.scene,
@@ -187,8 +209,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             this.tileSize,
             {
               renderTarget: renderTarget,
-              arrayID: geometryArrayID,
-              namespace: this.options.namespace,
+              arrayID: id,
+              namespace: namespace,
               metadata: metadata,
               baseCRS: this.metadata.crs ?? '',
               baseWidth:
@@ -219,17 +241,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       transformationCoefficients[5] *= 2 ** nativeZoom;
 
       for (const pointGroupID of this.options.pointGroupID) {
+        const { namespace, id } = tileDBUriParser(
+          pointGroupID,
+          this.options.namespace
+        );
+
         const metadata = await getPointCloudMetadata({
-          namespace: this.options.namespace,
+          namespace: namespace,
           token: this.options.token,
           tiledbEnv: this.options.tiledbEnv,
-          pointGroupID
+          pointGroupID: id
         });
 
-        this.pointMetadata.set(pointGroupID, metadata);
+        this.pointMetadata.set(id, metadata);
         this.assetManagers.push(
           new PointManager(this.scene, this.workerPool, {
-            namespace: this.options.namespace,
+            namespace: namespace,
             transformationCoefficients: transformationCoefficients,
             metadata: metadata
           })
@@ -264,7 +291,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         dimensions: this.dimensions,
         attributes: this.attributes,
         levels: this.levels,
-        namespace: this.options.namespace
+        namespace: imageNamespace
       }
     );
 

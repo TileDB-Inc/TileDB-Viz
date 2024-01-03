@@ -23,6 +23,23 @@ import {
 import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Vector3 } from '@babylonjs/core';
 
+export function tileDBUriParser(
+  uri: string,
+  fallbackNamespace: string
+): { namespace: string; id: string } {
+  const tokens = uri.split('/');
+
+  if (tokens.length === 1) {
+    return { namespace: fallbackNamespace, id: uri };
+  }
+
+  if (tokens[0] !== 'tiledb:') {
+    throw new Error(`'${uri}' is not a TileDB Uri`);
+  }
+
+  return { namespace: tokens[2], id: tokens[3] };
+}
+
 export async function getGroupContents(
   options: AssetOptions
 ): Promise<AssetEntry[]> {
@@ -35,8 +52,13 @@ export async function getGroupContents(
     return [];
   }
 
+  const { namespace, id: baseGroup } = tileDBUriParser(
+    options.namespace,
+    options.baseGroup
+  );
+
   return await client.groups
-    .getGroupContents(options.namespace, options.baseGroup)
+    .getGroupContents(namespace, baseGroup)
     .then((value: GroupContents) => {
       if (!value.entries) {
         return [];
