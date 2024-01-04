@@ -18,6 +18,7 @@
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
   import { GUIEvent, SelectProps, SliderProps, colorScheme } from './types';
   import { Events } from './constants/events';
+    import { clone } from './utils/helpers';
 
   export let features = [];
   export let categories = [];
@@ -36,7 +37,7 @@
 
   for (const [idx, target] of targets.entries()) {
     categoryState[target[0]] = {};
-    colorGroups[target[0]] = JSON.parse(JSON.stringify(colorScheme));
+    colorGroups[target[0]] = clone(colorScheme);
     for (const [key, values] of Object.entries(categories[idx])) {
       categoryState[target[0]][key] = {};
       for (const name of values as string[]) {
@@ -68,12 +69,12 @@
 
   function datasetOnChange(index: number) {
     state.selectedDataset = index;
-    state = { ...state };
+    state = state;
   }
 
   function pointShapeOnChange(index: number) {
     state.options[state.selectedDataset].pointShape = index;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
@@ -90,7 +91,7 @@
 
   function pointSizeOnChange(size: number) {
     state.options[state.selectedDataset].pointSize = size;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
@@ -107,7 +108,7 @@
 
   function pointBudgetOnChange(budget: number) {
     state.options[state.selectedDataset].pointBudget = budget;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
@@ -124,7 +125,7 @@
 
   function qualityOnChange(quality: number) {
     state.options[state.selectedDataset].quality = quality;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
@@ -149,7 +150,7 @@
     }
 
     state.options[state.selectedDataset].selectedFeature = index;
-    state = { ...state };
+    state = state;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {

@@ -10,6 +10,8 @@ import { PointCloudMaterial } from '../../materials/pointShaderMaterial';
 import { PointResponse, PointShape, TypedArray } from '../../types';
 import { Tile, UpdateOptions } from '../tile';
 
+const MAX_GROUPS = 32;
+
 export interface PointUpdateOptions extends UpdateOptions<PointResponse> {
   pointOptions?: UniformBuffer;
   feature?: Feature;
@@ -79,7 +81,7 @@ export class PointTile extends Tile<PointResponse> {
           break;
         case FeatureType.CATEGORICAL:
           {
-            this.groups.fill(32);
+            this.groups.fill(MAX_GROUPS);
             this.mesh.setVerticesBuffer(
               new VertexBuffer(
                 this.scene.getEngine(),
@@ -100,7 +102,7 @@ export class PointTile extends Tile<PointResponse> {
 
             if (state) {
               for (let index = 0; index < this.groups.length; ++index) {
-                this.groups[index] = state.get(categories[index]) ?? 32;
+                this.groups[index] = state.get(categories[index]) ?? MAX_GROUPS;
               }
 
               // 'updateVerticesData' accepts a a Float32Array which is not mandatory

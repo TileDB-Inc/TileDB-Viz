@@ -114,7 +114,6 @@ export async function pointRequest(
     layout: Layout.Unordered,
     ranges: ranges,
     bufferSize: 20_000_000,
-    //attributes: [...Array.from(uniqueAttributes), ...request.domain.map(x => x.name)],
     attributes: Array.from(uniqueAttributes),
     returnRawBuffers: true,
     cancelToken: tokenSource?.token
@@ -189,7 +188,7 @@ export async function pointRequest(
         const elementCount = arrays[feature.attributes[0]].length;
         const attCount = feature.attributes.length;
 
-        // I use an typed array to work on a continuous block of memory
+        // I use a typed array to work on a continuous block of memory
         const interleavedData = new arrays[feature.attributes[0]].constructor(
           attCount * elementCount
         ) as TypedArray;

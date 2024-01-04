@@ -93,5 +93,37 @@
       border-radius: 2px;
       background: var(--viewer-border);
     }
+
+    input[type='range']::-moz-range-thumb:hover {
+      background: var(--viewer-accent);
+      width: 20px;
+      height: 20px;
+      margin-top: -9px;
+    }
+
+    input[type='range']::-moz-range-thumb {
+      appearance: none;
+      content: 10;
+      background: var(--viewer-surface-primary);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-top: -7px;
+      box-shadow: var(--viewer-shadow-medium);
+
+      transition:
+        background 0.2s ease-in-out,
+        width 0.2s ease-in-out,
+        height 0.2s ease-in-out,
+        margin-top 0.2s ease-in-out;
+    }
+
+    input[type='range']::-moz-range-track {
+      width: 100%;
+      height: 1.5px;
+      cursor: pointer;
+      border-radius: 2px;
+      background: var(--viewer-border);
+    }
   }
 </style>
