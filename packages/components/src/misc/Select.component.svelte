@@ -41,6 +41,7 @@
       min-width: 140px;
       line-height: 25px;
       vertical-align: middle;
+      color: var(--viewer-text-primary);
     }
 
     select {
