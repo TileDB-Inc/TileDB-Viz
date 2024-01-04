@@ -31,11 +31,13 @@
     display: flex;
     font-family: Inter, Arial, 'sans-serif';
     font-size: 14px;
+    color: var(--viewer-text-primary);
 
     label {
       min-width: 140px;
       line-height: 25px;
       vertical-align: middle;
+      color: var(--viewer-text-primary);
     }
 
     &__collapsable {
