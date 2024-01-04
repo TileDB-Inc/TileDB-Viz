@@ -204,7 +204,7 @@ export class PointManager extends Manager<PointTile> {
         this.pointBudget = event.detail.props.value;
         break;
       case 'quality':
-        this.screenSizeLimit = event.detail.props.value;
+        this.screenSizeLimit = 51 - event.detail.props.value;
         break;
     }
   }
@@ -337,12 +337,12 @@ export class PointManager extends Manager<PointTile> {
     this.blockQueue.insert(rootScore, root);
 
     let points = 0;
-    const blocks = 0;
+    let blocks = 0;
 
     while (
       !this.blockQueue.isEmpty() &&
       points < this.pointBudget &&
-      blocks < 400
+      blocks < 200
     ) {
       const block = this.blockQueue.extractMax().octreeBlock;
 
@@ -386,6 +386,7 @@ export class PointManager extends Manager<PointTile> {
       }
 
       points += block.pointCount || 0;
+      ++blocks;
 
       // Calculate children
       for (let i = 0; i < 8; ++i) {
@@ -449,9 +450,13 @@ export class PointManager extends Manager<PointTile> {
     block: MoctreeBlock,
     viewportRadius: number
   ): number {
-    return Math.max(
-      0,
-      block.boundingInfo.boundingSphere.radiusWorld - viewportRadius + 100
+    // return Math.max(
+    //   0,
+    //   block.boundingInfo.boundingSphere.radiusWorld - viewportRadius + 100
+    // );
+
+    return (
+      (block.boundingInfo.boundingSphere.radiusWorld / viewportRadius) * 100
     );
   }
 

@@ -61,7 +61,7 @@
         pointShape: 1,
         pointSize: 4,
         pointBudget: 100_000,
-        quality: 10
+        quality: 40
       };
     })
   };
