@@ -8,31 +8,21 @@
   import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
   import { ButtonProps, GUIEvent } from './types';
+  import { InfoPanelConfigEntry, InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
 
-  export let attributes = '{}';
-  export let idAttribute = '{}';
-
-  let results: any[] = [];
-  let idMap = JSON.parse(idAttribute);
-  let headings = [];
-  for (const attribute of Object.values(JSON.parse(attributes || '{}')).flatMap(
-    x => x
-  )) {
-    if (
-      headings.findIndex(
-        x => x.name === attribute.name && x.type === attribute.type
-      ) === -1
-    ) {
-      headings.push(attribute);
-    }
-  }
+  let config = new Map<string, InfoPanelConfigEntry>();
+  let results = new Map<string, any[]>();
+  let selectedDataset: string | undefined = undefined;
 
   let itemsPerPage: number = 10;
   let page: number = 0;
 
   let selectedItemIndex = -1;
 
-  $: pages = Math.ceil(results.length / itemsPerPage);
+  $: pages = Math.ceil((results.get(selectedDataset)?.length ?? 0) / itemsPerPage);
+  $: if (page >= pages) {
+    page = Math.max(0, pages - 1);
+  }
 
   function itemsPerPageOnChange(event: Event) {
     itemsPerPage = Number.parseInt((event.target as HTMLSelectElement).value);
@@ -49,9 +39,9 @@
   }
 
   function clear() {
-    results = [];
+    results = new Map<string, any[]>();
 
-    for (const [key] of Object.entries(idMap)) {
+    for (const [key, ] of config) {
       window.dispatchEvent(
         new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
           bubbles: true,
@@ -66,22 +56,22 @@
     }
   }
 
+  function datasetOnChange(event: Event & { currentTarget: HTMLSelectElement }) {
+    clearSelection();
+    page = 0;
+    selectedDataset = event.currentTarget.value;
+  }
+
   function clearSelection() {
-    const previousDataset =
-      selectedItemIndex !== -1
-        ? results[selectedItemIndex]['dataset']
-        : undefined;
-    const previousID =
-      selectedItemIndex !== -1
-        ? results[selectedItemIndex][idMap[previousDataset]]
-        : undefined;
+    const pickAttribute = config.get(selectedDataset).pickAttribute;
+    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
     selectedItemIndex = -1;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: previousDataset,
+          target: selectedDataset,
           props: {
             command: Commands.SELECT,
             data: {
@@ -95,87 +85,69 @@
   }
 
   function itemOnSelect(page: number, index: number) {
-    const previousDataset =
-      selectedItemIndex !== -1
-        ? results[selectedItemIndex]['dataset']
-        : undefined;
-    const previousID =
-      selectedItemIndex !== -1
-        ? results[selectedItemIndex][idMap[previousDataset]]
-        : undefined;
+    const pickAttribute = config.get(selectedDataset).pickAttribute;
+    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
 
     selectedItemIndex = page * itemsPerPage + index;
-    const selectedDataset = results[selectedItemIndex]['dataset'];
+    const currentID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
 
-    if (previousDataset === selectedDataset || previousDataset === undefined) {
-      window.dispatchEvent(
-        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-          bubbles: true,
-          detail: {
-            target: selectedDataset,
-            props: {
-              command: Commands.SELECT,
-              data: {
-                id: results[selectedItemIndex][idMap[selectedDataset]],
-                previousID
-              }
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          target: selectedDataset,
+          props: {
+            command: Commands.SELECT,
+            data: {
+              id: currentID,
+              previousID: previousID
             }
           }
-        })
-      );
-    } else {
-      window.dispatchEvent(
-        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-          bubbles: true,
-          detail: {
-            target: previousDataset,
-            props: {
-              command: Commands.SELECT,
-              data: {
-                id: -1n,
-                previousID
-              }
-            }
-          }
-        })
-      );
-
-      window.dispatchEvent(
-        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-          bubbles: true,
-          detail: {
-            target: selectedDataset,
-            props: {
-              command: Commands.SELECT,
-              data: {
-                id: results[selectedItemIndex][idMap[selectedDataset]],
-                previousID: undefined
-              }
-            }
-          }
-        })
-      );
-    }
+        }
+      })
+    );
   }
 
   function itemOnPick(event: CustomEvent<GUIEvent<any[]>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry') return;
+    if (target[0] !== 'geometry' || target[1] !== 'info') return;
 
-    results = [
-      ...results,
-      ...event.detail.props.map(x => {
-        x['dataset'] = target[2];
-        return x;
-      })
+    let currentResult = results.get(target[2]) ?? [];
+
+    currentResult = [
+      ...currentResult,
+      ...event.detail.props
     ];
+
+    results.set(target[2], currentResult);
+
+    // Trigger UI update
+    results = results;
 
     event.stopPropagation();
   }
 
+  function onInitialize(event: CustomEvent<GUIEvent<InfoPanelInitializationEvent>>) {
+    if (event.detail.target !== 'info-panel') {
+      return;
+    }
+
+    window.removeEventListener(Events.INITIALIZE, onInitialize, {
+      capture: true
+    });
+    event.stopPropagation();
+
+    config = event.detail.props.config;
+    selectedDataset = config.keys().next().value;
+  }
+
   onMount(() => {
     window.addEventListener(Events.PICK_OBJECT, itemOnPick, {
+      capture: true
+    });
+
+    window.addEventListener(Events.INITIALIZE, onInitialize, {
       capture: true
     });
   });
@@ -189,7 +161,30 @@
 
 <div class="Viewer-DataTable">
   <div class="Viewer-DataTable__header">
-    {results.length} Results Found
+    <div class="Viewer-DataTable__dataset-controls">
+      <label for="dataset">Dataset:</label>
+      <div class="Viewer-DataTable__select" style="width: 140px;">
+        <select name="dataset" on:change={datasetOnChange}>
+          {#each config as [key, entry]}
+            <option value={key}>{entry.name}</option>
+          {/each}
+        </select>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="icon"
+          focusable="false"
+          viewBox="0 0 48 48"
+        >
+          <path
+            d="M24 33C23.4948 33.0009 22.9945 32.9006 22.5287 32.7051C22.0628 32.5095 21.6409 32.2227 21.2877 31.8615L7.69042 18.0791C7.24757 17.6279 6.99963 17.0209 7 16.3886C7.00037 15.7564 7.24902 15.1497 7.69239 14.699C7.91034 14.4775 8.17023 14.3015 8.45689 14.1815C8.74355 14.0615 9.05125 13.9998 9.36203 14C9.6728 14.0002 9.98043 14.0622 10.2669 14.1826C10.5535 14.303 10.8131 14.4792 11.0308 14.701L24 27.8475L36.9692 14.701C37.1869 14.4793 37.4466 14.3032 37.7332 14.1829C38.0197 14.0626 38.3273 14.0005 38.638 14.0003C38.9487 14.0002 39.2564 14.0618 39.5431 14.1818C39.8297 14.3017 40.0896 14.4776 40.3076 14.699C40.751 15.1497 40.9997 15.7564 41 16.3886C41.0004 17.0208 40.7525 17.6279 40.3096 18.0791L26.7129 31.8615C26.3595 32.2227 25.9375 32.5095 25.4715 32.705C25.0056 32.9005 24.5053 33.0008 24 33Z"
+          />
+        </svg>
+      </div>
+      <div>-</div>
+      <div>
+        {results.get(selectedDataset)?.length ?? 0} Results Found
+      </div>
+    </div>
     <button class="Viewer-DataTable__button error" on:click={clear}>
       <svg class="icon" focusable="false" viewBox="0 0 48 48">
         <path
@@ -200,11 +195,11 @@
     </button>
   </div>
   <div class="Viewer-DataTable__main">
-    {#if results.length}
+    {#if results.get(selectedDataset)?.length}
       <table class="Viewer-DataTable__table">
         <thead>
           <tr>
-            {#each headings as heading}
+            {#each config.get(selectedDataset).attributes as heading}
               <th title={heading.type}>
                 {heading.name}
               </th>
@@ -212,7 +207,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each results.slice(page * itemsPerPage, (page + 1) * itemsPerPage) as item, index}
+          {#each results.get(selectedDataset).slice(page * itemsPerPage, (page + 1) * itemsPerPage) as item, index}
             <tr
               on:click={() => itemOnSelect(page, index)}
               class:Viewer-DataTable__row-even={index % 2}
@@ -220,7 +215,7 @@
                 index ===
                 selectedItemIndex}
             >
-              {#each headings as heading}
+              {#each config.get(selectedDataset).attributes as heading}
                 <td
                   class:Viewer-DataTable__td-selected={page * itemsPerPage +
                     index ===
@@ -240,9 +235,9 @@
     {/if}
   </div>
   <div class="Viewer-DataTable__controls">
-    <button class="Viewer-DataTable__button" on:click={clearSelection}
-      >Clear selection</button
-    >
+    <button class="Viewer-DataTable__button" on:click={clearSelection}>
+      Clear selection
+    </button>
     <div class="Viewer-DataTable__horizontal-container">
       <div class="Viewer-DataTable__pagination-control">
         <label for="itemsPerPage">Items per page:</label>
@@ -298,7 +293,7 @@
 <style lang="scss">
   .Viewer-DataTable {
     height: 400px;
-    background: var(--viewer-background-primary);
+    background: var(--viewer-surface-primary);
     display: grid;
     grid-template-rows: 40px minmax(0, 1fr) 40px;
     font-size: 14px;
@@ -312,7 +307,7 @@
       line-height: 28px;
       padding: 6px 20px;
       font-weight: 600;
-      font-size: 18px;
+      font-size: 14px;
       display: flex;
       justify-content: space-between;
     }
@@ -323,6 +318,12 @@
       display: flex;
       justify-content: space-between;
       line-height: 24px;
+    }
+
+    &__dataset-controls {
+      display: flex;
+      justify-content: space-evenly;
+      gap: 6px;
     }
 
     &__button {

@@ -14,6 +14,9 @@
     "build:types": "yarn g:tsc --declaration --allowJs false --emitDeclarationOnly",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
+  "dependencies": {
+    "@tiledb-inc/viz-common": "workspace:packages/common"
+  },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.4.3",
     "@tsconfig/svelte": "^5.0.0",

@@ -32,6 +32,11 @@ import { PickingTool } from './utils/picking-tool';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
 import { PointManager } from './model/point/pointManager';
+import {
+  GUIEvent,
+  InfoPanelConfigEntry,
+  InfoPanelInitializationEvent
+} from '@tiledb-inc/viz-common';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -331,6 +336,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.pickingTool.dispose();
     });
 
+    this.scene.onBeforeRenderObservable.addOnce(() => this.initializeGUI());
     this.scene.onBeforeRenderObservable.add(() => {
       this.fetchTiles();
     });
@@ -416,5 +422,32 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
   private clearCache() {
     clearMultiCache(this.levels.map(x => `${x.id}_${this.tileSize}`));
+  }
+
+  private initializeGUI() {
+    const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
+
+    for (const [key, value] of this.geometryMetadata) {
+      infoPanelConfig.set(key, {
+        name: value.name,
+        pickAttribute: value.idAttribute.name,
+        attributes: value.attributes
+      });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'info-panel',
+            props: {
+              config: infoPanelConfig
+            }
+          }
+        }
+      )
+    );
   }
 }

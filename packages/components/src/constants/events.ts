@@ -11,7 +11,8 @@ export enum Events {
   BUTTON_CLICK = 'button::clicked',
   PICK_OBJECT = 'picking::object',
   TEXT_INPUT_CHANGE = 'text-input::change',
-  SELECT_INPUT_CHANGE = 'select::change'
+  SELECT_INPUT_CHANGE = 'select::change',
+  INITIALIZE = 'gui::initialize'
 }
 
 export enum Commands {

@@ -68,24 +68,7 @@ class TileImageGUI {
       geometryMetadata.size
         ? `
         <sidebar-menu anchorLeft=true expandedMaxWidth=600>
-          <info-panel 
-            attributes='${JSON.stringify(
-              Object.fromEntries(
-                Array.from(geometryMetadata.values()).map(x => [
-                  x.name,
-                  x.attributes
-                ])
-              )
-            )}'
-            idAttribute='${JSON.stringify(
-              Object.fromEntries(
-                Array.from(geometryMetadata.entries()).map(([id, value]) => [
-                  id,
-                  value.idAttribute.name
-                ])
-              )
-            )}'
-          >
+          <info-panel>
           </info-panel>
         </sidebar-menu>`
         : ''
