@@ -5417,11 +5417,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tiledb-inc/viz-common@workspace:packages/common":
+  version: 0.0.0-use.local
+  resolution: "@tiledb-inc/viz-common@workspace:packages/common"
+  dependencies:
+    "@babel/core": ^7.12.0
+    "@babel/preset-env": ^7.18.10
+    "@babel/preset-typescript": ^7.18.6
+    "@babylonjs/core": ^6.20.2
+    parcel: ^2.9.3
+  languageName: unknown
+  linkType: soft
+
 "@tiledb-inc/viz-components@workspace:packages/components":
   version: 0.0.0-use.local
   resolution: "@tiledb-inc/viz-components@workspace:packages/components"
   dependencies:
     "@sveltejs/vite-plugin-svelte": ^2.4.3
+    "@tiledb-inc/viz-common": "workspace:packages/common"
     "@tsconfig/svelte": ^5.0.0
     esbuild: ^0.18.13
     svelte: ^4.1.2
@@ -5449,6 +5462,7 @@ __metadata:
     "@babylonjs/materials": ^6.20.2
     "@babylonjs/serializers": ^6.20.2
     "@tiledb-inc/tiledb-cloud": 1.0.15-alpha.1
+    "@tiledb-inc/viz-common": "workspace:packages/common"
     "@tiledb-inc/viz-components": "workspace:packages/components"
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx"
     axios: ^0.21.1
