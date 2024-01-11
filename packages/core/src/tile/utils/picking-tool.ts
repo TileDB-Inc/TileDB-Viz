@@ -10,7 +10,11 @@ import {
   Mesh,
   VertexData,
   EventState,
-  VertexBuffer
+  VertexBuffer,
+  MeshBuilder,
+  Vector3,
+  Constants,
+  AxesViewer
 } from '@babylonjs/core';
 import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
 import { getCamera } from './camera-utils';
@@ -205,6 +209,45 @@ export class PickingTool {
           callback(this.selectionBbox, { path: this.selectionBuffer })
         );
         this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
+
+        const shape = [];
+        const camera = getCamera(this.scene, 'Main')!;
+
+        const zoom = this.scene.getEngine().getRenderWidth() / (camera.orthoRight - camera.orthoLeft);
+        const midX = (this.selectionBbox[2] + this.selectionBbox[0]) / 2;
+        const midY = (this.selectionBbox[3] + this.selectionBbox[1]) / 2;
+      
+        let minX = camera.target.x + camera.orthoLeft;
+        let minZ = camera.target.z + camera.orthoBottom;
+
+        for (let i = 0; i < this.selectionBuffer.length; i += 2) {
+          const x = (this.selectionBuffer[i] - midX) / zoom;
+          const y = (this.selectionBuffer[i + 1] - midY) / zoom;
+
+          shape.push(new Vector3(-y, -x, 0));
+        }
+
+        const offset = new Vector3(0, 3000, -10);
+
+        const start = new Vector3(minX + midX / zoom, 0, minZ + midY / zoom);
+        const end = new Vector3(minX + midX / zoom, offset.y, minZ + midY / zoom);
+
+        const mesh = MeshBuilder.ExtrudeShape("Selection mesh", {
+          shape: shape,
+          path: [start, end],
+          sideOrientation: Mesh.DOUBLESIDE,
+          closeShape: true
+        });
+
+
+        mesh.setPivotPoint(camera.target);
+        mesh.addRotation(-camera.beta, 0, 0);
+        mesh.bakeCurrentTransformIntoVertices();
+        mesh.addRotation(0, -(camera.alpha + Math.PI * 0.5), 0);
+        mesh.bakeCurrentTransformIntoVertices();
+
+        console.log(mesh.getVerticesData(VertexBuffer.PositionKind, true, true), mesh.getIndices(true, true));
+
         break;
       }
       case PointerEventTypes.POINTERMOVE: {
@@ -224,7 +267,7 @@ export class PickingTool {
           Math.abs(
             (x - this.selectionBuffer[index - 2]) *
               (y - this.selectionBuffer[index - 1])
-          ) > 6
+          ) > 12
         ) {
           this.selectionBuffer.push(x, y);
 
