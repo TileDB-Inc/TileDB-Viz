@@ -22,6 +22,7 @@ export class WorkerPool {
 
   private poolSize: number;
   private workers: Worker[] = [];
+  private pointCloudOperationsWorker: Worker;
   private status: boolean[] = [];
   private taskMap: Map<string, number>;
   private messageQueue: DataRequest[] = [];
@@ -57,6 +58,11 @@ export class WorkerPool {
       this.workers.push(worker);
       this.status.push(false);
     }
+
+    this.pointCloudOperationsWorker = new Worker(new URL('tiledb.worker.pointcloud', import.meta.url), {
+      type: 'module',
+      name: 'Point Cloud Operations Worker'
+    });
   }
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {
