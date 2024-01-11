@@ -8,7 +8,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature, PointCloudMetadata } from '../../../types';
+import { Feature } from '../../../types';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -43,6 +43,8 @@ import {
   SliderProps,
   SelectProps
 } from '@tiledb-inc/viz-components';
+import { PointCloudMetadata } from '@tiledb-inc/viz-common';
+import { PickingTool } from '../../utils/picking-tool';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -60,6 +62,7 @@ export class PointManager extends Manager<PointTile> {
   private pointBudget: number;
   private screenSizeLimit: number;
   private namespace: string;
+  private pickingTool: PickingTool;
   private styleOptions = {
     pointShape: PointShape.CIRCLE,
     pointSize: 4,
@@ -80,7 +83,7 @@ export class PointManager extends Manager<PointTile> {
     groupState: new Map<string, Map<number, number>>()
   };
 
-  constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
+  constructor(scene: Scene, workerPool: WorkerPool, pickingTool: PickingTool, options: PointOptions) {
     super(scene, workerPool, 0, 0, 0);
 
     this.nonce = 0;
@@ -92,6 +95,7 @@ export class PointManager extends Manager<PointTile> {
     this.pointBudget = 100_000;
     this.screenSizeLimit = 10;
     this.namespace = options.namespace;
+    this.pickingTool = pickingTool;
 
     // To be in accordance with the image layer the UP direction align with
     // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
@@ -134,6 +138,10 @@ export class PointManager extends Manager<PointTile> {
     this.setupEventListeners();
     this.workerPool.callbacks.point.push(this.onPointTileDataLoad.bind(this));
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
+
+    if (this.metadata.idAttribute) {
+      this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
+    }
   }
 
   private setupEventListeners() {
@@ -426,6 +434,13 @@ export class PointManager extends Manager<PointTile> {
 
       this.tileStatus.delete(key);
     }
+  }
+
+  public pickGeometry(
+    bbox: number[],
+    constraints?: { path?: number[]; tiles?: number[][] }
+  ) {
+    
   }
 
   private initializeUniformBuffer() {

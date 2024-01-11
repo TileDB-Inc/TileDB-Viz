@@ -6,9 +6,7 @@ import { LevelRecord, ImageMetadata, types } from './types';
 import {
   AssetEntry,
   Attribute,
-  Dimension,
-  GeometryMetadata,
-  PointCloudMetadata
+  Dimension
 } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
@@ -35,6 +33,8 @@ import { PointManager } from './model/point/pointManager';
 import {
   GUIEvent,
   InfoPanelConfigEntry,
+  GeometryMetadata,
+  PointCloudMetadata,
   InfoPanelInitializationEvent
 } from '@tiledb-inc/viz-common';
 
@@ -84,6 +84,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
+      //this.scene.debugLayer.show();
 
       return scene;
     });
@@ -260,7 +261,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
         this.pointMetadata.set(id, metadata);
         this.assetManagers.push(
-          new PointManager(this.scene, this.workerPool, {
+          new PointManager(this.scene, this.workerPool, this.pickingTool, {
             namespace: namespace,
             transformationCoefficients: transformationCoefficients,
             metadata: metadata
@@ -428,6 +429,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
 
     for (const [key, value] of this.geometryMetadata) {
+      if (!value.idAttribute) continue;
+
       infoPanelConfig.set(key, {
         name: value.name,
         pickAttribute: value.idAttribute.name,
