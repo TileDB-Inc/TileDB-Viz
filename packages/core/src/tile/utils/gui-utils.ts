@@ -8,10 +8,9 @@ import {
 import { Channel, ImageMetadata } from '../types';
 import {
   Dimension,
-  AssetEntry,
-  GeometryMetadata,
-  PointCloudMetadata
+  AssetEntry
 } from '../../types';
+import { GeometryMetadata, PointCloudMetadata } from '@tiledb-inc/viz-common';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;

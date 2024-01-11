@@ -1,6 +1,12 @@
+import { Vector3 } from "@babylonjs/core";
+
 export type SceneConfig = {
   name?: string;
   description?: string;
+
+  imageConfigs?: ImageConfig[];
+  geometryConfigs?: GeometryConfig[];
+  pointConfigs?: PointConfig[];
 };
 
 export type AssetConfig = {
@@ -85,9 +91,100 @@ export type Feature = {
   interleaved: boolean;
 };
 
-export interface Attribute {
+export type Attribute = {
   name: string;
   type: string;
   visible: boolean;
   enumeration?: string;
 }
+
+export type Domain = {
+  name: string;
+  type: string;
+  min: number;
+  max: number;
+}
+
+type octreeIndex = `${number}-${number}-${number}-${number}`;
+
+//#region Asset Metadata
+
+type CommonAssetMetadata = {
+  /**
+   * The asset's display name
+   */
+  name: string;
+
+  /**
+   * A map between enumeration names and string values
+   */
+  categories: Map<string, string[]>;
+
+  /**
+   * The map projection which the geometries are stored
+   */
+  crs?: string;
+
+  /**
+   * A list of all available attributes per geometry entity
+   */
+  attributes: Attribute[];
+
+  /**
+   * A list of all the renderable attribute configurations
+   */
+  features: Feature[];
+}
+
+export type GeometryMetadata = CommonAssetMetadata & {
+  /**
+   * The type of the stored geometries
+   */
+  type: string;
+
+  /**
+   * An attribute containing a unique number per polygon to use for picking, if it exists
+   */
+  idAttribute?: Attribute;
+
+  /**
+   * An attribute containing the height information for each polygon, if it exists
+   */
+  extrudeAttribute?: Attribute;
+
+  /**
+   * The attribute storing the geometry information
+   */
+  geometryAttribute: Attribute;
+
+  /**
+   * 
+   */
+  extent: number[]; // [minX, minY, maxX, maxY]
+
+  /**
+   * The internal R-tree padding used for quering
+   */
+  pad: number[]; // [padX, padY]
+}
+
+export type PointCloudMetadata = CommonAssetMetadata & {
+  /**
+   * An attribute containing a unique number per polygon to use for picking, if it exists
+   */
+  idAttribute?: Attribute;
+
+  minPoint: Vector3;
+  maxPoint: Vector3;
+
+  minPointConforming?: Vector3;
+  maxPointConforming?: Vector3;
+
+  octreeData: { [index: octreeIndex]: number };
+
+  groupID: string;
+  levels: string[];
+  domain: Domain[];
+}
+
+//#endregion

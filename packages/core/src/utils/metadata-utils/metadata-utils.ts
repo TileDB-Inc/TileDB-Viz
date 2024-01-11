@@ -4,8 +4,6 @@ import {
   Attribute,
   Dimension,
   AssetEntry,
-  GeometryMetadata,
-  PointCloudMetadata,
   Feature,
   FeatureType,
   Domain
@@ -22,6 +20,8 @@ import {
 } from '../../tile/types';
 import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Vector3 } from '@babylonjs/core';
+import { GeometryConfig, PointConfig } from '@tiledb-inc/viz-common';
+import { GeometryMetadata, PointCloudMetadata } from '@tiledb-inc/viz-common';
 
 export function tileDBUriParser(
   uri: string,
@@ -204,7 +204,8 @@ async function getGroupMetadata(
 }
 
 export async function getGeometryMetadata(
-  options: AssetOptions
+  options: AssetOptions,
+  config?: GeometryConfig
 ): Promise<GeometryMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
@@ -273,10 +274,13 @@ export async function getGeometryMetadata(
     ],
     type: arrayMetadata['GeometryType'],
     idAttribute: attributes.find(
-      x => x.name === arrayMetadata['FID_ATTRIBUTE_NAME']
+      x => x.name === (config?.pickAttribute ?? arrayMetadata['FID_ATTRIBUTE_NAME']) && (config?.pickable ?? true)
+    ),
+    extrudeAttribute: attributes.find(
+      x => x.name === config?.extrudeAttribute && (config?.extrude ?? true)
     ),
     geometryAttribute: attributes.find(
-      x => x.name === arrayMetadata['GEOMETRY_ATTRIBUTE_NAME']
+      x => x.name === (config?.geometryAttribute ?? arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'])
     ),
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined,
@@ -314,7 +318,8 @@ export async function getGeometryMetadata(
 }
 
 export async function getPointCloudMetadata(
-  options: AssetOptions
+  options: AssetOptions,
+  config?: PointConfig
 ): Promise<PointCloudMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
@@ -404,7 +409,10 @@ export async function getPointCloudMetadata(
     attributes: attributes,
     domain: domain,
     features: features,
-    categories: new Map<string, string[]>()
+    categories: new Map<string, string[]>(),
+    idAttribute: attributes.find(
+      x => x.name === config?.pickAttribute && (config?.pickable ?? true)
+    )
   };
 
   if ('octree-bounds-conforming' in arrayMetadata) {

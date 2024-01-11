@@ -7,6 +7,7 @@ import {
   Feature,
   Domain
 } from '../../types';
+import { SceneConfig } from '@tiledb-inc/viz-common';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
@@ -23,6 +24,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
     intensity?: number;
   }[];
   features?: Feature[];
+  sceneConfig?: SceneConfig;
 }
 
 export interface Channel {
