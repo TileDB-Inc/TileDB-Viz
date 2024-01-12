@@ -1,3 +1,4 @@
+import { PointCloudOperation } from '@tiledb-inc/viz-common';
 import {
   DataRequest,
   InitializeMessage,
@@ -23,6 +24,7 @@ export class WorkerPool {
   private poolSize: number;
   private workers: Worker[] = [];
   private pointCloudOperationsWorker: Worker;
+  private operationsQueue: PointCloudOperation[] = [];
   private status: boolean[] = [];
   private taskMap: Map<string, number>;
   private messageQueue: DataRequest[] = [];
@@ -59,10 +61,16 @@ export class WorkerPool {
       this.status.push(false);
     }
 
-    this.pointCloudOperationsWorker = new Worker(new URL('tiledb.worker.pointcloud', import.meta.url), {
-      type: 'module',
-      name: 'Point Cloud Operations Worker'
-    });
+    this.pointCloudOperationsWorker = new Worker(
+      new URL('tiledb.worker.pointcloud', import.meta.url),
+      {
+        type: 'module',
+        name: 'Point Cloud Operations Worker'
+      }
+    );
+    this.pointCloudOperationsWorker.onmessage =
+      this.operationOnMessage.bind(this);
+    this.status.push(false);
   }
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {
@@ -184,5 +192,17 @@ export class WorkerPool {
 
   public isReady() {
     return this.numActive() === this.workers.length;
+  }
+
+  public postOperation(operation: PointCloudOperation) {
+    if (!this.status[this.poolSize]) {
+      this.pointCloudOperationsWorker.postMessage(operation);
+    } else {
+      this.operationsQueue.push(operation);
+    }
+  }
+
+  private async operationOnMessage(event: MessageEvent) {
+    console.log(event);
   }
 }

@@ -3,11 +3,7 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import {
-  AssetEntry,
-  Attribute,
-  Dimension
-} from '../types';
+import { AssetEntry, Attribute, Dimension } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -246,18 +242,21 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       transformationCoefficients[4] *= 2 ** nativeZoom;
       transformationCoefficients[5] *= 2 ** nativeZoom;
 
-      for (const pointGroupID of this.options.pointGroupID) {
+      for (const [index, pointGroupID] of this.options.pointGroupID.entries()) {
         const { namespace, id } = tileDBUriParser(
           pointGroupID,
           this.options.namespace
         );
 
-        const metadata = await getPointCloudMetadata({
-          namespace: namespace,
-          token: this.options.token,
-          tiledbEnv: this.options.tiledbEnv,
-          pointGroupID: id
-        });
+        const metadata = await getPointCloudMetadata(
+          {
+            namespace: namespace,
+            token: this.options.token,
+            tiledbEnv: this.options.tiledbEnv,
+            pointGroupID: id
+          },
+          this.options.sceneConfig?.pointConfigs?.at(index)
+        );
 
         this.pointMetadata.set(id, metadata);
         this.assetManagers.push(
@@ -429,7 +428,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
 
     for (const [key, value] of this.geometryMetadata) {
-      if (!value.idAttribute) continue;
+      if (!value.idAttribute) {
+        continue;
+      }
 
       infoPanelConfig.set(key, {
         name: value.name,

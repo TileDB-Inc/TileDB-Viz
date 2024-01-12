@@ -25,7 +25,7 @@ import {
   GUIEvent,
   Commands,
   SliderProps,
-  SelectProps,
+  SelectProps
 } from '@tiledb-inc/viz-components';
 import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
@@ -111,7 +111,9 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
     if (this.metadata.idAttribute) {
-      this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
+      this.workerPool.callbacks.info.push(
+        this.onGeometryInfoDataLoad.bind(this)
+      );
       this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
     }
 

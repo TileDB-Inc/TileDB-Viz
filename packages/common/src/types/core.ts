@@ -13,12 +13,12 @@ export type AssetConfig = {
   /**
    * Asset display name
    */
-  name: string;
+  name?: string;
 
   /**
    * Asset short description
    */
-  description: string;
+  description?: string;
 
   /**
    * Asset specific translation to overwrite any calculated translation at runtime
@@ -185,6 +185,39 @@ export type PointCloudMetadata = CommonAssetMetadata & {
   groupID: string;
   levels: string[];
   domain: Domain[];
+}
+
+//#endregion
+
+//#region Point Cloud Operations
+
+export type PointCloudOperation = {
+  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  id: string;
+}
+
+export type InitializeOctreeOperation = PointCloudOperation & {
+  operation: "INITIALIZE";
+  minPoint: number[];
+  maxPoint: number[];
+  maxDepth: number;
+  blocks: { [index: `${number}-${number}-${number}-${number}`]: number };
+}
+
+export type AddOctreeNodeOperation = PointCloudOperation & {
+  mortonCode: number;
+  data: Float32Array;
+}
+
+export type DeleteOctreeNodeOperation = PointCloudOperation & {
+  operation: "DELETE";
+  mortonCode: number;
+};
+
+export type IntersectOperation = PointCloudOperation & {
+  operation: "INTERSECT";
+  positions: Float32Array;
+  indices: Int32Array;
 }
 
 //#endregion

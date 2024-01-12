@@ -20,15 +20,7 @@ import {
   BaseResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
-import {
-  inv,
-  MathArray,
-  MathNumericType,
-  matrix,
-  max,
-  min,
-  multiply
-} from 'mathjs';
+import { inv, MathArray, matrix, multiply } from 'mathjs';
 import { PriorityQueue } from '../../../point-cloud/utils/priority-queue';
 import {
   encodeMorton,
@@ -43,8 +35,14 @@ import {
   SliderProps,
   SelectProps
 } from '@tiledb-inc/viz-components';
-import { PointCloudMetadata } from '@tiledb-inc/viz-common';
+import {
+  AddOctreeNodeOperation,
+  IntersectOperation,
+  PointCloudMetadata
+} from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
+import { constructOctree } from './utils';
+import { InitializeOctreeOperation } from '@tiledb-inc/viz-common';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -83,7 +81,12 @@ export class PointManager extends Manager<PointTile> {
     groupState: new Map<string, Map<number, number>>()
   };
 
-  constructor(scene: Scene, workerPool: WorkerPool, pickingTool: PickingTool, options: PointOptions) {
+  constructor(
+    scene: Scene,
+    workerPool: WorkerPool,
+    pickingTool: PickingTool,
+    options: PointOptions
+  ) {
     super(scene, workerPool, 0, 0, 0);
 
     this.nonce = 0;
@@ -127,20 +130,28 @@ export class PointManager extends Manager<PointTile> {
       this.metadata.maxPoint.z
     ]).toArray() as number[];
 
-    this.octree = new Moctree(
+    this.octree = constructOctree(
       new Vector3(minPoint[0], minPoint[2], minPoint[1]),
       new Vector3(maxPoint[0], maxPoint[2], maxPoint[1]),
-      this.metadata.levels.length
+      this.metadata.levels.length,
+      this.metadata.octreeData
     );
-
-    this.initializeOctree(this.metadata.octreeData);
     this.initializeUniformBuffer();
     this.setupEventListeners();
     this.workerPool.callbacks.point.push(this.onPointTileDataLoad.bind(this));
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
+    this.workerPool.postOperation({
+      operation: 'INITIALIZE',
+      id: this.metadata.groupID,
+      minPoint: minPoint,
+      maxPoint: maxPoint,
+      maxDepth: this.metadata.levels.length,
+      blocks: this.metadata.octreeData
+    } as InitializeOctreeOperation);
+
     if (this.metadata.idAttribute) {
-      this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
+      this.pickingTool.pickCallbacks.push(this.pickPoints.bind(this));
     }
   }
 
@@ -301,6 +312,13 @@ export class PointManager extends Manager<PointTile> {
       return;
     }
 
+    this.workerPool.postOperation({
+      operation: 'ADD',
+      id: this.metadata.groupID,
+      mortonCode: response.index[0],
+      data: response.attributes['position']
+    } as AddOctreeNodeOperation);
+
     if (status.tile) {
       status.tile.update({ response });
     } else {
@@ -436,11 +454,26 @@ export class PointManager extends Manager<PointTile> {
     }
   }
 
-  public pickGeometry(
+  public pickPoints(
     bbox: number[],
-    constraints?: { path?: number[]; tiles?: number[][] }
+    constraints?: {
+      path?: number[];
+      tiles?: number[][];
+      enclosureMeshPositions?: Float32Array;
+      enclosureMeshIndices?: Int32Array;
+    }
   ) {
-    
+    console.log(
+      constraints?.enclosureMeshPositions,
+      constraints?.enclosureMeshIndices
+    );
+
+    this.workerPool.postOperation({
+      operation: 'INTERSECT',
+      id: this.metadata.groupID,
+      positions: constraints?.enclosureMeshPositions,
+      indices: constraints?.enclosureMeshIndices
+    } as IntersectOperation);
   }
 
   private initializeUniformBuffer() {
@@ -468,67 +501,6 @@ export class PointManager extends Manager<PointTile> {
       0,
       block.boundingInfo.boundingSphere.radiusWorld - viewportRadius + 100
     );
-  }
-
-  private initializeOctree(blocks: {
-    [index: `${number}-${number}-${number}-${number}`]: number;
-  }) {
-    const size = this.octree.maxPoint.subtract(this.octree.minPoint);
-    const flipMatrix = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, -1]
-    ]);
-
-    for (const [index, pointCount] of Object.entries(blocks)) {
-      const [lod, x, y, z] = index.split('-').map(Number);
-      const mortonIndex = encodeMorton(new Vector3(x, z, y), lod);
-
-      const blocksPerDimension = Math.pow(2, lod);
-      const stepX = size.x / blocksPerDimension;
-      const stepY = size.y / blocksPerDimension;
-      const stepZ = size.z / blocksPerDimension;
-
-      // This bounds are Y-Z swapped so we need to only swap the indices tof the block
-
-      let minPoint = new Vector3(
-        this.octree.minPoint.x + x * stepX,
-        this.octree.minPoint.y + z * stepY,
-        this.octree.minPoint.z + y * stepZ
-      );
-      let maxPoint = new Vector3(
-        this.octree.minPoint.x + (x + 1) * stepX,
-        this.octree.minPoint.y + (z + 1) * stepY,
-        this.octree.minPoint.z + (y + 1) * stepZ
-      );
-
-      const minPointTransformed = multiply(
-        flipMatrix,
-        minPoint.asArray()
-      ).toArray() as MathNumericType[];
-      const maxPointTransformed = multiply(
-        flipMatrix,
-        maxPoint.asArray()
-      ).toArray() as MathNumericType[];
-
-      [minPoint, maxPoint] = [
-        Vector3.FromArray(
-          matrix(
-            min([minPointTransformed, maxPointTransformed], 0) as any
-          ).toArray() as number[]
-        ),
-        Vector3.FromArray(
-          matrix(
-            max([minPointTransformed, maxPointTransformed], 0) as any
-          ).toArray() as number[]
-        )
-      ];
-
-      this.octree.blocklist.set(
-        mortonIndex,
-        new MoctreeBlock(lod, mortonIndex, minPoint, maxPoint, pointCount)
-      );
-    }
   }
 
   private onCancel(id: string, response: BaseResponse) {

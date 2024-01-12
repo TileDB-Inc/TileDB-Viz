@@ -6,10 +6,7 @@ import {
   GUIEvent
 } from '@tiledb-inc/viz-components';
 import { Channel, ImageMetadata } from '../types';
-import {
-  Dimension,
-  AssetEntry
-} from '../../types';
+import { Dimension, AssetEntry } from '../../types';
 import { GeometryMetadata, PointCloudMetadata } from '@tiledb-inc/viz-common';
 
 // const styleElement = document.createElement('style');

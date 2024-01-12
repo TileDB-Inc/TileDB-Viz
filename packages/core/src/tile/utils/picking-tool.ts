@@ -12,9 +12,7 @@ import {
   EventState,
   VertexBuffer,
   MeshBuilder,
-  Vector3,
-  Constants,
-  AxesViewer
+  Vector3
 } from '@babylonjs/core';
 import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
 import { getCamera } from './camera-utils';
@@ -59,7 +57,12 @@ export class PickingTool {
   public pickCallbacks: {
     (
       bbox: number[],
-      constraints?: { path?: number[]; tiles?: number[][] }
+      constraints?: {
+        path?: number[];
+        tiles?: number[][];
+        enclosureMeshPositions?: Float32Array;
+        enclosureMeshIndices?: Int32Array;
+      }
     ): void;
   }[];
 
@@ -205,20 +208,18 @@ export class PickingTool {
       }
       case PointerEventTypes.POINTERUP: {
         this.active = false;
-        this.pickCallbacks.forEach(callback =>
-          callback(this.selectionBbox, { path: this.selectionBuffer })
-        );
-        this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         const shape = [];
         const camera = getCamera(this.scene, 'Main')!;
 
-        const zoom = this.scene.getEngine().getRenderWidth() / (camera.orthoRight - camera.orthoLeft);
+        const zoom =
+          this.scene.getEngine().getRenderWidth() /
+          (camera.orthoRight - camera.orthoLeft);
         const midX = (this.selectionBbox[2] + this.selectionBbox[0]) / 2;
         const midY = (this.selectionBbox[3] + this.selectionBbox[1]) / 2;
-      
-        let minX = camera.target.x + camera.orthoLeft;
-        let minZ = camera.target.z + camera.orthoBottom;
+
+        const minX = camera.target.x + camera.orthoLeft;
+        const minZ = camera.target.z + camera.orthoBottom;
 
         for (let i = 0; i < this.selectionBuffer.length; i += 2) {
           const x = (this.selectionBuffer[i] - midX) / zoom;
@@ -230,23 +231,38 @@ export class PickingTool {
         const offset = new Vector3(0, 3000, -10);
 
         const start = new Vector3(minX + midX / zoom, 0, minZ + midY / zoom);
-        const end = new Vector3(minX + midX / zoom, offset.y, minZ + midY / zoom);
+        const end = new Vector3(
+          minX + midX / zoom,
+          offset.y,
+          minZ + midY / zoom
+        );
 
-        const mesh = MeshBuilder.ExtrudeShape("Selection mesh", {
+        const mesh = MeshBuilder.ExtrudeShape('Selection mesh', {
           shape: shape,
           path: [start, end],
           sideOrientation: Mesh.DOUBLESIDE,
           closeShape: true
         });
 
-
         mesh.setPivotPoint(camera.target);
         mesh.addRotation(-camera.beta, 0, 0);
         mesh.bakeCurrentTransformIntoVertices();
         mesh.addRotation(0, -(camera.alpha + Math.PI * 0.5), 0);
         mesh.bakeCurrentTransformIntoVertices();
+        mesh.visibility = 0;
 
-        console.log(mesh.getVerticesData(VertexBuffer.PositionKind, true, true), mesh.getIndices(true, true));
+        this.pickCallbacks.forEach(callback =>
+          callback(this.selectionBbox, {
+            path: this.selectionBuffer,
+            enclosureMeshPositions: mesh.getVerticesData(
+              VertexBuffer.PositionKind,
+              true,
+              true
+            ) as Float32Array,
+            enclosureMeshIndices: mesh.getIndices(true, true) as Int32Array
+          })
+        );
+        this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         break;
       }

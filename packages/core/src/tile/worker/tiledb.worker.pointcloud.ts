@@ -1,63 +1,81 @@
-import { Mesh, NullEngine, Scene, Vector3, VertexData } from "@babylonjs/core";
-import { encodeMorton, Moctree } from "../../point-cloud/octree";
-import { PriorityQueue } from "../../point-cloud/utils/priority-queue";
-
-export type PointCloudOperation = {
-  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
-  id: string;
-}
-
-export type InitializeOctreeOperation = PointCloudOperation & {
-  operation: "INITIALIZE";
-  minPoint: number[];
-  maxPoint: number[];
-  maxDepth: number;
-}
-
-export type UpdateOctreeOperation = PointCloudOperation & {
-  mortonCode: number;
-  data: Float32Array;
-}
-
-export type IntersectOperation = PointCloudOperation & {
-  operation: "INTERSECT";
-  positions: Float32Array;
-  indices: Int32Array;
-}
+import { Mesh, NullEngine, Scene, Vector3, VertexData } from '@babylonjs/core';
+import {
+  AddOctreeNodeOperation,
+  DeleteOctreeNodeOperation,
+  InitializeOctreeOperation,
+  IntersectOperation,
+  PointCloudOperation
+} from '@tiledb-inc/viz-common';
+import { encodeMorton, Moctree } from '../../point-cloud/octree';
+import { constructOctree } from '../model/point/utils';
+import { pointIsInside } from './utils/geometryOperations';
 
 const scene = new Scene(new NullEngine());
 const octrees = new Map<string, Moctree>();
+const octreeData = new Map<string, Float32Array>();
 
 self.onmessage = function (event: MessageEvent<PointCloudOperation>) {
   switch (event.data.operation) {
-    case "INITIALIZE":
+    case 'INITIALIZE':
       initializeOctree(event.data as InitializeOctreeOperation);
       break;
-    case "ADD":
+    case 'ADD':
+      addOctreeNode(event.data as AddOctreeNodeOperation);
       break;
-    case "DELETE":
+    case 'DELETE':
+      deleteOctreeNode(event.data as DeleteOctreeNodeOperation);
       break;
-    case "INTERSECT":
+    case 'INTERSECT':
       intersect(event.data as IntersectOperation);
       break;
     default:
       console.warn(`Unknown point cloud operation "${event.data.operation}"`);
   }
+};
+
+function addOctreeNode(operation: AddOctreeNodeOperation) {
+  octreeData.set(`${operation.id}_${operation.mortonCode}`, operation.data);
+
+  self.postMessage({ done: true });
+}
+
+function deleteOctreeNode(operation: DeleteOctreeNodeOperation) {
+  octreeData.delete(`${operation.id}_${operation.mortonCode}`);
+
+  self.postMessage({ done: true });
 }
 
 function initializeOctree(operation: InitializeOctreeOperation) {
-  octrees.set(operation.id, new Moctree(Vector3.FromArray(operation.minPoint), Vector3.FromArray(operation.maxPoint), operation.maxDepth));
+  octrees.set(
+    operation.id,
+    constructOctree(
+      new Vector3(
+        operation.minPoint[0],
+        operation.minPoint[2],
+        operation.minPoint[1]
+      ),
+      new Vector3(
+        operation.maxPoint[0],
+        operation.maxPoint[2],
+        operation.maxPoint[1]
+      ),
+      operation.maxDepth,
+      operation.blocks
+    )
+  );
+
+  self.postMessage({ done: true });
 }
 
 function intersect(operation: IntersectOperation) {
   const octree = octrees.get(operation.id);
-
+  let count = 0;
   if (!octree) {
     return;
   }
 
   // Build intersection mesh
-  const mesh = new Mesh("Intersection Mesh", scene);
+  const mesh = new Mesh('Intersection Mesh', scene);
   const vertexData = new VertexData();
 
   vertexData.positions = operation.positions;
@@ -80,11 +98,20 @@ function intersect(operation: IntersectOperation) {
       break;
     }
 
-    if (!block.boundingInfo.intersects(mesh.getBoundingInfo(), true)) {
+    const data = octreeData.get(`${operation.id}_${block.mortonNumber}`);
+
+    if (!block.boundingInfo.intersects(mesh.getBoundingInfo(), true) || !data) {
       continue;
     }
 
     //TODO: Do per point intersection test
+    for (let index = 0; index < data.length; index += 3) {
+      if (
+        pointIsInside(mesh, [data[index], data[index + 1], data[index + 2]])
+      ) {
+        ++count;
+      }
+    }
 
     // Calculate children
     for (let i = 0; i < 8; ++i) {
@@ -100,4 +127,6 @@ function intersect(operation: IntersectOperation) {
       }
     }
   }
+  console.log(count);
+  self.postMessage({ done: true });
 }

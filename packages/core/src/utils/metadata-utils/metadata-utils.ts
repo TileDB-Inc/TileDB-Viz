@@ -274,13 +274,18 @@ export async function getGeometryMetadata(
     ],
     type: arrayMetadata['GeometryType'],
     idAttribute: attributes.find(
-      x => x.name === (config?.pickAttribute ?? arrayMetadata['FID_ATTRIBUTE_NAME']) && (config?.pickable ?? true)
+      x =>
+        x.name ===
+          (config?.pickAttribute ?? arrayMetadata['FID_ATTRIBUTE_NAME']) &&
+        (config?.pickable ?? true)
     ),
     extrudeAttribute: attributes.find(
       x => x.name === config?.extrudeAttribute && (config?.extrude ?? true)
     ),
     geometryAttribute: attributes.find(
-      x => x.name === (config?.geometryAttribute ?? arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'])
+      x =>
+        x.name ===
+        (config?.geometryAttribute ?? arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'])
     ),
     pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
     crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined,
