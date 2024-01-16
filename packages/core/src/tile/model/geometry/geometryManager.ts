@@ -4,10 +4,10 @@ import {
   GeometryResponse,
   RequestType,
   GeometryInfoMessage,
-  GeometryInfoResponse,
   BaseResponse,
   GeometryStyle,
-  colorScheme
+  colorScheme,
+  InfoResponse
 } from '../../types';
 import { GeometryTile, GeometryUpdateOptions } from './geometry';
 import {
@@ -272,7 +272,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.updateLoadingStatus(true);
   }
 
-  private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
+  private onGeometryInfoDataLoad(id: string, response: InfoResponse) {
     if (id !== this.arrayID) {
       return;
     }

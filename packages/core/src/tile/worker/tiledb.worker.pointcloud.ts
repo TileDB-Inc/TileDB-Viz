@@ -1,4 +1,5 @@
 import { Mesh, NullEngine, Scene, Vector3, VertexData } from '@babylonjs/core';
+import { IntersectionResult } from '@tiledb-inc/viz-common';
 import {
   AddOctreeNodeOperation,
   DeleteOctreeNodeOperation,
@@ -12,7 +13,10 @@ import { pointIsInside } from './utils/geometryOperations';
 
 const scene = new Scene(new NullEngine());
 const octrees = new Map<string, Moctree>();
-const octreeData = new Map<string, Float32Array>();
+const octreeData = new Map<
+  string,
+  { position: Float32Array; id: BigInt64Array }
+>();
 
 self.onmessage = function (event: MessageEvent<PointCloudOperation>) {
   switch (event.data.operation) {
@@ -34,7 +38,10 @@ self.onmessage = function (event: MessageEvent<PointCloudOperation>) {
 };
 
 function addOctreeNode(operation: AddOctreeNodeOperation) {
-  octreeData.set(`${operation.id}_${operation.mortonCode}`, operation.data);
+  octreeData.set(`${operation.id}_${operation.mortonCode}`, {
+    position: operation.data,
+    id: operation.ids
+  });
 
   self.postMessage({ done: true });
 }
@@ -69,7 +76,17 @@ function initializeOctree(operation: InitializeOctreeOperation) {
 
 function intersect(operation: IntersectOperation) {
   const octree = octrees.get(operation.id);
-  let count = 0;
+  const bbox = [
+    Number.MAX_VALUE,
+    Number.MAX_VALUE,
+    Number.MAX_VALUE,
+    -Number.MAX_VALUE,
+    -Number.MAX_VALUE,
+    -Number.MAX_VALUE
+  ];
+  const selectedIds: bigint[] = [];
+  const levels: Set<number> = new Set<number>();
+
   if (!octree) {
     return;
   }
@@ -98,20 +115,36 @@ function intersect(operation: IntersectOperation) {
       break;
     }
 
-    const data = octreeData.get(`${operation.id}_${block.mortonNumber}`);
+    const blockData = octreeData.get(`${operation.id}_${block.mortonNumber}`);
 
-    if (!block.boundingInfo.intersects(mesh.getBoundingInfo(), true) || !data) {
+    if (
+      !block.boundingInfo.intersects(mesh.getBoundingInfo(), true) ||
+      !blockData
+    ) {
       continue;
     }
 
-    //TODO: Do per point intersection test
-    for (let index = 0; index < data.length; index += 3) {
+    for (let index = 0; index < blockData.position.length; index += 3) {
       if (
-        pointIsInside(mesh, [data[index], data[index + 1], data[index + 2]])
+        pointIsInside(mesh, [
+          blockData.position[index],
+          blockData.position[index + 1],
+          blockData.position[index + 2]
+        ])
       ) {
-        ++count;
+        selectedIds.push(blockData.id[index / 3]);
+        [bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], bbox[5]] = [
+          Math.min(bbox[0], blockData.position[index]),
+          Math.min(bbox[1], blockData.position[index + 1]),
+          Math.min(bbox[2], blockData.position[index + 2]),
+          Math.max(bbox[3], blockData.position[index]),
+          Math.max(bbox[4], blockData.position[index + 1]),
+          Math.max(bbox[5], blockData.position[index + 2])
+        ];
       }
     }
+
+    levels.add(block.lod);
 
     // Calculate children
     for (let i = 0; i < 8; ++i) {
@@ -127,6 +160,18 @@ function intersect(operation: IntersectOperation) {
       }
     }
   }
-  console.log(count);
-  self.postMessage({ done: true });
+
+  const result = BigInt64Array.from(selectedIds);
+
+  self.postMessage(
+    {
+      operation: 'INTERSECT',
+      done: true,
+      id: operation.id,
+      bbox: bbox,
+      levelIncides: Array.from(levels),
+      ids: result
+    } as IntersectionResult,
+    [result.buffer] as any
+  );
 }

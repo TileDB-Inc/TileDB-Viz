@@ -8,7 +8,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature } from '../../../types';
+import { Feature, FeatureType } from '../../../types';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -17,7 +17,9 @@ import {
   RequestType,
   PointMessage,
   PointResponse,
-  BaseResponse
+  BaseResponse,
+  PointInfoMessage,
+  InfoResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
 import { inv, MathArray, matrix, multiply } from 'mathjs';
@@ -38,11 +40,13 @@ import {
 import {
   AddOctreeNodeOperation,
   IntersectOperation,
-  PointCloudMetadata
+  PointCloudMetadata,
+  InitializeOctreeOperation,
+  OperationResult,
+  IntersectionResult
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
-import { InitializeOctreeOperation } from '@tiledb-inc/viz-common';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -141,17 +145,57 @@ export class PointManager extends Manager<PointTile> {
     this.workerPool.callbacks.point.push(this.onPointTileDataLoad.bind(this));
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
-    this.workerPool.postOperation({
-      operation: 'INITIALIZE',
-      id: this.metadata.groupID,
-      minPoint: minPoint,
-      maxPoint: maxPoint,
-      maxDepth: this.metadata.levels.length,
-      blocks: this.metadata.octreeData
-    } as InitializeOctreeOperation);
-
     if (this.metadata.idAttribute) {
+      this.metadata.features.push({
+        name: 'Picking ID',
+        type: FeatureType.NON_RENDERABLE,
+        attributes: [this.metadata.idAttribute.name],
+        interleaved: false
+      });
+
       this.pickingTool.pickCallbacks.push(this.pickPoints.bind(this));
+      this.workerPool.callbacks.pointOperation.push(
+        this.onPointOperation.bind(this)
+      );
+      this.workerPool.callbacks.info.push(this.onPointInfo.bind(this));
+
+      this.workerPool.postOperation({
+        operation: 'INITIALIZE',
+        id: this.metadata.groupID,
+        minPoint: minPoint,
+        maxPoint: maxPoint,
+        maxDepth: this.metadata.levels.length,
+        blocks: this.metadata.octreeData
+      } as InitializeOctreeOperation);
+    }
+  }
+
+  private onPointOperation(id: string, response: OperationResult) {
+    if (!response.done || id !== this.metadata.groupID) {
+      return;
+    }
+
+    switch (response.operation) {
+      case 'INTERSECT':
+        this.workerPool.postMessage({
+          id: this.metadata.groupID,
+          type: RequestType.POINT_INFO,
+          request: {
+            namespace: this.namespace,
+            levels: (response as IntersectionResult).levelIncides.map(
+              x => this.metadata.levels[x]
+            ),
+            geotransformCoefficients: this.transformationCoefficients,
+            domain: this.metadata.domain,
+            idAttribute: this.metadata.idAttribute?.name ?? '',
+            ids: (response as IntersectionResult).ids,
+            bbox: (response as IntersectionResult).bbox,
+            nonce: this.nonce++
+          } as PointInfoMessage
+        } as DataRequest);
+        break;
+      default:
+        break;
     }
   }
 
@@ -312,12 +356,15 @@ export class PointManager extends Manager<PointTile> {
       return;
     }
 
-    this.workerPool.postOperation({
-      operation: 'ADD',
-      id: this.metadata.groupID,
-      mortonCode: response.index[0],
-      data: response.attributes['position']
-    } as AddOctreeNodeOperation);
+    if (this.metadata.idAttribute) {
+      this.workerPool.postOperation({
+        operation: 'ADD',
+        id: this.metadata.groupID,
+        mortonCode: response.index[0],
+        data: response.attributes['position'],
+        ids: response.attributes['Picking ID']
+      } as AddOctreeNodeOperation);
+    }
 
     if (status.tile) {
       status.tile.update({ response });
@@ -463,11 +510,6 @@ export class PointManager extends Manager<PointTile> {
       enclosureMeshIndices?: Int32Array;
     }
   ) {
-    console.log(
-      constraints?.enclosureMeshPositions,
-      constraints?.enclosureMeshIndices
-    );
-
     this.workerPool.postOperation({
       operation: 'INTERSECT',
       id: this.metadata.groupID,
@@ -536,5 +578,27 @@ export class PointManager extends Manager<PointTile> {
         } as PointMessage
       } as DataRequest);
     }
+  }
+
+  private onPointInfo(id: string, response: InfoResponse) {
+    if (id !== this.metadata.groupID) {
+      return;
+    }
+
+    for (const [, status] of this.tileStatus) {
+      if (status.state === TileState.VISIBLE) {
+        status.tile?.updateSelection(response.ids);
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent>(Events.PICK_OBJECT, {
+        bubbles: true,
+        detail: {
+          target: `geometry_info_${this.metadata.groupID}`,
+          props: response.info
+        }
+      })
+    );
   }
 }

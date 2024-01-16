@@ -205,8 +205,10 @@ export type InitializeOctreeOperation = PointCloudOperation & {
 }
 
 export type AddOctreeNodeOperation = PointCloudOperation & {
+  operation: "ADD";
   mortonCode: number;
   data: Float32Array;
+  ids: BigInt64Array;
 }
 
 export type DeleteOctreeNodeOperation = PointCloudOperation & {
@@ -218,6 +220,19 @@ export type IntersectOperation = PointCloudOperation & {
   operation: "INTERSECT";
   positions: Float32Array;
   indices: Int32Array;
+}
+
+export type OperationResult = {
+  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  id: string;
+  done: boolean;
+}
+
+export type IntersectionResult = OperationResult & {
+  operation: "INTERSECT";
+  bbox: number[];
+  levelIncides: number[];
+  ids: BigInt64Array;
 }
 
 //#endregion

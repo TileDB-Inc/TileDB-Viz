@@ -439,6 +439,18 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       });
     }
 
+    for (const [key, value] of this.pointMetadata) {
+      if (!value.idAttribute) {
+        continue;
+      }
+
+      infoPanelConfig.set(key, {
+        name: value.name,
+        pickAttribute: value.idAttribute.name,
+        attributes: value.attributes
+      });
+    }
+
     window.dispatchEvent(
       new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
         Events.INITIALIZE,

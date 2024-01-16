@@ -26,6 +26,7 @@ export class PointTile extends Tile<PointResponse> {
   private meshData: Record<string, TypedArray>;
   private vertexCount: number;
   private activeFeature?: Feature;
+  private vertexMap: Map<bigint, number>;
 
   constructor(scene: Scene, response: PointResponse) {
     super(scene, response);
@@ -36,6 +37,7 @@ export class PointTile extends Tile<PointResponse> {
     this.vertexCount = 0;
     this.mesh.layerMask = 0b1;
     this.mesh.renderingGroupId = 3;
+    this.vertexMap = new Map<bigint, number>();
 
     this.update({ response });
   }
@@ -52,6 +54,28 @@ export class PointTile extends Tile<PointResponse> {
 
       this.vertexCount = vertexData.positions.length / 3;
       this.groups = new Int32Array(this.vertexCount).fill(0);
+
+      if (updateOptions.response.attributes['Picking ID'].length) {
+        const ids = updateOptions.response.attributes[
+          'Picking ID'
+        ] as BigInt64Array;
+        this.vertexMap = new Map(
+          Array.from(ids).map((value, index) => [value, index])
+        );
+      }
+
+      this.mesh.setVerticesBuffer(
+        new VertexBuffer(
+          this.scene.getEngine(),
+          new Float32Array(
+            updateOptions.response.attributes['Picking ID'].length
+          ),
+          'state',
+          true,
+          false,
+          1
+        )
+      );
     }
 
     if (updateOptions.pointOptions) {
@@ -128,5 +152,24 @@ export class PointTile extends Tile<PointResponse> {
 
       this.mesh.updateVerticesData('group', this.groups as any);
     }
+  }
+
+  public updateSelection(ids: bigint[]) {
+    const state = this.mesh.getVerticesData('state') ?? new Float32Array();
+
+    if (ids.length) {
+      for (const id of ids) {
+        if (!this.vertexMap.has(id)) {
+          continue;
+        }
+
+        const index = this.vertexMap.get(id)!;
+        state[index] = 1;
+      }
+    } else {
+      state.fill(0);
+    }
+
+    this.mesh.updateVerticesData('state', state);
   }
 }

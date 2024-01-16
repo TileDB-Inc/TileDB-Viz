@@ -12,11 +12,11 @@ import {
   GeometryResponse,
   GeometryMessage,
   GeometryInfoMessage,
-  GeometryInfoResponse,
   BaseResponse,
   PointMessage,
   PointResponse,
-  PointInfoMessage
+  PointInfoMessage,
+  InfoResponse
 } from '../types';
 import { transpose, sliceRanges, Axes } from '../utils/array-utils';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
@@ -25,7 +25,7 @@ import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
 import proj4 from 'proj4';
 import { geometryRequest } from './loaders/geometryLoader';
-import { pointRequest } from './loaders/pointLoader';
+import { pointInfoRequest, pointRequest } from './loaders/pointLoader';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -105,7 +105,12 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       cancelSignal = false;
       currentId = event.data.id;
       tokenSource = CancelToken.source();
-      pointInfoRequest(event.data.id, event.data.request as PointInfoMessage);
+      pointInfoRequest(
+        event.data.id,
+        tiledbClient,
+        tokenSource,
+        event.data.request as PointInfoMessage
+      );
       break;
       break;
     case RequestType.GEOMETRY_INFO:
@@ -571,7 +576,7 @@ async function geometryInfoRequest(id: string, request: GeometryInfoMessage) {
     response: {
       ids: pickedIds,
       info: pickedResult
-    } as GeometryInfoResponse
+    } as InfoResponse
   } as WorkerResponse);
 }
 

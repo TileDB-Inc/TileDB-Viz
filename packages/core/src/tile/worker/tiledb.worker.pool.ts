@@ -1,4 +1,4 @@
-import { PointCloudOperation } from '@tiledb-inc/viz-common';
+import { OperationResult, PointCloudOperation } from '@tiledb-inc/viz-common';
 import {
   DataRequest,
   InitializeMessage,
@@ -7,7 +7,7 @@ import {
   ImageResponse,
   ResponseCallback,
   GeometryResponse,
-  GeometryInfoResponse,
+  InfoResponse,
   PointResponse
 } from '../types';
 
@@ -23,7 +23,6 @@ export class WorkerPool {
 
   private poolSize: number;
   private workers: Worker[] = [];
-  private pointCloudOperationsWorker: Worker;
   private operationsQueue: PointCloudOperation[] = [];
   private status: boolean[] = [];
   private taskMap: Map<string, number>;
@@ -36,7 +35,7 @@ export class WorkerPool {
       image: [],
       geometry: [],
       point: [],
-      pointInfo: [],
+      pointOperation: [],
       info: [],
       cancel: []
     };
@@ -49,7 +48,7 @@ export class WorkerPool {
       } as InitializeMessage
     } as DataRequest;
 
-    for (let index = 0; index < this.poolSize; index++) {
+    for (let index = 0; index < this.poolSize - 1; index++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
         type: 'module',
         name: `Worker ${index}`
@@ -61,16 +60,19 @@ export class WorkerPool {
       this.status.push(false);
     }
 
-    this.pointCloudOperationsWorker = new Worker(
+    const worker = new Worker(
       new URL('tiledb.worker.pointcloud', import.meta.url),
       {
         type: 'module',
         name: 'Point Cloud Operations Worker'
       }
     );
-    this.pointCloudOperationsWorker.onmessage =
-      this.operationOnMessage.bind(this);
+
+    worker.onmessage = this.operationOnMessage.bind(this);
+    this.workers.push(worker);
     this.status.push(false);
+
+    console.log(this.poolSize, this.status);
   }
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {
@@ -94,8 +96,9 @@ export class WorkerPool {
         }
         break;
       case RequestType.GEOMETRY_INFO:
+      case RequestType.POINT_INFO:
         for (const callback of this.callbacks.info) {
-          callback(response.id, response.response as GeometryInfoResponse);
+          callback(response.id, response.response as InfoResponse);
         }
         break;
       case RequestType.POINT:
@@ -143,7 +146,7 @@ export class WorkerPool {
   public postMessage(request: DataRequest, transferables?: Transferable[]) {
     let dispached = false;
     for (const [index, status] of this.status.entries()) {
-      if (!status) {
+      if (!status && index !== this.poolSize - 1) {
         this.workers[index].postMessage(request, transferables ?? []);
         this.status[index] = true;
         this.taskMap.set(request.id, index);
@@ -195,14 +198,26 @@ export class WorkerPool {
   }
 
   public postOperation(operation: PointCloudOperation) {
-    if (!this.status[this.poolSize]) {
-      this.pointCloudOperationsWorker.postMessage(operation);
+    if (!this.status[this.poolSize - 1]) {
+      this.workers[this.poolSize - 1].postMessage(operation);
     } else {
       this.operationsQueue.push(operation);
     }
   }
 
-  private async operationOnMessage(event: MessageEvent) {
-    console.log(event);
+  private async operationOnMessage(event: MessageEvent<OperationResult>) {
+    const response = event.data;
+
+    for (const callback of this.callbacks.pointOperation) {
+      callback(response.id, response);
+    }
+
+    const request = this.operationsQueue.pop();
+
+    if (request) {
+      this.workers[this.poolSize - 1].postMessage(request);
+    } else {
+      this.status[this.poolSize - 1] = false;
+    }
   }
 }
