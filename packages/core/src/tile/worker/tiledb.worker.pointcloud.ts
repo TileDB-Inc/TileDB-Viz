@@ -162,6 +162,7 @@ function intersect(operation: IntersectOperation) {
   }
 
   const result = BigInt64Array.from(selectedIds);
+  mesh.dispose(false, true);
 
   self.postMessage(
     {

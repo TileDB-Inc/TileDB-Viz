@@ -245,6 +245,10 @@ export class PickingTool {
           minZ + midY / zoom
         );
 
+        start.addInPlace(
+          start.subtract(end).normalize().multiplyByFloats(1, 1000, 1)
+        );
+
         const mesh = MeshBuilder.ExtrudeShape('Selection mesh', {
           shape: shape,
           path: [start, end],
