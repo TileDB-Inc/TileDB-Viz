@@ -280,6 +280,23 @@ export class PointManager extends Manager<PointTile> {
     }
 
     switch (event.detail.props.command) {
+      case Commands.CLEAR:
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updateSelection([]);
+          }
+        }
+        break;
+      case Commands.SELECT:
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updatePicked(
+              BigInt(event.detail.props.data?.id),
+              BigInt(event.detail.props.data?.previousID ?? -1)
+            );
+          }
+        }
+        break;
       case Commands.COLOR:
         {
           if (target[1] === 'fillColor') {
@@ -472,7 +489,7 @@ export class PointManager extends Manager<PointTile> {
         if (child) {
           const childScore = scoreMetric(child);
 
-          if (childScore < this.screenSizeLimit) {
+          if (childScore < 51 - this.screenSizeLimit) {
             continue;
           }
           this.blockQueue.insert(childScore, child);

@@ -172,4 +172,18 @@ export class PointTile extends Tile<PointResponse> {
 
     this.mesh.updateVerticesData('state', state);
   }
+
+  public updatePicked(id: bigint, previousID?: bigint) {
+    const state = this.mesh.getVerticesData('state') ?? new Float32Array();
+
+    if (previousID) {
+      const index = this.vertexMap.get(previousID)!;
+      state[index] = 1;
+    }
+
+    const index = this.vertexMap.get(id)!;
+    state[index] = 2;
+
+    this.mesh.updateVerticesData('state', state);
+  }
 }

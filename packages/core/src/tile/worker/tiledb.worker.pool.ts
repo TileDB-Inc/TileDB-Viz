@@ -71,8 +71,6 @@ export class WorkerPool {
     worker.onmessage = this.operationOnMessage.bind(this);
     this.workers.push(worker);
     this.status.push(false);
-
-    console.log(this.poolSize, this.status);
   }
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {

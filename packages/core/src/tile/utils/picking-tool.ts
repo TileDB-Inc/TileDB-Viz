@@ -12,7 +12,8 @@ import {
   EventState,
   VertexBuffer,
   MeshBuilder,
-  Vector3
+  Vector3,
+  ArcRotateCamera
 } from '@babylonjs/core';
 import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
 import { getCamera } from './camera-utils';
@@ -69,6 +70,7 @@ export class PickingTool {
   private mode: PickingMode;
   private scene: Scene;
   private utilityLayer: UtilityLayerRenderer;
+  private camera: ArcRotateCamera;
 
   private selectionBbox: number[];
   private selectionBuffer: number[];
@@ -85,10 +87,11 @@ export class PickingTool {
   private active: boolean;
 
   constructor(scene: Scene) {
+    this.camera = getCamera(scene, 'Main')!;
     this.mode = PickingMode.NONE;
     this.scene = scene;
     this.utilityLayer = new UtilityLayerRenderer(this.scene, false);
-    this.utilityLayer.setRenderCamera(getCamera(this.scene, 'Main')!);
+    this.utilityLayer.setRenderCamera(this.camera);
     this.selectionRenderVertexData = new VertexData();
     this.selectionRenderMesh = new Mesh(
       'selection',
@@ -209,17 +212,22 @@ export class PickingTool {
       case PointerEventTypes.POINTERUP: {
         this.active = false;
 
-        const shape = [];
-        const camera = getCamera(this.scene, 'Main')!;
+        if (this.selectionBuffer.length < 4) {
+          this.selectionRenderMesh.removeVerticesData(
+            VertexBuffer.PositionKind
+          );
+          break;
+        }
 
+        const shape = [];
         const zoom =
           this.scene.getEngine().getRenderWidth() /
-          (camera.orthoRight - camera.orthoLeft);
+          ((this.camera.orthoRight ?? 1) - (this.camera.orthoLeft ?? 0));
         const midX = (this.selectionBbox[2] + this.selectionBbox[0]) / 2;
         const midY = (this.selectionBbox[3] + this.selectionBbox[1]) / 2;
 
-        const minX = camera.target.x + camera.orthoLeft;
-        const minZ = camera.target.z + camera.orthoBottom;
+        const minX = this.camera.target.x + (this.camera.orthoLeft ?? 1);
+        const minZ = this.camera.target.z + (this.camera.orthoBottom ?? 1);
 
         for (let i = 0; i < this.selectionBuffer.length; i += 2) {
           const x = (this.selectionBuffer[i] - midX) / zoom;
@@ -244,10 +252,10 @@ export class PickingTool {
           closeShape: true
         });
 
-        mesh.setPivotPoint(camera.target);
-        mesh.addRotation(-camera.beta, 0, 0);
+        mesh.setPivotPoint(this.camera.target);
+        mesh.addRotation(-this.camera.beta, 0, 0);
         mesh.bakeCurrentTransformIntoVertices();
-        mesh.addRotation(0, -(camera.alpha + Math.PI * 0.5), 0);
+        mesh.addRotation(0, -(this.camera.alpha + Math.PI * 0.5), 0);
         mesh.bakeCurrentTransformIntoVertices();
         mesh.visibility = 0;
 
