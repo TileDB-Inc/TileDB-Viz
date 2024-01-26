@@ -61,9 +61,9 @@ export function parsePolygon(
       }
 
       shape.push(
-        multiply([point.x, point.y, 1], affineTransform)
+        multiply(affineTransform, [point.x!, point.y!, 1])
           .subset(index([true, true, false]))
-          .toArray()
+          .toArray() as number[]
       );
     }
     data.push(shape);
@@ -85,7 +85,7 @@ export function parsePolygon(
         }
 
         hole.push(
-          multiply([point.x, point.y, 1], affineTransform)
+          multiply(affineTransform, [point.x, point.y, 1])
             .subset(index([true, true, false]))
             .toArray()
         );
