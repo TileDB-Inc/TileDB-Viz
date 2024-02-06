@@ -1,6 +1,6 @@
 import { FeatureType } from '../../../types';
 import { CancelTokenSource } from 'axios';
-import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
+import Client, { QueryData, Range } from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
@@ -13,9 +13,19 @@ import {
   WorkerResponse
 } from '../../types';
 import { RequestType } from '../../types';
-import { MathArray, matrix, min, max, multiply, inv } from 'mathjs';
+import {
+  MathArray,
+  matrix,
+  min,
+  max,
+  multiply,
+  inv,
+  Matrix,
+  index
+} from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
 import { loadCachedGeometry, toTypedArray } from './utils';
+import proj4 from 'proj4';
 
 export async function pointRequest(
   id: string,
@@ -49,23 +59,6 @@ export async function pointRequest(
 
   const affineInverted = inv(affineMatrix);
 
-  // The Y and Z dimensions are swap from the octree so we need to swap the back
-  let minPoint = multiply(affineMatrix, [
-    request.minPoint[0],
-    request.minPoint[2],
-    request.minPoint[1]
-  ]).toArray();
-  let maxPoint = multiply(affineMatrix, [
-    request.maxPoint[0],
-    request.maxPoint[2],
-    request.maxPoint[1]
-  ]).toArray();
-
-  [minPoint, maxPoint] = [
-    matrix(min([minPoint, maxPoint], 0)).toArray(),
-    matrix(max([minPoint, maxPoint], 0)).toArray()
-  ];
-
   const uniqueAttributes = new Set<string>(
     request.features.flatMap(x => x.attributes)
   );
@@ -98,20 +91,14 @@ export async function pointRequest(
       })
     );
 
-  const ranges = [
-    [
-      Math.max(minPoint[0], limits['X'].min),
-      Math.min(maxPoint[0], limits['X'].max)
-    ],
-    [
-      Math.max(minPoint[1], limits['Y'].min),
-      Math.min(maxPoint[1], limits['Y'].max)
-    ],
-    [
-      Math.max(minPoint[2], limits['Z'].min),
-      Math.min(maxPoint[2], limits['Z'].max)
-    ]
-  ];
+  const ranges = calculateQueryRanges(
+    request.minPoint,
+    request.maxPoint,
+    limits,
+    affineMatrix,
+    request.imageCRS,
+    request.pointCRS
+  );
 
   const query = {
     layout: Layout.Unordered,
@@ -165,13 +152,30 @@ export async function pointRequest(
   const elementCount = arrays['X'].length;
   const positions = new Float32Array(3 * elementCount);
 
+  const converter =
+    request.imageCRS &&
+    request.pointCRS &&
+    request.imageCRS !== request.pointCRS
+      ? proj4(request.pointCRS, request.imageCRS)
+      : undefined;
+
   for (let idx = 0; idx < elementCount; ++idx) {
+    if (converter) {
+      [arrays['X'][idx], arrays['Y'][idx], arrays['Z'][idx]] =
+        converter.forward([
+          arrays['X'][idx],
+          arrays['Y'][idx],
+          arrays['Z'][idx]
+        ] as number[]);
+    }
+
+    // Apply the inverted transform and swap Y-Z axes
     [positions[3 * idx], positions[3 * idx + 2], positions[3 * idx + 1]] =
       multiply(affineInverted, [
         arrays['X'][idx],
         arrays['Y'][idx],
         arrays['Z'][idx]
-      ] as number[]).toArray();
+      ] as number[]).toArray() as number[];
   }
 
   result.attributes['position'] = positions;
@@ -245,22 +249,21 @@ export async function pointInfoRequest(
     [0, 0, geotransformCoefficients[1]]
   ] as MathArray);
 
-  // The Y and Z dimensions are swap from the octree so we need to swap the back
-  let minPoint = multiply(affineMatrix, [
-    request.bbox[0],
-    request.bbox[2],
-    request.bbox[1]
-  ]).toArray();
-  let maxPoint = multiply(affineMatrix, [
-    request.bbox[3],
-    request.bbox[5],
-    request.bbox[4]
-  ]).toArray();
+  const limits: { [domain: string]: { min: number; max: number } } =
+    Object.fromEntries(
+      request.domain.map(x => {
+        return [x.name, { min: x.min, max: x.max }];
+      })
+    );
 
-  [minPoint, maxPoint] = [
-    matrix(min([minPoint, maxPoint], 0)).toArray(),
-    matrix(max([minPoint, maxPoint], 0)).toArray()
-  ];
+  const ranges = calculateQueryRanges(
+    [request.bbox[0], request.bbox[2], request.bbox[1]],
+    [request.bbox[3], request.bbox[5], request.bbox[4]],
+    limits,
+    affineMatrix,
+    request.imageCRS,
+    request.pointCRS
+  );
 
   const ids = new Set(request.ids);
   const pickedResult: any[] = [];
@@ -269,11 +272,7 @@ export async function pointInfoRequest(
   for (const level of request.levels) {
     const query = {
       layout: Layout.Unordered,
-      ranges: [
-        [minPoint[0], maxPoint[0]],
-        [minPoint[1], maxPoint[1]],
-        [minPoint[2], maxPoint[2]]
-      ] as number[][],
+      ranges: ranges,
       bufferSize: 20_000_000,
       cancelToken: tokenSource?.token
     };
@@ -325,4 +324,50 @@ export async function pointInfoRequest(
       info: pickedResult
     } as InfoResponse
   } as WorkerResponse);
+}
+
+function calculateQueryRanges(
+  bboxMin: number[],
+  bboxMax: number[],
+  limits: { [domain: string]: { min: number; max: number } },
+  affineMatrix: Matrix,
+  baseCRS?: string,
+  sourceCRS?: string
+): (Range | Range[])[] {
+  // The Y and Z dimensions are swap from the octree so we need to swap the back
+  let minPoint = multiply(affineMatrix, [bboxMin[0], bboxMin[2], bboxMin[1]]);
+  let maxPoint = multiply(affineMatrix, [bboxMax[0], bboxMax[2], bboxMax[1]]);
+
+  if (baseCRS && sourceCRS && baseCRS !== sourceCRS) {
+    const converter = proj4(baseCRS, sourceCRS);
+
+    minPoint.subset(
+      index([true, true, true]),
+      converter.forward(minPoint.toArray() as number[])
+    );
+    maxPoint.subset(
+      index([true, true, true]),
+      converter.forward(maxPoint.toArray() as number[])
+    );
+  }
+
+  [minPoint, maxPoint] = [
+    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
+    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
+  ];
+
+  return [
+    [
+      Math.max(minPoint.get([0]), limits['X'].min),
+      Math.min(maxPoint.get([0]), limits['X'].max)
+    ],
+    [
+      Math.max(minPoint.get([1]), limits['Y'].min),
+      Math.min(maxPoint.get([1]), limits['Y'].max)
+    ],
+    [
+      Math.max(minPoint.get([2]), limits['Z'].min),
+      Math.min(maxPoint.get([2]), limits['Z'].max)
+    ]
+  ];
 }
