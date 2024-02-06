@@ -83,6 +83,7 @@ export async function geometryRequest(
     request.index,
     tileSize,
     affineMatrix,
+    request.pad,
     request.imageCRS,
     request.geometryCRS
   );
@@ -135,6 +136,11 @@ export async function geometryRequest(
     vertexMap: new Map<bigint, number[]>()
   };
 
+  const converter =
+    request.imageCRS && request.geometryCRS
+      ? proj4(request.geometryCRS, request.imageCRS)
+      : null;
+
   try {
     for await (const result of generator) {
       switch (request.geometryAttribute.type) {
@@ -145,6 +151,7 @@ export async function geometryRequest(
             request.features,
             request.type,
             inv(affineMatrix),
+            converter,
             geometryOutput
           );
           break;
@@ -155,6 +162,7 @@ export async function geometryRequest(
             request.features,
             request.type,
             inv(affineMatrix),
+            converter,
             geometryOutput
           );
           break;
@@ -242,8 +250,8 @@ function calculateQueryRanges(
   let minPoint = matrix([x * tilesize, y * tilesize, 1]);
   let maxPoint = matrix([(x + 1) * tilesize, (y + 1) * tilesize, 1]);
 
-  minPoint = multiply(minPoint, affineMatrix);
-  maxPoint = multiply(maxPoint, affineMatrix);
+  minPoint = multiply(affineMatrix, minPoint);
+  maxPoint = multiply(affineMatrix, maxPoint);
 
   if (baseCRS && sourceCRS) {
     const converter = proj4(baseCRS, sourceCRS);
@@ -289,6 +297,7 @@ function loadBinaryGeometry(
   features: Feature[],
   geometryType: string,
   affineTransform: Matrix,
+  converter: any | undefined,
   outputGeometry: OutputGeometry
 ) {
   const offsets = data['__offsets'][attributes.geometry.name] as BigUint64Array;
@@ -353,7 +362,8 @@ function loadBinaryGeometry(
         id,
         outputGeometry,
         featureData,
-        affineTransform
+        affineTransform,
+        converter
       );
       break;
     default:
@@ -367,6 +377,7 @@ function loadStringGeometry(
   features: Feature[],
   geometryType: string,
   affineTransform: Matrix,
+  converter: any | undefined,
   outputGeometry: OutputGeometry
 ) {
   const wkt = data[attributes.geometry.name] as string[];
@@ -425,7 +436,8 @@ function loadStringGeometry(
         id,
         outputGeometry,
         featureData,
-        affineTransform
+        affineTransform,
+        converter
       );
       break;
     default:

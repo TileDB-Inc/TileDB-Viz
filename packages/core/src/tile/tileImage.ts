@@ -226,9 +226,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           )
         );
 
-        await initializeCacheDB([
-          `${geometryArrayID}_${this.tileSize / 2 ** nativeZoom}`
-        ]);
+        await initializeCacheDB([`${id}_${this.tileSize / 2 ** nativeZoom}`]);
       }
     }
 

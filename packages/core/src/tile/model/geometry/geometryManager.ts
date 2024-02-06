@@ -177,6 +177,8 @@ export class GeometryManager extends Manager<GeometryTile> {
         continue;
       }
 
+      this.tileStatus.delete(key);
+
       if (status.state !== TileState.VISIBLE) {
         this.workerPool.cancelRequest({
           type: RequestType.CANCEL,
@@ -187,8 +189,6 @@ export class GeometryManager extends Manager<GeometryTile> {
       } else if (status.state === TileState.VISIBLE) {
         status.tile?.dispose();
       }
-
-      this.tileStatus.delete(key);
     }
   }
 
@@ -509,6 +509,7 @@ export class GeometryManager extends Manager<GeometryTile> {
           geometryCRS: this.metadata.crs,
           geotransformCoefficients: this.transformationCoefficients,
           metersPerUnit: this.metersPerUnit,
+          features: this.metadata.features,
           nonce: response.nonce
         } as GeometryMessage
       } as DataRequest);

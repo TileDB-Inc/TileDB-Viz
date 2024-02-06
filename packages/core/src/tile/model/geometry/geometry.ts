@@ -201,9 +201,12 @@ export class GeometryTile extends Tile<GeometryResponse> {
       this.mesh.material!.disableColorWrite = !(
         updateOptions.style & GeometryStyle.FILLED
       );
-      this.mesh.edgesRenderer!.isEnabled = Boolean(
-        updateOptions.style & GeometryStyle.OUTLINED
-      );
+
+      if (this.mesh.edgesRenderer) {
+        this.mesh.edgesRenderer.isEnabled = Boolean(
+          updateOptions.style & GeometryStyle.OUTLINED
+        );
+      }
     }
 
     this.mesh.visibility = updateOptions.fillOpacity ?? this.mesh.visibility;

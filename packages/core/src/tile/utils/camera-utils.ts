@@ -335,7 +335,7 @@ export class CameraManager {
           break;
         case PointerEventTypes.POINTERWHEEL:
           {
-            const delta = (pointerInfo.event as WheelEvent).deltaY / 1500;
+            const delta = -(pointerInfo.event as WheelEvent).deltaY / 1500;
 
             this.zoom = Math.max(
               this.lowerZoomLimit,
