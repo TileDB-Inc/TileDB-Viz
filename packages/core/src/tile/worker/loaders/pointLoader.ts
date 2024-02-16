@@ -6,7 +6,6 @@ import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
   PointInfoMessage,
-  PointInfoResponse,
   PointMessage,
   PointResponse,
   TypedArray,
@@ -44,17 +43,10 @@ export async function pointRequest(
 
   const geotransformCoefficients = request.geotransformCoefficients;
   const affineMatrix = matrix([
-    [
-      geotransformCoefficients[1],
-      geotransformCoefficients[2],
-      geotransformCoefficients[0]
-    ],
-    [
-      geotransformCoefficients[4],
-      -geotransformCoefficients[5],
-      geotransformCoefficients[3]
-    ],
-    [0, 0, geotransformCoefficients[1]]
+    [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
+    [0, geotransformCoefficients[5], 0, geotransformCoefficients[3]],
+    [0, 0, geotransformCoefficients[1], 0],
+    [0, 0, 0, 1]
   ] as MathArray);
 
   const affineInverted = inv(affineMatrix);
@@ -84,21 +76,11 @@ export async function pointRequest(
     } as WorkerResponse;
   }
 
-  const limits: { [domain: string]: { min: number; max: number } } =
-    Object.fromEntries(
-      request.domain.map(x => {
-        return [x.name, { min: x.min, max: x.max }];
-      })
-    );
-
-  const ranges = calculateQueryRanges(
-    request.minPoint,
-    request.maxPoint,
-    limits,
-    affineMatrix,
-    request.imageCRS,
-    request.pointCRS
-  );
+  const ranges = [
+    [request.minPoint[0], request.maxPoint[0]],
+    [request.minPoint[1], request.maxPoint[1]],
+    [request.minPoint[2], request.maxPoint[2]]
+  ];
 
   const query = {
     layout: Layout.Unordered,
@@ -174,7 +156,8 @@ export async function pointRequest(
       multiply(affineInverted, [
         arrays['X'][idx],
         arrays['Y'][idx],
-        arrays['Z'][idx]
+        arrays['Z'][idx],
+        1
       ] as number[]).toArray() as number[];
   }
 
@@ -335,19 +318,34 @@ function calculateQueryRanges(
   sourceCRS?: string
 ): (Range | Range[])[] {
   // The Y and Z dimensions are swap from the octree so we need to swap the back
-  let minPoint = multiply(affineMatrix, [bboxMin[0], bboxMin[2], bboxMin[1]]);
-  let maxPoint = multiply(affineMatrix, [bboxMax[0], bboxMax[2], bboxMax[1]]);
+  let minPoint = multiply(affineMatrix, [
+    bboxMin[0],
+    bboxMin[2],
+    bboxMin[1],
+    1
+  ]);
+  let maxPoint = multiply(affineMatrix, [
+    bboxMax[0],
+    bboxMax[2],
+    bboxMax[1],
+    1
+  ]);
+
+  [minPoint, maxPoint] = [
+    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
+    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
+  ];
 
   if (baseCRS && sourceCRS && baseCRS !== sourceCRS) {
     const converter = proj4(baseCRS, sourceCRS);
 
     minPoint.subset(
-      index([true, true, true]),
-      converter.forward(minPoint.toArray() as number[])
+      index([true, true, true, false]),
+      converter.forward(minPoint.toArray().slice(0, 3) as number[])
     );
     maxPoint.subset(
-      index([true, true, true]),
-      converter.forward(maxPoint.toArray() as number[])
+      index([true, true, true, false]),
+      converter.forward(maxPoint.toArray().slice(0, 3) as number[])
     );
   }
 

@@ -335,9 +335,20 @@ export async function getPointCloudMetadata(
     throw new Error('Point group ID is undefined');
   }
 
-  const [info, members] = await Promise.all([
+  const [info, members, groupMetadata] = await Promise.all([
     client.groups.API.getGroup(options.namespace, options.pointGroupID),
-    client.groups.getGroupContents(options.namespace, options.pointGroupID)
+    client.groups.getGroupContents(options.namespace, options.pointGroupID),
+    client.groups.V2API.getGroupMetadata(
+      options.namespace,
+      options.pointGroupID
+    )
+      .then((response: any) => response.data.entries)
+      .then((data: any) => {
+        return data.reduce((map: any, obj: any) => {
+          map[obj.key] = deserializeBuffer(obj.type, obj.value);
+          return map;
+        }, {});
+      })
   ]);
 
   const uris =
@@ -415,6 +426,7 @@ export async function getPointCloudMetadata(
     domain: domain,
     features: features,
     categories: new Map<string, string[]>(),
+    crs: groupMetadata['crs'],
     idAttribute: attributes.find(
       x => x.name === config?.pickAttribute && (config?.pickable ?? true)
     )

@@ -35,6 +35,7 @@ export class PointTile extends Tile<PointResponse> {
     this.mesh.material = this.material;
     this.meshData = {};
     this.vertexCount = 0;
+    this.mesh.scaling.z = -1;
     this.mesh.layerMask = 0b1;
     this.mesh.renderingGroupId = 3;
     this.vertexMap = new Map<bigint, number>();
@@ -55,27 +56,27 @@ export class PointTile extends Tile<PointResponse> {
       this.vertexCount = vertexData.positions.length / 3;
       this.groups = new Int32Array(this.vertexCount).fill(0);
 
-      if (updateOptions.response.attributes['Picking ID'].length) {
+      if (updateOptions.response.attributes['Picking ID']?.length) {
         const ids = updateOptions.response.attributes[
           'Picking ID'
         ] as BigInt64Array;
         this.vertexMap = new Map(
           Array.from(ids).map((value, index) => [value, index])
         );
-      }
 
-      this.mesh.setVerticesBuffer(
-        new VertexBuffer(
-          this.scene.getEngine(),
-          new Float32Array(
-            updateOptions.response.attributes['Picking ID'].length
-          ),
-          'state',
-          true,
-          false,
-          1
-        )
-      );
+        this.mesh.setVerticesBuffer(
+          new VertexBuffer(
+            this.scene.getEngine(),
+            new Float32Array(
+              updateOptions.response.attributes['Picking ID'].length
+            ),
+            'state',
+            true,
+            false,
+            1
+          )
+        );
+      }
     }
 
     if (updateOptions.pointOptions) {

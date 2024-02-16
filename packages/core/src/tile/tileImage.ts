@@ -80,7 +80,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      //this.scene.debugLayer.show();
+      // this.scene.debugLayer.show();
 
       return scene;
     });
@@ -261,7 +261,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           new PointManager(this.scene, this.workerPool, this.pickingTool, {
             namespace: namespace,
             transformationCoefficients: transformationCoefficients,
-            metadata: metadata
+            metadata: metadata,
+            baseCRS: this.metadata.crs
           })
         );
 
