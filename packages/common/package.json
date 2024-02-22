@@ -1,7 +1,7 @@
 {
-  "name": "@tiledb-inc/viz-core",
+  "name": "@tiledb-inc/viz-common",
   "version": "0.0.1",
-  "description": "Visualize TileDB arrays",
+  "description": "A library with common functionality used by all viz packages",
   "source": "src/index.ts",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
@@ -10,10 +10,6 @@
     "lib/**/*"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/TileDB-Inc/TileDB-Viz.git"
-  },
   "author": {
     "name": "TileDB",
     "email": "support@tiledb.com"
@@ -39,25 +35,7 @@
     "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
-    "@babylonjs/core": "^6.20.2",
-    "@babylonjs/gui": "^6.20.2",
-    "@babylonjs/gui-editor": "^6.20.2",
-    "@babylonjs/inspector": "^6.20.2",
-    "@babylonjs/loaders": "^6.20.2",
-    "@babylonjs/materials": "^6.20.2",
-    "@babylonjs/serializers": "^6.20.2",
-    "@tiledb-inc/tiledb-cloud": "1.0.15-alpha.1",
-    "@tiledb-inc/viz-common": "workspace:packages/common",
-    "@tiledb-inc/viz-components": "workspace:packages/components",
-    "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",
-    "axios": "^0.21.1",
-    "babylonjs-gui": "^6.20.2",
-    "babylonjs-materials": "^6.20.2",
-    "earcut": "2.2.4",
-    "geometry-extrude": "0.2.1",
-    "idb": "^7.0.2",
-    "mathjs": "^12.1.0",
-    "proj4": "^2.9.0"
+    "@babylonjs/core": "^6.20.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.0",
