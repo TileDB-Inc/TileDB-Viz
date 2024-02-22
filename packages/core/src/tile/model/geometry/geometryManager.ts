@@ -4,10 +4,10 @@ import {
   GeometryResponse,
   RequestType,
   GeometryInfoMessage,
-  GeometryInfoResponse,
   BaseResponse,
   GeometryStyle,
-  colorScheme
+  colorScheme,
+  InfoResponse
 } from '../../types';
 import { GeometryTile, GeometryUpdateOptions } from './geometry';
 import {
@@ -18,7 +18,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature, GeometryMetadata } from '../../../types';
+import { Feature } from '../../../types';
 import {
   ButtonProps,
   Events,
@@ -29,6 +29,7 @@ import {
 } from '@tiledb-inc/viz-components';
 import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
+import { GeometryMetadata } from '@tiledb-inc/viz-common';
 
 interface GeometryOptions {
   arrayID: string;
@@ -108,8 +109,13 @@ export class GeometryManager extends Manager<GeometryTile> {
       this.onGeometryTileDataLoad.bind(this)
     );
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
-    this.workerPool.callbacks.info.push(this.onGeometryInfoDataLoad.bind(this));
-    this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
+
+    if (this.metadata.idAttribute) {
+      this.workerPool.callbacks.info.push(
+        this.onGeometryInfoDataLoad.bind(this)
+      );
+      this.pickingTool.pickCallbacks.push(this.pickGeometry.bind(this));
+    }
 
     this.setupEventListeners();
   }
@@ -266,7 +272,7 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.updateLoadingStatus(true);
   }
 
-  private onGeometryInfoDataLoad(id: string, response: GeometryInfoResponse) {
+  private onGeometryInfoDataLoad(id: string, response: InfoResponse) {
     if (id !== this.arrayID) {
       return;
     }

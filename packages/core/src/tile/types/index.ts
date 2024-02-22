@@ -7,6 +7,8 @@ import {
   Feature,
   Domain
 } from '../../types';
+import { SceneConfig } from '@tiledb-inc/viz-common';
+import { OperationResult } from '@tiledb-inc/viz-common';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
@@ -23,6 +25,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
     intensity?: number;
   }[];
   features?: Feature[];
+  sceneConfig?: SceneConfig;
 }
 
 export interface Channel {
@@ -267,11 +270,11 @@ export interface PointInfoMessage {
   imageCRS?: string;
   pointCRS?: string;
   geotransformCoefficients: number[];
+  idAttribute: string;
   levels: string[];
-  worldBbox: number[];
-  screenBbox: number[];
-  selectionPath?: number[];
+  bbox: number[];
   domain: Domain[];
+  ids: BigInt64Array;
   nonce: number;
 }
 
@@ -304,21 +307,17 @@ export interface PointResponse extends BaseResponse {
   attributes: { [attribute: string]: TypedArray };
 }
 
-export interface GeometryInfoResponse {
+export interface InfoResponse {
   info: any[];
   ids: bigint[];
-}
-
-export interface PointInfoResponse {
-  info: any[];
 }
 
 export interface ResponseCallback {
   image: { (id: string, response: ImageResponse): void }[];
   geometry: { (id: string, response: GeometryResponse): void }[];
   point: { (id: string, response: PointResponse): void }[];
-  pointInfo: { (id: string, response: PointInfoResponse): void }[];
-  info: { (id: string, response: GeometryInfoResponse): void }[];
+  pointOperation: { (id: string, response: OperationResult): void }[];
+  info: { (id: string, response: InfoResponse): void }[];
   cancel: { (id: string, response: BaseResponse): void }[];
 }
 

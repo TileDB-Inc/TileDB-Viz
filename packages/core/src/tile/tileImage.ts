@@ -3,13 +3,7 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import {
-  AssetEntry,
-  Attribute,
-  Dimension,
-  GeometryMetadata,
-  PointCloudMetadata
-} from '../types';
+import { AssetEntry, Attribute, Dimension } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -35,6 +29,8 @@ import { PointManager } from './model/point/pointManager';
 import {
   GUIEvent,
   InfoPanelConfigEntry,
+  GeometryMetadata,
+  PointCloudMetadata,
   InfoPanelInitializationEvent
 } from '@tiledb-inc/viz-common';
 
@@ -84,6 +80,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
+      //this.scene.debugLayer.show();
 
       return scene;
     });
@@ -243,22 +240,25 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       transformationCoefficients[4] *= 2 ** nativeZoom;
       transformationCoefficients[5] *= 2 ** nativeZoom;
 
-      for (const pointGroupID of this.options.pointGroupID) {
+      for (const [index, pointGroupID] of this.options.pointGroupID.entries()) {
         const { namespace, id } = tileDBUriParser(
           pointGroupID,
           this.options.namespace
         );
 
-        const metadata = await getPointCloudMetadata({
-          namespace: namespace,
-          token: this.options.token,
-          tiledbEnv: this.options.tiledbEnv,
-          pointGroupID: id
-        });
+        const metadata = await getPointCloudMetadata(
+          {
+            namespace: namespace,
+            token: this.options.token,
+            tiledbEnv: this.options.tiledbEnv,
+            pointGroupID: id
+          },
+          this.options.sceneConfig?.pointConfigs?.at(index)
+        );
 
         this.pointMetadata.set(id, metadata);
         this.assetManagers.push(
-          new PointManager(this.scene, this.workerPool, {
+          new PointManager(this.scene, this.workerPool, this.pickingTool, {
             namespace: namespace,
             transformationCoefficients: transformationCoefficients,
             metadata: metadata
@@ -426,6 +426,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
 
     for (const [key, value] of this.geometryMetadata) {
+      if (!value.idAttribute) {
+        continue;
+      }
+
+      infoPanelConfig.set(key, {
+        name: value.name,
+        pickAttribute: value.idAttribute.name,
+        attributes: value.attributes
+      });
+    }
+
+    for (const [key, value] of this.pointMetadata) {
+      if (!value.idAttribute) {
+        continue;
+      }
+
       infoPanelConfig.set(key, {
         name: value.name,
         pickAttribute: value.idAttribute.name,

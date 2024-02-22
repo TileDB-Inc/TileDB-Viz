@@ -8,7 +8,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature, PointCloudMetadata } from '../../../types';
+import { Feature, FeatureType } from '../../../types';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -17,18 +17,12 @@ import {
   RequestType,
   PointMessage,
   PointResponse,
-  BaseResponse
+  BaseResponse,
+  PointInfoMessage,
+  InfoResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
-import {
-  inv,
-  MathArray,
-  MathNumericType,
-  matrix,
-  max,
-  min,
-  multiply
-} from 'mathjs';
+import { inv, MathArray, matrix, multiply } from 'mathjs';
 import { PriorityQueue } from '../../../point-cloud/utils/priority-queue';
 import {
   encodeMorton,
@@ -43,6 +37,16 @@ import {
   SliderProps,
   SelectProps
 } from '@tiledb-inc/viz-components';
+import {
+  AddOctreeNodeOperation,
+  IntersectOperation,
+  PointCloudMetadata,
+  InitializeOctreeOperation,
+  OperationResult,
+  IntersectionResult
+} from '@tiledb-inc/viz-common';
+import { PickingTool } from '../../utils/picking-tool';
+import { constructOctree } from './utils';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -60,6 +64,7 @@ export class PointManager extends Manager<PointTile> {
   private pointBudget: number;
   private screenSizeLimit: number;
   private namespace: string;
+  private pickingTool: PickingTool;
   private styleOptions = {
     pointShape: PointShape.CIRCLE,
     pointSize: 4,
@@ -80,7 +85,12 @@ export class PointManager extends Manager<PointTile> {
     groupState: new Map<string, Map<number, number>>()
   };
 
-  constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
+  constructor(
+    scene: Scene,
+    workerPool: WorkerPool,
+    pickingTool: PickingTool,
+    options: PointOptions
+  ) {
     super(scene, workerPool, 0, 0, 0);
 
     this.nonce = 0;
@@ -92,6 +102,7 @@ export class PointManager extends Manager<PointTile> {
     this.pointBudget = 100_000;
     this.screenSizeLimit = 10;
     this.namespace = options.namespace;
+    this.pickingTool = pickingTool;
 
     // To be in accordance with the image layer the UP direction align with
     // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
@@ -123,17 +134,69 @@ export class PointManager extends Manager<PointTile> {
       this.metadata.maxPoint.z
     ]).toArray() as number[];
 
-    this.octree = new Moctree(
+    this.octree = constructOctree(
       new Vector3(minPoint[0], minPoint[2], minPoint[1]),
       new Vector3(maxPoint[0], maxPoint[2], maxPoint[1]),
-      this.metadata.levels.length
+      this.metadata.levels.length,
+      this.metadata.octreeData
     );
-
-    this.initializeOctree(this.metadata.octreeData);
     this.initializeUniformBuffer();
     this.setupEventListeners();
     this.workerPool.callbacks.point.push(this.onPointTileDataLoad.bind(this));
     this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
+
+    if (this.metadata.idAttribute) {
+      this.metadata.features.push({
+        name: 'Picking ID',
+        type: FeatureType.NON_RENDERABLE,
+        attributes: [this.metadata.idAttribute.name],
+        interleaved: false
+      });
+
+      this.pickingTool.pickCallbacks.push(this.pickPoints.bind(this));
+      this.workerPool.callbacks.pointOperation.push(
+        this.onPointOperation.bind(this)
+      );
+      this.workerPool.callbacks.info.push(this.onPointInfo.bind(this));
+
+      this.workerPool.postOperation({
+        operation: 'INITIALIZE',
+        id: this.metadata.groupID,
+        minPoint: minPoint,
+        maxPoint: maxPoint,
+        maxDepth: this.metadata.levels.length,
+        blocks: this.metadata.octreeData
+      } as InitializeOctreeOperation);
+    }
+  }
+
+  private onPointOperation(id: string, response: OperationResult) {
+    if (!response.done || id !== this.metadata.groupID) {
+      return;
+    }
+
+    switch (response.operation) {
+      case 'INTERSECT':
+        this.workerPool.postMessage({
+          id: this.metadata.groupID,
+          type: RequestType.POINT_INFO,
+          request: {
+            namespace: this.namespace,
+            levels: (response as IntersectionResult).levelIncides.map(
+              x => this.metadata.levels[x]
+            ),
+            geotransformCoefficients: this.transformationCoefficients,
+            domain: this.metadata.domain,
+            idAttribute: this.metadata.idAttribute?.name ?? '',
+            ids: (response as IntersectionResult).ids,
+            bbox: (response as IntersectionResult).bbox,
+            nonce: this.nonce++
+          } as PointInfoMessage
+        } as DataRequest);
+        break;
+      default:
+        break;
+    }
   }
 
   private setupEventListeners() {
@@ -217,6 +280,23 @@ export class PointManager extends Manager<PointTile> {
     }
 
     switch (event.detail.props.command) {
+      case Commands.CLEAR:
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updateSelection([]);
+          }
+        }
+        break;
+      case Commands.SELECT:
+        for (const [, status] of this.tileStatus) {
+          if (status.state === TileState.VISIBLE) {
+            status.tile?.updatePicked(
+              BigInt(event.detail.props.data?.id),
+              BigInt(event.detail.props.data?.previousID ?? -1)
+            );
+          }
+        }
+        break;
       case Commands.COLOR:
         {
           if (target[1] === 'fillColor') {
@@ -291,6 +371,16 @@ export class PointManager extends Manager<PointTile> {
     if (!status || status.nonce !== response.nonce) {
       // Tile was removed from the tileset but canceling missed timing
       return;
+    }
+
+    if (this.metadata.idAttribute) {
+      this.workerPool.postOperation({
+        operation: 'ADD',
+        id: this.metadata.groupID,
+        mortonCode: response.index[0],
+        data: response.attributes['position'],
+        ids: response.attributes['Picking ID']
+      } as AddOctreeNodeOperation);
     }
 
     if (status.tile) {
@@ -400,7 +490,7 @@ export class PointManager extends Manager<PointTile> {
         if (child) {
           const childScore = scoreMetric(child);
 
-          if (childScore < this.screenSizeLimit) {
+          if (childScore < 51 - this.screenSizeLimit) {
             continue;
           }
           this.blockQueue.insert(childScore, child);
@@ -427,6 +517,23 @@ export class PointManager extends Manager<PointTile> {
 
       this.tileStatus.delete(key);
     }
+  }
+
+  public pickPoints(
+    bbox: number[],
+    constraints?: {
+      path?: number[];
+      tiles?: number[][];
+      enclosureMeshPositions?: Float32Array;
+      enclosureMeshIndices?: Int32Array;
+    }
+  ) {
+    this.workerPool.postOperation({
+      operation: 'INTERSECT',
+      id: this.metadata.groupID,
+      positions: constraints?.enclosureMeshPositions,
+      indices: constraints?.enclosureMeshIndices
+    } as IntersectOperation);
   }
 
   private initializeUniformBuffer() {
@@ -458,67 +565,6 @@ export class PointManager extends Manager<PointTile> {
     return (
       (block.boundingInfo.boundingSphere.radiusWorld / viewportRadius) * 100
     );
-  }
-
-  private initializeOctree(blocks: {
-    [index: `${number}-${number}-${number}-${number}`]: number;
-  }) {
-    const size = this.octree.maxPoint.subtract(this.octree.minPoint);
-    const flipMatrix = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, -1]
-    ]);
-
-    for (const [index, pointCount] of Object.entries(blocks)) {
-      const [lod, x, y, z] = index.split('-').map(Number);
-      const mortonIndex = encodeMorton(new Vector3(x, z, y), lod);
-
-      const blocksPerDimension = Math.pow(2, lod);
-      const stepX = size.x / blocksPerDimension;
-      const stepY = size.y / blocksPerDimension;
-      const stepZ = size.z / blocksPerDimension;
-
-      // This bounds are Y-Z swapped so we need to only swap the indices tof the block
-
-      let minPoint = new Vector3(
-        this.octree.minPoint.x + x * stepX,
-        this.octree.minPoint.y + z * stepY,
-        this.octree.minPoint.z + y * stepZ
-      );
-      let maxPoint = new Vector3(
-        this.octree.minPoint.x + (x + 1) * stepX,
-        this.octree.minPoint.y + (z + 1) * stepY,
-        this.octree.minPoint.z + (y + 1) * stepZ
-      );
-
-      const minPointTransformed = multiply(
-        flipMatrix,
-        minPoint.asArray()
-      ).toArray() as MathNumericType[];
-      const maxPointTransformed = multiply(
-        flipMatrix,
-        maxPoint.asArray()
-      ).toArray() as MathNumericType[];
-
-      [minPoint, maxPoint] = [
-        Vector3.FromArray(
-          matrix(
-            min([minPointTransformed, maxPointTransformed], 0) as any
-          ).toArray() as number[]
-        ),
-        Vector3.FromArray(
-          matrix(
-            max([minPointTransformed, maxPointTransformed], 0) as any
-          ).toArray() as number[]
-        )
-      ];
-
-      this.octree.blocklist.set(
-        mortonIndex,
-        new MoctreeBlock(lod, mortonIndex, minPoint, maxPoint, pointCount)
-      );
-    }
   }
 
   private onCancel(id: string, response: BaseResponse) {
@@ -554,5 +600,27 @@ export class PointManager extends Manager<PointTile> {
         } as PointMessage
       } as DataRequest);
     }
+  }
+
+  private onPointInfo(id: string, response: InfoResponse) {
+    if (id !== this.metadata.groupID) {
+      return;
+    }
+
+    for (const [, status] of this.tileStatus) {
+      if (status.state === TileState.VISIBLE) {
+        status.tile?.updateSelection(response.ids);
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent>(Events.PICK_OBJECT, {
+        bubbles: true,
+        detail: {
+          target: `geometry_info_${this.metadata.groupID}`,
+          props: response.info
+        }
+      })
+    );
   }
 }

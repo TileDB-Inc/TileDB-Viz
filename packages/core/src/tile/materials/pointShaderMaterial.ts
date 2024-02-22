@@ -10,6 +10,10 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
     #include<clipPlaneVertexDeclaration>
 
     in vec3 position;
+    in float state;
+
+    const vec4 selectionColor = vec4(0.0, 1.0, 0.0, 1.0);
+    const vec4 pickColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     #if (FEATURE_TYPE == ${FeatureType.RGB})
       in vec3 colorAttr;
@@ -48,6 +52,13 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       #elif (FEATURE_TYPE == ${FeatureType.FLAT_COLOR})
         vColor = color;
       #endif
+
+      if (state == 1.0) {
+        vColor = selectionColor;
+      }
+      else if (state == 2.0) {
+        vColor = pickColor;
+      }
     }
   `;
 
@@ -91,7 +102,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       fragment: 'PointCloudSimple'
     },
     {
-      attributes: ['position', 'colorAttr', 'group'],
+      attributes: ['position', 'colorAttr', 'group', 'state'],
       uniforms: ['worldViewProjection', 'world'],
       defines: ['POINT_TYPE', 'FEATURE_TYPE'],
       uniformBuffers: ['pointOptions'],

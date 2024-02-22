@@ -4,6 +4,9 @@ import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
 import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
+  InfoResponse,
+  PointInfoMessage,
+  PointInfoResponse,
   PointMessage,
   PointResponse,
   TypedArray,
@@ -219,4 +222,107 @@ export async function pointRequest(
     type: RequestType.POINT,
     response: result
   } as WorkerResponse;
+}
+
+export async function pointInfoRequest(
+  id: string,
+  client: Client,
+  tokenSource: CancelTokenSource,
+  request: PointInfoMessage
+) {
+  const geotransformCoefficients = request.geotransformCoefficients;
+  const affineMatrix = matrix([
+    [
+      geotransformCoefficients[1],
+      geotransformCoefficients[2],
+      geotransformCoefficients[0]
+    ],
+    [
+      geotransformCoefficients[4],
+      -geotransformCoefficients[5],
+      geotransformCoefficients[3]
+    ],
+    [0, 0, geotransformCoefficients[1]]
+  ] as MathArray);
+
+  // The Y and Z dimensions are swap from the octree so we need to swap the back
+  let minPoint = multiply(affineMatrix, [
+    request.bbox[0],
+    request.bbox[2],
+    request.bbox[1]
+  ]).toArray();
+  let maxPoint = multiply(affineMatrix, [
+    request.bbox[3],
+    request.bbox[5],
+    request.bbox[4]
+  ]).toArray();
+
+  [minPoint, maxPoint] = [
+    matrix(min([minPoint, maxPoint], 0)).toArray(),
+    matrix(max([minPoint, maxPoint], 0)).toArray()
+  ];
+
+  const ids = new Set(request.ids);
+  const pickedResult: any[] = [];
+  const pickedIds: bigint[] = [];
+
+  for (const level of request.levels) {
+    const query = {
+      layout: Layout.Unordered,
+      ranges: [
+        [minPoint[0], maxPoint[0]],
+        [minPoint[1], maxPoint[1]],
+        [minPoint[2], maxPoint[2]]
+      ] as number[][],
+      bufferSize: 20_000_000,
+      cancelToken: tokenSource?.token
+    };
+
+    const generator = client.query.ReadQuery(request.namespace, level, query);
+
+    try {
+      for await (const result of generator) {
+        for (
+          let index = 0;
+          index < (result as any)[request.idAttribute].length;
+          ++index
+        ) {
+          const entryID = BigInt((result as any)[request.idAttribute][index]);
+          if (!ids.has(entryID)) {
+            continue;
+          }
+
+          pickedIds.push(entryID);
+          ids.delete(entryID);
+
+          const info = {};
+          for (const [key, val] of Object.entries(result)) {
+            info[key] = val[index];
+          }
+
+          pickedResult.push(info);
+
+          if (ids.size === 0) {
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      self.postMessage({
+        id: id,
+        type: RequestType.CANCEL,
+        response: { nonce: request.nonce } as PointInfoResponse
+      } as WorkerResponse);
+      return;
+    }
+  }
+
+  self.postMessage({
+    id: id,
+    type: RequestType.POINT_INFO,
+    response: {
+      ids: pickedIds,
+      info: pickedResult
+    } as InfoResponse
+  } as WorkerResponse);
 }
