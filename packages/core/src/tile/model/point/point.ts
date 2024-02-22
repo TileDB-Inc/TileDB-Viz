@@ -5,7 +5,7 @@ import {
   UniformBuffer,
   ShaderMaterial
 } from '@babylonjs/core';
-import { Feature, FeatureType } from '../../../types';
+import { Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { PointCloudMaterial } from '../../materials/pointShaderMaterial';
 import { PointResponse, PointShape, TypedArray } from '../../types';
 import { Tile, UpdateOptions } from '../tile';
@@ -35,7 +35,6 @@ export class PointTile extends Tile<PointResponse> {
     this.mesh.material = this.material;
     this.meshData = {};
     this.vertexCount = 0;
-    this.mesh.scaling.z = -1;
     this.mesh.layerMask = 0b1;
     this.mesh.renderingGroupId = 3;
     this.vertexMap = new Map<bigint, number>();
@@ -103,6 +102,18 @@ export class PointTile extends Tile<PointResponse> {
       switch (updateOptions.feature.type) {
         case FeatureType.FLAT_COLOR:
           //skip
+          break;
+        case FeatureType.RGB:
+          this.mesh.setVerticesBuffer(
+            new VertexBuffer(
+              this.scene.getEngine(),
+              this.meshData[updateOptions.feature.name],
+              'colorAttr',
+              true,
+              false,
+              3
+            )
+          );
           break;
         case FeatureType.CATEGORICAL:
           {

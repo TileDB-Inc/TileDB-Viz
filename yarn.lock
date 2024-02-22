@@ -5425,6 +5425,7 @@ __metadata:
     "@babel/preset-env": ^7.18.10
     "@babel/preset-typescript": ^7.18.6
     "@babylonjs/core": ^6.20.2
+    "@tiledb-inc/tiledb-cloud": 1.0.15-alpha.1
     parcel: ^2.9.3
   languageName: unknown
   linkType: soft

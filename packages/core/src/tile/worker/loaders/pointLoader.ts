@@ -1,7 +1,7 @@
-import { FeatureType } from '../../../types';
+import { FeatureType } from '@tiledb-inc/viz-common';
 import { CancelTokenSource } from 'axios';
 import Client, { QueryData, Range } from '@tiledb-inc/tiledb-cloud';
-import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
@@ -23,7 +23,12 @@ import {
   index
 } from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
-import { loadCachedGeometry, toTypedArray } from './utils';
+import {
+  createRGB,
+  getNormalizationWindow,
+  loadCachedGeometry,
+  toTypedArray
+} from './utils';
 import proj4 from 'proj4';
 
 export async function pointRequest(
@@ -44,7 +49,7 @@ export async function pointRequest(
   const geotransformCoefficients = request.geotransformCoefficients;
   const affineMatrix = matrix([
     [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
-    [0, geotransformCoefficients[5], 0, geotransformCoefficients[3]],
+    [0, -geotransformCoefficients[5], 0, geotransformCoefficients[3]],
     [0, 0, geotransformCoefficients[1], 0],
     [0, 0, 0, 1]
   ] as MathArray);
@@ -52,7 +57,7 @@ export async function pointRequest(
   const affineInverted = inv(affineMatrix);
 
   const uniqueAttributes = new Set<string>(
-    request.features.flatMap(x => x.attributes)
+    request.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
   request.domain.forEach(x => uniqueAttributes.add(x.name));
@@ -164,37 +169,64 @@ export async function pointRequest(
   result.attributes['position'] = positions;
 
   for (const feature of request.features) {
-    if (feature.type === FeatureType.CATEGORICAL) {
-      result.attributes[feature.name] = Int32Array.from(
-        arrays[feature.attributes[0]] as Exclude<
-          TypedArray,
-          BigInt64Array | BigUint64Array
-        >
-      );
-    } else {
-      if (feature.interleaved) {
-        // All attributes should have the same size
-        // TODO: Add explicit check
-        const elementCount = arrays[feature.attributes[0]].length;
-        const attCount = feature.attributes.length;
+    if (!feature.attributes.length) {
+      continue;
+    }
 
-        // I use a typed array to work on a continuous block of memory
-        const interleavedData = new arrays[feature.attributes[0]].constructor(
-          attCount * elementCount
-        ) as TypedArray;
+    switch (feature.type) {
+      case FeatureType.CATEGORICAL:
+        result.attributes[feature.name] = Int32Array.from(
+          arrays[feature.attributes[0].name] as Exclude<
+            TypedArray,
+            BigInt64Array | BigUint64Array
+          >
+        );
+        break;
+      case FeatureType.RGB:
+        {
+          const normalizationWindows = getNormalizationWindow(
+            feature.attributes.map(x => {
+              return request.attributes.find(attr => attr.name === x.name)
+                ?.type;
+            }) as Datatype[],
+            feature.attributes.map(x => x.normalizationWindow)
+          );
 
-        for (const [idx, attribute] of feature.attributes.entries()) {
-          for (let index = 0; index < elementCount; ++index) {
-            interleavedData[index * attCount + idx] = arrays[attribute][index];
+          result.attributes[feature.name] = createRGB(
+            feature.attributes.map(x => arrays[x.name]),
+            feature.attributes.map((x, idx) =>
+              x.normalize ? normalizationWindows[idx] : undefined
+            )
+          );
+        }
+        break;
+      default:
+        if (feature.interleaved) {
+          // All attributes should have the same size and same type
+          // TODO: Add explicit check
+          const elementCount = arrays[feature.attributes[0].name].length;
+          const attCount = feature.attributes.length;
+
+          // I use a typed array to work on a continuous block of memory
+          const interleavedData = new arrays[
+            feature.attributes[0].name
+          ].constructor(attCount * elementCount) as TypedArray;
+
+          for (const [idx, attribute] of feature.attributes.entries()) {
+            for (let index = 0; index < elementCount; ++index) {
+              interleavedData[index * attCount + idx] =
+                arrays[attribute.name][index];
+            }
+          }
+
+          result.attributes[feature.name] = interleavedData;
+        } else {
+          if (arrays[feature.attributes[0].name]) {
+            result.attributes[feature.name] =
+              arrays[feature.attributes[0].name];
           }
         }
-
-        result.attributes[feature.name] = interleavedData;
-      } else {
-        if (arrays[feature.attributes[0]]) {
-          result.attributes[feature.name] = arrays[feature.attributes[0]];
-        }
-      }
+        break;
     }
   }
 
@@ -219,17 +251,10 @@ export async function pointInfoRequest(
 ) {
   const geotransformCoefficients = request.geotransformCoefficients;
   const affineMatrix = matrix([
-    [
-      geotransformCoefficients[1],
-      geotransformCoefficients[2],
-      geotransformCoefficients[0]
-    ],
-    [
-      geotransformCoefficients[4],
-      -geotransformCoefficients[5],
-      geotransformCoefficients[3]
-    ],
-    [0, 0, geotransformCoefficients[1]]
+    [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
+    [0, -geotransformCoefficients[5], 0, geotransformCoefficients[3]],
+    [0, 0, geotransformCoefficients[1], 0],
+    [0, 0, 0, 1]
   ] as MathArray);
 
   const limits: { [domain: string]: { min: number; max: number } } =
@@ -240,8 +265,8 @@ export async function pointInfoRequest(
     );
 
   const ranges = calculateQueryRanges(
-    [request.bbox[0], request.bbox[2], request.bbox[1]],
-    [request.bbox[3], request.bbox[5], request.bbox[4]],
+    [request.bbox[0], request.bbox[1], request.bbox[2]],
+    [request.bbox[3], request.bbox[4], request.bbox[5]],
     limits,
     affineMatrix,
     request.imageCRS,
@@ -261,7 +286,6 @@ export async function pointInfoRequest(
     };
 
     const generator = client.query.ReadQuery(request.namespace, level, query);
-
     try {
       for await (const result of generator) {
         for (

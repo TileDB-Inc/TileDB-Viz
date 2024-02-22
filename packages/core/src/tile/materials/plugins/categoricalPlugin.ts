@@ -9,7 +9,7 @@ import {
   SubMesh,
   UniformBuffer
 } from '@babylonjs/core';
-import { Feature, FeatureType } from '../../../types';
+import { Feature, FeatureType } from '@tiledb-inc/viz-common';
 
 export class CategoricalMaterialPlugin extends MaterialPluginBase {
   private _isEnabled = false;

@@ -3,7 +3,7 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Attribute, Dimension } from '../types';
+import { AssetEntry, Dimension } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -31,7 +31,8 @@ import {
   InfoPanelConfigEntry,
   GeometryMetadata,
   PointCloudMetadata,
-  InfoPanelInitializationEvent
+  InfoPanelInitializationEvent,
+  Attribute
 } from '@tiledb-inc/viz-common';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {

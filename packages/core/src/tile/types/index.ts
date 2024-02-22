@@ -1,14 +1,9 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
-import {
-  Attribute,
-  Dimension,
-  AssetMetadata,
-  Feature,
-  Domain
-} from '../../types';
+import { Dimension, AssetMetadata, Domain } from '../../types';
 import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
+import { Feature, Attribute } from '@tiledb-inc/viz-common';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;

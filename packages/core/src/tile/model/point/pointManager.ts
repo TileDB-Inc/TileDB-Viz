@@ -8,7 +8,6 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature, FeatureType } from '../../../types';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -43,7 +42,9 @@ import {
   PointCloudMetadata,
   InitializeOctreeOperation,
   OperationResult,
-  IntersectionResult
+  IntersectionResult,
+  Feature,
+  FeatureType
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
@@ -202,7 +203,7 @@ export class PointManager extends Manager<PointTile> {
       this.metadata.features.push({
         name: 'Picking ID',
         type: FeatureType.NON_RENDERABLE,
-        attributes: [this.metadata.idAttribute.name],
+        attributes: [{ name: this.metadata.idAttribute.name }],
         interleaved: false
       });
 
@@ -547,7 +548,7 @@ export class PointManager extends Manager<PointTile> {
         if (child) {
           const childScore = scoreMetric(child);
 
-          if (childScore < 51 - this.screenSizeLimit) {
+          if (childScore < this.screenSizeLimit) {
             continue;
           }
           this.blockQueue.insert(childScore, child);
@@ -614,11 +615,6 @@ export class PointManager extends Manager<PointTile> {
     block: MoctreeBlock,
     viewportRadius: number
   ): number {
-    // return Math.max(
-    //   0,
-    //   block.boundingInfo.boundingSphere.radiusWorld - viewportRadius + 100
-    // );
-
     return (
       (block.boundingInfo.boundingSphere.radiusWorld / viewportRadius) * 100
     );
@@ -653,6 +649,8 @@ export class PointManager extends Manager<PointTile> {
           nonce: ++this.nonce,
           attributes: this.metadata.attributes,
           geotransformCoefficients: this.transformationCoefficients,
+          imageCRS: this.baseCRS,
+          pointCRS: this.metadata.crs,
           domain: this.metadata.domain
         } as PointMessage
       } as DataRequest);

@@ -2,20 +2,6 @@ export interface AssetMetadata {
   dataset_type: string;
 }
 
-export enum FeatureType {
-  NON_RENDERABLE = 0,
-  RGB = 1,
-  CATEGORICAL = 2,
-  FLAT_COLOR = 3
-}
-
-export type Feature = {
-  name: string;
-  type: FeatureType;
-  attributes: string[];
-  interleaved: boolean;
-};
-
 export interface AssetEntry {
   namespace: string;
   name: string;
@@ -32,13 +18,6 @@ export interface AssetOptions {
   geometryArrayID?: string;
   pointGroupID?: string;
   baseGroup?: string;
-}
-
-export interface Attribute {
-  name: string;
-  type: string;
-  visible: boolean;
-  enumeration?: string;
 }
 
 export interface Domain {

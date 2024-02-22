@@ -99,3 +99,70 @@ export async function loadCachedGeometry(
 
   return result;
 }
+
+export function getNormalizationWindow(
+  types: Datatype[],
+  windows: Array<{ min: number; max: number } | undefined>
+): { min: number; max: number }[] {
+  const result: { min: number; max: number }[] = [];
+
+  for (const [index, type] of types.entries()) {
+    if (windows[index]) {
+      result.push(windows[index]);
+    } else {
+      switch (type) {
+        case Datatype.Uint8:
+          result.push({ min: 0, max: 2 ** 8 - 1 });
+          break;
+        case Datatype.Uint16:
+          result.push({ min: 0, max: 2 ** 16 - 1 });
+          break;
+        case Datatype.Uint32:
+          result.push({ min: 0, max: 2 ** 32 - 1 });
+          break;
+        case Datatype.Int8:
+          result.push({ min: -(2 ** 7), max: 2 ** 7 - 1 });
+          break;
+        case Datatype.Int16:
+          result.push({ min: -(2 ** 15), max: 2 ** 15 - 1 });
+          break;
+        case Datatype.Int32:
+          result.push({ min: -(2 ** 31), max: 2 ** 31 - 1 });
+          break;
+        default:
+          console.error('Unsupported data type for RGB feature');
+          break;
+      }
+    }
+  }
+
+  return result;
+}
+
+export function createRGB(
+  input: TypedArray[],
+  normalizationWindows: Array<{ min: number; max: number } | undefined>
+): Float32Array {
+  const output = new Float32Array(3 * input[0].length);
+
+  for (const [channel, array] of input.entries()) {
+    const normalizationWindow = normalizationWindows[channel];
+
+    for (let index = 0; index < array.length; ++index) {
+      if (normalizationWindow) {
+        output[index * 3 + channel] = Math.min(
+          Math.max(
+            (array[index] - normalizationWindow.min) /
+              (normalizationWindow.max - normalizationWindow.min),
+            0
+          ),
+          1
+        );
+      } else {
+        output[index * 3 + channel] = Number(array[index]);
+      }
+    }
+  }
+
+  return output;
+}

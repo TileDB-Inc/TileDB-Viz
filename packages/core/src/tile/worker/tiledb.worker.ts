@@ -94,7 +94,6 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
           );
         })
         .catch(x => {
-          console.log(x);
           self.postMessage({
             id: event.data.id,
             type: RequestType.CANCEL,

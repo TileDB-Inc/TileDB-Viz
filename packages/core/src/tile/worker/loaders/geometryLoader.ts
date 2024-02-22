@@ -23,7 +23,7 @@ import {
   index,
   inv
 } from 'mathjs';
-import { Attribute, Feature, FeatureType } from '../../../types';
+import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 
 export async function geometryRequest(
@@ -59,7 +59,7 @@ export async function geometryRequest(
   ] as MathArray);
 
   const uniqueAttributes = new Set<string>(
-    request.features.flatMap(x => x.attributes)
+    request.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
   const cachedArrays = await loadCachedGeometry(cacheTableID, x, y, [
@@ -122,8 +122,8 @@ export async function geometryRequest(
 
   for (const feature of request.features) {
     for (const attribute of feature.attributes) {
-      attributes[attribute] = request.additionalAttributes?.filter(
-        x => x.name === attribute
+      attributes[attribute.name] = request.additionalAttributes?.filter(
+        x => x.name === attribute.name
       )[0];
     }
   }
@@ -258,11 +258,15 @@ function calculateQueryRanges(
 
     minPoint.subset(
       index([true, true, false]),
-      converter.forward(minPoint.subset(index([true, true, false])).toArray())
+      converter.forward(
+        minPoint.subset(index([true, true, false])).toArray() as number[]
+      )
     );
     maxPoint.subset(
       index([true, true, false]),
-      converter.forward(maxPoint.subset(index([true, true, false])).toArray())
+      converter.forward(
+        maxPoint.subset(index([true, true, false])).toArray() as number[]
+      )
     );
   }
 
@@ -310,21 +314,25 @@ function loadBinaryGeometry(
   const featureData: Record<string, number[]> = {};
 
   for (const feature of features) {
+    if (!feature.attributes.length) {
+      continue;
+    }
+
     for (const attribute of feature.attributes) {
-      if (attribute in extraAttributes) {
+      if (attribute.name in extraAttributes) {
         continue;
       }
 
-      extraAttributes[attribute] = toNumericalArray(
-        data[attribute],
-        attributes[attribute]
+      extraAttributes[attribute.name] = toNumericalArray(
+        data[attribute.name],
+        attributes[attribute.name]
       );
     }
 
     if (feature.interleaved) {
       // All attributes should have the same size
       // TODO: Add explicit check
-      const elementCount = extraAttributes[feature.attributes[0]].length;
+      const elementCount = extraAttributes[feature.attributes[0].name].length;
       const attCount = feature.attributes.length;
 
       // I use an typed array to work on a continuous block of memory
@@ -335,14 +343,14 @@ function loadBinaryGeometry(
       for (const [idx, attribute] of feature.attributes.entries()) {
         for (let index = 0; index < elementCount; ++index) {
           interleavedData[index * attCount + idx] =
-            extraAttributes[attribute][index];
+            extraAttributes[attribute.name][index];
         }
       }
 
       featureData[feature.name] = Array.from(interleavedData);
     } else {
-      if (extraAttributes[feature.attributes[0]]) {
-        featureData[feature.name] = extraAttributes[feature.attributes[0]];
+      if (extraAttributes[feature.attributes[0].name]) {
+        featureData[feature.name] = extraAttributes[feature.attributes[0].name];
       }
     }
   }
@@ -390,21 +398,25 @@ function loadStringGeometry(
   const featureData: Record<string, number[]> = {};
 
   for (const feature of features) {
+    if (!feature.attributes.length) {
+      continue;
+    }
+
     for (const attribute of feature.attributes) {
-      if (attribute in extraAttributes) {
+      if (attribute.name in extraAttributes) {
         continue;
       }
 
-      extraAttributes[attribute] = toNumericalArray(
-        data[attribute],
-        attributes[attribute]
+      extraAttributes[attribute.name] = toNumericalArray(
+        data[attribute.name],
+        attributes[attribute.name]
       );
     }
 
     if (feature.interleaved) {
       // All attributes should have the same size
       // TODO: Add explicit check
-      const elementCount = extraAttributes[feature.attributes[0]].length;
+      const elementCount = extraAttributes[feature.attributes[0].name].length;
       const attCount = feature.attributes.length;
 
       // I use an typed array to work on a continuous block of memory
@@ -415,14 +427,14 @@ function loadStringGeometry(
       for (const [idx, attribute] of feature.attributes.entries()) {
         for (let index = 0; index < elementCount; ++index) {
           interleavedData[index * attCount + idx] =
-            extraAttributes[attribute][index];
+            extraAttributes[attribute.name][index];
         }
       }
 
       featureData[feature.name] = Array.from(interleavedData);
     } else {
-      if (extraAttributes[feature.attributes[0]]) {
-        featureData[feature.name] = extraAttributes[feature.attributes[0]];
+      if (extraAttributes[feature.attributes[0].name]) {
+        featureData[feature.name] = extraAttributes[feature.attributes[0].name];
       }
     }
   }

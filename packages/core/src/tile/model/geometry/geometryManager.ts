@@ -18,7 +18,7 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature } from '../../../types';
+import { Feature } from '@tiledb-inc/viz-common';
 import {
   ButtonProps,
   Events,
