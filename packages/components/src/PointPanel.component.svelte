@@ -19,11 +19,12 @@
   import { GUIEvent, SelectProps, SliderProps, colorScheme } from './types';
   import { Events } from './constants/events';
     import { clone } from './utils/helpers';
+    import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 
-  export let features = [];
+  export let features: Array<Array<Feature>> = [];
   export let categories = [];
-  export let attributes = [];
-  export let targets = [];
+  export let attributes: Array<Array<Attribute>> = [];
+  export let targets: Array<Array<string>> = [];
 
   let colorGroups: Record<string, string[]> = {};
   let categoryState: Record<
@@ -58,7 +59,7 @@
     options: new Array(targets.length).fill(0).map(() => {
       return {
         selectedFeature: 0,
-        selectedAttribute: attributes[0],
+        selectedAttribute: attributes[0][0],
         pointShape: 1,
         pointSize: 4,
         pointBudget: 100_000,
@@ -143,10 +144,10 @@
   function featureOnChange(index: number) {
     const feature = features[state.selectedDataset][index];
 
-    if (feature.type === 2) {
+    if (feature.type === FeatureType.CATEGORICAL) {
       state.options[state.selectedDataset].selectedAttribute = attributes[
         state.selectedDataset
-      ].find(x => x.name === feature.attributes[0]);
+      ].find(x => x.name === feature.attributes[0].name);
     }
 
     state.options[state.selectedDataset].selectedFeature = index;
