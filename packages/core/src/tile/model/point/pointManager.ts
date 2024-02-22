@@ -548,7 +548,7 @@ export class PointManager extends Manager<PointTile> {
         if (child) {
           const childScore = scoreMetric(child);
 
-          if (childScore < this.screenSizeLimit) {
+          if (childScore < 51 - this.screenSizeLimit) {
             continue;
           }
           this.blockQueue.insert(childScore, child);
