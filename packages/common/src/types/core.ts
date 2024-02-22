@@ -1,5 +1,5 @@
-import { Vector3 } from "@babylonjs/core";
-import { Datatype } from "@tiledb-inc/tiledb-cloud/lib/v2";
+import { Vector3 } from '@babylonjs/core';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 
 export type SceneConfig = {
   name?: string;
@@ -38,7 +38,7 @@ export type AssetConfig = {
     /**
      * Angle of rotation in radians
      */
-    angle: number
+    angle: number;
   };
 
   /**
@@ -79,7 +79,7 @@ export type GeometryConfig = AssetConfig & {
    * The attribute storing the extrusion values per geometry
    */
   extrudeAttribute?: string;
-}
+};
 
 export type PointConfig = AssetConfig;
 
@@ -97,7 +97,7 @@ export type Feature = {
   name: string;
 
   /**
-   * The feature type to inform the engine how to render the set of attributes 
+   * The feature type to inform the engine how to render the set of attributes
    */
   type: FeatureType;
 
@@ -112,14 +112,14 @@ export type Feature = {
 
     /**
      * Whether to normalize the attribute values to [0, 1] range.
-     * Floating point attributes need an explict window specified. 
+     * Floating point attributes need an explict window specified.
      */
     normalize?: boolean;
 
     /**
      * The range to normalize attribute values
      */
-    normalizationWindow?: {min: number, max: number};
+    normalizationWindow?: { min: number; max: number };
   }[];
 
   /**
@@ -133,14 +133,14 @@ export type Attribute = {
   type: Datatype;
   visible: boolean;
   enumeration?: string;
-}
+};
 
 export type Domain = {
   name: string;
   type: string;
   min: number;
   max: number;
-}
+};
 
 type octreeIndex = `${number}-${number}-${number}-${number}`;
 
@@ -171,7 +171,7 @@ type CommonAssetMetadata = {
    * A list of all the renderable attribute configurations
    */
   features: Feature[];
-}
+};
 
 export type GeometryMetadata = CommonAssetMetadata & {
   /**
@@ -195,7 +195,7 @@ export type GeometryMetadata = CommonAssetMetadata & {
   geometryAttribute: Attribute;
 
   /**
-   * 
+   *
    */
   extent: number[]; // [minX, minY, maxX, maxY]
 
@@ -203,7 +203,7 @@ export type GeometryMetadata = CommonAssetMetadata & {
    * The internal R-tree padding used for quering
    */
   pad: number[]; // [padX, padY]
-}
+};
 
 export type PointCloudMetadata = CommonAssetMetadata & {
   /**
@@ -222,180 +222,54 @@ export type PointCloudMetadata = CommonAssetMetadata & {
   groupID: string;
   levels: string[];
   domain: Domain[];
-}
+};
 
 //#endregion
 
 //#region Point Cloud Operations
 
 export type PointCloudOperation = {
-  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  operation: 'INITIALIZE' | 'ADD' | 'DELETE' | 'INTERSECT';
   id: string;
-}
+};
 
 export type InitializeOctreeOperation = PointCloudOperation & {
-  operation: "INITIALIZE";
+  operation: 'INITIALIZE';
   minPoint: number[];
   maxPoint: number[];
   maxDepth: number;
   blocks: { [index: `${number}-${number}-${number}-${number}`]: number };
-}
+};
 
 export type AddOctreeNodeOperation = PointCloudOperation & {
-  operation: "ADD";
+  operation: 'ADD';
   mortonCode: number;
   data: Float32Array;
   ids: BigInt64Array;
-}
+};
 
 export type DeleteOctreeNodeOperation = PointCloudOperation & {
-  operation: "DELETE";
+  operation: 'DELETE';
   mortonCode: number;
 };
 
 export type IntersectOperation = PointCloudOperation & {
-  operation: "INTERSECT";
+  operation: 'INTERSECT';
   positions: Float32Array;
   indices: Int32Array;
-}
+};
 
 export type OperationResult = {
-  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  operation: 'INITIALIZE' | 'ADD' | 'DELETE' | 'INTERSECT';
   id: string;
   done: boolean;
-}
+};
 
 export type IntersectionResult = OperationResult & {
-  operation: "INTERSECT";
+  operation: 'INTERSECT';
   bbox: number[];
   levelIncides: number[];
   ids: BigInt64Array;
-}
-
-//#endregion
-
-//#region NGFF Metadata
-
-type SpaceUnit = 
-  'angstrom' | 
-  'attometer' | 
-  'centimeter' | 
-  'decimeter' | 
-  'exameter' |
-  'femtometer' |
-  'foot' | 
-  'gigameter' |
-  'hectometer' |
-  'inch' |
-  'kilometer' |
-  'megameter' |
-  'meter' |
-  'micrometer' |
-  'mile' |
-  'millimeter' |
-  'nanometer' |
-  'parsec' |
-  'petameter' |
-  'picometer' |
-  'terameter' |
-  'yard' |
-  'yoctometer' |
-  'yottameter' |
-  'zeptometer' | 
-  'zettameter';
-
-type TimeUnit = 
-  'attosecond' |
-  'centisecond' |
-  'day' |
-  'decisecond' |
-  'exasecond' |
-  'femtosecond' |
-  'gigasecond' |
-  'hectosecond' |
-  'hour' |
-  'kilosecond' |
-  'megasecond' |
-  'microsecond' |
-  'millisecond' |
-  'minute' |
-  'nanosecond' |
-  'petasecond' |
-  'picosecond' |
-  'second' |
-  'terasecond' |
-  'yoctosecond' |
-  'yottasecond' |
-  'zeptosecond' |
-  'zettasecond';
-
-
-type Axes = {
-  name: string; // Must be unique
-  type?: "space" | "time" | "channel" | string;
-  unit?: SpaceUnit | TimeUnit;
-}
-
-type CoordinateTransformation = {
-  type: 'identity' | 'translation' | 'scale';
-  translation?: number[];
-  scale?: number[];
-}
-
-type Multiscales = {
-  image: {
-    axes: Axes;
-    datasets: {
-      path: string;
-      coordinateTransformations: CoordinateTransformation;
-    }[];
-    coordinateTransformations?: CoordinateTransformation;
-    name?: string;
-    version: string;
-    type?: string;
-    metadata?: {};
-  }[];
-}
-
-// Transitional
-type Omero = {
-  id: number;
-  name: string;
-  version: string;
-  channels: {
-    active: boolean;
-    coefficient: number;
-    color: string;
-    family: string;
-    inverted: boolean;
-    label: string;
-    window: {
-      min: number;
-      max: number;
-      start: number;
-      end: string;
-    }
-  }[];
-  rdefs: {
-    defaultT: number;
-    defaultZ: number;
-    model: "color" | "grayscale";
-  }
-}
-
-type Labels = string[];
-type RGBA = [number, number, number, number];
-
-type ImageLabel = {
-  version?: string;
-  colors: {
-    labelValue: number;
-    rgba: RGBA;
-  }[];
-  properties: {
-    
-  }[];
-  source: string;
-}
+};
 
 //#endregion

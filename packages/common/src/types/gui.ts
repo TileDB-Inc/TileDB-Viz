@@ -1,9 +1,9 @@
-import { Attribute } from "./core";
+import { Attribute } from './core';
 
 export type GUIEvent<T = any> = {
   target: string;
   props: T;
-}
+};
 
 type InfoPanelConfigEntry = {
   /**
@@ -20,11 +20,11 @@ type InfoPanelConfigEntry = {
    * The assets list of attributes
    */
   attributes: Attribute[];
-}
+};
 
 export type InfoPanelInitializationEvent = {
   /**
    * The Info Panel config options indexed by asset id
    */
   config: Map<string, InfoPanelConfigEntry>;
-}
+};
