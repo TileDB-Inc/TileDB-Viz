@@ -1,4 +1,5 @@
 import { Vector3 } from "@babylonjs/core";
+import { Datatype } from "@tiledb-inc/tiledb-cloud/lib/v2";
 
 export type SceneConfig = {
   name?: string;
@@ -54,6 +55,11 @@ export type AssetConfig = {
    * The attribute to be used as the unique identifier for picking. Must be numerical
    */
   pickAttribute?: string;
+
+  /**
+   * Additional user defined display features
+   */
+  features?: Feature[];
 };
 
 export type ImageConfig = AssetConfig;
@@ -85,15 +91,46 @@ export enum FeatureType {
 }
 
 export type Feature = {
+  /**
+   * The feature display name
+   */
   name: string;
+
+  /**
+   * The feature type to inform the engine how to render the set of attributes 
+   */
   type: FeatureType;
-  attributes: string[];
+
+  /**
+   * The list of attributes required to render the feature
+   */
+  attributes: {
+    /**
+     * The attribute name
+     */
+    name: string;
+
+    /**
+     * Whether to normalize the attribute values to [0, 1] range.
+     * Floating point attributes need an explict window specified. 
+     */
+    normalize?: boolean;
+
+    /**
+     * The range to normalize attribute values
+     */
+    normalizationWindow?: {min: number, max: number};
+  }[];
+
+  /**
+   * Whether to interleave the attributes into a single buffer
+   */
   interleaved: boolean;
 };
 
 export type Attribute = {
   name: string;
-  type: string;
+  type: Datatype;
   visible: boolean;
   enumeration?: string;
 }
@@ -233,6 +270,132 @@ export type IntersectionResult = OperationResult & {
   bbox: number[];
   levelIncides: number[];
   ids: BigInt64Array;
+}
+
+//#endregion
+
+//#region NGFF Metadata
+
+type SpaceUnit = 
+  'angstrom' | 
+  'attometer' | 
+  'centimeter' | 
+  'decimeter' | 
+  'exameter' |
+  'femtometer' |
+  'foot' | 
+  'gigameter' |
+  'hectometer' |
+  'inch' |
+  'kilometer' |
+  'megameter' |
+  'meter' |
+  'micrometer' |
+  'mile' |
+  'millimeter' |
+  'nanometer' |
+  'parsec' |
+  'petameter' |
+  'picometer' |
+  'terameter' |
+  'yard' |
+  'yoctometer' |
+  'yottameter' |
+  'zeptometer' | 
+  'zettameter';
+
+type TimeUnit = 
+  'attosecond' |
+  'centisecond' |
+  'day' |
+  'decisecond' |
+  'exasecond' |
+  'femtosecond' |
+  'gigasecond' |
+  'hectosecond' |
+  'hour' |
+  'kilosecond' |
+  'megasecond' |
+  'microsecond' |
+  'millisecond' |
+  'minute' |
+  'nanosecond' |
+  'petasecond' |
+  'picosecond' |
+  'second' |
+  'terasecond' |
+  'yoctosecond' |
+  'yottasecond' |
+  'zeptosecond' |
+  'zettasecond';
+
+
+type Axes = {
+  name: string; // Must be unique
+  type?: "space" | "time" | "channel" | string;
+  unit?: SpaceUnit | TimeUnit;
+}
+
+type CoordinateTransformation = {
+  type: 'identity' | 'translation' | 'scale';
+  translation?: number[];
+  scale?: number[];
+}
+
+type Multiscales = {
+  image: {
+    axes: Axes;
+    datasets: {
+      path: string;
+      coordinateTransformations: CoordinateTransformation;
+    }[];
+    coordinateTransformations?: CoordinateTransformation;
+    name?: string;
+    version: string;
+    type?: string;
+    metadata?: {};
+  }[];
+}
+
+// Transitional
+type Omero = {
+  id: number;
+  name: string;
+  version: string;
+  channels: {
+    active: boolean;
+    coefficient: number;
+    color: string;
+    family: string;
+    inverted: boolean;
+    label: string;
+    window: {
+      min: number;
+      max: number;
+      start: number;
+      end: string;
+    }
+  }[];
+  rdefs: {
+    defaultT: number;
+    defaultZ: number;
+    model: "color" | "grayscale";
+  }
+}
+
+type Labels = string[];
+type RGBA = [number, number, number, number];
+
+type ImageLabel = {
+  version?: string;
+  colors: {
+    labelValue: number;
+    rgba: RGBA;
+  }[];
+  properties: {
+    
+  }[];
+  source: string;
 }
 
 //#endregion
