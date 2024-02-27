@@ -1,11 +1,8 @@
 import {
   AssetOptions,
   AssetMetadata,
-  Attribute,
   Dimension,
   AssetEntry,
-  Feature,
-  FeatureType,
   Domain
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
@@ -21,7 +18,13 @@ import {
 import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Vector3 } from '@babylonjs/core';
 import { GeometryConfig, PointConfig } from '@tiledb-inc/viz-common';
-import { GeometryMetadata, PointCloudMetadata } from '@tiledb-inc/viz-common';
+import {
+  GeometryMetadata,
+  PointCloudMetadata,
+  Feature,
+  FeatureType,
+  Attribute
+} from '@tiledb-inc/viz-common';
 
 export function tileDBUriParser(
   uri: string,
@@ -253,7 +256,7 @@ export async function getGeometryMetadata(
         if (x.enumeration) {
           return {
             name: x.name,
-            attributes: [x.name],
+            attributes: [{ name: x.name }],
             interleaved: false,
             type: FeatureType.CATEGORICAL
           };
@@ -335,9 +338,20 @@ export async function getPointCloudMetadata(
     throw new Error('Point group ID is undefined');
   }
 
-  const [info, members] = await Promise.all([
+  const [info, members, groupMetadata] = await Promise.all([
     client.groups.API.getGroup(options.namespace, options.pointGroupID),
-    client.groups.getGroupContents(options.namespace, options.pointGroupID)
+    client.groups.getGroupContents(options.namespace, options.pointGroupID),
+    client.groups.V2API.getGroupMetadata(
+      options.namespace,
+      options.pointGroupID
+    )
+      .then((response: any) => response.data.entries ?? [])
+      .then((data: any) => {
+        return data.reduce((map: any, obj: any) => {
+          map[obj.key] = deserializeBuffer(obj.type, obj.value);
+          return map;
+        }, {});
+      })
   ]);
 
   const uris =
@@ -393,7 +407,7 @@ export async function getPointCloudMetadata(
         if (x.enumeration) {
           return {
             name: x.name,
-            attributes: [x.name],
+            attributes: [{ name: x.name }],
             interleaved: false,
             type: FeatureType.CATEGORICAL
           };
@@ -403,6 +417,25 @@ export async function getPointCloudMetadata(
       })
       .filter(x => x !== undefined) as Feature[])
   );
+
+  if (config?.features) {
+    features.push(
+      ...(config.features
+        .map(x => {
+          if (
+            !x.attributes.every(y =>
+              attributes.find(attr => attr.name === y.name)
+            )
+          ) {
+            console.warn(`Feature ${x.name} references missing attributes`);
+            return undefined;
+          }
+
+          return x;
+        })
+        .filter(x => x !== undefined) as Feature[])
+    );
+  }
 
   const metadata: PointCloudMetadata = {
     groupID: options.pointGroupID,
@@ -415,6 +448,7 @@ export async function getPointCloudMetadata(
     domain: domain,
     features: features,
     categories: new Map<string, string[]>(),
+    crs: groupMetadata['crs'],
     idAttribute: attributes.find(
       x => x.name === config?.pickAttribute && (config?.pickable ?? true)
     )

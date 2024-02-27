@@ -12,7 +12,7 @@ import { PolygonShaderMaterial } from '../../materials/polygonShaderMaterial';
 import { SelectionMaterialPlugin } from '../../materials/plugins/selectionPlugin';
 import { Tile, UpdateOptions } from '../tile';
 import { CategoricalMaterialPlugin } from '../../materials/plugins/categoricalPlugin';
-import { Feature, FeatureType } from '../../../types';
+import { Feature, FeatureType } from '@tiledb-inc/viz-common';
 
 export interface GeometryUpdateOptions extends UpdateOptions<GeometryResponse> {
   style?: GeometryStyle;

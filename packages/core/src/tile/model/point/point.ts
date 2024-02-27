@@ -5,7 +5,7 @@ import {
   UniformBuffer,
   ShaderMaterial
 } from '@babylonjs/core';
-import { Feature, FeatureType } from '../../../types';
+import { Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { PointCloudMaterial } from '../../materials/pointShaderMaterial';
 import { PointResponse, PointShape, TypedArray } from '../../types';
 import { Tile, UpdateOptions } from '../tile';
@@ -55,27 +55,27 @@ export class PointTile extends Tile<PointResponse> {
       this.vertexCount = vertexData.positions.length / 3;
       this.groups = new Int32Array(this.vertexCount).fill(0);
 
-      if (updateOptions.response.attributes['Picking ID'].length) {
+      if (updateOptions.response.attributes['Picking ID']?.length) {
         const ids = updateOptions.response.attributes[
           'Picking ID'
         ] as BigInt64Array;
         this.vertexMap = new Map(
           Array.from(ids).map((value, index) => [value, index])
         );
-      }
 
-      this.mesh.setVerticesBuffer(
-        new VertexBuffer(
-          this.scene.getEngine(),
-          new Float32Array(
-            updateOptions.response.attributes['Picking ID'].length
-          ),
-          'state',
-          true,
-          false,
-          1
-        )
-      );
+        this.mesh.setVerticesBuffer(
+          new VertexBuffer(
+            this.scene.getEngine(),
+            new Float32Array(
+              updateOptions.response.attributes['Picking ID'].length
+            ),
+            'state',
+            true,
+            false,
+            1
+          )
+        );
+      }
     }
 
     if (updateOptions.pointOptions) {
@@ -102,6 +102,18 @@ export class PointTile extends Tile<PointResponse> {
       switch (updateOptions.feature.type) {
         case FeatureType.FLAT_COLOR:
           //skip
+          break;
+        case FeatureType.RGB:
+          this.mesh.setVerticesBuffer(
+            new VertexBuffer(
+              this.scene.getEngine(),
+              this.meshData[updateOptions.feature.name],
+              'colorAttr',
+              true,
+              false,
+              3
+            )
+          );
           break;
         case FeatureType.CATEGORICAL:
           {

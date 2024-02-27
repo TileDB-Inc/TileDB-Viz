@@ -18,7 +18,6 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature } from '../../../types';
 import {
   ButtonProps,
   Events,
@@ -29,7 +28,7 @@ import {
 } from '@tiledb-inc/viz-components';
 import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
-import { GeometryMetadata } from '@tiledb-inc/viz-common';
+import { GeometryMetadata, Feature } from '@tiledb-inc/viz-common';
 
 interface GeometryOptions {
   arrayID: string;

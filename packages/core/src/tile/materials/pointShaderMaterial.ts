@@ -1,5 +1,5 @@
 import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
-import { FeatureType } from '../../types';
+import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '../types';
 
 export function PointCloudMaterial(scene: Scene): ShaderMaterial {

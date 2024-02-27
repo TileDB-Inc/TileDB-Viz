@@ -1,2 +1,2 @@
-export * from './gui';
 export * from './core';
+export * from './gui';

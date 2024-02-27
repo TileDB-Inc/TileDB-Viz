@@ -1,4 +1,5 @@
-import { Vector3 } from "@babylonjs/core";
+import { Vector3 } from '@babylonjs/core';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 
 export type SceneConfig = {
   name?: string;
@@ -37,7 +38,7 @@ export type AssetConfig = {
     /**
      * Angle of rotation in radians
      */
-    angle: number
+    angle: number;
   };
 
   /**
@@ -54,6 +55,11 @@ export type AssetConfig = {
    * The attribute to be used as the unique identifier for picking. Must be numerical
    */
   pickAttribute?: string;
+
+  /**
+   * Additional user defined display features
+   */
+  features?: Feature[];
 };
 
 export type ImageConfig = AssetConfig;
@@ -73,7 +79,7 @@ export type GeometryConfig = AssetConfig & {
    * The attribute storing the extrusion values per geometry
    */
   extrudeAttribute?: string;
-}
+};
 
 export type PointConfig = AssetConfig;
 
@@ -85,25 +91,56 @@ export enum FeatureType {
 }
 
 export type Feature = {
+  /**
+   * The feature display name
+   */
   name: string;
+
+  /**
+   * The feature type to inform the engine how to render the set of attributes
+   */
   type: FeatureType;
-  attributes: string[];
+
+  /**
+   * The list of attributes required to render the feature
+   */
+  attributes: {
+    /**
+     * The attribute name
+     */
+    name: string;
+
+    /**
+     * Whether to normalize the attribute values to [0, 1] range.
+     * Floating point attributes need an explict window specified.
+     */
+    normalize?: boolean;
+
+    /**
+     * The range to normalize attribute values
+     */
+    normalizationWindow?: { min: number; max: number };
+  }[];
+
+  /**
+   * Whether to interleave the attributes into a single buffer
+   */
   interleaved: boolean;
 };
 
 export type Attribute = {
   name: string;
-  type: string;
+  type: Datatype;
   visible: boolean;
   enumeration?: string;
-}
+};
 
 export type Domain = {
   name: string;
   type: string;
   min: number;
   max: number;
-}
+};
 
 type octreeIndex = `${number}-${number}-${number}-${number}`;
 
@@ -134,7 +171,7 @@ type CommonAssetMetadata = {
    * A list of all the renderable attribute configurations
    */
   features: Feature[];
-}
+};
 
 export type GeometryMetadata = CommonAssetMetadata & {
   /**
@@ -158,7 +195,7 @@ export type GeometryMetadata = CommonAssetMetadata & {
   geometryAttribute: Attribute;
 
   /**
-   * 
+   *
    */
   extent: number[]; // [minX, minY, maxX, maxY]
 
@@ -166,7 +203,7 @@ export type GeometryMetadata = CommonAssetMetadata & {
    * The internal R-tree padding used for quering
    */
   pad: number[]; // [padX, padY]
-}
+};
 
 export type PointCloudMetadata = CommonAssetMetadata & {
   /**
@@ -185,54 +222,54 @@ export type PointCloudMetadata = CommonAssetMetadata & {
   groupID: string;
   levels: string[];
   domain: Domain[];
-}
+};
 
 //#endregion
 
 //#region Point Cloud Operations
 
 export type PointCloudOperation = {
-  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  operation: 'INITIALIZE' | 'ADD' | 'DELETE' | 'INTERSECT';
   id: string;
-}
+};
 
 export type InitializeOctreeOperation = PointCloudOperation & {
-  operation: "INITIALIZE";
+  operation: 'INITIALIZE';
   minPoint: number[];
   maxPoint: number[];
   maxDepth: number;
   blocks: { [index: `${number}-${number}-${number}-${number}`]: number };
-}
+};
 
 export type AddOctreeNodeOperation = PointCloudOperation & {
-  operation: "ADD";
+  operation: 'ADD';
   mortonCode: number;
   data: Float32Array;
   ids: BigInt64Array;
-}
+};
 
 export type DeleteOctreeNodeOperation = PointCloudOperation & {
-  operation: "DELETE";
+  operation: 'DELETE';
   mortonCode: number;
 };
 
 export type IntersectOperation = PointCloudOperation & {
-  operation: "INTERSECT";
+  operation: 'INTERSECT';
   positions: Float32Array;
   indices: Int32Array;
-}
+};
 
 export type OperationResult = {
-  operation: "INITIALIZE" | "ADD" | "DELETE" | "INTERSECT";
+  operation: 'INITIALIZE' | 'ADD' | 'DELETE' | 'INTERSECT';
   id: string;
   done: boolean;
-}
+};
 
 export type IntersectionResult = OperationResult & {
-  operation: "INTERSECT";
+  operation: 'INTERSECT';
   bbox: number[];
   levelIncides: number[];
   ids: BigInt64Array;
-}
+};
 
 //#endregion

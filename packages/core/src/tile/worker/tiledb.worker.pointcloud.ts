@@ -66,6 +66,17 @@ function initializeOctree(operation: InitializeOctreeOperation) {
         operation.maxPoint[2],
         operation.maxPoint[1]
       ),
+      new Vector3(
+        operation.minPoint[0],
+        operation.minPoint[1],
+        operation.minPoint[2]
+      ),
+      new Vector3(
+        operation.maxPoint[0],
+        operation.maxPoint[1],
+        operation.maxPoint[2]
+      ),
+      [1, -1, 1], // The actual block indices are not uses so no need to align the octree correctly
       operation.maxDepth,
       operation.blocks
     )

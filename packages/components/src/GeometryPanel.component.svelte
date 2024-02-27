@@ -19,11 +19,12 @@
   import { GUIEvent, SelectProps, colorScheme } from './types';
   import { Events } from './constants/events';
   import { clone } from './utils/helpers';
+    import { Attribute, Feature } from '@tiledb-inc/viz-common';
 
-  export let features = [];
-  export let attributes = [];
+  export let features: Array<Array<Feature>> = [];
+  export let attributes: Array<Array<Attribute>> = [];
   export let categories = [];
-  export let targets = [];
+  export let targets: Array<Array<string>> = [];
 
   let colorGroups: Record<string, string[]> = {};
   let categoryState: Record<
@@ -133,7 +134,7 @@
       state.options[state.selectedDataset].selectedFeature
     ];
   $: attribute = attributes[state.selectedDataset].filter(
-    x => x.name === currentFeature.attributes[0]
+    x => x.name === currentFeature.attributes[0]?.name
   )[0];
 </script>
 

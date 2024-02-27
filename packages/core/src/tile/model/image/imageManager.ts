@@ -1,5 +1,5 @@
 import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
-import { Attribute, Dimension } from '../../../types';
+import { Dimension } from '../../../types';
 import {
   BaseResponse,
   Channel,
@@ -22,6 +22,7 @@ import {
   SliderProps,
   Commands
 } from '@tiledb-inc/viz-components';
+import { Attribute } from '@tiledb-inc/viz-common';
 
 interface ImageOptions {
   metadata: ImageMetadata;

@@ -8,7 +8,6 @@ import {
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager, TileStatus, TileState } from '../manager';
-import { Feature, FeatureType } from '../../../types';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -22,7 +21,7 @@ import {
   InfoResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
-import { inv, MathArray, matrix, multiply } from 'mathjs';
+import { inv, MathArray, matrix, max, min, multiply } from 'mathjs';
 import { PriorityQueue } from '../../../point-cloud/utils/priority-queue';
 import {
   encodeMorton,
@@ -43,15 +42,19 @@ import {
   PointCloudMetadata,
   InitializeOctreeOperation,
   OperationResult,
-  IntersectionResult
+  IntersectionResult,
+  Feature,
+  FeatureType
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
+import proj4 from 'proj4';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
   transformationCoefficients: number[];
   namespace: string;
+  baseCRS?: string;
 }
 
 export class PointManager extends Manager<PointTile> {
@@ -65,6 +68,7 @@ export class PointManager extends Manager<PointTile> {
   private screenSizeLimit: number;
   private namespace: string;
   private pickingTool: PickingTool;
+  private baseCRS?: string;
   private styleOptions = {
     pointShape: PointShape.CIRCLE,
     pointSize: 4,
@@ -102,41 +106,91 @@ export class PointManager extends Manager<PointTile> {
     this.pointBudget = 100_000;
     this.screenSizeLimit = 10;
     this.namespace = options.namespace;
+    this.baseCRS = options.baseCRS;
     this.pickingTool = pickingTool;
 
     // To be in accordance with the image layer the UP direction align with
     // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
-
+    // TODO: Add the default rotations back to the 4D matrix
     const affineMatrix = matrix([
       [
         options.transformationCoefficients[1],
-        options.transformationCoefficients[2],
+        0,
+        0,
         options.transformationCoefficients[0]
       ],
       [
-        options.transformationCoefficients[4],
+        0,
         options.transformationCoefficients[5],
+        0,
         options.transformationCoefficients[3]
       ],
-      [0, 0, options.transformationCoefficients[1]]
+      [0, 0, options.transformationCoefficients[1], 0],
+      [0, 0, 0, 1]
     ] as MathArray);
 
-    const affineInverted = inv(affineMatrix);
-    const minPoint = multiply(affineInverted, [
+    let minPoint = [
       this.metadata.minPoint.x,
       this.metadata.minPoint.y,
-      this.metadata.minPoint.z
-    ]).toArray() as number[];
+      this.metadata.minPoint.z,
+      1
+    ];
 
-    const maxPoint = multiply(affineInverted, [
+    let maxPoint = [
       this.metadata.maxPoint.x,
       this.metadata.maxPoint.y,
-      this.metadata.maxPoint.z
-    ]).toArray() as number[];
+      this.metadata.maxPoint.z,
+      1
+    ];
+
+    if (
+      options.baseCRS &&
+      options.metadata.crs &&
+      options.baseCRS !== options.metadata.crs
+    ) {
+      const converter = proj4(options.metadata.crs, options.baseCRS);
+
+      minPoint = [...converter.forward(minPoint.slice(0, 3)), 1];
+      maxPoint = [...converter.forward(maxPoint.slice(0, 3)), 1];
+    }
+
+    const affineInverted = inv(affineMatrix);
+
+    const minPointTransformed = multiply(affineInverted, minPoint);
+    const maxPointTransformed = multiply(affineInverted, maxPoint);
+
+    // Type info is wrong since min and max when applied to 2D arrays with 0 as the selected dimension will return back an array
+    [minPoint, maxPoint] = [
+      matrix(
+        min(
+          [
+            minPointTransformed.toArray(),
+            maxPointTransformed.toArray()
+          ] as number[][],
+          0
+        ) as any
+      ).toArray() as number[],
+      matrix(
+        max(
+          [
+            minPointTransformed.toArray(),
+            maxPointTransformed.toArray()
+          ] as number[][],
+          0
+        ) as any
+      ).toArray() as number[]
+    ];
 
     this.octree = constructOctree(
       new Vector3(minPoint[0], minPoint[2], minPoint[1]),
       new Vector3(maxPoint[0], maxPoint[2], maxPoint[1]),
+      options.metadata.minPoint,
+      options.metadata.maxPoint,
+      [
+        options.transformationCoefficients[1],
+        options.transformationCoefficients[5],
+        options.transformationCoefficients[1]
+      ],
       this.metadata.levels.length,
       this.metadata.octreeData
     );
@@ -149,7 +203,7 @@ export class PointManager extends Manager<PointTile> {
       this.metadata.features.push({
         name: 'Picking ID',
         type: FeatureType.NON_RENDERABLE,
-        attributes: [this.metadata.idAttribute.name],
+        attributes: [{ name: this.metadata.idAttribute.name }],
         interleaved: false
       });
 
@@ -456,15 +510,19 @@ export class PointManager extends Manager<PointTile> {
           id: tileIndex,
           request: {
             index: [block.mortonNumber],
-            minPoint: block.minPoint.asArray(),
-            maxPoint: block.maxPoint.asArray(),
+            minPoint:
+              block.nativeMinPoint?.asArray() ?? block.minPoint.asArray(),
+            maxPoint:
+              block.nativeMaxPoint?.asArray() ?? block.maxPoint.asArray(),
             namespace: this.namespace,
             arrayID: this.metadata.levels[block.lod],
             features: this.metadata.features,
             nonce: ++this.nonce,
             attributes: this.metadata.attributes,
             geotransformCoefficients: this.transformationCoefficients,
-            domain: this.metadata.domain
+            domain: this.metadata.domain,
+            imageCRS: this.baseCRS,
+            pointCRS: this.metadata.crs
           } as PointMessage
         } as DataRequest);
 
@@ -557,11 +615,6 @@ export class PointManager extends Manager<PointTile> {
     block: MoctreeBlock,
     viewportRadius: number
   ): number {
-    // return Math.max(
-    //   0,
-    //   block.boundingInfo.boundingSphere.radiusWorld - viewportRadius + 100
-    // );
-
     return (
       (block.boundingInfo.boundingSphere.radiusWorld / viewportRadius) * 100
     );
@@ -596,6 +649,8 @@ export class PointManager extends Manager<PointTile> {
           nonce: ++this.nonce,
           attributes: this.metadata.attributes,
           geotransformCoefficients: this.transformationCoefficients,
+          imageCRS: this.baseCRS,
+          pointCRS: this.metadata.crs,
           domain: this.metadata.domain
         } as PointMessage
       } as DataRequest);

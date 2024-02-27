@@ -57,12 +57,13 @@
     "geometry-extrude": "0.2.1",
     "idb": "^7.0.2",
     "mathjs": "^12.1.0",
-    "proj4": "^2.9.0"
+    "proj4": "^2.9.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.0",
     "@babel/preset-env": "^7.18.10",
     "@babel/preset-typescript": "^7.18.6",
+    "@types/proj4": "^2.5.5",
     "parcel": "^2.9.3"
   }
 }

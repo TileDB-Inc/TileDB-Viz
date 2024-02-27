@@ -5425,6 +5425,7 @@ __metadata:
     "@babel/preset-env": ^7.18.10
     "@babel/preset-typescript": ^7.18.6
     "@babylonjs/core": ^6.20.2
+    "@tiledb-inc/tiledb-cloud": 1.0.15-alpha.1
     parcel: ^2.9.3
   languageName: unknown
   linkType: soft
@@ -5465,6 +5466,7 @@ __metadata:
     "@tiledb-inc/viz-common": "workspace:packages/common"
     "@tiledb-inc/viz-components": "workspace:packages/components"
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx"
+    "@types/proj4": ^2.5.5
     axios: ^0.21.1
     babylonjs-gui: ^6.20.2
     babylonjs-materials: ^6.20.2
@@ -5473,7 +5475,7 @@ __metadata:
     idb: ^7.0.2
     mathjs: ^12.1.0
     parcel: ^2.9.3
-    proj4: ^2.9.0
+    proj4: ^2.9.2
   languageName: unknown
   linkType: soft
 
@@ -5919,6 +5921,13 @@ __metadata:
   version: 1.0.1
   resolution: "@types/pretty-hrtime@npm:1.0.1"
   checksum: a6cdee417eea6f7af914e4fcd13e05822864ce10b5d7646525632e86d69b79123eec55a5d3fff0155ba46b61902775e1644bcb80e1e4dffdac28e7febb089083
+  languageName: node
+  linkType: hard
+
+"@types/proj4@npm:^2.5.5":
+  version: 2.5.5
+  resolution: "@types/proj4@npm:2.5.5"
+  checksum: 06a1898ffff6d7b4a0da04249b431b129ae31c1a75decfdcbdde6b6d7a7cf9560f8506e89f441b6ebe287e66ef5d0fd3e7ca33f9eb30c1427f8b9989bd3dc578
   languageName: node
   linkType: hard
 
@@ -8173,9 +8182,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001109, caniuse-lite@npm:^1.0.30001517":
-  version: 1.0.30001519
-  resolution: "caniuse-lite@npm:1.0.30001519"
-  checksum: 66085133ede05d947e30b62fed2cbae18e5767afda8b0de38840883e1cfe5846bf1568ddbafd31647544e59112355abedaf9c867ac34541bfc20d69e7a19d94c
+  version: 1.0.30001587
+  resolution: "caniuse-lite@npm:1.0.30001587"
+  checksum: fb50aa9beaaae42f9feae92ce038f6ff71e97510f024ef1bef2666f3adcfd36d6c59e5675442e5fe795575193f71bc826cb7721d4b0f6d763e82d193bea57863
   languageName: node
   linkType: hard
 
@@ -16527,13 +16536,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proj4@npm:^2.9.0":
-  version: 2.9.0
-  resolution: "proj4@npm:2.9.0"
+"proj4@npm:^2.9.2":
+  version: 2.10.0
+  resolution: "proj4@npm:2.10.0"
   dependencies:
     mgrs: 1.0.0
-    wkt-parser: ^1.3.1
-  checksum: b907be4821ddfabf779e57cd008ec062aa2ed033525c867c820b98492291871ef8a7a45cd2ee939f3bcb53cb89142b18a50af55d4e2748af272e62a194e49aa7
+    wkt-parser: ^1.3.3
+  checksum: 1470d94e064b44a6f4658c22c34a4e7948fbde31af71202344f616307efa9ab284ecd5ad074203fafdc840aca569bd96ac8520732c8be89234f4c83c9e7de124
   languageName: node
   linkType: hard
 
@@ -20465,7 +20474,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wkt-parser@npm:^1.3.1":
+"wkt-parser@npm:^1.3.3":
   version: 1.3.3
   resolution: "wkt-parser@npm:1.3.3"
   checksum: b001a7e8b83c1af66f4a1bc56d5041858191b13a530af20d80dda80de92ed672bec30c3528893480ad3ef03edf845e8e9962c79c77eae860530c99afd59ff94c

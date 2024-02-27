@@ -92,7 +92,9 @@ class MoctreeBlock {
     minPoint: Vector3,
     maxPoint: Vector3,
     pointCount = -1,
-    entries?: TransformedResult
+    entries?: TransformedResult,
+    public nativeMinPoint?: Vector3,
+    public nativeMaxPoint?: Vector3
   ) {
     this.minPoint = minPoint;
     this.maxPoint = maxPoint;

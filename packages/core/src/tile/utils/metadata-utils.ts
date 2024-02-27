@@ -7,8 +7,8 @@ import {
   LevelRecord,
   ImageMetadata
 } from '../types';
-
-import { Attribute, Dimension } from '../../types';
+import { Attribute } from '@tiledb-inc/viz-common';
+import { Dimension } from '../../types';
 
 const rgb = [
   [255, 0, 0, 255],
