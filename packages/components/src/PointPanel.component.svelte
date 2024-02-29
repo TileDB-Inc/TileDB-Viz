@@ -63,7 +63,8 @@
         pointShape: 1,
         pointSize: 4,
         pointBudget: 100_000,
-        quality: 40
+        quality: 40,
+        pointOpacity: 1
       };
     })
   };
@@ -101,6 +102,23 @@
           target: `${targets[state.selectedDataset][0]}_pointSize`,
           props: {
             value: size
+          }
+        }
+      })
+    );
+  }
+
+  function pointOpacityOnChange(opacity: number) {
+    state.options[state.selectedDataset].pointOpacity = opacity;
+    state = state;
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${targets[state.selectedDataset][0]}_pointOpacity`,
+          props: {
+            value: opacity
           }
         }
       })
@@ -231,6 +249,15 @@
       value={state.options[state.selectedDataset].pointSize}
       step={0.01}
       callback={pointSizeOnChange}
+    />
+    <Slider
+      id={'pointOpacity'}
+      label={'Point opacity'}
+      min={0}
+      max={1}
+      value={state.options[state.selectedDataset].pointOpacity}
+      step={0.01}
+      callback={pointOpacityOnChange}
     />
     {#if features[state.selectedDataset].length === 0}
       No Available Features

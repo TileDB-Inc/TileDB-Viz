@@ -72,6 +72,7 @@ export class PointManager extends Manager<PointTile> {
   private styleOptions = {
     pointShape: PointShape.CIRCLE,
     pointSize: 4,
+    pointOpacity: 1,
     color: new Vector4(1, 0, 0.498, 1),
 
     // This array is shared by reference so changing a value
@@ -322,6 +323,10 @@ export class PointManager extends Manager<PointTile> {
         break;
       case 'quality':
         this.screenSizeLimit = 51 - event.detail.props.value;
+        break;
+      case 'pointOpacity':
+        this.pointOptions.updateFloat('pointOpacity', event.detail.props.value);
+        this.pointOptions.update();
         break;
     }
   }
@@ -600,12 +605,17 @@ export class PointManager extends Manager<PointTile> {
     this.pointOptions.addUniform('pointSize', 1, 0);
     this.pointOptions.addUniform('color', 4, 0);
     this.pointOptions.addUniform('colorScheme', 4, 32);
+    this.pointOptions.addUniform('pointOpacity', 1, 0);
 
     this.pointOptions.updateFloat('pointSize', this.styleOptions.pointSize);
     this.pointOptions.updateVector4('color', this.styleOptions.color);
     this.pointOptions.updateFloatArray(
       'colorScheme',
       this.styleOptions.colorScheme
+    );
+    this.pointOptions.updateFloat(
+      'pointOpacity',
+      this.styleOptions.pointOpacity
     );
 
     this.pointOptions.update();

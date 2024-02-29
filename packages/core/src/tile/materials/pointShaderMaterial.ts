@@ -28,6 +28,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       float pointSize;
       vec4 color;
       vec4 colorScheme[32];
+      float pointOpacity;
     };
 
     flat out vec4 vColor;
@@ -67,6 +68,13 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
 
     #include<clipPlaneFragmentDeclaration>
 
+    layout(std140) uniform pointOptions {
+      float pointSize;
+      vec4 color;
+      vec4 colorScheme[32];
+      float pointOpacity;
+    };
+
     flat in vec4 vColor;
 
     void main(void)
@@ -90,7 +98,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
         }
       #endif
 
-      glFragColor = vec4(vColor.rgb, 1.0);
+      glFragColor = vec4(vColor.rgb, pointOpacity);
     }
   `;
 
@@ -106,7 +114,8 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       uniforms: ['worldViewProjection', 'world'],
       defines: ['POINT_TYPE', 'FEATURE_TYPE'],
       uniformBuffers: ['pointOptions'],
-      useClipPlane: true
+      useClipPlane: true,
+      needAlphaBlending: true
     }
   );
 
