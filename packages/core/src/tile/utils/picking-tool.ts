@@ -2,8 +2,6 @@ import {
   Scene,
   Observer,
   Nullable,
-  KeyboardInfo,
-  KeyboardEventTypes,
   PointerInfo,
   PointerEventTypes,
   UtilityLayerRenderer,
@@ -17,12 +15,13 @@ import {
 } from '@babylonjs/core';
 import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
 import { getCamera } from './camera-utils';
-
-enum PickingMode {
-  NONE = 0,
-  SINGLE = 1,
-  LASSO = 3
-}
+import {
+  ButtonProps,
+  Commands,
+  Events,
+  GUIEvent
+} from '@tiledb-inc/viz-components';
+import { PickingMode } from '@tiledb-inc/viz-common';
 
 export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
   // calculate world space bbox to use for geometry query
@@ -113,48 +112,45 @@ export class PickingTool {
     this.selectedTiles = new Set<string>();
     this.active = false;
 
-    this.scene.onKeyboardObservable.add((keyboardInfo: KeyboardInfo) => {
-      switch (keyboardInfo.type) {
-        case KeyboardEventTypes.KEYUP:
-          if (!keyboardInfo.event.shiftKey) {
-            break;
-          }
-
-          if (
-            keyboardInfo.event.code === 'Digit1' &&
-            this.mode !== PickingMode.SINGLE
-          ) {
-            this.mode = PickingMode.SINGLE;
-
-            this.scene.onPointerObservable.remove(this.lassoHandler);
-
-            this.singleHandler = this.scene.onPointerObservable.add(
-              this.singlePicker.bind(this),
-              undefined,
-              true
-            );
-          } else if (
-            keyboardInfo.event.code === 'Digit3' &&
-            this.mode !== PickingMode.LASSO
-          ) {
-            this.mode = PickingMode.LASSO;
-
-            this.scene.onPointerObservable.remove(this.singleHandler);
-
-            this.lassoHandler = this.scene.onPointerObservable.add(
-              this.lassoPicker.bind(this),
-              undefined,
-              true
-            );
-          } else if (keyboardInfo.event.code === 'Digit0') {
-            this.mode = PickingMode.NONE;
-
-            this.scene.onPointerObservable.remove(this.singleHandler);
-            this.scene.onPointerObservable.remove(this.lassoHandler);
-          }
-          break;
+    window.addEventListener(
+      Events.BUTTON_CLICK,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
       }
-    });
+    );
+  }
+
+  private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'picking-tool') {
+      return;
+    }
+
+    switch (event.detail.props.command) {
+      case Commands.PICKING_TOOL_SELECT:
+        this.mode = event.detail.props.data as PickingMode;
+        if (this.mode === PickingMode.SINGLE) {
+          this.scene.onPointerObservable.remove(this.lassoHandler);
+          this.singleHandler = this.scene.onPointerObservable.add(
+            this.singlePicker.bind(this),
+            undefined,
+            true
+          );
+        } else if (this.mode === PickingMode.LASSO) {
+          this.scene.onPointerObservable.remove(this.singleHandler);
+          this.lassoHandler = this.scene.onPointerObservable.add(
+            this.lassoPicker.bind(this),
+            undefined,
+            true
+          );
+        } else {
+          this.scene.onPointerObservable.remove(this.singleHandler);
+          this.scene.onPointerObservable.remove(this.lassoHandler);
+        }
+        break;
+    }
   }
 
   private singlePicker(pointerInfo: PointerInfo, state: EventState): void {
@@ -339,6 +335,14 @@ export class PickingTool {
   }
 
   public dispose() {
+    window.removeEventListener(
+      Events.BUTTON_CLICK,
+      this.buttonHandler.bind(this) as any,
+      {
+        capture: true
+      }
+    );
+
     this.scene.onPointerObservable.remove(this.singleHandler);
     this.scene.onPointerObservable.remove(this.lassoHandler);
   }

@@ -23,5 +23,6 @@ export enum Commands {
   ZOOMIN = 'command::zoomin',
   ZOOMOUT = 'command::zoomout',
   RESET = 'command::reset',
-  GROUP = 'command::group'
+  GROUP = 'command::group',
+  PICKING_TOOL_SELECT = 'command::picking-tool-select'
 }

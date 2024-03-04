@@ -51,7 +51,7 @@
 <style lang="scss">
   .ViewerScalebar {
     position: absolute;
-    left: 20px;
+    left: 60px;
     bottom: 40px;
     width: calc(var(--scalebar-length) * 1px);
     height: 10px;

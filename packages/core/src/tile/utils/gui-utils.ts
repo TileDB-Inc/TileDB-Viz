@@ -60,15 +60,8 @@ class TileImageGUI {
     this.uiWrapper.innerHTML = `
     <status-overlay>
     </status-overlay>
-    ${
-      geometryMetadata.size
-        ? `
-        <sidebar-menu anchorLeft=true expandedMaxWidth=600>
-          <info-panel>
-          </info-panel>
-        </sidebar-menu>`
-        : ''
-    }
+    <selection-panel>
+    </selection-panel>
     <sidebar-menu>
       <zoom-control zoom='0.25'>
       </zoom-control>

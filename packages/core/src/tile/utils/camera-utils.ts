@@ -17,7 +17,7 @@ import {
   Commands
 } from '@tiledb-inc/viz-components';
 
-const MINIMAP_OFFSET = 20;
+const MINIMAP_OFFSET = 60;
 const MINIMAP_MAX_SIZE = 200;
 const ZOOM_STEP = 0.125;
 

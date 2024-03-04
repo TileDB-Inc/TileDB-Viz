@@ -1,6 +1,40 @@
 import { Vector3 } from '@babylonjs/core';
 import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 
+export type TileDBScene = {
+  /**
+   * Scene name
+   */
+  name?: string;
+
+  /**
+   * Scene description
+   */
+  description?: string;
+
+  /**
+   * The list of image assets of the scene
+   */
+  images?: string[];
+
+  /**
+   * The list of geometry assets of the scene
+   */
+  geometries?: string[];
+
+  /**
+   * The list of point cloud assets of the scene
+   */
+  pointClouds?: string[];
+};
+
+export type Asset = {
+  /**
+   * The uri of the asset registered to TileDB Cloud
+   */
+  tileDBUri: string;
+};
+
 export type SceneConfig = {
   name?: string;
   description?: string;
