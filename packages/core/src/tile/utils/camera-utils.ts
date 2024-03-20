@@ -85,12 +85,12 @@ export class CameraManager {
 
       this.scene.activeCameras?.push(this.minimapCamera);
 
-      const minimapPipeline = new MinimapPipeline(
-        this.scene,
-        this.baseWidth,
-        this.baseHeight
-      );
-      minimapPipeline.initializePostProcess();
+      // const minimapPipeline = new MinimapPipeline(
+      //   this.scene,
+      //   this.baseWidth,
+      //   this.baseHeight
+      // );
+      // minimapPipeline.initializePostProcess();
     }
 
     window.addEventListener(

@@ -1,4 +1,4 @@
-import { Engine, Scene, SceneLoader } from '@babylonjs/core';
+import { Engine, Scene, SceneLoader, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
@@ -35,7 +35,7 @@ export class TileDBVisualization {
   width: string;
   height: string;
   canvas?: HTMLCanvasElement;
-  engine?: Engine;
+  engine?: WebGPUEngine;
   wheelPrecision: number;
   moveSpeed: number;
   inspector?: boolean;
@@ -64,7 +64,7 @@ export class TileDBVisualization {
       this.canvas?.setAttribute('width', width);
       this.canvas?.setAttribute('height', height);
     }
-    this.engine?.resize();
+    this.engine?.resize(true);
   }
 
   destroy() {
@@ -109,24 +109,41 @@ export class TileDBVisualization {
 
     this.rootElement.appendChild(wrapperDiv);
 
-    this.engine = new Engine(this.canvas, true);
-    this.engine.doNotHandleContextLost = true;
-
-    const engine = this.engine;
-
-    SceneLoader.ShowLoadingScreen = false;
-
-    this.resizeCanvas();
-
-    // window resize event handler
-    window.addEventListener('resize', () => {
-      this.engine?.resize();
-    });
-
-    this.createScene().then(scene => {
-      engine.runRenderLoop(() => {
-        scene.render();
+    //this.engine = new Engine(this.canvas, true);
+    this.engine = new WebGPUEngine(canvas);
+    this.engine.initAsync().then(x => {
+      SceneLoader.ShowLoadingScreen = false;
+  
+      this.resizeCanvas();
+  
+      // window resize event handler
+      window.addEventListener('resize', () => {
+        this.engine?.resize(true);
       });
-    });
+  
+      this.createScene().then(scene => {
+        this.engine.runRenderLoop(() => {
+          scene.render();
+        });
+      });
+    })
+    // this.engine.doNotHandleContextLost = true;
+
+    // const engine = this.engine;
+
+    // SceneLoader.ShowLoadingScreen = false;
+
+    // this.resizeCanvas();
+
+    // // window resize event handler
+    // window.addEventListener('resize', () => {
+    //   this.engine?.resize(true);
+    // });
+
+    // this.createScene().then(scene => {
+    //   engine.runRenderLoop(() => {
+    //     scene.render();
+    //   });
+    // });
   }
 }
