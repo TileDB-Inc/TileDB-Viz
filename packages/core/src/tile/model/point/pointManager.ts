@@ -104,7 +104,7 @@ export class PointManager extends Manager<PointTile> {
     this.transformationCoefficients = options.transformationCoefficients;
     this.activeFeature = this.metadata.features[0];
     this.initializeUniformBuffer();
-    this.pointBudget = 100_000;
+    this.pointBudget = 1_000_000;
     this.screenSizeLimit = 10;
     this.namespace = options.namespace;
     this.baseCRS = options.baseCRS;
@@ -493,70 +493,86 @@ export class PointManager extends Manager<PointTile> {
       points < this.pointBudget &&
       blocks < 200
     ) {
-      const block = this.blockQueue.extractMax().octreeBlock;
+      // Extract all blocks (they belong to the same lod) and determine visibility
+      const visibleBlocks = [];
+      while (!this.blockQueue.isEmpty()) {
+        const block = this.blockQueue.extractMax().octreeBlock;
 
-      if (!block) {
-        break;
-      }
-
-      if (!block.boundingInfo.isInFrustum(frustrum)) {
-        continue;
-      }
-
-      const tileIndex = `${this.metadata.name}_${block.mortonNumber}`;
-      const status =
-        this.tileStatus.get(tileIndex) ??
-        ({ evict: false, nonce: 0 } as TileStatus<PointTile>);
-      status.evict = false;
-
-      if (status.state === undefined) {
-        this.workerPool.postMessage({
-          type: RequestType.POINT,
-          id: tileIndex,
-          request: {
-            index: [block.mortonNumber],
-            minPoint:
-              block.nativeMinPoint?.asArray() ?? block.minPoint.asArray(),
-            maxPoint:
-              block.nativeMaxPoint?.asArray() ?? block.maxPoint.asArray(),
-            namespace: this.namespace,
-            arrayID: this.metadata.levels[block.lod],
-            features: this.metadata.features,
-            nonce: ++this.nonce,
-            attributes: this.metadata.attributes,
-            geotransformCoefficients: this.transformationCoefficients,
-            domain: this.metadata.domain,
-            imageCRS: this.baseCRS,
-            pointCRS: this.metadata.crs
-          } as PointMessage
-        } as DataRequest);
-
-        status.state = TileState.LOADING;
-        status.nonce = this.nonce;
-        this.tileStatus.set(tileIndex, status);
-
-        this.updateLoadingStatus(false);
-      }
-
-      points += block.pointCount || 0;
-      ++blocks;
-
-      // Calculate children
-      for (let i = 0; i < 8; ++i) {
-        const code = (block.mortonNumber << 3) + i;
-
-        if (!this.octree.blocklist.has(code)) {
+        if (!block || !block.boundingInfo.isInFrustum(frustrum)) {
           continue;
         }
 
-        const child = this.octree.blocklist.get(code);
-        if (child) {
-          const childScore = scoreMetric(child);
+        visibleBlocks.push(block);
+      }
 
-          if (childScore < 51 - this.screenSizeLimit) {
+      // Check is the point budget is enough to hold all blocks
+      if (
+        visibleBlocks.reduce((a, b) => {
+          return a + b.pointCount;
+        }, 0) +
+          points >
+        this.pointBudget
+      ) {
+        continue;
+      }
+
+      // Add child blocks to the queue and load blocks
+      for (const block of visibleBlocks) {
+        const tileIndex = `${this.metadata.name}_${block.mortonNumber}`;
+        const status =
+          this.tileStatus.get(tileIndex) ??
+          ({ evict: false, nonce: 0 } as TileStatus<PointTile>);
+        status.evict = false;
+
+        if (status.state === undefined) {
+          this.workerPool.postMessage({
+            type: RequestType.POINT,
+            id: tileIndex,
+            request: {
+              index: [block.mortonNumber],
+              minPoint:
+                block.nativeMinPoint?.asArray() ?? block.minPoint.asArray(),
+              maxPoint:
+                block.nativeMaxPoint?.asArray() ?? block.maxPoint.asArray(),
+              namespace: this.namespace,
+              arrayID: this.metadata.levels[block.lod],
+              features: this.metadata.features,
+              nonce: ++this.nonce,
+              attributes: this.metadata.attributes,
+              geotransformCoefficients: this.transformationCoefficients,
+              domain: this.metadata.domain,
+              imageCRS: this.baseCRS,
+              pointCRS: this.metadata.crs
+            } as PointMessage
+          } as DataRequest);
+
+          status.state = TileState.LOADING;
+          status.nonce = this.nonce;
+          this.tileStatus.set(tileIndex, status);
+
+          this.updateLoadingStatus(false);
+        }
+
+        points += block.pointCount || 0;
+        ++blocks;
+
+        for (let i = 0; i < 8; ++i) {
+          const code = (block.mortonNumber << 3) + i;
+
+          if (!this.octree.blocklist.has(code)) {
             continue;
           }
-          this.blockQueue.insert(childScore, child);
+
+          const child = this.octree.blocklist.get(code);
+          if (child) {
+            // All child blocks should have the same score needs assertion
+            const childScore = scoreMetric(child);
+
+            if (childScore < 51 - this.screenSizeLimit) {
+              continue;
+            }
+            this.blockQueue.insert(childScore, child);
+          }
         }
       }
     }

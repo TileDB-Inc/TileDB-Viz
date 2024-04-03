@@ -81,7 +81,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     return super.createScene().then(async scene => {
       this.scene = scene;
       await this.initializeScene();
-      // this.scene.debugLayer.show();
 
       return scene;
     });

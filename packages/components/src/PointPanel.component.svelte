@@ -62,7 +62,7 @@
         selectedAttribute: attributes[0][0],
         pointShape: 1,
         pointSize: 4,
-        pointBudget: 100_000,
+        pointBudget: 1_000_000,
         quality: 40,
         pointOpacity: 1
       };
