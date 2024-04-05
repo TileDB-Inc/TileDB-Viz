@@ -30,16 +30,20 @@ export interface TileDBVisualizationBaseOptions {
    * The HTML element to render the canvas
    */
   rootElement: HTMLElement;
+
+  engineAPI?: 'WEBGL' | 'WEBGPU';
 }
+
 export class TileDBVisualization {
   width: string;
   height: string;
   canvas?: HTMLCanvasElement;
-  engine?: WebGPUEngine;
+  engine?: Engine;
   wheelPrecision: number;
   moveSpeed: number;
   inspector?: boolean;
   rootElement: HTMLElement;
+  engineAPI: 'WEBGL' | 'WEBGPU';
 
   constructor(options: TileDBVisualizationBaseOptions) {
     this.width = options.width || '100%';
@@ -48,6 +52,7 @@ export class TileDBVisualization {
     this.moveSpeed = options.moveSpeed || -1;
     this.inspector = options.inspector || false;
     this.rootElement = options.rootElement;
+    this.engineAPI = options.engineAPI ?? 'WEBGL';
 
     pubSub.removeAllListeners(RERENDER_EVT);
   }
@@ -109,41 +114,46 @@ export class TileDBVisualization {
 
     this.rootElement.appendChild(wrapperDiv);
 
-    //this.engine = new Engine(this.canvas, true);
-    this.engine = new WebGPUEngine(canvas);
-    this.engine.initAsync().then(x => {
+    if (this.engineAPI === 'WEBGL') {
+      this.engine = new Engine(this.canvas, true);
+      this.engine.doNotHandleContextLost = true;
+
+      const engine = this.engine;
+
       SceneLoader.ShowLoadingScreen = false;
-  
+
       this.resizeCanvas();
-  
+
       // window resize event handler
       window.addEventListener('resize', () => {
         this.engine?.resize(true);
       });
-  
+
       this.createScene().then(scene => {
-        this.engine.runRenderLoop(() => {
+        engine.runRenderLoop(() => {
           scene.render();
         });
       });
-    })
-    // this.engine.doNotHandleContextLost = true;
+    } else {
+      this.engine = new WebGPUEngine(canvas);
+      const engine = this.engine as WebGPUEngine;
 
-    // const engine = this.engine;
+      engine.initAsync().then(() => {
+        SceneLoader.ShowLoadingScreen = false;
 
-    // SceneLoader.ShowLoadingScreen = false;
+        this.resizeCanvas();
 
-    // this.resizeCanvas();
+        // window resize event handler
+        window.addEventListener('resize', () => {
+          this.engine?.resize(true);
+        });
 
-    // // window resize event handler
-    // window.addEventListener('resize', () => {
-    //   this.engine?.resize(true);
-    // });
-
-    // this.createScene().then(scene => {
-    //   engine.runRenderLoop(() => {
-    //     scene.render();
-    //   });
-    // });
+        this.createScene().then(scene => {
+          engine.runRenderLoop(() => {
+            scene.render();
+          });
+        });
+      });
+    }
   }
 }

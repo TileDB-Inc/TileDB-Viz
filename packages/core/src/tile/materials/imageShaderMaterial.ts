@@ -1,4 +1,10 @@
-import { Scene, Effect, ShaderMaterial, ShaderStore, ShaderLanguage, TextureSampler, Constants } from '@babylonjs/core';
+import {
+  Scene,
+  Effect,
+  ShaderMaterial,
+  ShaderStore,
+  ShaderLanguage
+} from '@babylonjs/core';
 
 export function ImageShaderMaterialWebGPU(
   name: string,
@@ -6,7 +12,9 @@ export function ImageShaderMaterialWebGPU(
   samplerType: string,
   channelCount: number
 ): ShaderMaterial {
-  ShaderStore.ShadersStoreWGSL[`Bioimage_${samplerType}_${channelCount}VertexShader`] = `
+  ShaderStore.ShadersStoreWGSL[
+    `Bioimage_${samplerType}_${channelCount}VertexShader`
+  ] = `
     #include<sceneUboDeclaration>
     #include<meshUboDeclaration>
 
@@ -36,12 +44,11 @@ export function ImageShaderMaterialWebGPU(
     
     var<uniform> tileOptions : TileOptions;
     var texture_arr : texture_2d_array<${samplerType}>;
-    var mSampler : sampler;
 
     @fragment
     fn main(input : FragmentInputs) -> FragmentOutputs {
       var color : vec4<f32> = vec4f(0.0);
-      var coords = vec2<u32>(vec2<f32>(textureDimensions(texture_arr)) * fragmentInputs.vTexCoord);
+      var coords = vec2<u32>(vec2<f32>(textureDimensions(texture_arr) - vec2<u32>(1)) * fragmentInputs.vTexCoord);
       
       for (var i : i32 = 0; i < ${channelCount.toFixed(0)}; i++) {
         if (tileOptions.channelMapping[i].r > ${channelCount.toFixed(0)}u) {
@@ -66,16 +73,11 @@ export function ImageShaderMaterialWebGPU(
     },
     {
       attributes: ['position', 'uv'],
-      uniformBuffers: ["Scene", "Mesh", 'tileOptions'],
+      uniformBuffers: ['Scene', 'Mesh', 'tileOptions'],
       shaderLanguage: ShaderLanguage.WGSL
     }
   );
 
-  const sampler = new TextureSampler();
-  sampler.setParameters(Constants.TEXTURE_CLAMP_ADDRESSMODE, Constants.TEXTURE_CLAMP_ADDRESSMODE);
-  sampler.samplingMode = Constants.TEXTURE_NEAREST_SAMPLINGMODE;
-
-  material.setTextureSampler("mSampler", sampler);
   material.backFaceCulling = false;
 
   return material;

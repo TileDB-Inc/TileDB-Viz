@@ -195,6 +195,10 @@ export class GeometryManager extends Manager<GeometryTile> {
     bbox: number[],
     constraints?: { path?: number[]; tiles?: number[][] }
   ) {
+    if (this.scene.getEngine().isWebGPU) {
+      return;
+    }
+
     // calculate width and height of bbox
     const height = Math.max(bbox[3] - bbox[1], 1);
     const width = Math.max(bbox[2] - bbox[0], 1);

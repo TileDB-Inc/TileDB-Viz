@@ -8,6 +8,7 @@ import {
   Quaternion
 } from '@babylonjs/core';
 import { MinimapPipeline } from '../pipelines/minimapPostProcess';
+import { MinimapPipelineWebGPU } from '../pipelines/minimapPostProcessWebGPU';
 import {
   Events,
   GUIEvent,
@@ -85,12 +86,11 @@ export class CameraManager {
 
       this.scene.activeCameras?.push(this.minimapCamera);
 
-      // const minimapPipeline = new MinimapPipeline(
-      //   this.scene,
-      //   this.baseWidth,
-      //   this.baseHeight
-      // );
-      // minimapPipeline.initializePostProcess();
+      const minimapPipeline = this.scene.getEngine().isWebGPU
+        ? new MinimapPipelineWebGPU(this.scene, this.baseWidth, this.baseHeight)
+        : new MinimapPipeline(this.scene, this.baseWidth, this.baseHeight);
+
+      minimapPipeline.initializePostProcess();
     }
 
     window.addEventListener(

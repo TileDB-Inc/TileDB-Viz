@@ -1,6 +1,115 @@
-import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
+import {
+  Scene,
+  Effect,
+  ShaderMaterial,
+  ShaderStore,
+  ShaderLanguage
+} from '@babylonjs/core';
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '../types';
+
+export function PointCloudMaterialWebGPU(
+  scene: Scene,
+  featureType: FeatureType
+): ShaderMaterial {
+  let attributeName: string | undefined = undefined;
+  let attributeType: string | undefined = undefined;
+  let coloring: string | undefined = undefined;
+
+  switch (featureType) {
+    case FeatureType.RGB:
+      attributeName = 'colorAttr';
+      attributeType = 'vec3<f32>';
+      coloring =
+        'vertexOutputs.vColor = vec4<f32>(vertexInputs.colorAttr, pointOptions.pointOpacity);';
+      break;
+    case FeatureType.CATEGORICAL:
+      attributeName = 'group';
+      attributeType = 'i32';
+      coloring =
+        'vertexOutputs.vColor = mix(vec4<f32>(pointOptions.colorScheme[vertexInputs.group].rgb, pointOptions.pointOpacity), vec4<f32>(0), f32(vertexInputs.group > 31));';
+      break;
+  }
+
+  ShaderStore.ShadersStoreWGSL[
+    `PointCloudSimpleFT${featureType}VertexShader`
+  ] = `
+  #include<sceneUboDeclaration>
+  #include<meshUboDeclaration>
+
+  attribute position: vec3<f32>;
+  attribute loc: vec3<f32>;
+  attribute state: f32;
+
+  ${attributeName ? `attribute ${attributeName}: ${attributeType};` : ''}
+
+  const selectionColor: vec4<f32> = vec4<f32>(0.0, 1.0, 0.0, 1.0);
+  const pickColor: vec4<f32> = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+
+  struct PointOptions {
+    pointSize: f32,
+    color: vec4<f32>,
+    colorScheme: array<vec4<f32>, 32>,
+    pointOpacity: f32
+  };
+
+  var<uniform> pointOptions : PointOptions;
+
+  varying vColor: vec4<f32>;
+
+  @vertex
+  fn main(input: VertexInputs) -> FragmentInputs
+  {
+    //var p: vec4<f32> = pointOptions.transformation * vec4<f32>(vertexInputs.loc, 1.0);
+    //vertexOutputs.position = scene.viewProjection * (vec4<f32>(p.x, p.z, p.y, 1.0) + vec4<f32>(vertexInputs.position, 0.0));
+
+    vertexOutputs.position = scene.viewProjection * (vec4<f32>(vertexInputs.loc, 1.0) + vec4<f32>(vertexInputs.position, 0.0));
+    
+    ${
+      attributeName
+        ? coloring
+        : 'vertexOutputs.vColor = vec4<f32>(pointOptions.color.rgb, pointOptions.pointOpacity);'
+    }
+    
+    if (vertexInputs.state == 1.0) {
+      vertexOutputs.vColor = selectionColor;
+    }
+    else if (vertexInputs.state == 2.0) {
+      vertexOutputs.vColor = pickColor;
+    }
+  }
+`;
+
+  ShaderStore.ShadersStoreWGSL[
+    `PointCloudSimpleFT${featureType}FragmentShader`
+  ] = `
+  varying vColor: vec4<f32>;
+
+  @fragment
+  fn main(input : FragmentInputs) -> FragmentOutputs {
+    fragmentOutputs.color = fragmentInputs.vColor;
+  }
+`;
+
+  const material = new ShaderMaterial(
+    'PointCloudSimpleShader',
+    scene,
+    {
+      vertex: `PointCloudSimpleFT${featureType}`,
+      fragment: `PointCloudSimpleFT${featureType}`
+    },
+    {
+      attributes: attributeName
+        ? ['position', 'loc', 'state', attributeName]
+        : ['position', 'loc', 'state'],
+      uniformBuffers: ['Scene', 'Mesh', 'pointOptions'],
+      shaderLanguage: ShaderLanguage.WGSL,
+      needAlphaBlending: true
+    }
+  );
+
+  return material;
+}
 
 export function PointCloudMaterial(scene: Scene): ShaderMaterial {
   Effect.ShadersStore['PointCloudSimpleVertexShader'] = `
@@ -49,7 +158,6 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
         else {
           vColor = colorScheme[group];
         }
-        //gl_PointSize = max(1.0, pointSize * vColor.a);
       #elif (FEATURE_TYPE == ${FeatureType.FLAT_COLOR})
         vColor = color;
       #endif

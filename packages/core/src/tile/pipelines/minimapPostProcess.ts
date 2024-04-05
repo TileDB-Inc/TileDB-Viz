@@ -102,7 +102,7 @@ export class MinimapPipeline {
       left = Math.max(Math.min(this.baseWidth, left), 0) / this.baseWidth;
       right = Math.max(Math.min(this.baseWidth, right), 0) / this.baseWidth;
 
-      effect.setFloatArray('visibleArea', Float32Array.from([left, 1 - top, right, 1 - bottom]));
+      effect.setArray4('visibleArea', [left, 1 - top, right, 1 - bottom]);
     };
   }
 }

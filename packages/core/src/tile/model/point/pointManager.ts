@@ -284,7 +284,10 @@ export class PointManager extends Manager<PointTile> {
       return;
     }
 
-    let updateOptions: PointUpdateOptions = { ...this.styleOptions };
+    let updateOptions: PointUpdateOptions = {
+      ...this.styleOptions,
+      pointOptions: this.pointOptions
+    };
 
     switch (target[1]) {
       case 'shape':

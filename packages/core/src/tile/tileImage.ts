@@ -1,5 +1,5 @@
 import { TileDBVisualization } from '../base';
-import { Color3, ComputeShader, DataBuffer, DirectionalLight, Scene, StorageBuffer, Vector3, VertexBuffer } from '@babylonjs/core';
+import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
@@ -82,7 +82,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.scene = scene;
 
       await this.initializeScene();
-      // this.scene.debugLayer.show();
 
       return scene;
     });
