@@ -16,178 +16,178 @@
   import Slider from './misc/InlineSlider.component.svelte';
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
-  import { GUIEvent, SelectProps, SliderProps, colorScheme } from './types';
+  import {
+    GUICategoricalState,
+    GUIEvent,
+    GUIFeaturePropertyState,
+    GUIFlatColorState,
+    GUIPropertyState,
+    GUISelectPropertyState,
+    GUISliderPropertyState,
+    SelectProps,
+    SliderProps,
+    colorScheme
+  } from './types';
   import { Events } from './constants/events';
-    import { clone } from './utils/helpers';
-    import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
+  import { clone } from './utils/helpers';
+  import {
+    Attribute,
+    Feature,
+    FeatureType,
+    GUICategoricalFeature,
+    GUIFeatureProperty,
+    GUIFlatColorFeature,
+    GUISelectProperty,
+    GUISliderProperty,
+    PointPanelInitializationEvent
+  } from '@tiledb-inc/viz-common';
+  import { onDestroy, onMount } from 'svelte';
 
-  export let features: Array<Array<Feature>> = [];
-  export let categories = [];
-  export let attributes: Array<Array<Attribute>> = [];
-  export let targets: Array<Array<string>> = [];
-
-  let colorGroups: Record<string, string[]> = {};
-  let categoryState: Record<
-    string,
-    Record<string, Record<string, { group: number; selected: boolean }>>
-  > = {};
-  let flatColorState: Record<
-    string,
-    Record<string, { fillColor?: string; outlineColor?: string }>
-  > = {};
-
-  for (const [idx, target] of targets.entries()) {
-    categoryState[target[0]] = {};
-    colorGroups[target[0]] = clone(colorScheme);
-    for (const [key, values] of Object.entries(categories[idx])) {
-      categoryState[target[0]][key] = {};
-      for (const name of values as string[]) {
-        categoryState[target[0]][key][name] = { group: 0, selected: false };
-      }
-    }
-
-    flatColorState[target[0]] = {};
-    for (const feature of features[idx]) {
-      if (feature.type === 3) {
-        flatColorState[target[0]][feature.name] = { fillColor: '#FF007F' };
-      }
-    }
-  }
-
-  let state = {
-    selectedDataset: 0,
-    options: new Array(targets.length).fill(0).map(() => {
-      return {
-        selectedFeature: 0,
-        selectedAttribute: attributes[0][0],
-        pointShape: 1,
-        pointSize: 4,
-        pointBudget: 1_000_000,
-        quality: 40,
-        pointOpacity: 1
-      };
-    })
+  let datasetPropertyState: GUISelectPropertyState = {
+      property: {
+      type: 'SELECT',
+      name: 'Dataset',
+      id: 'dataset',
+      values: [] as string[],
+      default: 0
+    },
+    value: 0
   };
+  let globalState: Array<{ dataset: string; state: GUIPropertyState<any>[] }> = [];
+  let selectedDataset: string = '';
 
-  function datasetOnChange(index: number) {
-    state.selectedDataset = index;
-    state = state;
+  function datasetOnChange(value: number) {
+    datasetPropertyState.value = value;
   }
 
-  function pointShapeOnChange(index: number) {
-    state.options[state.selectedDataset].pointShape = index;
-    state = state;
+  function selectOnChange(value: number, dataset: string, property: string) {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${dataset}_${property}`,
+          props: {
+            value: value
+          }
+        }
+      })
+    );
+  }
+
+  function sliderOnChange(value: number, dataset: string, property: string) {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${dataset}_${property}`,
+          props: {
+            value: value
+          }
+        }
+      })
+    );
+  }
+
+  function featureOnChange(value: number, dataset: string, property: string) {
+    globalState = {...globalState};
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
         bubbles: true,
         detail: {
-          target: `${targets[state.selectedDataset][0]}_shape`,
+          target: `${dataset}_${property}`,
           props: {
-            value: state.options[state.selectedDataset].pointShape
+            value: value
           }
         }
       })
     );
   }
 
-  function pointSizeOnChange(size: number) {
-    state.options[state.selectedDataset].pointSize = size;
-    state = state;
 
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_pointSize`,
-          props: {
-            value: size
-          }
-        }
-      })
-    );
-  }
+  $: currentDataset = globalState[datasetPropertyState.value]?.dataset ;
 
-  function pointOpacityOnChange(opacity: number) {
-    state.options[state.selectedDataset].pointOpacity = opacity;
-    state = state;
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_pointOpacity`,
-          props: {
-            value: opacity
-          }
-        }
-      })
-    );
-  }
-
-  function pointBudgetOnChange(budget: number) {
-    state.options[state.selectedDataset].pointBudget = budget;
-    state = state;
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_pointBudget`,
-          props: {
-            value: budget
-          }
-        }
-      })
-    );
-  }
-
-  function qualityOnChange(quality: number) {
-    state.options[state.selectedDataset].quality = quality;
-    state = state;
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_quality`,
-          props: {
-            value: quality
-          }
-        }
-      })
-    );
-  }
-
-  function featureOnChange(index: number) {
-    const feature = features[state.selectedDataset][index];
-
-    if (feature.type === FeatureType.CATEGORICAL) {
-      state.options[state.selectedDataset].selectedAttribute = attributes[
-        state.selectedDataset
-      ].find(x => x.name === feature.attributes[0].name);
+  function onInitialize(
+    event: CustomEvent<GUIEvent<PointPanelInitializationEvent>>
+  ) {
+    if (event.detail.target !== 'point-panel') {
+      return;
     }
 
-    state.options[state.selectedDataset].selectedFeature = index;
-    state = state;
+    event.stopPropagation();
+    const state: GUIPropertyState<any>[] = [];
 
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${targets[state.selectedDataset][0]}_feature`,
-          props: {
-            value: state.options[state.selectedDataset].selectedFeature
+    for (const property of event.detail.props.properties) {
+      switch (property.type) {
+        case 'SLIDER':
+          state.push({
+              property: property,
+              value: (property as GUISliderProperty).default
+            } as GUISliderPropertyState
+          );
+          break;
+        case 'SELECT':
+          state.push({
+              property: property,
+              value: (property as GUISelectProperty).default
+            } as GUISelectPropertyState
+          );
+          break;
+        case 'FEATURE': {
+          const colorState: Record<string, GUIFlatColorState> = {};
+          const categoryState: Record<string, GUICategoricalState> = {};
+
+          for (const feature of (property as GUIFeatureProperty).features) {
+            if (feature.type === FeatureType.FLAT_COLOR) {
+              colorState[feature.name] = {
+                fill: (feature as GUIFlatColorFeature).fill,
+                outline: (feature as GUIFlatColorFeature).outline
+              } as GUIFlatColorState;
+            } else if (feature.type === FeatureType.CATEGORICAL) {
+              categoryState[feature.name] = {
+                colors: clone(colorScheme),
+                category: Object.fromEntries(
+                  event.detail.props.enumerations[
+                    (feature as GUICategoricalFeature).enumeration
+                  ].map(x => {
+                    return [x, { group: 0, selected: false }];
+                  })
+                )
+              } as GUICategoricalState;
+            }
           }
+          state.push({
+              property: property,
+              flatColorState: colorState,
+              categoricalState: categoryState,
+              value: 0
+            } as GUIFeaturePropertyState);
+          break;
         }
-      })
+      }
+    }
+    globalState.push(
+      {
+        dataset: event.detail.props.id,
+        state: state
+      }
     );
+
+    datasetPropertyState.property.values.push(event.detail.props.name);
+    datasetPropertyState = {...datasetPropertyState};
   }
 
-  $: currentFeature =
-    features[state.selectedDataset][
-      state.options[state.selectedDataset].selectedFeature
-    ];
+  onMount(() => {
+    window.addEventListener(Events.INITIALIZE, onInitialize, {
+      capture: true
+    });
+  });
+
+  onDestroy(() => {
+    window.removeEventListener(Events.INITIALIZE, onInitialize, {
+      capture: true
+    });
+  });
 </script>
 
 <Section>
@@ -209,82 +209,41 @@
     Point Cloud
   </div>
   <div class="Viewer-PointCloud_main" slot="content">
-    <Select
-      label={'Dataset'}
-      options={targets.map(x => x[1])}
-      defaultIndex={0}
-      callback={datasetOnChange}
-    />
-    <Slider
-      id={'pointBudget'}
-      label={'Point budget'}
-      min={100_000}
-      max={10_000_000}
-      value={state.options[state.selectedDataset].pointBudget}
-      step={10_000}
-      callback={pointBudgetOnChange}
-      formatter={value => `${(value / 1_000_000).toFixed(1)}M`}
-    />
-    <Slider
-      id={'quality'}
-      label={'Quality'}
-      min={1}
-      max={50}
-      value={state.options[state.selectedDataset].quality}
-      step={1}
-      callback={qualityOnChange}
-      formatter={value => value.toFixed(0)}
-    />
-    <Select
-      label={'Point shape'}
-      options={['Square', 'Circle']}
-      defaultIndex={1}
-      callback={pointShapeOnChange}
-    />
-    <Slider
-      id={'pointSize'}
-      label={'Point size'}
-      min={1}
-      max={10}
-      value={state.options[state.selectedDataset].pointSize}
-      step={0.01}
-      callback={pointSizeOnChange}
-    />
-    <Slider
-      id={'pointOpacity'}
-      label={'Point opacity'}
-      min={0}
-      max={1}
-      value={state.options[state.selectedDataset].pointOpacity}
-      step={0.01}
-      callback={pointOpacityOnChange}
-    />
-    {#if features[state.selectedDataset].length === 0}
-      No Available Features
-    {:else}
-      <Select
-        label={'Display feature'}
-        options={features[state.selectedDataset].map(x => x.name)}
-        defaultIndex={state.options[state.selectedDataset].selectedFeature}
-        callback={featureOnChange}
-      />
-      {#if currentFeature.type === 3}
-        <FlatColorPanel
-          state={flatColorState[targets[state.selectedDataset][0]][
-            currentFeature.name
-          ]}
-          target={targets[state.selectedDataset][0]}
+    <Select dataset={''} state={datasetPropertyState} callback={datasetOnChange} />
+
+    {#each globalState[datasetPropertyState.value]?.state ?? [] as state}
+      {#if state.property.type === 'SELECT'}
+        <Select
+          {state}
+          dataset={currentDataset}
+          callback={selectOnChange}
         />
-      {:else if currentFeature.type === 2}
-        <CategoricalPanel
-          state={categoryState[targets[state.selectedDataset][0]][
-            state.options[state.selectedDataset].selectedAttribute.enumeration
-          ]}
-          target={targets[state.selectedDataset][0]}
-          color_groups={colorGroups[targets[state.selectedDataset][0]]}
+      {:else if state.property.type === 'SLIDER'}
+        <Slider
+          {state}
+          dataset={currentDataset}
+          callback={sliderOnChange}
         />
+      {:else if state.property.type === 'FEATURE'}
+        <Select
+          {state}
+          dataset={currentDataset}
+          callback={featureOnChange}
+        />
+        {console.log(state)}
+        {#if state.property.features[state.value].type === FeatureType.FLAT_COLOR}
+          <FlatColorPanel
+            state={state.flatColorState[state.property.features[state.value].name]}
+            dataset={currentDataset}
+          />
+        {:else if state.property.features[state.value].type === FeatureType.CATEGORICAL}
+          <CategoricalPanel
+            state={state.categoricalState[state.property.features[state.value].name]}
+            dataset={currentDataset}
+          />
+        {/if}
       {/if}
-    {/if}
+    {/each}
   </div>
 </Section>
 

@@ -49,6 +49,8 @@ export abstract class Manager<T extends Tile<any>> {
    */
   public abstract loadTiles(camera: ArcRotateCamera, zoom: number): void;
 
+  public abstract initializeGUIProperties(): void;
+
   /**
    * Unregister all event listeners from the scene or the GUI.
    */

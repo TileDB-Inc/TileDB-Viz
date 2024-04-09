@@ -1,29 +1,25 @@
 <script lang="ts">
-  export let id = '';
-  export let label = '';
-  export let min = 0;
-  export let max = 10;
-  export let value = 1;
-  export let step = 0.1;
+  import { GUISliderProperty } from "@tiledb-inc/viz-common";
+    import { GUISliderPropertyState } from "../types";
 
-  export let callback = (value: number) => {};
-  export let formatter = (value: number) => {
-    return value.toFixed(2);
-  };
+  export let formatter = (value: number) => { return value.toFixed(2); };
+  export let callback = (value: number, dataset: string, property: string) => {};
+  export let dataset: string = '';
+  export let state: GUISliderPropertyState;
 </script>
 
 <div class="Viewer-Slider">
-  <label for={'slider' + id}>{label}:</label>
+  <label for={'slider' + dataset}>{state.property.name}:</label>
   <input
-    name={'slider' + id}
+    name={'slider' + dataset}
     type="range"
-    {min}
-    {max}
-    {step}
-    bind:value
-    on:input={() => callback(value)}
+    min={state.property.min}
+    max={state.property.max}
+    step={state.property.step}
+    bind:value={state.value}
+    on:input={() => callback(state.value, dataset, state.property.id)}
   />
-  <p class="Viewer-Slider__collapsable">{formatter(value)}</p>
+  <p class="Viewer-Slider__collapsable">{formatter(state.value)}</p>
 </div>
 
 <style lang="scss">

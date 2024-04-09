@@ -1,20 +1,21 @@
-<script lang="ts">
-  export let label = '';
-  export let options = [];
-  export let defaultIndex = 0;
+<script lang="ts">    
+  import { GUISelectPropertyState } from "../types";
 
-  export let callback = (value: number) => {};
+  export let callback = (value: number, dataset: string, property: string) => {};
+  export let dataset: string;
+  export let state: GUISelectPropertyState;
 </script>
 
 <div class="Viewer-Select">
-  <label for="options">{label}:</label>
+  <label for="options">{state.property.name}:</label>
   <div class="Viewer-Select__control">
     <select
       name="options"
-      on:change={event => callback(Number.parseInt(event.target.value))}
+      bind:value={state.value}
+      on:change={event => callback(Number.parseInt(event.target.value), dataset, state.property.id)}
     >
-      {#each options as name, index}
-        <option selected={index === defaultIndex} value={index}>{name}</option>
+      {#each state.property.values as name, index}
+        <option selected={index === state.value} value={index}>{name}</option>
       {/each}
     </select>
     <svg

@@ -1,29 +1,34 @@
 <script lang="ts">
   import Checkbox from './Checkbox.component.svelte';
   import Numeric from './NumericInput.component.svelte';
-  import { GUIEvent, ButtonProps, colorScheme, SelectProps } from '../types';
+  import {
+    GUIEvent,
+    ButtonProps,
+    colorScheme,
+    SelectProps,
+    GUICategoricalState
+  } from '../types';
   import { Events, Commands } from '../constants/events';
   import { hexToRgb } from '../utils/helpers';
 
-  export let target = '';
-  export let state: Record<string, { group: number; selected: boolean }> = {};
-  export let color_groups: string[] = [];
+  export let state: GUICategoricalState;
+  export let dataset: string = '';
 
   let searchText = '';
 
   function onColorGroupChange(name, group) {
-    state[name].group = group;
+    state.category[name].group = group;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: `${target}_feature`,
+          target: `${dataset}_feature`,
           props: {
             command: Commands.GROUP,
             data: {
               category: categories.indexOf(name),
-              group: state[name].selected ? state[name].group : 32
+              group: state.category[name].selected ? state.category[name].group : 32
             }
           }
         }
@@ -36,12 +41,12 @@
       new CustomEvent<GUIEvent<ButtonProps>>(Events.COLOR_CHANGE, {
         bubbles: true,
         detail: {
-          target: `${target}_${state[name].group}`,
+          target: `${dataset}_${state.category[name].group}`,
           props: {
             command: Commands.COLOR,
             data: {
-              ...hexToRgb(color_groups[state[name].group]),
-              a: state[name].selected ? 1 : 0
+              ...hexToRgb(state.colors[state.category[name].group]),
+              a: state.category[name].selected ? 1 : 0
             }
           }
         }
@@ -50,18 +55,18 @@
   }
 
   function onCategorySelect(name: string, selected: boolean) {
-    state[name].selected = selected;
+    state.category[name].selected = selected;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: `${target}_feature`,
+          target: `${dataset}_feature`,
           props: {
             command: Commands.GROUP,
             data: {
               category: categories.indexOf(name),
-              group: state[name].selected ? state[name].group : 32
+              group: state.category[name].selected ? state.category[name].group : 32
             }
           }
         }
@@ -69,7 +74,9 @@
     );
   }
 
-  $: categories = Object.keys(state);
+  $: categories = Object.keys(state.category);
+
+  console.log(state);
 </script>
 
 <div class="Viewer-CategoricalPanel">
@@ -91,7 +98,7 @@
         <li class="Viewer-CategoricalPanel__item">
           <Checkbox
             id={name}
-            value={state[name].selected}
+            value={state.category[name].selected}
             callback={value => onCategorySelect(name, value)}
           />
           {name}
@@ -99,14 +106,14 @@
             <div class="Viewer-CategoricalPanel__color-group_expandable">
               <Numeric
                 min={0}
-                max={63}
-                value={state[name].group}
+                max={31}
+                value={state.category[name].group}
                 callback={group => onColorGroupChange(name, group)}
               />
             </div>
             <input
               type="color"
-              bind:value={color_groups[state[name].group]}
+              bind:value={state.colors[state.category[name].group]}
               on:input={e => onColorChange(name)}
             />
           </fragment>

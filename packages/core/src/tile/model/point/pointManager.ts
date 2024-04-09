@@ -44,7 +44,14 @@ import {
   OperationResult,
   IntersectionResult,
   Feature,
-  FeatureType
+  FeatureType,
+  GUIProperty,
+  PointPanelInitializationEvent,
+  GUISliderProperty,
+  GUISelectProperty,
+  GUIFeatureProperty,
+  GUIFlatColorFeature,
+  GUICategoricalFeature
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
@@ -73,7 +80,7 @@ export class PointManager extends Manager<PointTile> {
     pointShape: PointShape.CIRCLE,
     pointSize: 4,
     pointOpacity: 1,
-    color: new Vector4(1, 0, 0.498, 1),
+    color: new Vector4(1, 0.078, 0.576, 1),
 
     // This array is shared by reference so changing a value
     // should automatically update the uniform value
@@ -361,7 +368,7 @@ export class PointManager extends Manager<PointTile> {
         break;
       case Commands.COLOR:
         {
-          if (target[1] === 'fillColor') {
+          if (target[1] === 'fill') {
             const color: { r: number; g: number; b: number } =
               event.detail.props.data;
             Vector4.FromFloatsToRef(
@@ -705,6 +712,99 @@ export class PointManager extends Manager<PointTile> {
           props: response.info
         }
       })
+    );
+  }
+
+  public initializeGUIProperties() {
+    const properties: GUIProperty[] = [
+      {
+        name: 'Point budget',
+        id: 'pointBudget',
+        type: 'SLIDER',
+        min: 100_000,
+        max: 10_000_000,
+        default: 1_000_000,
+        step: 10_000
+      } as GUISliderProperty,
+      {
+        name: 'Quality',
+        id: 'quality',
+        type: 'SLIDER',
+        min: 1,
+        max: 50,
+        default: 40,
+        step: 1
+      } as GUISliderProperty,
+      {
+        name: 'Point shape',
+        id: 'pointShape',
+        type: 'SELECT',
+        values: ['Square', 'Circle'],
+        default: 0
+      } as GUISelectProperty,
+      {
+        name: 'Point size',
+        id: 'pointSize',
+        type: 'SLIDER',
+        min: 1,
+        max: 10,
+        default: 4,
+        step: 0.01
+      } as GUISliderProperty,
+      {
+        name: 'Point opacity',
+        id: 'pointOpacity',
+        type: 'SLIDER',
+        min: 0,
+        max: 1,
+        default: 1,
+        step: 0.01
+      } as GUISliderProperty,
+      {
+        name: 'Display feature',
+        id: 'feature',
+        type: 'FEATURE',
+        values: this.metadata.features
+          .filter(x => x.type !== FeatureType.NON_RENDERABLE)
+          .map(x => x.name),
+        features: this.metadata.features
+          .map(x => {
+            if (x.type === FeatureType.FLAT_COLOR) {
+              return {
+                name: x.name,
+                type: FeatureType.FLAT_COLOR,
+                fill: '#FF1493'
+              } as GUIFlatColorFeature;
+            } else if (x.type === FeatureType.CATEGORICAL) {
+              return {
+                name: x.name,
+                type: FeatureType.CATEGORICAL,
+                enumeration: this.metadata.attributes.find(
+                  y => y.name === x.attributes[0].name
+                )?.enumeration
+              } as GUICategoricalFeature;
+            }
+          })
+          .filter(x => x !== undefined)
+      } as GUIFeatureProperty
+    ];
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<PointPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'point-panel',
+            props: {
+              id: this.metadata.groupID,
+              name: this.metadata.name,
+              properties: properties,
+              enumerations: Object.fromEntries(this.metadata.categories)
+            }
+          }
+        }
+      )
     );
   }
 }

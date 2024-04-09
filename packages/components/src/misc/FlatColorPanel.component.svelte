@@ -1,23 +1,20 @@
 <script lang="ts">
   import { Commands, Events } from '../constants/events';
-  import { ButtonProps, GUIEvent } from '../types';
+  import { ButtonProps, GUIEvent, GUIFlatColorState } from '../types';
   import { hexToRgb } from '../utils/helpers';
 
-  export let state: { fillColor: string; outlineColor: string } = {
-    fillColor: '#0000FF',
-    outlineColor: '#FF0000'
-  };
-  export let target = '';
+  export let dataset: string = '';
+  export let state: GUIFlatColorState;
 
-  function onColorChange(name: string) {
+  function onColorChange(property: 'fill' | 'outline') {
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.COLOR_CHANGE, {
         bubbles: true,
         detail: {
-          target: `${target}_${name}`,
+          target: `${dataset}_${property}`,
           props: {
             command: Commands.COLOR,
-            data: hexToRgb(state[name])
+            data: hexToRgb(state[property])
           }
         }
       })
@@ -30,25 +27,25 @@
     <div class="Viewer-ColorPanel__section-header">
       Coloring mode - Flat Color
     </div>
-    {#if state.fillColor}
+    {#if state.fill}
       <fragment class="Viewer-ColorPanel__color">
         <label for="fillcolor">Fill Color</label>
         <input
           name="fillcolor"
           type="color"
-          bind:value={state.fillColor}
-          on:input={e => onColorChange('fillColor')}
+          bind:value={state.fill}
+          on:input={e => onColorChange('fill')}
         />
       </fragment>
     {/if}
-    {#if state.outlineColor}
+    {#if state.outline}
       <fragment class="Viewer-ColorPanel__color">
         <label for="outlinecolor">Outline Color</label>
         <input
           name="outlinecolor"
           type="color"
-          bind:value={state.outlineColor}
-          on:input={e => onColorChange('outlineColor')}
+          bind:value={state.outline}
+          on:input={e => onColorChange('outline')}
         />
       </fragment>
     {/if}

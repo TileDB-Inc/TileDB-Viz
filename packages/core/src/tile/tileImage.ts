@@ -465,5 +465,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         }
       )
     );
+
+    for (const manager of this.assetManagers) {
+      manager.initializeGUIProperties();
+    }
   }
 }
