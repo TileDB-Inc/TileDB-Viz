@@ -34,6 +34,8 @@ import {
   InfoPanelInitializationEvent,
   Attribute
 } from '@tiledb-inc/viz-common';
+import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
+import { TileManager } from './model/3d/3DTileManager';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -80,6 +82,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
+      this.scene.debugLayer.show();
 
       await this.initializeScene();
 
@@ -299,6 +302,25 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         namespace: imageNamespace
       }
     );
+
+    // proj4.defs("EPSG:4978","+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs");
+    if (this.options.tileUris) {
+      for (const tileURI of this.options.tileUris) {
+        const res = await load3DTileset(tileURI, {
+          sourceCRS: '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs',
+          targetCRS: this.metadata.crs,
+          transformation: this.metadata.transformationCoefficients
+        }).catch(x => console.log(x));
+
+        this.assetManagers.push(
+          new TileManager(this.scene, this.workerPool, 0, {
+            metadata: res,
+            baseCRS: this.metadata.crs,
+            transformation: this.metadata.transformationCoefficients
+          })
+        );
+      }
+    }
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
