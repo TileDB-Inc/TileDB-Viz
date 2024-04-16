@@ -1,5 +1,6 @@
 import { Vector3 } from '@babylonjs/core';
 import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Tile } from '../model';
 
 export type TileDBScene = {
   /**
@@ -304,6 +305,15 @@ export type IntersectionResult = OperationResult & {
   bbox: number[];
   levelIncides: number[];
   ids: BigInt64Array;
+};
+
+//#endregion
+
+//#region 3D Tiles metadata
+
+export type TilesMetadata<T extends Tile<T>> = CommonAssetMetadata & {
+  root: T;
+  baseUrl: string;
 };
 
 //#endregion
