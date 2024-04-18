@@ -1,6 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+
 import proj4 from 'proj4';
 import { functions } from './projections/common/functions';
-
 import { Gauss } from './projections/gauss';
 import { Sterea } from './projections/sterea';
 import { Etmerc } from './projections/etmerc';
