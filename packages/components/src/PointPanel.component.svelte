@@ -54,7 +54,6 @@
     value: 0
   };
   let globalState: Array<{ dataset: string; state: GUIPropertyState<any>[] }> = [];
-  let selectedDataset: string = '';
 
   function datasetOnChange(value: number) {
     datasetPropertyState.value = value;
@@ -105,7 +104,7 @@
   }
 
 
-  $: currentDataset = globalState[datasetPropertyState.value]?.dataset ;
+  $: currentDataset = globalState[datasetPropertyState.value]?.dataset;
 
   function onInitialize(
     event: CustomEvent<GUIEvent<PointPanelInitializationEvent>>

@@ -117,3 +117,15 @@ export type PointPanelInitializationEvent = {
 
   enumerations: Record<string, string[]>;
 };
+
+export type TilePanelInitializationEvent = {
+  id: string;
+
+  name: string;
+
+  properties: GUIProperty[];
+};
+
+export type ScenePanelInitializationEvent = {
+  properties: GUIProperty[];
+};

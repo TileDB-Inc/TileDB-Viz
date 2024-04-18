@@ -1,3 +1,7 @@
+import { FeatureType, GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature, GUIProperty, GUISelectProperty, GUISliderProperty } from "@tiledb-inc/viz-common";
+import { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState, GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, colorScheme } from "../types";
+import { stat } from "fs";
+
 export function capitalize(str: string): string {
   const firstChar = str.charAt(0);
 
@@ -105,4 +109,60 @@ export function clone<T>(object: T): T {
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+export function setupProperties(properties: GUIProperty[], enumerations: Record<string, string[]> = {}): GUIPropertyState<any>[] {
+  const state: GUIPropertyState<any>[] = [];
+
+  for (const property of properties) {
+    switch (property.type) {
+      case 'SLIDER':
+        state.push({
+            property: property,
+            value: (property as GUISliderProperty).default
+          } as GUISliderPropertyState
+        );
+        break;
+      case 'SELECT':
+        state.push({
+            property: property,
+            value: (property as GUISelectProperty).default
+          } as GUISelectPropertyState
+        );
+        break;
+      case 'FEATURE': {
+        const colorState: Record<string, GUIFlatColorState> = {};
+        const categoryState: Record<string, GUICategoricalState> = {};
+
+        for (const feature of (property as GUIFeatureProperty).features) {
+          if (feature.type === FeatureType.FLAT_COLOR) {
+            colorState[feature.name] = {
+              fill: (feature as GUIFlatColorFeature).fill,
+              outline: (feature as GUIFlatColorFeature).outline
+            } as GUIFlatColorState;
+          } else if (feature.type === FeatureType.CATEGORICAL) {
+            categoryState[feature.name] = {
+              colors: clone(colorScheme),
+              category: Object.fromEntries(
+                enumerations[
+                  (feature as GUICategoricalFeature).enumeration
+                ].map(x => {
+                  return [x, { group: 0, selected: false }];
+                })
+              )
+            } as GUICategoricalState;
+          }
+        }
+        state.push({
+            property: property,
+            flatColorState: colorState,
+            categoricalState: categoryState,
+            value: 0
+          } as GUIFeaturePropertyState);
+        break;
+      }
+    }
+  }
+
+  return state;
 }

@@ -7,7 +7,7 @@ import {
   Frustum
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus } from '../manager';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -51,7 +51,8 @@ import {
   GUISelectProperty,
   GUIFeatureProperty,
   GUIFlatColorFeature,
-  GUICategoricalFeature
+  GUICategoricalFeature,
+  TileState
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';

@@ -62,6 +62,8 @@ class TileImageGUI {
     </status-overlay>
     <selection-panel>
     </selection-panel>
+    <asset-panel>
+    </asset-panel>
     <sidebar-menu>
       <zoom-control zoom='0.25'>
       </zoom-control>

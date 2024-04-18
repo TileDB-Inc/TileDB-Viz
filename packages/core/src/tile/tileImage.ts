@@ -36,6 +36,10 @@ import {
 } from '@tiledb-inc/viz-common';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
+import { GUIProperty } from '@tiledb-inc/viz-common';
+import { GUISelectProperty } from '@tiledb-inc/viz-common';
+import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import proj4 from 'proj4';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -310,7 +314,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           sourceCRS: '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs',
           targetCRS: this.metadata.crs,
           transformation: this.metadata.transformationCoefficients
-        }).catch(x => console.log(x));
+        });
 
         this.assetManagers.push(
           new TileManager(this.scene, this.workerPool, 0, {
@@ -488,8 +492,47 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       )
     );
 
+    this.initializeGUIProperties();
+
     for (const manager of this.assetManagers) {
       manager.initializeGUIProperties();
     }
+  }
+
+  public initializeGUIProperties() {
+    const projections: string[] = [];
+
+    if (this.metadata.crs) {
+      // Type definitions are incorrect/incomplete for proj4
+      const projection = proj4.Proj(this.metadata.crs) as any;
+      projections.push(projection.name ?? projection.title);
+    } else {
+      projections.push('None');
+    }
+
+    const properties: GUIProperty[] = [
+      {
+        name: 'Base CRS',
+        id: 'baseCRS',
+        type: 'SELECT',
+        values: projections,
+        default: 0
+      } as GUISelectProperty
+    ];
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ScenePanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'scene-panel',
+            props: {
+              properties: properties
+            }
+          }
+        }
+      )
+    );
   }
 }

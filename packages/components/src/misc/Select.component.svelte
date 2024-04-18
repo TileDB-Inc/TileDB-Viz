@@ -2,7 +2,7 @@
   import { GUISelectPropertyState } from "../types";
 
   export let callback = (value: number, dataset: string, property: string) => {};
-  export let dataset: string;
+  export let dataset: string = '';
   export let state: GUISelectPropertyState;
 </script>
 

@@ -11,7 +11,7 @@ import {
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus } from '../manager';
 import { ImageTile } from './image';
 import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
@@ -22,7 +22,7 @@ import {
   SliderProps,
   Commands
 } from '@tiledb-inc/viz-components';
-import { Attribute } from '@tiledb-inc/viz-common';
+import { Attribute, TileState } from '@tiledb-inc/viz-common';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -161,7 +161,7 @@ export class ImageManager extends Manager<ImageTile> {
           while (parent !== undefined) {
             const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
             const parentState = this.tileStatus.get(parentIndex);
-            if (parentState?.state === TileState.VISIBLE) {
+            if (parentState && parentState.state === TileState.VISIBLE) {
               parentState.evict = false;
               break;
             }
@@ -194,7 +194,7 @@ export class ImageManager extends Manager<ImageTile> {
           while (parent !== undefined) {
             const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
             const parentState = this.tileStatus.get(parentIndex);
-            if (parentState?.state === TileState.VISIBLE) {
+            if (parentState && parentState.state === TileState.VISIBLE) {
               parentState.evict = false;
               break;
             }
@@ -429,6 +429,10 @@ export class ImageManager extends Manager<ImageTile> {
         }
       });
     }
+  }
+
+  public initializeGUIProperties(): void {
+    /** ignore */
   }
 }
 

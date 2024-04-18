@@ -17,7 +17,7 @@ import {
   Color3
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus } from '../manager';
 import {
   ButtonProps,
   Events,
@@ -28,7 +28,7 @@ import {
 } from '@tiledb-inc/viz-components';
 import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
-import { GeometryMetadata, Feature } from '@tiledb-inc/viz-common';
+import { GeometryMetadata, Feature, TileState } from '@tiledb-inc/viz-common';
 
 interface GeometryOptions {
   arrayID: string;
@@ -44,6 +44,9 @@ interface GeometryOptions {
 }
 
 export class GeometryManager extends Manager<GeometryTile> {
+  public initializeGUIProperties(): void {
+    throw new Error('Method not implemented.');
+  }
   private metadata: GeometryMetadata;
   private baseCRS: string;
   private transformationCoefficients: number[];
