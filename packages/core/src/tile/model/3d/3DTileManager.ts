@@ -1,23 +1,19 @@
 import {
-  AbstractMesh,
   ArcRotateCamera,
   Camera,
   ComputeShader,
-  Constants,
-  Effect,
   Frustum,
   HemisphericLight,
-  Matrix,
   Mesh,
   Scene,
   SceneLoader,
   StorageBuffer,
   Vector3,
   VertexBuffer,
-  VertexData
+  TransformNode
 } from '@babylonjs/core';
-import { Manager } from '../manager';
-import { Block, TilesMetadata } from '@tiledb-inc/viz-common';
+import { Manager, TileStatus } from '../manager';
+import { Block, TileState, TilesMetadata } from '@tiledb-inc/viz-common';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { TDB3DTile } from './3DTile';
 import { load3DTileset } from '../../../utils/metadata-utils/3DTiles/3DTileLoader';
@@ -25,24 +21,24 @@ import { shaderBuilder } from '../../materials/shaders/compile';
 import proj4 from 'proj4';
 import { inv, matrix } from 'mathjs';
 import { PriorityQueue } from '@tiledb-inc/viz-common';
+import { GUIProperty } from '@tiledb-inc/viz-common';
+import { GUISelectProperty } from '@tiledb-inc/viz-common';
+import { GUIEvent } from '@tiledb-inc/viz-common';
+import { Events } from '@tiledb-inc/viz-components';
+import { TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { GUISliderProperty } from '@tiledb-inc/viz-common';
 
 interface TileOptions {
   metadata: TilesMetadata<TDB3DTile>;
-  transformation: number[];
-  baseCRS: string;
-}
-
-enum TileStatus {
-  LOADING = 1,
-  VISIBLE = 2
+  transformation?: number[];
+  baseCRS?: string;
 }
 
 export class TileManager extends Manager<any> {
-  private status: Map<string, TileStatus>;
   private sseThreshold: number;
   private metadata: TilesMetadata<TDB3DTile>;
-  private tranformation: number[];
-  private baseCRS: string;
+  private transformation: number[];
+  private baseCRS?: string;
   private compute?: ComputeShader;
 
   constructor(
@@ -54,49 +50,52 @@ export class TileManager extends Manager<any> {
     super(scene, workerPool, 0, 0, 0);
 
     this.metadata = tileOptions.metadata;
-    this.tranformation = tileOptions.transformation;
     this.baseCRS = tileOptions.baseCRS;
-    this.status = new Map<string, TileStatus>();
+    this.transformation = tileOptions.transformation ?? [0, 1, 0, 0, 0, 1];
     this.sseThreshold = 15;
     new HemisphericLight('Skylight', new Vector3(0, 1, 0.1), this.scene);
 
-    if (this.scene.getEngine().isWebGPU && tileOptions.baseCRS) {
+    if (this.scene.getEngine().isWebGPU) {
+      //Decide whether a projection compute step is required
       const inverse = inv(
         matrix([
-          [this.tranformation[1], 0, 0, this.tranformation[0]],
-          [0, this.tranformation[5], 0, this.tranformation[3]],
-          [0, 0, this.tranformation[1], 0],
+          [this.transformation[1], 0, 0, this.transformation[0]],
+          [0, this.transformation[5], 0, this.transformation[3]],
+          [0, 0, this.transformation[1], 0],
           [0, 0, 0, 1]
         ])
       );
 
       const projectionComputeShader = `
           @group(0) @binding(0) var<storage,read_write> position : array<f32>;
-          @group(0) @binding(1) var<storage, read> transformation : mat4x4<f32>;
 
-          const projection : mat4x4<f32> = mat4x4<f32>(vec4<f32>(${inverse.get([
-            0, 0
-          ])}, 0, 0, 0), vec4<f32>(0, ${inverse.get([
+          const transformation : mat4x4<f32> = mat4x4<f32>(vec4<f32>(${inverse.get(
+            [0, 0]
+          )}, 0, 0, 0), vec4<f32>(0, ${inverse.get([
         1, 1
       ])}, 0, 0), vec4<f32>(0, 0, ${inverse.get([
         2, 2
       ])}, 0), vec4<f32>(${inverse.get([0, 3])}, ${inverse.get([1, 3])}, 0, 1));
 
-          ${shaderBuilder(
-            proj4.Proj(
-              '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'
-            ),
-            proj4.Proj(tileOptions.baseCRS)
-          )}
+        ${
+          this.baseCRS
+            ? `
+        ${shaderBuilder(
+          proj4.Proj('+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'),
+          proj4.Proj(tileOptions.baseCRS)
+        )}
+        `
+            : 'fn project(point: vec3<f32>) -> vec3<f32> { return point; }'
+        }
 
           @compute @workgroup_size(1, 1, 1)
           fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
             for (var i : u32 = 0u; i < arrayLength(&position); i = i + 3u) {
 
-              let transformedPosition2: vec4<f32> = transformation * vec4<f32>(position[i], position[i + 1], position[i + 2], 1);
-              let transformedPosition: vec4<f32> = vec4<f32>(position[i], position[i + 1], position[i + 2], 1);
-              var p: vec4<f32> = projection * vec4<f32>(project(vec3<f32>(-transformedPosition.x, -transformedPosition.z, transformedPosition.y)), 1);
+              // Switch from Y-up to Z-up
+              var p: vec4<f32> = transformation * vec4<f32>(project(vec3<f32>(position[i], -position[i + 2], position[i + 1])), 1);
 
+              // Switch from Z-up to Y-up
               position[i] = p[0];
               position[i + 1] = p[2];
               position[i + 2] = -p[1];
@@ -110,8 +109,7 @@ export class TileManager extends Manager<any> {
         { computeSource: projectionComputeShader },
         {
           bindingsMapping: {
-            position: { group: 0, binding: 0 },
-            transformation: { group: 0, binding: 1 }
+            position: { group: 0, binding: 0 }
           }
         }
       );
@@ -119,6 +117,10 @@ export class TileManager extends Manager<any> {
   }
 
   public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+    for (const [_, status] of this.tileStatus) {
+      status.evict = true;
+    }
+
     const frustrum = Frustum.GetPlanes(camera.getTransformationMatrix());
 
     // const tiles: TDB3DTile[] = [this.metadata.root];
@@ -160,20 +162,26 @@ export class TileManager extends Manager<any> {
       }
 
       for (const uri of tile.contents) {
-        if (this.status.has(uri)) {
+        const status =
+          this.tileStatus.get(uri) ??
+          ({ evict: false, nonce: 0 } as TileStatus<any>);
+        status.evict = false;
+
+        if (status.state) {
           continue;
         }
 
-        this.status.set(uri, TileStatus.LOADING);
+        status.state = TileState.LOADING;
+        this.tileStatus.set(uri, status);
 
         if (uri.endsWith('.json')) {
           load3DTileset(this.metadata.baseUrl + uri, {
             sourceCRS: '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs',
             targetCRS: this.baseCRS,
-            transformation: this.tranformation
+            transformation: this.transformation
           }).then(x => {
             tile.children = x.root.children;
-            this.status.set(uri, TileStatus.VISIBLE);
+            status.state = TileState.VISIBLE;
           });
         } else {
           SceneLoader.ImportMeshAsync(
@@ -183,8 +191,6 @@ export class TileManager extends Manager<any> {
             this.scene
           )
             .then(x => {
-              this.status.set(uri, TileStatus.VISIBLE);
-
               const meshes: Mesh[] = [];
 
               for (const mesh of x.meshes) {
@@ -193,6 +199,18 @@ export class TileManager extends Manager<any> {
                 }
 
                 meshes.push(mesh as Mesh);
+
+                const worldMatrix = (
+                  mesh.parent as TransformNode
+                )._localMatrix.clone();
+
+                mesh.parent = null;
+                mesh.resetLocalMatrix();
+
+                if (mesh instanceof Mesh) {
+                  mesh.material.backFaceCulling = false;
+                  mesh.bakeTransformIntoVertices(worldMatrix);
+                }
               }
 
               //return meshes;
@@ -206,17 +224,6 @@ export class TileManager extends Manager<any> {
               );
             })
             .then((mesh: Mesh) => {
-              mesh.bakeCurrentTransformIntoVertices();
-              const transformationBuffer = new StorageBuffer(
-                this.scene.getEngine(),
-                Float32Array.BYTES_PER_ELEMENT * 16
-              );
-              transformationBuffer.update(
-                new Float32Array(mesh.computeWorldMatrix(true).asArray())
-              );
-
-              mesh.resetLocalMatrix();
-
               const data = mesh.getVerticesData(VertexBuffer.PositionKind);
 
               const positionBuffer = new StorageBuffer(
@@ -226,11 +233,6 @@ export class TileManager extends Manager<any> {
               positionBuffer.update(data as Float32Array);
 
               this.compute?.setStorageBuffer('position', positionBuffer);
-
-              this.compute?.setStorageBuffer(
-                'transformation',
-                transformationBuffer
-              );
               this.compute?.dispatchWhenReady(1).then(() => {
                 positionBuffer.read().then(result => {
                   mesh.name = tile.id.toString();
@@ -238,7 +240,10 @@ export class TileManager extends Manager<any> {
                     VertexBuffer.PositionKind,
                     new Float32Array(result.buffer)
                   );
-                  (mesh as Mesh).refreshBoundingInfo();
+                  mesh.refreshBoundingInfo();
+                  tile.mesh = mesh;
+                  status.state = TileState.VISIBLE;
+                  status.tile = tile;
                 });
               });
             })
@@ -246,9 +251,87 @@ export class TileManager extends Manager<any> {
         }
       }
     }
+
+    for (const key of this.tileStatus.keys()) {
+      const status = this.tileStatus.get(key);
+
+      if (!status?.evict) {
+        continue;
+      }
+
+      if (status.state !== TileState.VISIBLE) {
+        // Currently we are not cancelling pending tiles
+        continue;
+      }
+
+      this.tileStatus.delete(key);
+
+      // Currently we are not cancelling pending tiles
+      if (status.state === TileState.VISIBLE) {
+        (status.tile as TDB3DTile)?.mesh?.dispose();
+      }
+    }
   }
 
-  public initializeGUIProperties(): void {}
+  // public setupEventListeners(): void {
+  //   window.addEventListener(
+  //     Events.SELECT_INPUT_CHANGE,
+  //     this.selectHandler.bind(this) as any,
+  //     { capture: true }
+  //   );
+  //   window.addEventListener(
+  //     Events.SLIDER_CHANGE,
+  //     this.sliderHandler.bind(this) as any,
+  //     { capture: true }
+  //   );
+  // }
+
+  public initializeGUIProperties(): void {
+    const properties: GUIProperty[] = [
+      {
+        name: 'Source CRS',
+        id: 'sourceCRS',
+        type: 'SELECT',
+        values: ['EPSG 4978', 'Native'],
+        default: 0
+      } as GUISelectProperty,
+      {
+        name: 'SSE Threshold',
+        id: 'sseThreshold',
+        type: 'SLIDER',
+        min: 1,
+        max: 100,
+        default: 15,
+        step: 1
+      } as GUISliderProperty,
+      {
+        name: 'Opacity',
+        id: 'opacity',
+        type: 'SLIDER',
+        min: 0,
+        max: 1,
+        default: 1,
+        step: 0.01
+      } as GUISliderProperty
+    ];
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<TilePanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'tile-panel',
+            props: {
+              id: this.metadata.baseUrl,
+              name: this.metadata.name,
+              properties: properties
+            }
+          }
+        }
+      )
+    );
+  }
 }
 
 function screenSpaceError(
@@ -256,7 +339,7 @@ function screenSpaceError(
   camera: Camera,
   scene: Scene
 ): number {
-  if (camera.mode == Camera.ORTHOGRAPHIC_CAMERA) {
+  if (camera.mode === Camera.ORTHOGRAPHIC_CAMERA) {
     const pixelSize =
       Math.max(
         camera.orthoTop! - camera.orthoBottom!,

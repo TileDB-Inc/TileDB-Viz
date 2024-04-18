@@ -1,4 +1,4 @@
-import { Camera, Scene, SceneLoader } from '@babylonjs/core';
+import { Camera, Mesh, Scene, SceneLoader } from '@babylonjs/core';
 import { Tileset, TileState } from '../../../types';
 import { OGC3DTilesTileset } from '@tiledb-inc/viz-common/src/types/3DTiles';
 import { Tile } from '@tiledb-inc/viz-common';
@@ -6,6 +6,7 @@ import { extractBVH } from '../../../utils/metadata-utils/3DTiles/3DTileLoader';
 
 export class TDB3DTile extends Tile<TDB3DTile> {
   public contents: string[];
+  public mesh?: Mesh;
 
   constructor() {
     super();

@@ -8,7 +8,7 @@ import {
 import { RefineStrategy } from '../../../types';
 import { TDB3DTile } from '../../../tile/model/3d/3DTile';
 import proj4 from 'proj4';
-import { Matrix, inv, matrix, max, min, multiply } from 'mathjs';
+import { Matrix, inv, matrix, multiply } from 'mathjs';
 
 export async function load3DTileset(
   uri: string,
@@ -20,6 +20,8 @@ export async function load3DTileset(
 ): Promise<TilesMetadata<TDB3DTile>> {
   const tileset = (await (await fetch(uri)).json()) as OGC3DTilesTileset;
 
+  console.log(await fetch(uri));
+
   // Validate tileset
   if (tileset.asset.version !== '1.1') {
     return Promise.reject(
@@ -28,8 +30,12 @@ export async function load3DTileset(
   }
 
   const metadata: TilesMetadata<TDB3DTile> = {
+    name: uri.split('//')[1],
     root: extractBVH(tileset, options)[0],
-    baseUrl: uri.substring(0, uri.lastIndexOf('/') + 1)
+    baseUrl: uri.substring(0, uri.lastIndexOf('/') + 1),
+    features: [],
+    categories: new Map(),
+    attributes: []
   };
 
   return metadata;
