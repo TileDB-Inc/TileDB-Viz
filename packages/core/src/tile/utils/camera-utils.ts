@@ -17,6 +17,10 @@ import {
   TextBoxProps,
   Commands
 } from '@tiledb-inc/viz-components';
+import {
+  CameraPanelInitializationEvent,
+  EngineUpdate
+} from '@tiledb-inc/viz-common';
 
 const MINIMAP_OFFSET = 60;
 const MINIMAP_MAX_SIZE = 200;
@@ -320,16 +324,25 @@ export class CameraManager {
             this.pointerDownStartPosition = pointerCurrentPosition;
 
             window.dispatchEvent(
-              new CustomEvent(Events.ENGINE_INFO_UPDATE, {
-                bubbles: true,
-                detail: {
-                  type: 'CAMERA_POSITION',
-                  cameraTarget: {
-                    x: this.mainCamera.target.x,
-                    z: -this.mainCamera.target.z
+              new CustomEvent<GUIEvent<EngineUpdate[]>>(
+                Events.ENGINE_INFO_UPDATE,
+                {
+                  bubbles: true,
+                  detail: {
+                    target: 'camera-panel',
+                    props: [
+                      {
+                        propertyID: 'position',
+                        value: this.mainCamera.position.asArray()
+                      },
+                      {
+                        propertyID: 'target',
+                        value: this.mainCamera.target.asArray()
+                      }
+                    ]
                   }
                 }
-              })
+              )
             );
           }
           break;
@@ -357,6 +370,41 @@ export class CameraManager {
           break;
       }
     });
+  }
+
+  public initializeGUIProperties() {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<CameraPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'camera-panel',
+            props: {
+              projection: {
+                type: 'SELECT',
+                name: 'Projection mode',
+                id: 'projection',
+                values: ['Orthographic'],
+                default: 0
+              },
+              position: {
+                type: 'VECTOR',
+                name: 'Position',
+                id: 'position',
+                value: this.mainCamera.position.asArray()
+              },
+              target: {
+                type: 'VECTOR',
+                name: 'Target',
+                id: 'target',
+                value: this.mainCamera.target.asArray()
+              }
+            }
+          }
+        }
+      )
+    );
   }
 
   public dispose() {

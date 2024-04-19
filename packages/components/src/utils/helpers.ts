@@ -1,5 +1,5 @@
-import { FeatureType, GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature, GUIProperty, GUISelectProperty, GUISliderProperty } from "@tiledb-inc/viz-common";
-import { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState, GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, colorScheme } from "../types";
+import { FeatureType, GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
+import { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState, GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, GUIVectorPropertyState, colorScheme } from "../types";
 import { stat } from "fs";
 
 export function capitalize(str: string): string {
@@ -129,6 +129,12 @@ export function setupProperties(properties: GUIProperty[], enumerations: Record<
             value: (property as GUISelectProperty).default
           } as GUISelectPropertyState
         );
+        break;
+      case 'VECTOR':
+        state.push({
+          property: property,
+          value: JSON.parse(JSON.stringify((property as GUIVectorProperty).value))
+        } as GUIVectorPropertyState)
         break;
       case 'FEATURE': {
         const colorState: Record<string, GUIFlatColorState> = {};

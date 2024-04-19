@@ -86,7 +86,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
-      this.scene.debugLayer.show();
 
       await this.initializeScene();
 
@@ -500,6 +499,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   public initializeGUIProperties() {
+    this.cameraManager.initializeGUIProperties();
     const projections: string[] = [];
 
     if (this.metadata.crs) {

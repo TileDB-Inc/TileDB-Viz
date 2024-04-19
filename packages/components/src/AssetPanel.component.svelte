@@ -8,7 +8,7 @@
   import { onMount } from 'svelte';
   import CameraPanel from './CameraPanel.component.svelte';
   import ScenePanel from './ScenePanel.component.svelte';
-    import TilePanel from './TilePanel.component.svelte';
+  import TilePanel from './TilePanel.component.svelte';
 
   let expandableWindowsState: Record<
     string,
@@ -208,7 +208,7 @@
   </div>
 </div>
 
-<!-- <div
+<div
   bind:this={expandableWindowsState['camera-panel'].reference}
   class="Viewer-SelectionPanel__container"
   style="max-width: {expandableWindowsState['camera-panel'].active
@@ -223,7 +223,7 @@
   </div>
 </div>
 
--->
+
 
 <div
   bind:this={expandableWindowsState['scene-panel'].reference}

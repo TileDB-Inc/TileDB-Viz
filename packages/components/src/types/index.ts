@@ -1,4 +1,4 @@
-import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty } from "@tiledb-inc/viz-common";
+import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -82,4 +82,8 @@ export type GUIFeaturePropertyState = GUIPropertyState<GUIFeatureProperty> & {
   value: number;
   flatColorState: Record<string, GUIFlatColorState>;
   categoricalState: Record<string, GUICategoricalState>;
+}
+
+export type GUIVectorPropertyState = GUIPropertyState<GUIVectorProperty> & {
+  value: [number, number, number];
 }

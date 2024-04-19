@@ -5,6 +5,11 @@ export type GUIEvent<T = any> = {
   props: T;
 };
 
+export type EngineUpdate = {
+  propertyID: string;
+  value: any;
+};
+
 type InfoPanelConfigEntry = {
   /**
    * The asset display name
@@ -43,7 +48,7 @@ export type GUIProperty = {
   /**
    * Property type
    */
-  type: 'SLIDER' | 'SELECT' | 'FEATURE';
+  type: 'SLIDER' | 'SELECT' | 'FEATURE' | 'VECTOR';
 };
 
 export type GUISliderProperty = GUIProperty & {
@@ -108,6 +113,12 @@ export type GUICategoricalFeature = GUIFeature & {
   enumeration: string;
 };
 
+export type GUIVectorProperty = GUIProperty & {
+  type: 'VECTOR';
+
+  value: [number, number, number];
+};
+
 export type PointPanelInitializationEvent = {
   id: string;
 
@@ -128,4 +139,13 @@ export type TilePanelInitializationEvent = {
 
 export type ScenePanelInitializationEvent = {
   properties: GUIProperty[];
+};
+
+export type CameraPanelInitializationEvent = {
+  projection: GUISelectProperty;
+  position: GUIVectorProperty;
+  target: GUIVectorProperty;
+  pitch: GUISliderProperty;
+  rotation: GUISliderProperty;
+  zoom: GUISliderProperty;
 };

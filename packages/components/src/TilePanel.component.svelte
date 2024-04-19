@@ -26,7 +26,6 @@
   function onInitialize(
     event: CustomEvent<GUIEvent<TilePanelInitializationEvent>>
   ) {
-    console.log(event);
     if (event.detail.target !== 'tile-panel') {
       return;
     }
