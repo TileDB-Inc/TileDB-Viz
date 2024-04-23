@@ -65,8 +65,6 @@ class TileImageGUI {
     <asset-panel>
     </asset-panel>
     <sidebar-menu>
-      <zoom-control zoom='0.25'>
-      </zoom-control>
       <channel-panel channels='${JSON.stringify(channels)}'>
       </channel-panel>
       ${

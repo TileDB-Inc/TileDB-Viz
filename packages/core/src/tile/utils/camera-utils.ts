@@ -206,49 +206,9 @@ export class CameraManager {
       return;
     }
 
-    if (target[1] === 'zoom') {
-      switch (event.detail.props.command) {
-        case Commands.ZOOMIN:
-          this.zoom = Math.max(
-            this.lowerZoomLimit,
-            Math.min(
-              this.upperZoomLimit,
-              2 ** (Math.log2(this.zoom) + ZOOM_STEP)
-            )
-          );
-          break;
-        case Commands.ZOOMOUT:
-          this.zoom = Math.max(
-            this.lowerZoomLimit,
-            Math.min(
-              this.upperZoomLimit,
-              2 ** (Math.log2(this.zoom) - ZOOM_STEP)
-            )
-          );
-          break;
-        case Commands.RESET:
-          this.zoom = this.lowerZoomLimit;
-          this.mainCamera.target.x = this.baseWidth / 2;
-          this.mainCamera.target.z = -this.baseHeight / 2;
-          this.mainCamera.alpha = -Math.PI * 0.5;
-          this.mainCamera.beta = 0;
-          break;
-      }
-    } else if (target[1] === 'minimap' && this.minimapCamera) {
+    if (target[1] === 'minimap' && this.minimapCamera) {
       this.minimapCamera._skipRendering = !event.detail.props.data;
     }
-
-    this.resizeCameraViewport();
-
-    window.dispatchEvent(
-      new CustomEvent(Events.ENGINE_INFO_UPDATE, {
-        bubbles: true,
-        detail: {
-          type: 'ZOOM_INFO',
-          zoom: this.zoom
-        }
-      })
-    );
 
     event.stopPropagation();
   }
@@ -275,9 +235,34 @@ export class CameraManager {
           }
         }
         break;
+      case 'zoom':
+        this.zoom = Math.max(
+          this.lowerZoomLimit,
+          Math.min(this.upperZoomLimit, 2 ** event.detail.props.value)
+        );
+        this.resizeCameraViewport();
     }
 
     event.stopPropagation();
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<EngineUpdate[]>>(Events.ENGINE_INFO_UPDATE, {
+        bubbles: true,
+        detail: {
+          target: 'camera-panel',
+          props: [
+            {
+              propertyID: 'position',
+              value: this.mainCamera.position.asArray()
+            },
+            {
+              propertyID: 'target',
+              value: this.mainCamera.target.asArray()
+            }
+          ]
+        }
+      })
+    );
   }
 
   public setupCameraInput() {
@@ -361,7 +346,7 @@ export class CameraManager {
                 bubbles: true,
                 detail: {
                   type: 'ZOOM_INFO',
-                  zoom: this.zoom
+                  zoom: Math.log2(this.zoom)
                 }
               })
             );
@@ -373,6 +358,7 @@ export class CameraManager {
   }
 
   public initializeGUIProperties() {
+    console.log(this);
     window.dispatchEvent(
       new CustomEvent<GUIEvent<CameraPanelInitializationEvent>>(
         Events.INITIALIZE,
@@ -412,6 +398,14 @@ export class CameraManager {
                 max: 45,
                 default: 0,
                 step: 1
+              },
+              zoom: {
+                name: 'Zoom',
+                id: 'zoom',
+                min: Math.log2(this.lowerZoomLimit),
+                max: Math.log2(this.upperZoomLimit),
+                default: Math.log2(this.lowerZoomLimit),
+                step: 0.125
               }
             }
           }

@@ -6,6 +6,7 @@
   import { GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, GUIVectorPropertyState } from './types';
   import { GUIEvent, CameraPanelInitializationEvent, GUISelectProperty, EngineUpdate } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';
+    import ZoomControl from './ZoomControl.component.svelte';
 
   let globalState: {
     position: GUIVectorPropertyState;
@@ -30,7 +31,7 @@
       target: { property: payload.target, value: JSON.parse(JSON.stringify(payload.target.value)) },
       rotation: { property: payload.rotation, value: payload.rotation.default },
       pitch: { property: payload.pitch, value: payload.pitch.default },
-      // zoom: { property: payload.zoom, value: payload.zoom.default }
+      zoom: { property: payload.zoom, value: payload.zoom.default }
     }
   }
 
@@ -90,11 +91,12 @@
     {#if globalState === undefined}
       No camera found
     {:else}
-      <Select state={globalState.projection}></Select>
-      <VectorInput state={globalState.position}></VectorInput>
-      <VectorInput state={globalState.target}></VectorInput>
-      <Slider state={globalState.rotation} formatter={val => val.toFixed(1) + '\xB0'}></Slider>
-      <Slider state={globalState.pitch} formatter={val => val.toFixed(1) + '\xB0'}></Slider>
+      <ZoomControl state={globalState.zoom} />
+      <Select state={globalState.projection} />
+      <VectorInput state={globalState.position} />
+      <VectorInput state={globalState.target} />
+      <Slider state={globalState.rotation} dataset={'camera'} formatter={val => val.toFixed(1) + '\xB0'} />
+      <Slider state={globalState.pitch} dataset={'camera'} formatter={val => val.toFixed(1) + '\xB0'} />
     {/if}
   </div>
 </div>
