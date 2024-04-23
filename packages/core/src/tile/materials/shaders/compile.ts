@@ -27,8 +27,6 @@ export function shaderBuilder(
   sourceProjection: proj4.InterfaceProjection,
   targetProjection: proj4.InterfaceProjection
 ): string {
-  console.log(sourceProjection, targetProjection, proj4.WGS84);
-
   // Get source projection dependencies
   const sourceProjectionShader = getProjection(sourceProjection as any);
   const sourceProjectionDependencies = sourceProjectionShader

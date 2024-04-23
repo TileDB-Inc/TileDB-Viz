@@ -145,7 +145,6 @@ export async function pointRequest(
     request.imageCRS !== request.pointCRS
       ? proj4(request.pointCRS, request.imageCRS)
       : undefined;
-
   for (let idx = 0; idx < elementCount; ++idx) {
     if (converter) {
       [arrays['X'][idx], arrays['Y'][idx], arrays['Z'][idx]] =

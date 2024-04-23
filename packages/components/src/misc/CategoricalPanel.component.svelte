@@ -75,8 +75,6 @@
   }
 
   $: categories = Object.keys(state.category);
-
-  console.log(state);
 </script>
 
 <div class="Viewer-CategoricalPanel">

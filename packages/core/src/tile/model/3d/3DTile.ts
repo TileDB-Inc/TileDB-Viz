@@ -53,10 +53,6 @@ export class TDB3DTileTileset extends Tileset<TDB3DTile> {
       } else {
         for (const uri of tile.contents) {
           SceneLoader.ImportMeshAsync('', uri, '', this.scene).then(result => {
-            for (const mesh of result.meshes) {
-              console.log(mesh);
-            }
-
             this.state.set(tile.id, TileState.VISIBLE);
           });
         }

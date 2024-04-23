@@ -20,8 +20,6 @@ export async function load3DTileset(
 ): Promise<TilesMetadata<TDB3DTile>> {
   const tileset = (await (await fetch(uri)).json()) as OGC3DTilesTileset;
 
-  console.log(await fetch(uri));
-
   // Validate tileset
   if (tileset.asset.version !== '1.1') {
     return Promise.reject(

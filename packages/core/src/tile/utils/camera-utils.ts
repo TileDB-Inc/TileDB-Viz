@@ -358,7 +358,6 @@ export class CameraManager {
   }
 
   public initializeGUIProperties() {
-    console.log(this);
     window.dispatchEvent(
       new CustomEvent<GUIEvent<CameraPanelInitializationEvent>>(
         Events.INITIALIZE,

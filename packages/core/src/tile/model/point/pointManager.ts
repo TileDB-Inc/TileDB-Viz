@@ -285,8 +285,6 @@ export class PointManager extends Manager<PointTile> {
   private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
     const target = event.detail.target.split('_');
 
-    console.log(event, this.metadata.groupID);
-
     if (target[0] !== this.metadata.groupID) {
       return;
     }
@@ -302,7 +300,6 @@ export class PointManager extends Manager<PointTile> {
         updateOptions = { ...this.styleOptions };
         break;
       case 'displayFeature':
-        console.log(event);
         this.activeFeature = this.metadata.features[event.detail.props.value];
         updateOptions.feature = this.activeFeature;
         break;
