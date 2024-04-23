@@ -79,8 +79,6 @@ class TileImageGUI {
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
           : ''
       }
-      <options-panel>
-      </options-panel>
     </sidebar-menu>
     <scale-bar basePhysicalSize='${
       imageMetadata.physicalSizeX

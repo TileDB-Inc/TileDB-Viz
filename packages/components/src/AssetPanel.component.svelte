@@ -10,7 +10,8 @@
   import ScenePanel from './ScenePanel.component.svelte';
   import TilePanel from './TilePanel.component.svelte';
   import PointPanel from './PointPanel.component.svelte';
-    import GeometryPanel from './GeometryPanel.component.svelte';
+  import GeometryPanel from './GeometryPanel.component.svelte';
+    import OptionsPanel from './OptionsPanel.component.svelte';
 
   let expandableWindowsState: Record<
     string,
@@ -21,7 +22,8 @@
     'image-panel': { active: false, width: 0, reference: undefined },
     'geometry-panel': { active: false, width: 0, reference: undefined },
     'point-panel': { active: false, width: 0, reference: undefined },
-    'tile-panel': { active: false, width: 0, reference: undefined }
+    'tile-panel': { active: false, width: 0, reference: undefined },
+    'options-panel': { active: false, width: 0, reference: undefined }
   };
 
   onMount(() => {
@@ -181,8 +183,10 @@
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path
+          d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"
+        />
         <path d="M7 9h1.5a1.5 1.5 0 0 1 0 3h-.5h.5a1.5 1.5 0 0 1 0 3h-1.5" />
         <path d="M14 9v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2z" />
       </svg>
@@ -191,20 +195,26 @@
   </div>
 
   <div class="anchor-bottom">
-    <button class="Viewer-SelectionPanel__option">
+    <button 
+      title="3D Tile Layers"
+      class="Viewer-SelectionPanel__option"
+      class:selected={expandableWindowsState['options-panel'].active}
+      on:click={() => expandableWindowOnChange('options-panel')}
+      >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="icon"
         viewBox="0 0 48 48"
-        stroke-width="1.5"
+        stroke-width="2"
         stroke="currentColor"
         fill="none"
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path
-          d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"
-        /><path d="M12 9h.01" /><path d="M11 12h1v4h1" />
+        <path
+          d="M26.1271 4.27897C27.2225 4.27897 28.1187 5.15572 28.1187 6.2716V8.76238C29.5806 9.14098 30.9468 9.71884 32.2294 10.4561L33.9821 8.68267C34.7588 7.88562 36.0135 7.88562 36.7903 8.68267L39.5985 11.4923C40.3752 12.2694 40.3752 13.5248 39.5985 14.3019L37.8259 16.0554C38.5628 17.3108 39.1404 18.7056 39.5188 20.1602L42.0084 20.1403C43.1038 20.1403 44 21.017 44 22.1329V26.1182C44 27.2141 43.1038 28.1108 42.0084 28.1108H39.4989C39.1205 29.5455 38.5429 30.9204 37.7861 32.2236L39.5387 33.9771C40.3155 34.7542 40.3155 36.0096 39.5387 36.7867L36.7106 39.5963C35.914 40.3734 34.6592 40.3734 33.8825 39.5963L32.1099 37.8229C30.8154 38.5801 29.4411 39.138 27.9992 39.5166V42.0074C27.9992 43.1033 27.103 44 26.0076 44H22.0243C20.909 44 20.0327 43.1033 20.0327 42.0074V39.4967C18.5788 39.1181 17.2045 38.5402 15.91 37.783L14.1374 39.5365H14.1175C13.3209 40.3136 12.0661 40.3136 11.2894 39.5365L8.46126 36.707C7.66461 35.9099 7.66461 34.6546 8.45927 33.8775L10.2119 32.104C9.43517 30.8088 8.87751 29.4339 8.4991 27.9912H5.99164C4.87632 27.9912 4 27.0946 4 25.9986V22.0134C4 20.8975 4.87632 20.0207 5.99164 20.0207H8.48118C8.83967 18.5581 9.43716 17.1713 10.1741 15.9079L8.40151 14.1345C7.60486 13.3375 7.60486 12.0821 8.40151 11.305L11.2097 8.46348C11.9865 7.66643 13.2412 7.66643 14.0179 8.46348L15.7706 10.217C17.0452 9.43987 18.4194 8.88194 19.8733 8.50334L19.8534 5.99263C19.8534 4.87676 20.7297 4 21.845 4H25.8283L26.1271 4.27897ZM24.1354 16.2347C19.7339 16.2347 16.1689 19.8015 16.1689 24.2052C16.1689 28.589 19.7339 32.1758 24.1354 32.1758C28.517 32.1758 32.102 28.589 32.102 24.2052C32.102 19.8015 28.517 16.2347 24.1354 16.2347Z"
+        >
+        </path>
       </svg>
     </button>
   </div>
@@ -282,6 +292,21 @@
     style="--expanded-width: 400px"
   >
     <TilePanel></TilePanel>
+  </div>
+</div>
+
+<div
+  bind:this={expandableWindowsState['options-panel'].reference}
+  class="Viewer-SelectionPanel__container"
+  style="max-width: {expandableWindowsState['options-panel'].active
+    ? expandableWindowsState['options-panel'].width
+    : 0}px; transition: 0.8s max-width; overflow: hidden;"
+>
+  <div
+    class="Viewer-SelectionPanel__sidewindow"
+    style="--expanded-width: 400px"
+  >
+    <OptionsPanel></OptionsPanel>
   </div>
 </div>
 
