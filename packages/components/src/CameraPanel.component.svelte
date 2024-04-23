@@ -1,8 +1,9 @@
 <script lang="ts">
   import Select from './misc/Select.component.svelte';
+  import Slider from './misc/InlineSlider.component.svelte';
   import VectorInput from './misc/VectorInput.component.svelte';
   import { Events } from './constants/events';
-  import { GUIPropertyState, GUISelectPropertyState, GUIVectorPropertyState } from './types';
+  import { GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, GUIVectorPropertyState } from './types';
   import { GUIEvent, CameraPanelInitializationEvent, GUISelectProperty, EngineUpdate } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';
 
@@ -10,6 +11,9 @@
     position: GUIVectorPropertyState;
     target: GUIVectorPropertyState;
     projection: GUISelectPropertyState;
+    rotation: GUISliderPropertyState;
+    pitch: GUISliderPropertyState;
+    zoom: GUISliderPropertyState;
   };
 
   function onInitialize(event: CustomEvent<GUIEvent<CameraPanelInitializationEvent>>) {
@@ -23,7 +27,10 @@
     globalState = {
       projection: { property: payload.projection, value: payload.projection.default },
       position: { property: payload.position, value: JSON.parse(JSON.stringify(payload.position.value)) },
-      target: { property: payload.target, value: JSON.parse(JSON.stringify(payload.target.value)) }
+      target: { property: payload.target, value: JSON.parse(JSON.stringify(payload.target.value)) },
+      rotation: { property: payload.rotation, value: payload.rotation.default },
+      pitch: { property: payload.pitch, value: payload.pitch.default },
+      // zoom: { property: payload.zoom, value: payload.zoom.default }
     }
   }
 
@@ -42,6 +49,15 @@
           break;
         case globalState.target.property.id:
           globalState.target.value = payload.value;
+          break;
+        case globalState.rotation.property.id:
+          globalState.rotation.value = payload.value;
+          break;
+        case globalState.pitch.property.id:
+          globalState.pitch.value = payload.value;
+          break;
+        case globalState.zoom.property.id:
+          globalState.zoom.value = payload.value;
           break;
       }
     }
@@ -77,6 +93,8 @@
       <Select state={globalState.projection}></Select>
       <VectorInput state={globalState.position}></VectorInput>
       <VectorInput state={globalState.target}></VectorInput>
+      <Slider state={globalState.rotation} formatter={val => val.toFixed(1) + '\xB0'}></Slider>
+      <Slider state={globalState.pitch} formatter={val => val.toFixed(1) + '\xB0'}></Slider>
     {/if}
   </div>
 </div>

@@ -28,7 +28,16 @@ import {
 } from '@tiledb-inc/viz-components';
 import { PickingTool, screenToWorldSpaceBbox } from '../../utils/picking-tool';
 import { hexToRgb } from '../../utils/helpers';
-import { GeometryMetadata, Feature, TileState } from '@tiledb-inc/viz-common';
+import {
+  GeometryMetadata,
+  Feature,
+  TileState,
+  FeatureType,
+  GUIFlatColorFeature,
+  GUICategoricalFeature,
+  GUIFeature
+} from '@tiledb-inc/viz-common';
+import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 
 interface GeometryOptions {
   arrayID: string;
@@ -44,9 +53,6 @@ interface GeometryOptions {
 }
 
 export class GeometryManager extends Manager<GeometryTile> {
-  public initializeGUIProperties(): void {
-    throw new Error('Method not implemented.');
-  }
   private metadata: GeometryMetadata;
   private baseCRS: string;
   private transformationCoefficients: number[];
@@ -59,9 +65,9 @@ export class GeometryManager extends Manager<GeometryTile> {
   private styleOptions = {
     style: GeometryStyle.FILLED,
     fillOpacity: 1,
-    fillColor: new Color3(0, 0, 1),
+    fill: new Color3(0, 0, 1),
     outlineThickness: 1,
-    outlineColor: new Color3(1, 0, 0),
+    outline: new Color3(1, 0, 0),
     renderingGroup: 1,
 
     // This array is shared by reference so changing a value
@@ -303,6 +309,8 @@ export class GeometryManager extends Manager<GeometryTile> {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
+    console.log(event);
+
     if (target[0] !== this.arrayID) {
       return;
     }
@@ -327,7 +335,7 @@ export class GeometryManager extends Manager<GeometryTile> {
         break;
       case Commands.COLOR:
         {
-          if (target[1] === 'fillColor' || target[1] === 'outlineColor') {
+          if (target[1] === 'fill' || target[1] === 'outline') {
             const color: { r: number; g: number; b: number } =
               event.detail.props.data;
             this.styleOptions[target[1]] = new Color3(
@@ -436,16 +444,16 @@ export class GeometryManager extends Manager<GeometryTile> {
     }
 
     switch (target[1]) {
-      case 'style':
-        this.styleOptions.style = event.detail.props.value + 1;
+      case 'renderingStyle':
+        this.styleOptions.style = event.detail.props.value;
         updateOptions = { ...this.styleOptions };
         break;
-      case 'feature':
+      case 'displayFeature':
         this.activeFeature = this.metadata.features[event.detail.props.value];
         updateOptions.feature = this.activeFeature;
         break;
       case 'renderingGroup':
-        this.styleOptions.renderingGroup = event.detail.props.value + 1;
+        this.styleOptions.renderingGroup = event.detail.props.value;
         updateOptions = { ...this.styleOptions };
         break;
       default:
@@ -473,7 +481,7 @@ export class GeometryManager extends Manager<GeometryTile> {
           0.01
         );
         break;
-      case 'lineThickness':
+      case 'outlineWidth':
         this.styleOptions.outlineThickness = event.detail.props.value;
         break;
     }
@@ -520,5 +528,93 @@ export class GeometryManager extends Manager<GeometryTile> {
         } as GeometryMessage
       } as DataRequest);
     }
+  }
+
+  public initializeGUIProperties(): void {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<GeometryPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'geometry-panel',
+            props: {
+              id: this.arrayID,
+              name: this.metadata.name,
+              renderingGroup: {
+                name: 'Rendering group',
+                id: 'renderingGroup',
+                entries: [
+                  { value: 1, name: 'Layer 1' },
+                  { value: 2, name: 'Layer 2' },
+                  { value: 3, name: 'Layer 3' }
+                ],
+                default: 1
+              },
+              renderingStyle: {
+                name: 'Rendering style',
+                id: 'renderingStyle',
+                entries: [
+                  { value: GeometryStyle.FILLED, name: 'Filled' },
+                  { value: GeometryStyle.OUTLINED, name: 'Outlined' },
+                  {
+                    value: GeometryStyle.FILLED_OUTLINED,
+                    name: 'Filled + Outlined'
+                  }
+                ],
+                default: GeometryStyle.FILLED
+              },
+              fillOpacity: {
+                name: 'Fill opacity',
+                id: 'fillOpacity',
+                min: 0,
+                max: 1,
+                step: 0.01,
+                default: 1
+              },
+              outlineWidth: {
+                name: 'Outline width',
+                id: 'outlineWidth',
+                min: 0,
+                max: 4,
+                step: 0.04,
+                default: 1
+              },
+              displayFeature: {
+                name: 'Display feature',
+                id: 'displayFeature',
+                entries: this.metadata.features
+                  .filter(x => x.type !== FeatureType.NON_RENDERABLE)
+                  .map((x, index) => {
+                    return { value: index, name: x.name };
+                  }),
+                default: 0,
+                features: this.metadata.features
+                  .map(x => {
+                    if (x.type === FeatureType.FLAT_COLOR) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.FLAT_COLOR,
+                        fill: '#0000FF',
+                        outline: '#FF0000'
+                      } as GUIFlatColorFeature;
+                    } else if (x.type === FeatureType.CATEGORICAL) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.CATEGORICAL,
+                        enumeration: this.metadata.attributes.find(
+                          y => y.name === x.attributes[0].name
+                        )?.enumeration
+                      } as GUICategoricalFeature;
+                    }
+                  })
+                  .filter(x => x !== undefined) as GUIFeature[]
+              },
+              enumerations: Object.fromEntries(this.metadata.categories)
+            }
+          }
+        }
+      )
+    );
   }
 }

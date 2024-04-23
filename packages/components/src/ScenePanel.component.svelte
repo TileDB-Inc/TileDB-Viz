@@ -3,10 +3,11 @@
   import Select from './misc/Select.component.svelte';
   import { Events } from './constants/events';
   import { GUIEvent, ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
-  import { GUIPropertyState } from './types';
-  import { setupProperties } from './utils/helpers';
+  import { GUISelectPropertyState } from './types';
 
-  let globalState: GUIPropertyState<any>[] = [];
+  let globalState: {
+    baseCRS: GUISelectPropertyState
+  };
 
   function onInitialize(
     event: CustomEvent<GUIEvent<ScenePanelInitializationEvent>>
@@ -16,7 +17,12 @@
     }
 
     event.stopPropagation();
-    globalState = setupProperties(event.detail.props.properties);
+    const payload = event.detail.props;
+    payload.baseCRS
+
+    globalState = {
+      baseCRS: {property: payload.baseCRS, value: payload.baseCRS.default}
+    }
   }
 
   onMount(() => {
@@ -35,14 +41,9 @@
 <div class="Viewer-ScenePanel">
   <div class="Viewer-ScenePanel__header">Scene Settings</div>
   <div class="Viewer-ScenePanel__main">
-    {#each globalState as state}
-      {#if state.property.type === 'SELECT'}
-        <Select
-          {state}
-          dataset={'scene'}
-        />
-      {/if}
-    {/each}
+    {#if globalState !== undefined }
+      <Select state={globalState.baseCRS} dataset={'scene'} />
+    {/if}
   </div>
 </div>
 

@@ -3,21 +3,25 @@
   import Select from './misc/Select.component.svelte';
   import { Events } from './constants/events';
   import { GUIEvent, TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
-  import { GUIPropertyState, GUISelectPropertyState } from './types';
+  import { GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState } from './types';
   import { setupProperties } from './utils/helpers';
   import Slider from './misc/InlineSlider.component.svelte';
 
   let datasetPropertyState: GUISelectPropertyState = {
       property: {
-      type: 'SELECT',
       name: 'Dataset',
       id: 'dataset',
-      values: [] as string[],
+      entries: [],
       default: 0
     },
     value: 0
   };
-  let globalState: Array<{ dataset: string; state: GUIPropertyState<any>[] }> = [];
+  let globalState: { 
+    datasetID: string;  
+    sourceCRS: GUISelectPropertyState;
+    sseThreshold: GUISliderPropertyState;
+    opacity: GUISliderPropertyState;
+  }[] = [];
 
   function datasetOnChange(value: number) {
     datasetPropertyState.value = value;
@@ -31,18 +35,21 @@
     }
 
     event.stopPropagation();
-    globalState.push(
-      {
-        dataset: event.detail.props.id,
-        state: setupProperties(event.detail.props.properties)
+    const payload = event.detail.props;
+
+    globalState.push({
+        datasetID: payload.id,
+        sourceCRS: {property: payload.sourceCRS, value: payload.sourceCRS.default},
+        sseThreshold: {property: payload.sseThreshold, value: payload.sseThreshold.default},
+        opacity: {property: payload.opacity, value: payload.opacity.default}
       }
     );
 
-    datasetPropertyState.property.values.push(event.detail.props.name);
+    datasetPropertyState.property.entries.push({value: datasetPropertyState.property.entries.length, name: event.detail.props.name});
     datasetPropertyState = {...datasetPropertyState};
   }
 
-  $: currentDataset = globalState[datasetPropertyState.value]?.dataset;
+  $: currentState = globalState[datasetPropertyState.value]
 
   onMount(() => {
     window.addEventListener(Events.INITIALIZE, onInitialize, {
@@ -60,14 +67,14 @@
 <div class="Viewer-ScenePanel">
   <div class="Viewer-ScenePanel__header">Scene Settings</div>
   <div class="Viewer-ScenePanel__main">
-    <Select dataset={''} state={datasetPropertyState} callback={datasetOnChange} />
-    {#each globalState[datasetPropertyState.value]?.state ?? [] as state}
-      {#if state.property.type === 'SELECT'}
-        <Select {state} dataset={currentDataset} />
-      {:else if state.property.type === 'SLIDER'}
-        <Slider {state} dataset={currentDataset} />
-      {/if}
-    {/each}
+    {#if datasetPropertyState.property.entries.length === 0}
+      No 3D Tile assets found
+    {:else}
+      <Select state={datasetPropertyState} callback={(value) => datasetPropertyState.value = value} />
+      <Select state={currentState.sourceCRS} dataset={currentState.datasetID} />
+      <Slider state={currentState.sseThreshold} dataset={currentState.datasetID} />
+      <Slider state={currentState.opacity} dataset={currentState.datasetID} />
+    {/if}
   </div>
 </div>
 

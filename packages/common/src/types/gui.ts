@@ -1,4 +1,4 @@
-import { Attribute, FeatureType } from './core';
+import { Attribute, FeatureType, GeometryStyle, PointShape } from './core';
 
 export type GUIEvent<T = any> = {
   target: string;
@@ -44,16 +44,9 @@ export type GUIProperty = {
    * Property id
    */
   id: string;
-
-  /**
-   * Property type
-   */
-  type: 'SLIDER' | 'SELECT' | 'FEATURE' | 'VECTOR';
 };
 
 export type GUISliderProperty = GUIProperty & {
-  type: 'SLIDER';
-
   /**
    * Minimum range value
    */
@@ -75,13 +68,11 @@ export type GUISliderProperty = GUIProperty & {
   step: number;
 };
 
-export type GUISelectProperty = GUIProperty & {
-  type: 'SELECT';
-
+export type GUISelectProperty<T = number> = GUIProperty & {
   /**
    * Selectable options
    */
-  values: string[];
+  entries: { value: T; name: string }[];
 
   /**
    * Default range value
@@ -89,9 +80,7 @@ export type GUISelectProperty = GUIProperty & {
   default: number;
 };
 
-export type GUIFeatureProperty = Omit<GUISelectProperty, 'type'> & {
-  type: 'FEATURE';
-
+export type GUIFeatureProperty = GUISelectProperty & {
   features: GUIFeature[];
 };
 
@@ -114,18 +103,29 @@ export type GUICategoricalFeature = GUIFeature & {
 };
 
 export type GUIVectorProperty = GUIProperty & {
-  type: 'VECTOR';
-
   value: [number, number, number];
+};
+
+export type GeometryPanelInitializationEvent = {
+  id: string;
+  name: string;
+  renderingGroup: GUISelectProperty;
+  renderingStyle: GUISelectProperty<GeometryStyle>;
+  displayFeature: GUIFeatureProperty;
+  fillOpacity: GUISliderProperty;
+  outlineWidth: GUISliderProperty;
+  enumerations: Record<string, string[]>;
 };
 
 export type PointPanelInitializationEvent = {
   id: string;
-
   name: string;
-
-  properties: GUIProperty[];
-
+  pointBudget: GUISliderProperty;
+  quality: GUISliderProperty;
+  pointShape: GUISelectProperty<PointShape>;
+  pointSize: GUISliderProperty;
+  pointOpacity: GUISliderProperty;
+  displayFeature: GUIFeatureProperty;
   enumerations: Record<string, string[]>;
 };
 
@@ -134,11 +134,13 @@ export type TilePanelInitializationEvent = {
 
   name: string;
 
-  properties: GUIProperty[];
+  sourceCRS: GUISelectProperty;
+  sseThreshold: GUISliderProperty;
+  opacity: GUISliderProperty;
 };
 
 export type ScenePanelInitializationEvent = {
-  properties: GUIProperty[];
+  baseCRS: GUISelectProperty;
 };
 
 export type CameraPanelInitializationEvent = {

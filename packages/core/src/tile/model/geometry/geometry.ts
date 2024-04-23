@@ -19,10 +19,10 @@ export interface GeometryUpdateOptions extends UpdateOptions<GeometryResponse> {
   style?: GeometryStyle;
 
   outlineThickness?: number;
-  outlineColor?: Color3;
+  outline?: Color3;
 
   fillOpacity?: number;
-  fillColor?: Color3;
+  fill?: Color3;
 
   groupUpdate?: { categoryIndex: number; group: number };
   groupState?: Map<string, Map<number, number>>;
@@ -222,11 +222,11 @@ export class GeometryTile extends Tile<GeometryResponse> {
     this.mesh.edgesWidth =
       updateOptions.outlineThickness ?? this.mesh.outlineWidth;
 
-    this.mesh.edgesColor = updateOptions.outlineColor
-      ? Color4.FromColor3(updateOptions.outlineColor)
+    this.mesh.edgesColor = updateOptions.outline
+      ? Color4.FromColor3(updateOptions.outline)
       : this.mesh.edgesColor;
     (this.mesh.material as StandardMaterial).diffuseColor =
-      updateOptions.fillColor ??
+      updateOptions.fill ??
       (this.mesh.material as StandardMaterial).diffuseColor;
 
     if (updateOptions.groupUpdate) {

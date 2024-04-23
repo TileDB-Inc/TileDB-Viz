@@ -67,8 +67,8 @@ export type GUISliderPropertyState = GUIPropertyState<GUISliderProperty> & {
   value: number;
 }
 
-export type GUISelectPropertyState = GUIPropertyState<GUISelectProperty> & {
-  value: number;
+export type GUISelectPropertyState<T = number> = GUIPropertyState<GUISelectProperty<T>> & {
+  value: T;
 }
 
 export type GUIFlatColorState = { fill?: string, outline?: string };

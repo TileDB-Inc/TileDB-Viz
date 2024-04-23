@@ -287,34 +287,6 @@ export class TileManager extends Manager<any> {
   // }
 
   public initializeGUIProperties(): void {
-    const properties: GUIProperty[] = [
-      {
-        name: 'Source CRS',
-        id: 'sourceCRS',
-        type: 'SELECT',
-        values: ['EPSG 4978', 'Native'],
-        default: 0
-      } as GUISelectProperty,
-      {
-        name: 'SSE Threshold',
-        id: 'sseThreshold',
-        type: 'SLIDER',
-        min: 1,
-        max: 100,
-        default: 15,
-        step: 1
-      } as GUISliderProperty,
-      {
-        name: 'Opacity',
-        id: 'opacity',
-        type: 'SLIDER',
-        min: 0,
-        max: 1,
-        default: 1,
-        step: 0.01
-      } as GUISliderProperty
-    ];
-
     window.dispatchEvent(
       new CustomEvent<GUIEvent<TilePanelInitializationEvent>>(
         Events.INITIALIZE,
@@ -325,7 +297,31 @@ export class TileManager extends Manager<any> {
             props: {
               id: this.metadata.baseUrl,
               name: this.metadata.name,
-              properties: properties
+              sourceCRS: {
+                name: 'Source CRS',
+                id: 'sourceCRS',
+                entries: [
+                  { value: 0, name: 'EPSG 4978' },
+                  { value: 1, name: 'Native' }
+                ],
+                default: 0
+              },
+              sseThreshold: {
+                name: 'SSE Threshold',
+                id: 'sseThreshold',
+                min: 1,
+                max: 100,
+                default: 15,
+                step: 1
+              },
+              opacity: {
+                name: 'Opacity',
+                id: 'opacity',
+                min: 0,
+                max: 1,
+                default: 1,
+                step: 0.01
+              }
             }
           }
         }

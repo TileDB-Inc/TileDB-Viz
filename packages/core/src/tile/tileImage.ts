@@ -500,25 +500,15 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
   public initializeGUIProperties() {
     this.cameraManager.initializeGUIProperties();
-    const projections: string[] = [];
+    const projections: { value: number; name: string }[] = [];
 
     if (this.metadata.crs) {
       // Type definitions are incorrect/incomplete for proj4
       const projection = proj4.Proj(this.metadata.crs) as any;
-      projections.push(projection.name ?? projection.title);
+      projections.push({ value: 0, name: projection.name ?? projection.title });
     } else {
-      projections.push('None');
+      projections.push({ value: 0, name: 'None' });
     }
-
-    const properties: GUIProperty[] = [
-      {
-        name: 'Base CRS',
-        id: 'baseCRS',
-        type: 'SELECT',
-        values: projections,
-        default: 0
-      } as GUISelectProperty
-    ];
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ScenePanelInitializationEvent>>(
@@ -528,7 +518,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           detail: {
             target: 'scene-panel',
             props: {
-              properties: properties
+              baseCRS: {
+                name: 'Base CRS',
+                id: 'baseCRS',
+                entries: projections,
+                default: 0
+              }
             }
           }
         }

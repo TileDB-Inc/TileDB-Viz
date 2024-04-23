@@ -111,6 +111,37 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+export function createFeatureState(property: GUIFeatureProperty, enumerations: Record<string, string[]>): GUIFeaturePropertyState {
+  const state: GUIFeaturePropertyState = {
+    property: property,
+    value: property.default,
+    flatColorState: {},
+    categoricalState: {},
+  };
+
+  for (const feature of property.features) {
+    if (feature.type === FeatureType.FLAT_COLOR) {
+      state.flatColorState[feature.name] = {
+        fill: (feature as GUIFlatColorFeature).fill,
+        outline: (feature as GUIFlatColorFeature).outline
+      } as GUIFlatColorState;
+    } else if (feature.type === FeatureType.CATEGORICAL) {
+      state.categoricalState[feature.name] = {
+        colors: clone(colorScheme),
+        category: Object.fromEntries(
+          enumerations[
+            (feature as GUICategoricalFeature).enumeration
+          ].map(x => {
+            return [x, { group: 0, selected: false }];
+          })
+        )
+      } as GUICategoricalState;
+    }
+  }
+
+  return state;
+}
+
 export function setupProperties(properties: GUIProperty[], enumerations: Record<string, string[]> = {}): GUIPropertyState<any>[] {
   const state: GUIPropertyState<any>[] = [];
 

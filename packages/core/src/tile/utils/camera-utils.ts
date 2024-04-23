@@ -382,23 +382,36 @@ export class CameraManager {
             target: 'camera-panel',
             props: {
               projection: {
-                type: 'SELECT',
                 name: 'Projection mode',
                 id: 'projection',
-                values: ['Orthographic'],
+                entries: [{ value: 0, name: 'Orthographic' }],
                 default: 0
               },
               position: {
-                type: 'VECTOR',
                 name: 'Position',
                 id: 'position',
                 value: this.mainCamera.position.asArray()
               },
               target: {
-                type: 'VECTOR',
                 name: 'Target',
                 id: 'target',
                 value: this.mainCamera.target.asArray()
+              },
+              rotation: {
+                name: 'Rotation',
+                id: 'rotation',
+                min: 0,
+                max: 360,
+                default: 0,
+                step: 1
+              },
+              pitch: {
+                name: 'Pitch',
+                id: 'pitch',
+                min: 0,
+                max: 45,
+                default: 0,
+                step: 1
               }
             }
           }

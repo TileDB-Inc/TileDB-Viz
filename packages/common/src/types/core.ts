@@ -179,6 +179,18 @@ export type Domain = {
 
 type octreeIndex = `${number}-${number}-${number}-${number}`;
 
+export enum PointShape {
+  SQUARE = 0b1,
+  CIRCLE = 0b10,
+  PARABOLA = 0b100
+}
+
+export enum GeometryStyle {
+  FILLED = 0b01,
+  OUTLINED = 0b10,
+  FILLED_OUTLINED = 0b11
+}
+
 //#region Asset Metadata
 
 type CommonAssetMetadata = {

@@ -9,6 +9,8 @@
   import CameraPanel from './CameraPanel.component.svelte';
   import ScenePanel from './ScenePanel.component.svelte';
   import TilePanel from './TilePanel.component.svelte';
+  import PointPanel from './PointPanel.component.svelte';
+    import GeometryPanel from './GeometryPanel.component.svelte';
 
   let expandableWindowsState: Record<
     string,
@@ -223,8 +225,6 @@
   </div>
 </div>
 
-
-
 <div
   bind:this={expandableWindowsState['scene-panel'].reference}
   class="Viewer-SelectionPanel__container"
@@ -237,6 +237,36 @@
     style="--expanded-width: 400px"
   >
     <ScenePanel></ScenePanel>
+  </div>
+</div>
+
+<div
+  bind:this={expandableWindowsState['geometry-panel'].reference}
+  class="Viewer-SelectionPanel__container"
+  style="max-width: {expandableWindowsState['geometry-panel'].active
+    ? expandableWindowsState['geometry-panel'].width
+    : 0}px; transition: 0.8s max-width; overflow: hidden;"
+>
+  <div
+    class="Viewer-SelectionPanel__sidewindow"
+    style="--expanded-width: 400px"
+  >
+    <GeometryPanel></GeometryPanel>
+  </div>
+</div>
+
+<div
+  bind:this={expandableWindowsState['point-panel'].reference}
+  class="Viewer-SelectionPanel__container"
+  style="max-width: {expandableWindowsState['point-panel'].active
+    ? expandableWindowsState['point-panel'].width
+    : 0}px; transition: 0.8s max-width; overflow: hidden;"
+>
+  <div
+    class="Viewer-SelectionPanel__sidewindow"
+    style="--expanded-width: 400px"
+  >
+    <PointPanel></PointPanel>
   </div>
 </div>
 
