@@ -309,8 +309,6 @@ export class GeometryManager extends Manager<GeometryTile> {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    console.log(event);
-
     if (target[0] !== this.arrayID) {
       return;
     }

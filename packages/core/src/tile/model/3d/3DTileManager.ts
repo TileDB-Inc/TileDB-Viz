@@ -21,12 +21,9 @@ import { shaderBuilder } from '../../materials/shaders/compile';
 import proj4 from 'proj4';
 import { inv, matrix } from 'mathjs';
 import { PriorityQueue } from '@tiledb-inc/viz-common';
-import { GUIProperty } from '@tiledb-inc/viz-common';
-import { GUISelectProperty } from '@tiledb-inc/viz-common';
 import { GUIEvent } from '@tiledb-inc/viz-common';
-import { Events } from '@tiledb-inc/viz-components';
+import { Events, SliderProps } from '@tiledb-inc/viz-components';
 import { TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
-import { GUISliderProperty } from '@tiledb-inc/viz-common';
 
 interface TileOptions {
   metadata: TilesMetadata<TDB3DTile>;
@@ -40,6 +37,7 @@ export class TileManager extends Manager<any> {
   private transformation: number[];
   private baseCRS?: string;
   private compute?: ComputeShader;
+  private visibility: number;
 
   constructor(
     scene: Scene,
@@ -53,6 +51,7 @@ export class TileManager extends Manager<any> {
     this.baseCRS = tileOptions.baseCRS;
     this.transformation = tileOptions.transformation ?? [0, 1, 0, 0, 0, 1];
     this.sseThreshold = 15;
+    this.visibility = 1;
     new HemisphericLight('Skylight', new Vector3(0, 1, 0.1), this.scene);
 
     if (this.scene.getEngine().isWebGPU) {
@@ -114,6 +113,8 @@ export class TileManager extends Manager<any> {
         }
       );
     }
+
+    this.setupEventListeners();
   }
 
   public loadTiles(camera: ArcRotateCamera, zoom: number): void {
@@ -241,6 +242,7 @@ export class TileManager extends Manager<any> {
                     new Float32Array(result.buffer)
                   );
                   mesh.refreshBoundingInfo();
+                  mesh.visibility = this.visibility;
                   tile.mesh = mesh;
                   status.state = TileState.VISIBLE;
                   status.tile = tile;
@@ -273,18 +275,36 @@ export class TileManager extends Manager<any> {
     }
   }
 
-  // public setupEventListeners(): void {
-  //   window.addEventListener(
-  //     Events.SELECT_INPUT_CHANGE,
-  //     this.selectHandler.bind(this) as any,
-  //     { capture: true }
-  //   );
-  //   window.addEventListener(
-  //     Events.SLIDER_CHANGE,
-  //     this.sliderHandler.bind(this) as any,
-  //     { capture: true }
-  //   );
-  // }
+  public setupEventListeners(): void {
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this.sliderHandler.bind(this) as any,
+      { capture: true }
+    );
+  }
+
+  public sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>): void {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== this.metadata.id) {
+      return;
+    }
+
+    switch (target[1]) {
+      case 'opacity':
+        this.visibility = event.detail.props.value;
+        for (const status of this.tileStatus.values()) {
+          const tile = status.tile as TDB3DTile | undefined;
+
+          if (tile?.mesh === undefined) {
+            continue;
+          }
+
+          tile.mesh.visibility = this.visibility;
+        }
+        break;
+    }
+  }
 
   public initializeGUIProperties(): void {
     window.dispatchEvent(
@@ -295,7 +315,7 @@ export class TileManager extends Manager<any> {
           detail: {
             target: 'tile-panel',
             props: {
-              id: this.metadata.baseUrl,
+              id: this.metadata.id,
               name: this.metadata.name,
               sourceCRS: {
                 name: 'Source CRS',

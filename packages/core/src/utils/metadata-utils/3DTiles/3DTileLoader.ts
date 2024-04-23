@@ -33,6 +33,7 @@ export async function load3DTileset(
     name: uri.split('//')[1],
     root: extractBVH(tileset, options)[0],
     baseUrl: uri.substring(0, uri.lastIndexOf('/') + 1),
+    id: crypto.randomUUID(),
     features: [],
     categories: new Map(),
     attributes: []

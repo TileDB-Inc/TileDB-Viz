@@ -326,6 +326,7 @@ export type IntersectionResult = OperationResult & {
 export type TilesMetadata<T extends Tile<T>> = CommonAssetMetadata & {
   root: T;
   baseUrl: string;
+  id: string;
 };
 
 //#endregion
