@@ -79,7 +79,7 @@ export class PointManager extends Manager<PointTile> {
   private zoom: number;
   private styleOptions = {
     pointShape: PointShape.SQUARE,
-    pointSize: 4,
+    pointSize: 1,
     pointOpacity: 1,
     color: new Vector4(1, 0.078, 0.576, 1),
 
@@ -773,7 +773,7 @@ export class PointManager extends Manager<PointTile> {
                 id: 'pointSize',
                 min: 1,
                 max: 10,
-                default: 4,
+                default: 1,
                 step: 0.01
               },
               pointOpacity: {

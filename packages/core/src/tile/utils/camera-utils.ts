@@ -24,6 +24,7 @@ import {
 const MINIMAP_OFFSET = 60;
 const MINIMAP_MAX_SIZE = 200;
 const ZOOM_STEP = 0.125;
+const ZOOM_SENSITIVITY = 0.013;
 
 export class CameraManager {
   private scene: Scene;
@@ -298,36 +299,66 @@ export class CameraManager {
                 )
               );
 
-            this.mainCamera.position.addInPlace(
-              positionDifference.multiplyByFloats(-1, 0, 1)
-            );
-            this.mainCamera.target.addInPlace(
-              positionDifference.multiplyByFloats(-1, 0, 1)
-            );
-
             this.pointerDownStartPosition = pointerCurrentPosition;
 
-            window.dispatchEvent(
-              new CustomEvent<GUIEvent<EngineUpdate[]>>(
-                Events.ENGINE_INFO_UPDATE,
-                {
+            if (pointerInfo.event.ctrlKey) {
+              const direction = -Math.sign(positionDifference.z);
+              const delta =
+                positionDifference
+                  .multiplyByFloats(this.zoom, 1, this.zoom)
+                  .length() *
+                ZOOM_SENSITIVITY *
+                ZOOM_STEP *
+                direction;
+
+              this.zoom = Math.max(
+                this.lowerZoomLimit,
+                Math.min(
+                  this.upperZoomLimit,
+                  2 ** (Math.log2(this.zoom) + delta)
+                )
+              );
+
+              this.resizeCameraViewport();
+              window.dispatchEvent(
+                new CustomEvent(Events.ENGINE_INFO_UPDATE, {
                   bubbles: true,
                   detail: {
-                    target: 'camera-panel',
-                    props: [
-                      {
-                        propertyID: 'position',
-                        value: this.mainCamera.position.asArray()
-                      },
-                      {
-                        propertyID: 'target',
-                        value: this.mainCamera.target.asArray()
-                      }
-                    ]
+                    type: 'ZOOM_INFO',
+                    zoom: Math.log2(this.zoom)
                   }
-                }
-              )
-            );
+                })
+              );
+            } else {
+              this.mainCamera.position.addInPlace(
+                positionDifference.multiplyByFloats(-1, 0, 1)
+              );
+              this.mainCamera.target.addInPlace(
+                positionDifference.multiplyByFloats(-1, 0, 1)
+              );
+
+              window.dispatchEvent(
+                new CustomEvent<GUIEvent<EngineUpdate[]>>(
+                  Events.ENGINE_INFO_UPDATE,
+                  {
+                    bubbles: true,
+                    detail: {
+                      target: 'camera-panel',
+                      props: [
+                        {
+                          propertyID: 'position',
+                          value: this.mainCamera.position.asArray()
+                        },
+                        {
+                          propertyID: 'target',
+                          value: this.mainCamera.target.asArray()
+                        }
+                      ]
+                    }
+                  }
+                )
+              );
+            }
           }
           break;
         case PointerEventTypes.POINTERWHEEL:
