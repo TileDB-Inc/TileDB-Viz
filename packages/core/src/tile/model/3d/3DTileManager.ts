@@ -24,6 +24,7 @@ import { PriorityQueue } from '@tiledb-inc/viz-common';
 import { GUIEvent } from '@tiledb-inc/viz-common';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
 import { TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { FrameDetails } from '../../../types';
 
 interface TileOptions {
   metadata: TilesMetadata<TDB3DTile>;
@@ -117,7 +118,7 @@ export class TileManager extends Manager<any> {
     this.setupEventListeners();
   }
 
-  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
     for (const [_, status] of this.tileStatus) {
       status.evict = true;
     }

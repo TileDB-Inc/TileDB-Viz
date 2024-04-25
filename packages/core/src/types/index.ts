@@ -114,3 +114,8 @@ export class Tileset<T extends Tile<T>> {
     return result;
   }
 }
+
+export type FrameDetails = {
+  zoom: number;
+  level: number;
+};

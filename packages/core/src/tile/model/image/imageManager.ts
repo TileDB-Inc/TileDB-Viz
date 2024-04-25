@@ -1,5 +1,5 @@
 import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
-import { Dimension } from '../../../types';
+import { Dimension, FrameDetails } from '../../../types';
 import {
   BaseResponse,
   Channel,
@@ -136,19 +136,19 @@ export class ImageManager extends Manager<ImageTile> {
     );
   }
 
-  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
     for (const [key, value] of this.tileStatus) {
       value.evict = this.hasMinimap ? !key.endsWith('0') : true;
     }
 
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
       camera,
-      zoom
+      frameDetails.level
     );
 
     for (let x = minXIndex; x <= maxXIndex; ++x) {
       for (let y = minYIndex; y <= maxYIndex; ++y) {
-        const tileIndex = `image_${x}_${y}_${zoom}`;
+        const tileIndex = `image_${x}_${y}_${frameDetails.level}`;
         const status =
           this.tileStatus.get(tileIndex) ??
           ({ evict: false, type: 'IMAGE', nonce: 0 } as TileStatus<ImageTile>);
@@ -156,7 +156,7 @@ export class ImageManager extends Manager<ImageTile> {
         status.evict = false;
 
         if (status.state === TileState.LOADING) {
-          let parent = getParent([x, y, zoom]);
+          let parent = getParent([x, y, frameDetails.level]);
 
           while (parent !== undefined) {
             const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
@@ -173,9 +173,9 @@ export class ImageManager extends Manager<ImageTile> {
             type: RequestType.IMAGE,
             id: tileIndex,
             request: {
-              index: [x, y, zoom],
+              index: [x, y, frameDetails.level],
               tileSize: this.tileSize,
-              levelRecord: this.levels[zoom],
+              levelRecord: this.levels[frameDetails.level],
               namespace: this.namespace,
               attribute: this.selectedAttribute,
               channelRanges: this.channelRanges,
@@ -190,7 +190,7 @@ export class ImageManager extends Manager<ImageTile> {
 
           this.updateLoadingStatus(false);
 
-          let parent = getParent([x, y, zoom]);
+          let parent = getParent([x, y, frameDetails.level]);
           while (parent !== undefined) {
             const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
             const parentState = this.tileStatus.get(parentIndex);

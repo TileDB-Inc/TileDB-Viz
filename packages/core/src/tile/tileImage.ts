@@ -3,7 +3,7 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Dimension } from '../types';
+import { AssetEntry, Dimension, FrameDetails } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -36,8 +36,6 @@ import {
 } from '@tiledb-inc/viz-common';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
-import { GUIProperty } from '@tiledb-inc/viz-common';
-import { GUISelectProperty } from '@tiledb-inc/viz-common';
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
 
@@ -60,6 +58,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: Manager<Tile<any>>[];
+  private frameDetails: FrameDetails;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -81,6 +80,10 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.geometryMetadata = new Map<string, GeometryMetadata>();
     this.pointMetadata = new Map<string, PointCloudMetadata>();
     this.assetManagers = [];
+    this.frameDetails = {
+      zoom: 0.25,
+      level: -2
+    };
   }
 
   protected async createScene(): Promise<Scene> {
@@ -409,7 +412,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    const integerZoom = Math.max(
+    this.frameDetails.zoom = this.cameraManager.getZoom();
+    this.frameDetails.level = Math.max(
       0,
       Math.min(
         this.levels.length - 1,
@@ -417,9 +421,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       )
     );
 
-    this.tileset.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+    this.tileset.loadTiles(
+      this.cameraManager.getMainCamera(),
+      this.frameDetails
+    );
     for (const manager of this.assetManagers) {
-      manager.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+      manager.loadTiles(this.cameraManager.getMainCamera(), this.frameDetails);
     }
   }
 

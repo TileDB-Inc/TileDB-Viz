@@ -14,8 +14,7 @@ import {
   GUIEvent,
   ButtonProps,
   SliderProps,
-  TextBoxProps,
-  Commands
+  TextBoxProps
 } from '@tiledb-inc/viz-components';
 import {
   CameraPanelInitializationEvent,
@@ -404,7 +403,7 @@ export class CameraManager {
                 min: Math.log2(this.lowerZoomLimit),
                 max: Math.log2(this.upperZoomLimit),
                 default: Math.log2(this.lowerZoomLimit),
-                step: 0.125
+                step: ZOOM_STEP
               }
             }
           }

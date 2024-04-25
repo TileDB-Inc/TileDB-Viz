@@ -38,6 +38,7 @@ import {
   GUIFeature
 } from '@tiledb-inc/viz-common';
 import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { FrameDetails } from '../../../types';
 
 interface GeometryOptions {
   arrayID: string;
@@ -128,12 +129,12 @@ export class GeometryManager extends Manager<GeometryTile> {
     this.setupEventListeners();
   }
 
-  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
     for (const [, value] of this.tileStatus) {
       value.evict = true;
     }
 
-    if (zoom >= this.nativeZoom) {
+    if (frameDetails.level >= this.nativeZoom) {
       const [minXIndex, maxXIndex, minYIndex, maxYIndex] =
         this.getTileIndexRange(camera, this.nativeZoom);
 

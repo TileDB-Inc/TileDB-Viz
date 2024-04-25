@@ -54,6 +54,7 @@ import {
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
 import proj4 from 'proj4';
+import { FrameDetails } from '../../../types';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -74,8 +75,10 @@ export class PointManager extends Manager<PointTile> {
   private namespace: string;
   private pickingTool: PickingTool;
   private baseCRS?: string;
+  private pointSize: number;
+  private zoom: number;
   private styleOptions = {
-    pointShape: PointShape.CIRCLE,
+    pointShape: PointShape.SQUARE,
     pointSize: 4,
     pointOpacity: 1,
     color: new Vector4(1, 0.078, 0.576, 1),
@@ -114,6 +117,8 @@ export class PointManager extends Manager<PointTile> {
     this.namespace = options.namespace;
     this.baseCRS = options.baseCRS;
     this.pickingTool = pickingTool;
+    this.pointSize = 1;
+    this.zoom = 0.25;
 
     // To be in accordance with the image layer the UP direction align with
     // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
@@ -296,7 +301,7 @@ export class PointManager extends Manager<PointTile> {
 
     switch (target[1]) {
       case 'pointShape':
-        this.styleOptions.pointShape = 2 ** event.detail.props.value;
+        this.styleOptions.pointShape = event.detail.props.value;
         updateOptions = { ...this.styleOptions };
         break;
       case 'displayFeature':
@@ -323,7 +328,15 @@ export class PointManager extends Manager<PointTile> {
 
     switch (target[1]) {
       case 'pointSize':
-        this.pointOptions.updateFloat('pointSize', event.detail.props.value);
+        this.pointSize = event.detail.props.value;
+        if (this.scene.getEngine().isWebGPU) {
+          this.pointOptions.updateFloat(
+            'pointSize',
+            this.pointSize / this.zoom
+          );
+        } else {
+          this.pointOptions.updateFloat('pointSize', this.pointSize);
+        }
         this.pointOptions.update();
         break;
       case 'pointBudget':
@@ -465,9 +478,15 @@ export class PointManager extends Manager<PointTile> {
     this.updateLoadingStatus(true);
   }
 
-  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
     for (const [, value] of this.tileStatus) {
       value.evict = true;
+    }
+
+    if (this.scene.getEngine().isWebGPU) {
+      this.zoom = frameDetails.zoom;
+      this.pointOptions.updateFloat('pointSize', this.pointSize / this.zoom);
+      this.pointOptions.update();
     }
 
     this.blockQueue.reset();
