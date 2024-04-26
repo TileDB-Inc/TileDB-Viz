@@ -809,6 +809,11 @@ export class PointManager extends Manager<PointTile> {
                           y => y.name === x.attributes[0].name
                         )?.enumeration
                       } as GUICategoricalFeature;
+                    } else if (x.type === FeatureType.RGB) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.RGB
+                      } as GUIFeature;
                     }
                   })
                   .filter(x => x !== undefined) as GUIFeature[]

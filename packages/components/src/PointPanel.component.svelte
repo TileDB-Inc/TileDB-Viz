@@ -4,30 +4,17 @@
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
   import {
-    GUICategoricalState,
     GUIEvent,
     GUIFeaturePropertyState,
-    GUIFlatColorState,
-    GUIPropertyState,
     GUISelectPropertyState,
-    GUISliderPropertyState,
-    SelectProps,
-    SliderProps,
-    colorScheme
+    GUISliderPropertyState
   } from './types';
   import { Events } from './constants/events';
-  import { clone, createFeatureState } from './utils/helpers';
+  import { createFeatureState } from './utils/helpers';
   import {
     FeatureType,
-    GUICategoricalFeature,
-    GUIFeatureProperty,
-    GUIFlatColorFeature,
-    GUISelectProperty,
-    GUISliderProperty,
     PointPanelInitializationEvent,
-
     PointShape
-
   } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';
 
@@ -75,6 +62,8 @@
 
     datasetPropertyState.property.entries.push({value: datasetPropertyState.property.entries.length, name: event.detail.props.name});
     datasetPropertyState = { ...datasetPropertyState };
+
+    console.log(globalState);
   }
 
   onMount(() => {
