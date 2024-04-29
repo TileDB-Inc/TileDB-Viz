@@ -208,7 +208,6 @@ export class PointTile extends Tile<PointResponse> {
               updatable: true
             });
 
-            console.log('box');
             const buffer = new VertexData();
 
             buffer.positions = box.getVerticesData(VertexBuffer.PositionKind);

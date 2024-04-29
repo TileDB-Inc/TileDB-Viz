@@ -62,8 +62,6 @@
 
     datasetPropertyState.property.entries.push({value: datasetPropertyState.property.entries.length, name: event.detail.props.name});
     datasetPropertyState = { ...datasetPropertyState };
-
-    console.log(globalState);
   }
 
   onMount(() => {

@@ -632,7 +632,7 @@ async function calculateTileBbox(
   for (const [x, y] of tiles) {
     const cachedPositions = (await getQueryDataFromCache(
       `${arrayID}_${tileSize}`,
-      `${'position'}_${x}_${y}`
+      `${'positions'}_${x}_${y}`
     )) as Float32Array | undefined;
 
     const cachedIds = (await getQueryDataFromCache(
