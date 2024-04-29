@@ -1,4 +1,4 @@
-import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty } from "@tiledb-inc/viz-common";
+import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -67,8 +67,8 @@ export type GUISliderPropertyState = GUIPropertyState<GUISliderProperty> & {
   value: number;
 }
 
-export type GUISelectPropertyState = GUIPropertyState<GUISelectProperty> & {
-  value: number;
+export type GUISelectPropertyState<T = number> = GUIPropertyState<GUISelectProperty<T>> & {
+  value: T;
 }
 
 export type GUIFlatColorState = { fill?: string, outline?: string };
@@ -82,4 +82,8 @@ export type GUIFeaturePropertyState = GUIPropertyState<GUIFeatureProperty> & {
   value: number;
   flatColorState: Record<string, GUIFlatColorState>;
   categoricalState: Record<string, GUICategoricalState>;
+}
+
+export type GUIVectorPropertyState = GUIPropertyState<GUIVectorProperty> & {
+  value: [number, number, number];
 }

@@ -23,6 +23,9 @@ export { default as InfoPanel } from './InfoPanel.component.svelte';
 export { default as GeometryPanel } from './GeometryPanel.component.svelte';
 export { default as PointPanel } from './PointPanel.component.svelte';
 export { default as SelectionPanel } from './SelectionPanel.component.svelte';
+export { default as AssetPanel } from './AssetPanel.component.svelte';
+export { default as CameraPanel } from './CameraPanel.component.svelte'; 
+export { default as TilePanel } from './TilePanel.component.svelte'
 
 export { Events, Commands }
 export type { GUIEvent, ButtonProps, SliderProps, TextBoxProps, SelectProps }

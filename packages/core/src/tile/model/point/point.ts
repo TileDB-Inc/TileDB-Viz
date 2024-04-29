@@ -177,6 +177,52 @@ export class PointTile extends Tile<PointResponse> {
         true
       );
     }
+
+    if (updateOptions.pointShape) {
+      switch (updateOptions.pointShape) {
+        case PointShape.CIRCLE:
+          {
+            const sphere = MeshBuilder.CreateSphere(this.mesh.name, {
+              diameter: 1,
+              segments: 1,
+              updatable: true
+            });
+            const buffer = new VertexData();
+
+            buffer.positions = sphere.getVerticesData(
+              VertexBuffer.PositionKind
+            );
+            buffer.normals = sphere.getVerticesData(VertexBuffer.NormalKind);
+            buffer.uvs = sphere.getVerticesData(VertexBuffer.UVKind);
+            buffer.indices = sphere.getIndices();
+
+            buffer.applyToMesh(this.mesh);
+
+            sphere.dispose();
+          }
+          break;
+        case PointShape.SQUARE:
+          {
+            const box = MeshBuilder.CreateBox(this.mesh.name, {
+              size: 1,
+              updatable: true
+            });
+
+            console.log('box');
+            const buffer = new VertexData();
+
+            buffer.positions = box.getVerticesData(VertexBuffer.PositionKind);
+            buffer.normals = box.getVerticesData(VertexBuffer.NormalKind);
+            buffer.uvs = box.getVerticesData(VertexBuffer.UVKind);
+            buffer.indices = box.getIndices();
+
+            buffer.applyToMesh(this.mesh);
+
+            box.dispose();
+          }
+          break;
+      }
+    }
   }
 
   private setupInstanceBuffersWebGPU(positions: Float32Array) {

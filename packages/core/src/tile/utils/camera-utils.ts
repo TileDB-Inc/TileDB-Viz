@@ -14,13 +14,17 @@ import {
   GUIEvent,
   ButtonProps,
   SliderProps,
-  TextBoxProps,
-  Commands
+  TextBoxProps
 } from '@tiledb-inc/viz-components';
+import {
+  CameraPanelInitializationEvent,
+  EngineUpdate
+} from '@tiledb-inc/viz-common';
 
 const MINIMAP_OFFSET = 60;
 const MINIMAP_MAX_SIZE = 200;
 const ZOOM_STEP = 0.125;
+const ZOOM_SENSITIVITY = 0.013;
 
 export class CameraManager {
   private scene: Scene;
@@ -202,49 +206,9 @@ export class CameraManager {
       return;
     }
 
-    if (target[1] === 'zoom') {
-      switch (event.detail.props.command) {
-        case Commands.ZOOMIN:
-          this.zoom = Math.max(
-            this.lowerZoomLimit,
-            Math.min(
-              this.upperZoomLimit,
-              2 ** (Math.log2(this.zoom) + ZOOM_STEP)
-            )
-          );
-          break;
-        case Commands.ZOOMOUT:
-          this.zoom = Math.max(
-            this.lowerZoomLimit,
-            Math.min(
-              this.upperZoomLimit,
-              2 ** (Math.log2(this.zoom) - ZOOM_STEP)
-            )
-          );
-          break;
-        case Commands.RESET:
-          this.zoom = this.lowerZoomLimit;
-          this.mainCamera.target.x = this.baseWidth / 2;
-          this.mainCamera.target.z = -this.baseHeight / 2;
-          this.mainCamera.alpha = -Math.PI * 0.5;
-          this.mainCamera.beta = 0;
-          break;
-      }
-    } else if (target[1] === 'minimap' && this.minimapCamera) {
+    if (target[1] === 'minimap' && this.minimapCamera) {
       this.minimapCamera._skipRendering = !event.detail.props.data;
     }
-
-    this.resizeCameraViewport();
-
-    window.dispatchEvent(
-      new CustomEvent(Events.ENGINE_INFO_UPDATE, {
-        bubbles: true,
-        detail: {
-          type: 'ZOOM_INFO',
-          zoom: this.zoom
-        }
-      })
-    );
 
     event.stopPropagation();
   }
@@ -271,9 +235,34 @@ export class CameraManager {
           }
         }
         break;
+      case 'zoom':
+        this.zoom = Math.max(
+          this.lowerZoomLimit,
+          Math.min(this.upperZoomLimit, 2 ** event.detail.props.value)
+        );
+        this.resizeCameraViewport();
     }
 
     event.stopPropagation();
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<EngineUpdate[]>>(Events.ENGINE_INFO_UPDATE, {
+        bubbles: true,
+        detail: {
+          target: 'camera-panel',
+          props: [
+            {
+              propertyID: 'position',
+              value: this.mainCamera.position.asArray()
+            },
+            {
+              propertyID: 'target',
+              value: this.mainCamera.target.asArray()
+            }
+          ]
+        }
+      })
+    );
   }
 
   public setupCameraInput() {
@@ -310,27 +299,66 @@ export class CameraManager {
                 )
               );
 
-            this.mainCamera.position.addInPlace(
-              positionDifference.multiplyByFloats(-1, 0, 1)
-            );
-            this.mainCamera.target.addInPlace(
-              positionDifference.multiplyByFloats(-1, 0, 1)
-            );
-
             this.pointerDownStartPosition = pointerCurrentPosition;
 
-            window.dispatchEvent(
-              new CustomEvent(Events.ENGINE_INFO_UPDATE, {
-                bubbles: true,
-                detail: {
-                  type: 'CAMERA_POSITION',
-                  cameraTarget: {
-                    x: this.mainCamera.target.x,
-                    z: -this.mainCamera.target.z
+            if (pointerInfo.event.ctrlKey) {
+              const direction = -Math.sign(positionDifference.z);
+              const delta =
+                positionDifference
+                  .multiplyByFloats(this.zoom, 1, this.zoom)
+                  .length() *
+                ZOOM_SENSITIVITY *
+                ZOOM_STEP *
+                direction;
+
+              this.zoom = Math.max(
+                this.lowerZoomLimit,
+                Math.min(
+                  this.upperZoomLimit,
+                  2 ** (Math.log2(this.zoom) + delta)
+                )
+              );
+
+              this.resizeCameraViewport();
+              window.dispatchEvent(
+                new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+                  bubbles: true,
+                  detail: {
+                    type: 'ZOOM_INFO',
+                    zoom: Math.log2(this.zoom)
                   }
-                }
-              })
-            );
+                })
+              );
+            } else {
+              this.mainCamera.position.addInPlace(
+                positionDifference.multiplyByFloats(-1, 0, 1)
+              );
+              this.mainCamera.target.addInPlace(
+                positionDifference.multiplyByFloats(-1, 0, 1)
+              );
+
+              window.dispatchEvent(
+                new CustomEvent<GUIEvent<EngineUpdate[]>>(
+                  Events.ENGINE_INFO_UPDATE,
+                  {
+                    bubbles: true,
+                    detail: {
+                      target: 'camera-panel',
+                      props: [
+                        {
+                          propertyID: 'position',
+                          value: this.mainCamera.position.asArray()
+                        },
+                        {
+                          propertyID: 'target',
+                          value: this.mainCamera.target.asArray()
+                        }
+                      ]
+                    }
+                  }
+                )
+              );
+            }
           }
           break;
         case PointerEventTypes.POINTERWHEEL:
@@ -348,7 +376,7 @@ export class CameraManager {
                 bubbles: true,
                 detail: {
                   type: 'ZOOM_INFO',
-                  zoom: this.zoom
+                  zoom: Math.log2(this.zoom)
                 }
               })
             );
@@ -357,6 +385,62 @@ export class CameraManager {
           break;
       }
     });
+  }
+
+  public initializeGUIProperties() {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<CameraPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'camera-panel',
+            props: {
+              projection: {
+                name: 'Projection mode',
+                id: 'projection',
+                entries: [{ value: 0, name: 'Orthographic' }],
+                default: 0
+              },
+              position: {
+                name: 'Position',
+                id: 'position',
+                value: this.mainCamera.position.asArray()
+              },
+              target: {
+                name: 'Target',
+                id: 'target',
+                value: this.mainCamera.target.asArray()
+              },
+              rotation: {
+                name: 'Rotation',
+                id: 'rotation',
+                min: 0,
+                max: 360,
+                default: 0,
+                step: 1
+              },
+              pitch: {
+                name: 'Pitch',
+                id: 'pitch',
+                min: 0,
+                max: 45,
+                default: 0,
+                step: 1
+              },
+              zoom: {
+                name: 'Zoom',
+                id: 'zoom',
+                min: Math.log2(this.lowerZoomLimit),
+                max: Math.log2(this.upperZoomLimit),
+                default: Math.log2(this.lowerZoomLimit),
+                step: ZOOM_STEP
+              }
+            }
+          }
+        }
+      )
+    );
   }
 
   public dispose() {

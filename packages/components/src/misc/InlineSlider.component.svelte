@@ -1,11 +1,30 @@
 <script lang="ts">
-  import { GUISliderProperty } from "@tiledb-inc/viz-common";
-    import { GUISliderPropertyState } from "../types";
+    import { GUIEvent } from "@tiledb-inc/viz-common";
+    import { Events } from "../constants/events";
+  import { GUISliderPropertyState, SliderProps } from "../types";
 
   export let formatter = (value: number) => { return value.toFixed(2); };
   export let callback = (value: number, dataset: string, property: string) => {};
   export let dataset: string = '';
   export let state: GUISliderPropertyState;
+
+  function onChange() {
+    if (callback) {
+      callback(state.value, dataset, state.property.id);
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${dataset}_${state.property.id}`,
+          props: {
+            value: state.value
+          }
+        }
+      })
+    );
+  }
 </script>
 
 <div class="Viewer-Slider">
@@ -17,7 +36,7 @@
     max={state.property.max}
     step={state.property.step}
     bind:value={state.value}
-    on:input={() => callback(state.value, dataset, state.property.id)}
+    on:input={onChange}
   />
   <p class="Viewer-Slider__collapsable">{formatter(state.value)}</p>
 </div>
@@ -42,7 +61,7 @@
       overflow: hidden;
       width: 100%;
       max-width: 0;
-      text-align: end;
+      text-align: start;
       transition: max-width 0.2s ease-in-out;
       line-height: 25px;
     }
@@ -57,7 +76,7 @@
     }
 
     &:hover &__collapsable {
-      max-width: 30px;
+      max-width: 46px;
     }
 
     input[type='range']::-webkit-slider-thumb:hover {

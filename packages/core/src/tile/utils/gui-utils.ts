@@ -62,9 +62,9 @@ class TileImageGUI {
     </status-overlay>
     <selection-panel>
     </selection-panel>
+    <asset-panel>
+    </asset-panel>
     <sidebar-menu>
-      <zoom-control zoom='0.25'>
-      </zoom-control>
       <channel-panel channels='${JSON.stringify(channels)}'>
       </channel-panel>
       ${
@@ -79,51 +79,6 @@ class TileImageGUI {
           ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
           : ''
       }
-      ${
-        geometryMetadata.size
-          ? `<geometry-panel 
-          attributes='${JSON.stringify(
-            Array.from(geometryMetadata.entries()).map(x => x[1].attributes)
-          )}' 
-          categories='${JSON.stringify(
-            Array.from(geometryMetadata.entries()).map(x =>
-              Object.fromEntries(x[1].categories)
-            )
-          )}' 
-          features='${JSON.stringify(
-            Array.from(geometryMetadata.entries()).map(x => x[1].features)
-          )}'
-          targets='${JSON.stringify(
-            Array.from(geometryMetadata.entries()).map(x => [x[0], x[1].name])
-          )}'
-        >
-        </geometry-panel>`
-          : ''
-      }
-      ${
-        pointMetadata.size
-          ? `<point-panel
-          attributes='${JSON.stringify(
-            Array.from(pointMetadata.entries()).map(x => x[1].attributes)
-          )}' 
-          categories='${JSON.stringify(
-            Array.from(pointMetadata.entries()).map(x =>
-              Object.fromEntries(x[1].categories)
-            )
-          )}' 
-          features='${JSON.stringify(
-            Array.from(pointMetadata.entries()).map(x => x[1].features)
-          )}'
-          targets='${JSON.stringify(
-            Array.from(pointMetadata.entries()).map(x => [x[0], x[1].name])
-          )}'
-        >
-        </point-panel>
-        `
-          : ''
-      }
-      <options-panel>
-      </options-panel>
     </sidebar-menu>
     <scale-bar basePhysicalSize='${
       imageMetadata.physicalSizeX
