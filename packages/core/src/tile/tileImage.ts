@@ -3,7 +3,7 @@ import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
 import { TileDBTileImageOptions } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { LevelRecord, ImageMetadata, types } from './types';
-import { AssetEntry, Dimension } from '../types';
+import { AssetEntry, Dimension, FrameDetails } from '../types';
 import { getAssetMetadata, getGroupContents } from '../utils/metadata-utils';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -34,6 +34,10 @@ import {
   InfoPanelInitializationEvent,
   Attribute
 } from '@tiledb-inc/viz-common';
+import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
+import { TileManager } from './model/3d/3DTileManager';
+import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import proj4 from 'proj4';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -54,6 +58,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: Manager<Tile<any>>[];
+  private frameDetails: FrameDetails;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -75,6 +80,10 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.geometryMetadata = new Map<string, GeometryMetadata>();
     this.pointMetadata = new Map<string, PointCloudMetadata>();
     this.assetManagers = [];
+    this.frameDetails = {
+      zoom: 0.25,
+      level: -2
+    };
   }
 
   protected async createScene(): Promise<Scene> {
@@ -300,6 +309,25 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       }
     );
 
+    // proj4.defs("EPSG:4978","+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs");
+    if (this.options.tileUris) {
+      for (const tileURI of this.options.tileUris) {
+        const res = await load3DTileset(tileURI, {
+          sourceCRS: '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs',
+          targetCRS: this.metadata.crs,
+          transformation: this.metadata.transformationCoefficients
+        });
+
+        this.assetManagers.push(
+          new TileManager(this.scene, this.workerPool, 0, {
+            metadata: res,
+            baseCRS: this.metadata.crs,
+            transformation: this.metadata.transformationCoefficients
+          })
+        );
+      }
+    }
+
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
     });
@@ -384,7 +412,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private fetchTiles() {
-    const integerZoom = Math.max(
+    this.frameDetails.zoom = this.cameraManager.getZoom();
+    this.frameDetails.level = Math.max(
       0,
       Math.min(
         this.levels.length - 1,
@@ -392,9 +421,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       )
     );
 
-    this.tileset.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+    this.tileset.loadTiles(
+      this.cameraManager.getMainCamera(),
+      this.frameDetails
+    );
     for (const manager of this.assetManagers) {
-      manager.loadTiles(this.cameraManager.getMainCamera(), integerZoom);
+      manager.loadTiles(this.cameraManager.getMainCamera(), this.frameDetails);
     }
   }
 
@@ -466,8 +498,43 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       )
     );
 
+    this.initializeGUIProperties();
+
     for (const manager of this.assetManagers) {
       manager.initializeGUIProperties();
     }
+  }
+
+  public initializeGUIProperties() {
+    this.cameraManager.initializeGUIProperties();
+    const projections: { value: number; name: string }[] = [];
+
+    if (this.metadata.crs) {
+      // Type definitions are incorrect/incomplete for proj4
+      const projection = proj4.Proj(this.metadata.crs) as any;
+      projections.push({ value: 0, name: projection.name ?? projection.title });
+    } else {
+      projections.push({ value: 0, name: 'None' });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ScenePanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'scene-panel',
+            props: {
+              baseCRS: {
+                name: 'Base CRS',
+                id: 'baseCRS',
+                entries: projections,
+                default: 0
+              }
+            }
+          }
+        }
+      )
+    );
   }
 }

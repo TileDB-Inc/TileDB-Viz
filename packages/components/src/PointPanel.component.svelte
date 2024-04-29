@@ -1,111 +1,44 @@
-<svelte:options
-  customElement={{
-    tag: 'point-panel',
-    props: {
-      features: { type: 'Array' },
-      categories: { type: 'Array' },
-      attributes: { type: 'Array' },
-      targets: { type: 'Array' }
-    }
-  }}
-/>
-
 <script lang="ts">
-  import Section from './Section.component.svelte';
   import Select from './misc/Select.component.svelte';
   import Slider from './misc/InlineSlider.component.svelte';
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
   import {
-    GUICategoricalState,
     GUIEvent,
     GUIFeaturePropertyState,
-    GUIFlatColorState,
-    GUIPropertyState,
     GUISelectPropertyState,
-    GUISliderPropertyState,
-    SelectProps,
-    SliderProps,
-    colorScheme
+    GUISliderPropertyState
   } from './types';
   import { Events } from './constants/events';
-  import { clone } from './utils/helpers';
+  import { createFeatureState } from './utils/helpers';
   import {
-    Attribute,
-    Feature,
     FeatureType,
-    GUICategoricalFeature,
-    GUIFeatureProperty,
-    GUIFlatColorFeature,
-    GUISelectProperty,
-    GUISliderProperty,
-    PointPanelInitializationEvent
+    PointPanelInitializationEvent,
+    PointShape
   } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';
 
   let datasetPropertyState: GUISelectPropertyState = {
-      property: {
-      type: 'SELECT',
+    property: {
       name: 'Dataset',
       id: 'dataset',
-      values: [] as string[],
+      entries: [],
       default: 0
     },
     value: 0
   };
-  let globalState: Array<{ dataset: string; state: GUIPropertyState<any>[] }> = [];
-  let selectedDataset: string = '';
+  let globalState: {
+    datasetID: string;
+    pointBudget: GUISliderPropertyState;
+    quality: GUISliderPropertyState;
+    pointShape: GUISelectPropertyState<PointShape>;
+    pointSize: GUISliderPropertyState;
+    pointOpacity: GUISliderPropertyState;
+    displayFeature: GUIFeaturePropertyState;
+  }[] = [];
 
-  function datasetOnChange(value: number) {
-    datasetPropertyState.value = value;
-  }
-
-  function selectOnChange(value: number, dataset: string, property: string) {
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${dataset}_${property}`,
-          props: {
-            value: value
-          }
-        }
-      })
-    );
-  }
-
-  function sliderOnChange(value: number, dataset: string, property: string) {
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SliderProps>>(Events.SLIDER_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${dataset}_${property}`,
-          props: {
-            value: value
-          }
-        }
-      })
-    );
-  }
-
-  function featureOnChange(value: number, dataset: string, property: string) {
-    globalState = {...globalState};
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
-        bubbles: true,
-        detail: {
-          target: `${dataset}_${property}`,
-          props: {
-            value: value
-          }
-        }
-      })
-    );
-  }
-
-
-  $: currentDataset = globalState[datasetPropertyState.value]?.dataset ;
+  $: currentDataset = globalState[datasetPropertyState.value]?.datasetID;
+  $: currentFeature = globalState[datasetPropertyState.value]?.displayFeature;
 
   function onInitialize(
     event: CustomEvent<GUIEvent<PointPanelInitializationEvent>>
@@ -115,66 +48,22 @@
     }
 
     event.stopPropagation();
-    const state: GUIPropertyState<any>[] = [];
+    const payload = event.detail.props;
 
-    for (const property of event.detail.props.properties) {
-      switch (property.type) {
-        case 'SLIDER':
-          state.push({
-              property: property,
-              value: (property as GUISliderProperty).default
-            } as GUISliderPropertyState
-          );
-          break;
-        case 'SELECT':
-          state.push({
-              property: property,
-              value: (property as GUISelectProperty).default
-            } as GUISelectPropertyState
-          );
-          break;
-        case 'FEATURE': {
-          const colorState: Record<string, GUIFlatColorState> = {};
-          const categoryState: Record<string, GUICategoricalState> = {};
+    globalState.push({
+      datasetID: event.detail.props.id,
+      pointBudget: {property: payload.pointBudget, value: payload.pointBudget.default},
+      quality: {property: payload.quality, value: payload.quality.default},
+      pointShape: {property: payload.pointShape, value: payload.pointShape.default},
+      pointSize: {property: payload.pointSize, value: payload.pointSize.default},
+      pointOpacity: {property: payload.pointOpacity, value: payload.pointOpacity.default},
+      displayFeature: createFeatureState(payload.displayFeature, payload.enumerations)
+    });
 
-          for (const feature of (property as GUIFeatureProperty).features) {
-            if (feature.type === FeatureType.FLAT_COLOR) {
-              colorState[feature.name] = {
-                fill: (feature as GUIFlatColorFeature).fill,
-                outline: (feature as GUIFlatColorFeature).outline
-              } as GUIFlatColorState;
-            } else if (feature.type === FeatureType.CATEGORICAL) {
-              categoryState[feature.name] = {
-                colors: clone(colorScheme),
-                category: Object.fromEntries(
-                  event.detail.props.enumerations[
-                    (feature as GUICategoricalFeature).enumeration
-                  ].map(x => {
-                    return [x, { group: 0, selected: false }];
-                  })
-                )
-              } as GUICategoricalState;
-            }
-          }
-          state.push({
-              property: property,
-              flatColorState: colorState,
-              categoricalState: categoryState,
-              value: 0
-            } as GUIFeaturePropertyState);
-          break;
-        }
-      }
-    }
-    globalState.push(
-      {
-        dataset: event.detail.props.id,
-        state: state
-      }
-    );
+    datasetPropertyState.property.entries.push({value: datasetPropertyState.property.entries.length, name: event.detail.props.name});
+    datasetPropertyState = { ...datasetPropertyState };
 
-    datasetPropertyState.property.values.push(event.detail.props.name);
-    datasetPropertyState = {...datasetPropertyState};
+    console.log(globalState);
   }
 
   onMount(() => {
@@ -190,8 +79,8 @@
   });
 </script>
 
-<Section>
-  <div slot="header" class="Viewer-PointCloud__title">
+<div class="Viewer-PointCloud">
+  <div class="Viewer-PointCloud__header">
     <svg
       width="24"
       height="24"
@@ -208,64 +97,57 @@
     </svg>
     Point Cloud
   </div>
-  <div class="Viewer-PointCloud_main" slot="content">
-    <Select dataset={''} state={datasetPropertyState} callback={datasetOnChange} />
+  <div class="Viewer-PointCloud_main">
+    {#if datasetPropertyState.property.entries.length === 0}
+      No point cloud asset found
+    {:else}
+      <Select state={datasetPropertyState} dataset={''} callback={(index) => datasetPropertyState.value = index}/>
+      <Slider state={globalState[datasetPropertyState.value].pointBudget} dataset={currentDataset}/>
+      <Slider state={globalState[datasetPropertyState.value].quality} dataset={currentDataset}/>
+      <Select state={globalState[datasetPropertyState.value].pointShape} dataset={currentDataset}/>
+      <Slider state={globalState[datasetPropertyState.value].pointSize} dataset={currentDataset}/>
+      <Slider state={globalState[datasetPropertyState.value].pointOpacity} dataset={currentDataset}/>
 
-    {#each globalState[datasetPropertyState.value]?.state ?? [] as state}
-      {#if state.property.type === 'SELECT'}
+      {#if currentFeature.property.entries.length === 0}
+        No Available Features
+      {:else}
         <Select
-          {state}
+          state={globalState[datasetPropertyState.value].displayFeature}
           dataset={currentDataset}
-          callback={selectOnChange}
+          callback={(index) => currentFeature.value = index}
         />
-      {:else if state.property.type === 'SLIDER'}
-        <Slider
-          {state}
-          dataset={currentDataset}
-          callback={sliderOnChange}
-        />
-      {:else if state.property.type === 'FEATURE'}
-        <Select
-          {state}
-          dataset={currentDataset}
-          callback={featureOnChange}
-        />
-        {console.log(state)}
-        {#if state.property.features[state.value].type === FeatureType.FLAT_COLOR}
+        {#if currentFeature.property.features[currentFeature.value].type === FeatureType.FLAT_COLOR}
           <FlatColorPanel
-            state={state.flatColorState[state.property.features[state.value].name]}
-            dataset={currentDataset}
+            state={currentFeature.flatColorState[currentFeature.property.features[currentFeature.value].name]}
+            dataset={globalState[datasetPropertyState.value].datasetID}
           />
-        {:else if state.property.features[state.value].type === FeatureType.CATEGORICAL}
+        {:else if currentFeature.property.features[currentFeature.value].type === FeatureType.CATEGORICAL}
           <CategoricalPanel
-            state={state.categoricalState[state.property.features[state.value].name]}
-            dataset={currentDataset}
+            state={currentFeature.categoricalState[currentFeature.property.features[currentFeature.value].name]}
+            dataset={globalState[datasetPropertyState.value].datasetID}
           />
         {/if}
       {/if}
-    {/each}
+    {/if}
   </div>
-</Section>
+</div>
 
 <style lang="scss">
   .Viewer-PointCloud {
-    width: 320px;
-    height: 600px;
+    max-height: 600px;
     background-color: var(--viewer-background-primary);
     font-size: 14px;
     color: var(--viewer-text-primary);
     font-family: Inter, Arial, 'sans-serif';
 
-    &__title {
-      font-style: normal;
-      font-weight: 700;
-      font-size: 16px;
-      line-height: 24px;
-      color: var(--viewer-text-primary);
+    &__header {
+      border-bottom: 1px solid var(--viewer-border);
+      vertical-align: middle;
+      line-height: 28px;
+      padding: 6px 20px;
+      font-weight: 600;
+      font-size: 14px;
       display: flex;
-      align-items: center;
-      margin: 0;
-      justify-content: space-between;
 
       svg {
         margin-right: 10px;

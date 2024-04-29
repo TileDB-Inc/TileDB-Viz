@@ -1,3 +1,7 @@
+import { FeatureType, GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
+import { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState, GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, GUIVectorPropertyState, colorScheme } from "../types";
+import { stat } from "fs";
+
 export function capitalize(str: string): string {
   const firstChar = str.charAt(0);
 
@@ -105,4 +109,35 @@ export function clone<T>(object: T): T {
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+export function createFeatureState(property: GUIFeatureProperty, enumerations: Record<string, string[]>): GUIFeaturePropertyState {
+  const state: GUIFeaturePropertyState = {
+    property: property,
+    value: property.default,
+    flatColorState: {},
+    categoricalState: {},
+  };
+
+  for (const feature of property.features) {
+    if (feature.type === FeatureType.FLAT_COLOR) {
+      state.flatColorState[feature.name] = {
+        fill: (feature as GUIFlatColorFeature).fill,
+        outline: (feature as GUIFlatColorFeature).outline
+      } as GUIFlatColorState;
+    } else if (feature.type === FeatureType.CATEGORICAL) {
+      state.categoricalState[feature.name] = {
+        colors: clone(colorScheme),
+        category: Object.fromEntries(
+          enumerations[
+            (feature as GUICategoricalFeature).enumeration
+          ].map(x => {
+            return [x, { group: 0, selected: false }];
+          })
+        )
+      } as GUICategoricalState;
+    }
+  }
+
+  return state;
 }

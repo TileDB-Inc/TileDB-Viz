@@ -21,6 +21,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   }[];
   features?: Feature[];
   sceneConfig?: SceneConfig;
+  tileUris?: string[];
 }
 
 export interface Channel {

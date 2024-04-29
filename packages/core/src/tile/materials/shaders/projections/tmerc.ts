@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+
 import proj4 from 'proj4';
 import { EPSLN } from './constants';
 
