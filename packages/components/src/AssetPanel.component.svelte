@@ -98,7 +98,7 @@
     </button>
     <div class="separator"></div>
 
-    <button
+    <!-- <button
       title="Image Layers"
       class="Viewer-SelectionPanel__option"
       class:selected={expandableWindowsState['image-panel'].active}
@@ -120,7 +120,7 @@
           d="M4.41309 44.1692V4.16919H44.4131V44.1692H4.41309ZM8.67938 39.9584H40.1468V8.37994H8.67938V39.9584Z"
         ></path>
       </svg>
-    </button>
+    </button> -->
     <button
       title="Polygon Layers"
       class="Viewer-SelectionPanel__option"
@@ -196,7 +196,7 @@
 
   <div class="anchor-bottom">
     <button 
-      title="3D Tile Layers"
+      title="Settings"
       class="Viewer-SelectionPanel__option"
       class:selected={expandableWindowsState['options-panel'].active}
       on:click={() => expandableWindowOnChange('options-panel')}
