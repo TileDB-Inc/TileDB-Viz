@@ -7,7 +7,7 @@ import {
   Frustum
 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus, TileState } from '../manager';
+import { Manager, TileStatus } from '../manager';
 import { PointTile, PointUpdateOptions } from './point';
 import {
   PointShape,
@@ -44,11 +44,17 @@ import {
   OperationResult,
   IntersectionResult,
   Feature,
-  FeatureType
+  FeatureType,
+  PointPanelInitializationEvent,
+  GUIFlatColorFeature,
+  GUICategoricalFeature,
+  TileState,
+  GUIFeature
 } from '@tiledb-inc/viz-common';
 import { PickingTool } from '../../utils/picking-tool';
 import { constructOctree } from './utils';
 import proj4 from 'proj4';
+import { FrameDetails } from '../../../types';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -69,11 +75,13 @@ export class PointManager extends Manager<PointTile> {
   private namespace: string;
   private pickingTool: PickingTool;
   private baseCRS?: string;
+  private pointSize: number;
+  private zoom: number;
   private styleOptions = {
-    pointShape: PointShape.CIRCLE,
-    pointSize: 4,
+    pointShape: PointShape.SQUARE,
+    pointSize: 1,
     pointOpacity: 1,
-    color: new Vector4(1, 0, 0.498, 1),
+    color: new Vector4(1, 0.078, 0.576, 1),
 
     // This array is shared by reference so changing a value
     // should automatically update the uniform value
@@ -109,6 +117,8 @@ export class PointManager extends Manager<PointTile> {
     this.namespace = options.namespace;
     this.baseCRS = options.baseCRS;
     this.pickingTool = pickingTool;
+    this.pointSize = 1;
+    this.zoom = 0.25;
 
     // To be in accordance with the image layer the UP direction align with
     // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
@@ -284,14 +294,17 @@ export class PointManager extends Manager<PointTile> {
       return;
     }
 
-    let updateOptions: PointUpdateOptions = { ...this.styleOptions };
+    let updateOptions: PointUpdateOptions = {
+      ...this.styleOptions,
+      pointOptions: this.pointOptions
+    };
 
     switch (target[1]) {
-      case 'shape':
-        this.styleOptions.pointShape = 2 ** event.detail.props.value;
+      case 'pointShape':
+        this.styleOptions.pointShape = event.detail.props.value;
         updateOptions = { ...this.styleOptions };
         break;
-      case 'feature':
+      case 'displayFeature':
         this.activeFeature = this.metadata.features[event.detail.props.value];
         updateOptions.feature = this.activeFeature;
         break;
@@ -315,7 +328,15 @@ export class PointManager extends Manager<PointTile> {
 
     switch (target[1]) {
       case 'pointSize':
-        this.pointOptions.updateFloat('pointSize', event.detail.props.value);
+        this.pointSize = event.detail.props.value;
+        if (this.scene.getEngine().isWebGPU) {
+          this.pointOptions.updateFloat(
+            'pointSize',
+            this.pointSize / this.zoom
+          );
+        } else {
+          this.pointOptions.updateFloat('pointSize', this.pointSize);
+        }
         this.pointOptions.update();
         break;
       case 'pointBudget':
@@ -358,7 +379,7 @@ export class PointManager extends Manager<PointTile> {
         break;
       case Commands.COLOR:
         {
-          if (target[1] === 'fillColor') {
+          if (target[1] === 'fill') {
             const color: { r: number; g: number; b: number } =
               event.detail.props.data;
             Vector4.FromFloatsToRef(
@@ -457,9 +478,15 @@ export class PointManager extends Manager<PointTile> {
     this.updateLoadingStatus(true);
   }
 
-  public loadTiles(camera: ArcRotateCamera, zoom: number): void {
+  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
     for (const [, value] of this.tileStatus) {
       value.evict = true;
+    }
+
+    if (this.scene.getEngine().isWebGPU) {
+      this.zoom = frameDetails.zoom;
+      this.pointOptions.updateFloat('pointSize', this.pointSize / this.zoom);
+      this.pointOptions.update();
     }
 
     this.blockQueue.reset();
@@ -702,6 +729,100 @@ export class PointManager extends Manager<PointTile> {
           props: response.info
         }
       })
+    );
+  }
+
+  public initializeGUIProperties() {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<PointPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'point-panel',
+            props: {
+              id: this.metadata.groupID,
+              name: this.metadata.name,
+              pointBudget: {
+                name: 'Point budget',
+                id: 'pointBudget',
+                min: 100_000,
+                max: 10_000_000,
+                default: 1_000_000,
+                step: 10_000
+              },
+              quality: {
+                name: 'Quality',
+                id: 'quality',
+                min: 1,
+                max: 50,
+                default: 40,
+                step: 1
+              },
+              pointShape: {
+                name: 'Point shape',
+                id: 'pointShape',
+                entries: [
+                  { value: PointShape.SQUARE, name: 'Square' },
+                  { value: PointShape.CIRCLE, name: 'Circle' }
+                ],
+                default: PointShape.SQUARE
+              },
+              pointSize: {
+                name: 'Point size',
+                id: 'pointSize',
+                min: 1,
+                max: 10,
+                default: 1,
+                step: 0.01
+              },
+              pointOpacity: {
+                name: 'Point opacity',
+                id: 'pointOpacity',
+                min: 0,
+                max: 1,
+                default: 1,
+                step: 0.01
+              },
+              displayFeature: {
+                name: 'Display feature',
+                id: 'displayFeature',
+                entries: this.metadata.features
+                  .filter(x => x.type !== FeatureType.NON_RENDERABLE)
+                  .map((x, index) => {
+                    return { value: index, name: x.name };
+                  }),
+                default: 0,
+                features: this.metadata.features
+                  .map(x => {
+                    if (x.type === FeatureType.FLAT_COLOR) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.FLAT_COLOR,
+                        fill: '#FF1493'
+                      } as GUIFlatColorFeature;
+                    } else if (x.type === FeatureType.CATEGORICAL) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.CATEGORICAL,
+                        enumeration: this.metadata.attributes.find(
+                          y => y.name === x.attributes[0].name
+                        )?.enumeration
+                      } as GUICategoricalFeature;
+                    } else if (x.type === FeatureType.RGB) {
+                      return {
+                        name: x.name,
+                        type: FeatureType.RGB
+                      } as GUIFeature;
+                    }
+                  })
+                  .filter(x => x !== undefined) as GUIFeature[]
+              },
+              enumerations: Object.fromEntries(this.metadata.categories)
+            }
+          }
+        }
+      )
     );
   }
 }

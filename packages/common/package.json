@@ -35,7 +35,7 @@
     "lint:fix": "yarn g:eslint './src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
-    "@babylonjs/core": "^6.20.2",
+    "@babylonjs/core": "^7.0.0",
     "@tiledb-inc/tiledb-cloud": "1.0.15-alpha.1"
   },
   "devDependencies": {

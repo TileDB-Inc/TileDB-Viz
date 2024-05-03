@@ -50,7 +50,7 @@
 	}
 	
 	.anchorRight {
-		right: 0px;
+		right: 32px;
 		flex-direction: row;
 	}
 	
@@ -61,7 +61,7 @@
     padding: 8px;
     border-radius: 6px;
     border: 0;
-    margin: 16px;
+    margin: 48px;
     height: fit-content;
 
     &::hover {

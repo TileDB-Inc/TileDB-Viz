@@ -1,4 +1,68 @@
-import { Scene, Effect, ShaderMaterial } from '@babylonjs/core';
+import {
+  Scene,
+  Effect,
+  ShaderMaterial,
+  ShaderStore,
+  ShaderLanguage,
+  UniformBuffer
+} from '@babylonjs/core';
+
+export function ScreenSpaceLineMaterialWebGPU(scene: Scene): ShaderMaterial {
+  ShaderStore.ShadersStoreWGSL['ScreenSpaceLineVertexShader'] = `
+    attribute position: vec3<f32>;
+
+    struct Options {
+      screenWidth: f32,
+      screenHeight: f32
+    }
+
+    var<uniform> options: Options;
+
+    @vertex
+    fn main(input: VertexInputs) -> FragmentInputs
+    {
+      var x: f32 = 2.0 * (vertexInputs.position.x / options.screenWidth) - 1.0;
+      var y: f32 = 2.0 * (vertexInputs.position.y / options.screenHeight) - 1.0;
+      vertexOutputs.position = vec4<f32>(x, y, 0.5, 1.0);
+    }
+  `;
+
+  ShaderStore.ShadersStoreWGSL['ScreenSpaceLineFragmentShader'] = `
+    @fragment
+    fn main(input : FragmentInputs) -> FragmentOutputs {
+      fragmentOutputs.color = vec4(1.0);
+    }
+  `;
+
+  const material = new ShaderMaterial(
+    'ScreenSpaceLineShader',
+    scene,
+    {
+      vertex: 'ScreenSpaceLine',
+      fragment: 'ScreenSpaceLine'
+    },
+    {
+      attributes: ['position'],
+      uniformBuffers: ['options'],
+      shaderLanguage: ShaderLanguage.WGSL
+    }
+  );
+
+  material.fillMode = ShaderMaterial.LineStripDrawMode;
+  material.backFaceCulling = false;
+
+  const buffer = new UniformBuffer(scene.getEngine());
+  buffer.addUniform('screenWidth', 1, 0);
+  buffer.addUniform('screenHeight', 1, 0);
+
+  buffer.updateFloat('screenWidth', scene.getEngine().getRenderWidth());
+  buffer.updateFloat('screenHeight', scene.getEngine().getRenderHeight());
+  buffer.update();
+
+  material.setUniformBuffer('options', buffer);
+
+  return material;
+}
 
 export function ScreenSpaceLineMaterial(scene: Scene): ShaderMaterial {
   Effect.ShadersStore['ScreenSpaceLineVertexShader'] = `

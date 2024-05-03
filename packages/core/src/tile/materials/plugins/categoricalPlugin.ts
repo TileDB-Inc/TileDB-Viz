@@ -82,9 +82,9 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
         return {
           CUSTOM_VERTEX_DEFINITIONS: `
             #if (FEATURE_TYPE == ${FeatureType.CATEGORICAL})
-              in int group;
+              attribute int group;
 
-              flat out vec4 vColor;
+              flat varying vec4 vColor;
             #endif
           `,
           CUSTOM_VERTEX_MAIN_END: `
@@ -102,7 +102,7 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
         return {
           CUSTOM_FRAGMENT_DEFINITIONS: `
             #if (FEATURE_TYPE == ${FeatureType.CATEGORICAL})
-              flat in vec4 vColor;
+              flat varying vec4 vColor;
             #endif
           `,
           CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `

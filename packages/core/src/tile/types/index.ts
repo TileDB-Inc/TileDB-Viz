@@ -21,6 +21,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   }[];
   features?: Feature[];
   sceneConfig?: SceneConfig;
+  tileUris?: string[];
 }
 
 export interface Channel {
@@ -128,6 +129,7 @@ export const types = {
     type: Constants.TEXTURETYPE_UNSIGNED_BYTE,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'usampler2DArray',
+    webGPUSampleType: 'u32',
     create: function (size: number) {
       return new Uint8Array(size);
     }
@@ -138,6 +140,7 @@ export const types = {
     type: Constants.TEXTURETYPE_BYTE,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'isampler2DArray',
+    webGPUSampleType: 'i32',
     create: function (size: number) {
       return new Int8Array(size);
     }
@@ -148,6 +151,7 @@ export const types = {
     type: Constants.TEXTURETYPE_UNSIGNED_SHORT,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'usampler2DArray',
+    webGPUSampleType: 'u32',
     create: function (size: number) {
       return new Uint16Array(size);
     }
@@ -158,6 +162,7 @@ export const types = {
     type: Constants.TEXTURETYPE_HALF_FLOAT,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'sampler2DArray',
+    webGPUSampleType: 'f32',
     create: function (size: number) {
       return new Float32Array(size);
     }
@@ -168,6 +173,7 @@ export const types = {
     type: Constants.TEXTURETYPE_FLOAT,
     filtering: Texture.NEAREST_SAMPLINGMODE,
     samplerType: 'sampler2DArray',
+    webGPUSampleType: 'f32',
     create: function (size: number) {
       return new Float32Array(size);
     }

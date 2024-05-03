@@ -3,11 +3,8 @@ import { WorkerPool } from '../worker/tiledb.worker.pool';
 import { Tile } from './tile';
 import { Events } from '@tiledb-inc/viz-components';
 import { getViewArea } from '../utils/helpers';
-
-export const enum TileState {
-  LOADING,
-  VISIBLE
-}
+import { TileState } from '@tiledb-inc/viz-common';
+import { FrameDetails } from '../../types';
 
 export interface TileStatus<T> {
   tile?: T;
@@ -47,7 +44,12 @@ export abstract class Manager<T extends Tile<any>> {
    * @param camera The main orthographic camera
    * @param zoom The logarithmic camera zoom level
    */
-  public abstract loadTiles(camera: ArcRotateCamera, zoom: number): void;
+  public abstract loadTiles(
+    camera: ArcRotateCamera,
+    frameDetails: FrameDetails
+  ): void;
+
+  public abstract initializeGUIProperties(): void;
 
   /**
    * Unregister all event listeners from the scene or the GUI.

@@ -1,20 +1,42 @@
-<script lang="ts">
-  export let label = '';
-  export let options = [];
-  export let defaultIndex = 0;
+<script lang="ts">    
+  import { GUIEvent } from "@tiledb-inc/viz-common";
+  import { GUISelectPropertyState, SelectProps } from "../types";
+  import { Events } from "../constants/events";
 
-  export let callback = (value: number) => {};
+  export let callback = (value: number, dataset: string, property: string) => {};
+  export let dataset: string = '';
+  export let state: GUISelectPropertyState<any>;
+
+  const onChange = () => {
+    if (callback) {
+      callback(state.value, dataset, state.property.id);
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<SelectProps>>(Events.SELECT_INPUT_CHANGE, {
+        bubbles: true,
+        detail: {
+          target: `${dataset}_${state.property.id}`,
+          props: {
+            value: state.value
+          }
+        }
+      })
+    );
+  }
+
 </script>
 
 <div class="Viewer-Select">
-  <label for="options">{label}:</label>
+  <label for="options">{state.property.name}:</label>
   <div class="Viewer-Select__control">
     <select
       name="options"
-      on:change={event => callback(Number.parseInt(event.target.value))}
+      bind:value={state.value}
+      on:change={onChange}
     >
-      {#each options as name, index}
-        <option selected={index === defaultIndex} value={index}>{name}</option>
+      {#each state.property.entries as entry}
+        <option selected={entry.value === state.value} value={entry.value}>{entry.name}</option>
       {/each}
     </select>
     <svg

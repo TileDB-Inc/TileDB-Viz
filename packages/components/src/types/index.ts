@@ -1,3 +1,5 @@
+import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
+
 export type Theme = 'system' | 'light' | 'dark';
 
 export interface GUIEvent<T = any> {
@@ -56,3 +58,32 @@ export const colorScheme = [
   '#2A6478',
   '#BDECB6'
 ];
+
+export type GUIPropertyState<T extends GUIProperty> = {
+  property: T
+}
+
+export type GUISliderPropertyState = GUIPropertyState<GUISliderProperty> & {
+  value: number;
+}
+
+export type GUISelectPropertyState<T = number> = GUIPropertyState<GUISelectProperty<T>> & {
+  value: T;
+}
+
+export type GUIFlatColorState = { fill?: string, outline?: string };
+
+export type GUICategoricalState = {
+  category: Record<string, { group: number; selected: boolean }>
+  colors: string[];
+}
+
+export type GUIFeaturePropertyState = GUIPropertyState<GUIFeatureProperty> & {
+  value: number;
+  flatColorState: Record<string, GUIFlatColorState>;
+  categoricalState: Record<string, GUICategoricalState>;
+}
+
+export type GUIVectorPropertyState = GUIPropertyState<GUIVectorProperty> & {
+  value: [number, number, number];
+}

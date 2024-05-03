@@ -26,9 +26,9 @@ export class SelectionMaterialPlugin extends MaterialPluginBase {
       case 'vertex':
         return {
           CUSTOM_VERTEX_DEFINITIONS: `
-            in float state;
+            attribute float state;
 
-            flat out float uState;
+            flat varying float uState;
           `,
           CUSTOM_VERTEX_MAIN_END: `
             uState = state;
@@ -40,7 +40,7 @@ export class SelectionMaterialPlugin extends MaterialPluginBase {
             const vec3 selectionColor = vec3(0.0, 1.0, 0.0);
             const vec3 pickColor = vec3(1.0, 0.0, 0.0);
 
-            flat in float uState;
+            flat varying float uState;
           `,
           CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `
             if (uState == 1.0) {

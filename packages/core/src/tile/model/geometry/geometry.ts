@@ -5,7 +5,8 @@ import {
   VertexBuffer,
   StandardMaterial,
   Color3,
-  Color4
+  Color4,
+  ShaderMaterial
 } from '@babylonjs/core';
 import { GeometryResponse, GeometryStyle, TypedArray } from '../../types';
 import { PolygonShaderMaterial } from '../../materials/polygonShaderMaterial';
@@ -18,10 +19,10 @@ export interface GeometryUpdateOptions extends UpdateOptions<GeometryResponse> {
   style?: GeometryStyle;
 
   outlineThickness?: number;
-  outlineColor?: Color3;
+  outline?: Color3;
 
   fillOpacity?: number;
-  fillColor?: Color3;
+  fill?: Color3;
 
   groupUpdate?: { categoryIndex: number; group: number };
   groupState?: Map<string, Map<number, number>>;
@@ -37,6 +38,7 @@ export class GeometryTile extends Tile<GeometryResponse> {
   private groups!: Int32Array;
   private meshData: Record<string, TypedArray>;
   private vertexCount: number;
+  private polygonPickingMaterial?: ShaderMaterial;
 
   constructor(
     assetID: string,
@@ -46,10 +48,12 @@ export class GeometryTile extends Tile<GeometryResponse> {
   ) {
     super(scene, updateOptions.response!, assetID);
 
-    const polygonPickingMaterial = PolygonShaderMaterial(
-      `${assetID}_${this.index.toString()}`,
-      this.scene
-    );
+    if (!this.scene.getEngine().isWebGPU) {
+      this.polygonPickingMaterial = PolygonShaderMaterial(
+        `${assetID}_${this.index.toString()}`,
+        this.scene
+      );
+    }
 
     const material = new StandardMaterial(
       `standardPolygonMaterial_${assetID}`,
@@ -71,8 +75,13 @@ export class GeometryTile extends Tile<GeometryResponse> {
     this.mesh.layerMask = 0b1;
     this.mesh.renderingGroupId = 1;
 
-    renderTarget.renderList?.push(this.mesh);
-    renderTarget.setMaterialForRendering(this.mesh, polygonPickingMaterial);
+    if (!this.scene.getEngine().isWebGPU) {
+      renderTarget.renderList?.push(this.mesh);
+      renderTarget.setMaterialForRendering(
+        this.mesh,
+        this.polygonPickingMaterial
+      );
+    }
 
     this.vertexMap = new Map<bigint, number[]>();
     this.meshData = {};
@@ -213,11 +222,11 @@ export class GeometryTile extends Tile<GeometryResponse> {
     this.mesh.edgesWidth =
       updateOptions.outlineThickness ?? this.mesh.outlineWidth;
 
-    this.mesh.edgesColor = updateOptions.outlineColor
-      ? Color4.FromColor3(updateOptions.outlineColor)
+    this.mesh.edgesColor = updateOptions.outline
+      ? Color4.FromColor3(updateOptions.outline)
       : this.mesh.edgesColor;
     (this.mesh.material as StandardMaterial).diffuseColor =
-      updateOptions.fillColor ??
+      updateOptions.fill ??
       (this.mesh.material as StandardMaterial).diffuseColor;
 
     if (updateOptions.groupUpdate) {

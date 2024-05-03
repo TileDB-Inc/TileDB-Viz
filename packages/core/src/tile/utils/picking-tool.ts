@@ -13,7 +13,10 @@ import {
   Vector3,
   ArcRotateCamera
 } from '@babylonjs/core';
-import { ScreenSpaceLineMaterial } from '../materials/screenSpaceLineMaterial';
+import {
+  ScreenSpaceLineMaterial,
+  ScreenSpaceLineMaterialWebGPU
+} from '../materials/screenSpaceLineMaterial';
 import { getCamera } from './camera-utils';
 import {
   ButtonProps,
@@ -97,9 +100,9 @@ export class PickingTool {
       this.utilityLayer.utilityLayerScene
     );
     this.selectionRenderMesh.alwaysSelectAsActiveMesh = true;
-    this.selectionRenderMesh.material = ScreenSpaceLineMaterial(
-      this.utilityLayer.utilityLayerScene
-    );
+    this.selectionRenderMesh.material = scene.getEngine().isWebGPU
+      ? ScreenSpaceLineMaterialWebGPU(this.utilityLayer.utilityLayerScene)
+      : ScreenSpaceLineMaterial(this.utilityLayer.utilityLayerScene);
     this.pickCallbacks = [];
 
     this.singleHandler = null;
@@ -313,10 +316,22 @@ export class PickingTool {
           );
 
           // Lasso rendering
+          // To ensure compatibility with WebGPU we nned to close the line loop manually
+          // and then remove the loop close elements after setting the vertex buffers
+
           this.selectionRenderIndices.push(
             this.selectionRenderPositions.length / 3
           );
           this.selectionRenderPositions.push(x, y, 0);
+
+          this.selectionRenderIndices.push(
+            this.selectionRenderPositions.length / 3
+          );
+          this.selectionRenderPositions.push(
+            this.selectionRenderPositions[0],
+            this.selectionRenderPositions[1],
+            0
+          );
 
           this.selectionRenderVertexData.positions = Float32Array.from(
             this.selectionRenderPositions
@@ -324,10 +339,16 @@ export class PickingTool {
           this.selectionRenderVertexData.indices = Int32Array.from(
             this.selectionRenderIndices
           );
+
           this.selectionRenderVertexData.applyToMesh(
             this.selectionRenderMesh,
             false
           );
+
+          this.selectionRenderIndices.pop();
+          this.selectionRenderPositions.pop();
+          this.selectionRenderPositions.pop();
+          this.selectionRenderPositions.pop();
         }
         break;
       }
