@@ -25,4 +25,4 @@ jobs:
       # Set Yarn config for npm token
       - run: yarn config set npmAuthToken ${{ secrets.NPM_TOKEN }}
       # Publish packages
-      - run: ./scripts/publish.sh components && ./scripts/publish.sh core && ./scripts/publish.sh react
+      - run: ./scripts/publish.sh common && ./scripts/publish.sh components && ./scripts/publish.sh core && ./scripts/publish.sh react
