@@ -25,6 +25,7 @@ import {
   FeatureType,
   Attribute
 } from '@tiledb-inc/viz-common';
+import { getQueryDataFromCache, writeToCache } from '../cache';
 
 export function tileDBUriParser(
   uri: string,
@@ -94,6 +95,14 @@ export async function getGroupContents(
 export async function getAssetMetadata(
   options: AssetOptions
 ): Promise<[AssetMetadata, Attribute[], Dimension[], LevelRecord[]]> {
+  const cachedMetadata = await getQueryDataFromCache(
+    options.groupID ?? options.arrayID ?? '',
+    'metadata'
+  );
+  if (cachedMetadata) {
+    return cachedMetadata;
+  }
+
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -129,29 +138,41 @@ export async function getAssetMetadata(
     } as Attribute;
   });
 
+  let metadata;
+
   switch (assetMetadata.dataset_type) {
     case 'BIOIMG':
-      return getBiomedicalMetadata(
+      metadata = getBiomedicalMetadata(
         assetMetadata as BiomedicalAssetMetadata,
         attributes,
         uris
       );
+      break;
     case 'RASTER':
-      return getRasterMetadata(
+      metadata = getRasterMetadata(
         assetMetadata as RasterAssetMetadata,
         attributes,
         uris
       );
+      break;
     default:
       if ((assetMetadata as any)._gdal) {
-        return getRasterMetadata(
+        metadata = getRasterMetadata(
           assetMetadata as RasterAssetMetadata,
           attributes,
           uris
         );
+        break;
       }
       throw new Error(`Unknown dataset type '${assetMetadata.dataset_type}'`);
   }
+
+  await writeToCache(
+    options.groupID ?? options.arrayID ?? '',
+    'metadata',
+    metadata
+  );
+  return metadata;
 }
 
 async function getArrayMetadata(
@@ -217,6 +238,14 @@ export async function getGeometryMetadata(
 
   if (!options.geometryArrayID) {
     throw new Error('Geometry array ID is undefined');
+  }
+
+  const cachedMetadata = await getQueryDataFromCache(
+    options.geometryArrayID,
+    'metadata'
+  );
+  if (cachedMetadata) {
+    return cachedMetadata;
   }
 
   const [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
@@ -322,6 +351,7 @@ export async function getGeometryMetadata(
           })
         );
 
+  await writeToCache(options.geometryArrayID, 'metadata', geometryMetadata);
   return geometryMetadata;
 }
 
@@ -336,6 +366,26 @@ export async function getPointCloudMetadata(
 
   if (!options.pointGroupID) {
     throw new Error('Point group ID is undefined');
+  }
+
+  const cachedMetadata = await getQueryDataFromCache(
+    options.pointGroupID,
+    'metadata'
+  );
+  if (cachedMetadata) {
+    // Transform the serialized vectors back to the `Vector3` object
+    cachedMetadata.minPoint = new Vector3(
+      cachedMetadata.minPoint._x,
+      cachedMetadata.minPoint._y,
+      cachedMetadata.minPoint._z
+    );
+    cachedMetadata.maxPoint = new Vector3(
+      cachedMetadata.maxPoint._x,
+      cachedMetadata.maxPoint._y,
+      cachedMetadata.maxPoint._z
+    );
+
+    return cachedMetadata;
   }
 
   const [info, members, groupMetadata] = await Promise.all([
@@ -486,6 +536,8 @@ export async function getPointCloudMetadata(
             ];
           })
         );
+
+  await writeToCache(options.pointGroupID, 'metadata', metadata);
   return metadata;
 }
 
