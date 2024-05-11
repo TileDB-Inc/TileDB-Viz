@@ -454,6 +454,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
   private clearCache() {
     clearMultiCache(this.levels.map(x => `${x.id}_${this.tileSize}`));
+    clearMultiCache(
+      [this.options.arrayID ?? this.options.groupID ?? ''].map(
+        x => x.split('/').at(-1)!
+      )
+    );
+    if (this.options.pointGroupID && this.options.pointGroupID.length !== 0) {
+      clearMultiCache(this.options.pointGroupID.map(x => x.split('/').at(-1)!));
+    }
+    if (
+      this.options.geometryArrayID &&
+      this.options.geometryArrayID.length !== 0
+    ) {
+      clearMultiCache(
+        this.options.geometryArrayID.map(x => x.split('/').at(-1)!)
+      );
+    }
   }
 
   private initializeGUI() {
