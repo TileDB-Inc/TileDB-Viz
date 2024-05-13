@@ -63,7 +63,8 @@ export function PointCloudMaterialWebGPU(
     //var p: vec4<f32> = pointOptions.transformation * vec4<f32>(vertexInputs.loc, 1.0);
     //vertexOutputs.position = scene.viewProjection * (vec4<f32>(p.x, p.z, p.y, 1.0) + vec4<f32>(vertexInputs.position, 0.0));
 
-    vertexOutputs.position = scene.viewProjection * (vec4<f32>(vertexInputs.loc, 1.0) + vec4<f32>(vertexInputs.position, 0.0));
+    var scale: mat4x4<f32> = mat4x4<f32>(vec4<f32>(pointOptions.pointSize, 0, 0, 0), vec4<f32>(0, pointOptions.pointSize, 0, 0), vec4<f32>(0, 0, pointOptions.pointSize, 0), vec4<f32>(0, 0, 0, 1));
+    vertexOutputs.position = scene.viewProjection * mesh.world * (vec4<f32>(vertexInputs.loc, 1.0) + scale * vec4<f32>(vertexInputs.position, 0.0));
     
     ${
       attributeName
