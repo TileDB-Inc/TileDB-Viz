@@ -44,6 +44,7 @@
     right: 0;
     background-color: #129dff;
     color: white;
+    font-size: 14px;
     padding: 8px;
     border-radius: 50px;
     opacity: 75%;
