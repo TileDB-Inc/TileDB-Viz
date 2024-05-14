@@ -343,6 +343,7 @@
       text-decoration-thickness: auto;
       transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: var(--viewer-shadow-small);
+      color: var(--viewer-text-primary);
     }
 
     &__icon-button {
