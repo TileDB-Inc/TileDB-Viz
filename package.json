@@ -2,7 +2,7 @@
   "name": "@tiledb-inc/viz",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "yarn@3.6.1",
+  "packageManager": "yarn@3.6.3",
   "license": "MIT",
   "workspaces": [
     "packages/*"
@@ -23,7 +23,7 @@
     "quarto": "quarto render ./quarto/ --fail-if-warnings",
     "g:eslint": "cd $INIT_CWD && eslint",
     "g:parcel": "cd $INIT_CWD && parcel",
-    "storybook": "yarn workspace @tiledb-inc/viz-react storybook",
+    "storybook": "yarn workspace @tiledb-inc/viz-react storybook --ci",
     "lint": "yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
     "lint:fix": "yarn workspace @tiledb-inc/viz-common lint:fix && yarn workspace @tiledb-inc/viz-core lint:fix && yarn workspace @tiledb-inc/viz-react lint:fix"
   },

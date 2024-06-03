@@ -1,9 +1,23 @@
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { Constants, Texture } from '@babylonjs/core';
-import { Dimension, AssetMetadata, Domain } from '../../types';
+import {
+  Dimension,
+  AssetMetadata,
+  Domain,
+  GeometryDataContent,
+  PointDataContent,
+  ImageDataContent
+} from '../../types';
 import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
+import { Matrix } from 'mathjs';
+import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { GeometryContent } from '../model/geometry/geometryContent';
+import { Tile } from '../model/tile';
+import { PointTileContent } from '../model/point/pointContent';
+import { ImageContent } from '../model/image/imageContent';
+import { TDB3DTileContent } from '../model/3d/3DTileContent';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   namespace: string;
@@ -25,7 +39,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
 }
 
 export interface Channel {
-  color: number[];
+  color: { rend: number; green: number; blue: number; alpha: number };
   id: string;
   intensity: number;
   max: number;
@@ -73,7 +87,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
 }
 
 export interface ImageMetadata extends AssetMetadata {
-  channels: Map<string, Channel[]>;
+  channels: Record<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
   physicalSizeZ?: number;
@@ -86,6 +100,198 @@ export interface ImageMetadata extends AssetMetadata {
   transformationCoefficients?: number[];
   axes: Array<AxesMetadata>;
 }
+
+export type ImageMetadataV2 = {
+  /**
+   * THe root of the image tileset
+   */
+  root: Tile<ImageDataContent, ImageContent>;
+
+  /**
+   * A map between attribute name and channel information
+   */
+  channels: Map<string, Channel[]>;
+
+  /**
+   * The list of available attributes able to deisplay
+   */
+  attributes: Attribute[];
+
+  /**
+   * Additional dimensions available for preview one slice at a time
+   */
+  extraDimensions: Dimension[];
+
+  /**
+   * The coordinate system of the image
+   */
+  crs?: string;
+
+  /**
+   * An affine matrix to convert from pixel coordinates back to physical coordinates
+   */
+  pixelToCRS?: Matrix;
+
+  /**
+   * Cnfiguration options for loading the tiles
+   */
+  loaderMetadata?: Map<string, ImageLoaderMetadata>;
+};
+
+export type GeometryMetadata = {
+  /**
+   * The display name of the geometry asset.
+   */
+  name: string;
+
+  /**
+   * The root of the geomemtry tileset.
+   */
+  root: Tile<GeometryDataContent, GeometryContent>;
+
+  /**
+   * The available renderable features of the dataset.
+   */
+  features: Feature[];
+
+  /**
+   * The list af all available attributes to fetch when loading geometry features.
+   */
+  attributes: Attribute[];
+
+  /**
+   * A map between enumeration names and string values
+   */
+  categories: Map<string, string[]>;
+
+  /**
+   * Geometry loader specific metadata.
+   */
+  loaderMetadata?: GeometryLoaderMetadata;
+};
+
+export type PointCloudMetadata = {
+  /**
+   * The display anme of the point cloud asset.
+   */
+  name: string;
+
+  /**
+   * The root of the point cloud tileset.
+   */
+  root: Tile<PointDataContent, PointTileContent>;
+
+  /**
+   * An attribute containing a unique number per polygon to use for picking, if it exists
+   */
+  idAttribute?: Attribute;
+
+  /**
+   * A map between enumeration names and string values
+   */
+  categories: Map<string, string[]>;
+
+  /**
+   *
+   */
+  features: Feature[];
+
+  /**
+   * Point cloud loader specific metadata.
+   */
+  loaderMetadata: PointCloudLoaderMetadata;
+
+  groupID: string;
+  domain: Domain[];
+};
+
+export type ImageLoaderMetadata = {
+  /**
+   * TileDB array schemas of all arrays of the image.
+   */
+  schema: ArraySchema;
+
+  /**
+   * The dimension of each image array in the order that exist in each image.
+   */
+  dimensions: string[];
+
+  /**
+   * If true, the image array has a single channel which is ommited.
+   */
+  implicitChannel: boolean;
+
+  /**
+   * if true, the image array is WebP compressed and follows a known 2D schema.
+   */
+  isWebPCompressed: boolean;
+};
+
+export type GeometryLoaderMetadata = {
+  /**
+   *
+   */
+  type: string;
+
+  /**
+   *
+   */
+  sourceCRS?: string;
+
+  /**
+   * the padding of the internal R-Tree.
+   */
+  pad: [number, number];
+
+  /**
+   * The unique identifier attribute for each geometric feature.
+   */
+  idAttribute: Attribute;
+
+  /**
+   * The attribute containing the geometric data in WKB or WKT encoding.
+   */
+  geometryAttribute: Attribute;
+
+  /**
+   * Optional height attribute to extrude each geometry feature.
+   */
+  heightAttribute?: Attribute;
+
+  /**
+   * Optional attribute with additional renderable properties for each geometry features.
+   */
+  additionalAttributes?: Attribute[];
+};
+
+export type PointCloudLoaderMetadata = {};
+
+export type TDB3DTileMetadata = {
+  /**
+   * Session unique dataset identifier.
+   */
+  id: string;
+
+  /**
+   * THe root of the 3D Tiles tileset.
+   */
+  root: Tile<string, TDB3DTileContent>;
+
+  /**
+   * The dispay name of the 3D Tile dataset.
+   */
+  name: string;
+
+  /**
+   * The base url for all assets of the 3D Tile dataset.
+   */
+  baseUrl: string;
+
+  /**
+   * The coordinate system of the 3D Tiles dataset.
+   */
+  crs?: string;
+};
 
 // Fallback support types for fmt_version 1 groups
 
@@ -193,19 +399,23 @@ export const enum RequestType {
 
 export interface DataRequest {
   type: RequestType;
-  id: string;
-  request: any;
+  id: number;
+  payload?: any;
 }
 
-export interface InitializeMessage {
+export interface InitializationPayload {
   token: string;
   basePath?: string;
 }
 
-export interface ImageMessage {
+export type AssetInitializationRequest = {
+  loaderMetadata: ImageLoaderMetadata[];
+};
+
+export type ImagePayload = {
+  uri: string;
+  region: { dimension: string; min: number; max: number }[];
   index: number[];
-  tileSize: number;
-  levelRecord: LevelRecord;
   namespace: string;
   channelRanges: number[];
   channelMapping: number[];
@@ -214,7 +424,17 @@ export interface ImageMessage {
   basePath: string;
   dimensions: Dimension[];
   nonce: number;
-}
+  loaderOptions: ImageLoaderMetadata;
+};
+
+export type GeometryPayload = {
+  uri: string;
+  region: { dimension: string; min: number; max: number }[];
+  index: number[];
+  namespace: string;
+  targetCRS?: string;
+  transformation: number[];
+};
 
 export interface GeometryMessage {
   index: number[];
@@ -281,7 +501,7 @@ export interface PointInfoMessage {
 
 export interface WorkerResponse {
   type: RequestType;
-  id: string;
+  id: number;
   response: any;
 }
 
@@ -296,7 +516,7 @@ export interface ImageResponse extends BaseResponse {
   width: number;
   height: number;
   channels: number;
-  dtype: keyof typeof types;
+  dtype: Datatype;
 }
 
 export interface GeometryResponse extends BaseResponse {

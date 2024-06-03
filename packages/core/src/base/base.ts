@@ -4,6 +4,7 @@ import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
 import { RERENDER_EVT } from '../constants';
 import pubSub from '../utils/pubSub';
+import '@tiledb-inc/viz-components';
 
 export interface TileDBVisualizationBaseOptions {
   /**
@@ -104,15 +105,21 @@ export class TileDBVisualization {
         wrapperDiv.style.width = '100%';
       }
     }
+
     canvas.style.width = this.width;
     canvas.style.height = this.height;
+
     this.canvas = canvas;
     this.canvas.setAttribute('width', this.width);
     this.canvas.setAttribute('height', this.height);
     pubSub.subscribe(RERENDER_EVT, this.rerenderCanvas);
     wrapperDiv.appendChild(this.canvas);
 
+    const loadingScreen = document.createElement('div');
+    loadingScreen.innerHTML = '<loading-screen></loading-screen>';
+
     this.rootElement.appendChild(wrapperDiv);
+    this.rootElement.appendChild(loadingScreen);
 
     if (this.engineAPI === 'WEBGL') {
       this.engine = new Engine(this.canvas, true);
