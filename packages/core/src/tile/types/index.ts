@@ -12,7 +12,7 @@ import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
-import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
 import { PointTileContent } from '../model/point/pointContent';
@@ -39,7 +39,7 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
 }
 
 export interface Channel {
-  color: { rend: number; green: number; blue: number; alpha: number };
+  color: { red: number; green: number; blue: number; alpha: number };
   id: string;
   intensity: number;
   max: number;
@@ -103,7 +103,17 @@ export interface ImageMetadata extends AssetMetadata {
 
 export type ImageMetadataV2 = {
   /**
-   * THe root of the image tileset
+   * Unique dataset id.
+   */
+  id: string;
+
+  /**
+   * Image dataset display name.
+   */
+  name: string;
+
+  /**
+   * The root of the image tileset
    */
   root: Tile<ImageDataContent, ImageContent>;
 
@@ -516,7 +526,7 @@ export interface ImageResponse extends BaseResponse {
   width: number;
   height: number;
   channels: number;
-  dtype: Datatype;
+  dtype: keyof typeof types;
 }
 
 export interface GeometryResponse extends BaseResponse {

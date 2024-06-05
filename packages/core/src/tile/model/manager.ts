@@ -102,15 +102,9 @@ export abstract class Manager<T extends Tile<any>> {
         tile.state & TileState.PENDING_LOAD &&
         !(tile.state & (TileState.VISIBLE | TileState.LOADING))
       ) {
-        console.log(
-          tile.geometricError,
-          tile.screenSpaceError(camera),
-          this.scene.getEngine().getRenderWidth(),
-          camera.orthoRight - camera.orthoLeft
-        );
         this._requestTileInternal(tile)
           .then(x => this._onLoadedInternal(tile, x))
-          .catch(x => this._removeTileInternal(tile));
+          .catch(_ => this._removeTileInternal(tile));
       } else {
         // Clear pending load flag
         tile.state = tile.state & ~TileState.PENDING_LOAD;
@@ -159,12 +153,11 @@ export abstract class Manager<T extends Tile<any>> {
   private _requestTileInternal(tile: T): Promise<any> {
     tile.state = TileState.LOADING;
 
-    const request = this.requestTile(tile);
     const cancelation = new Promise((_, reject) => {
       this.rejectHandlers.set(tile.id, reject);
     });
 
-    return Promise.race([request, cancelation]);
+    return Promise.race([this.requestTile(tile), cancelation]);
   }
 
   protected forceReloadTiles(): void {
@@ -173,7 +166,9 @@ export abstract class Manager<T extends Tile<any>> {
         this._cancelTileInternal(tile);
       }
 
-      this._requestTileInternal(tile);
+      this._requestTileInternal(tile)
+        .then(x => this._onLoadedInternal(tile, x))
+        .catch(_ => this._removeTileInternal(tile));
     }
   }
 

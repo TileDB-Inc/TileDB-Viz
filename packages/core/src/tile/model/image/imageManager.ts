@@ -1,18 +1,19 @@
-import { Scene, ArcRotateCamera, UniformBuffer } from '@babylonjs/core';
-import { Dimension, FrameDetails } from '../../../types';
+/**
+ * TODO: Need to add dimension control back
+ * TODO: Need to add back non WebP compresses image support
+ */
+
+import { Scene, UniformBuffer } from '@babylonjs/core';
 import {
-  BaseResponse,
   Channel,
   DataRequest,
-  ImageMessage,
-  ImageMetadata,
+  ImageMetadataV2,
+  ImagePayload,
   ImageResponse,
-  LevelRecord,
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus } from '../manager';
-import { ImageTile } from './image';
+import { Manager } from '../manager';
 import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
 import {
@@ -22,55 +23,52 @@ import {
   SliderProps,
   Commands
 } from '@tiledb-inc/viz-components';
-import { Attribute, TileState } from '@tiledb-inc/viz-common';
+import {
+  Attribute,
+  GUIChannelProperty,
+  GUISelectProperty
+} from '@tiledb-inc/viz-common';
+import { ImageContent } from './imageContent';
+import { ImageDataContent } from '../../../types';
+import { Tile } from '../tile';
+import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
 
 interface ImageOptions {
-  metadata: ImageMetadata;
+  metadata: ImageMetadataV2;
   namespace: string;
-  levels: LevelRecord[];
-  dimensions: Dimension[];
-  attributes: Attribute[];
 }
 
-export class ImageManager extends Manager<ImageTile> {
+export class ImageManager extends Manager<
+  Tile<ImageDataContent, ImageContent>
+> {
   private channelRanges: number[] = [];
   private channelMapping: Uint32Array;
   private intensityRanges: Float32Array;
   private colors: Float32Array;
   private tileOptions!: UniformBuffer;
-  private levels: LevelRecord[];
-  private dimensions: Dimension[];
-  private attributes: Attribute[];
-  private metadata: ImageMetadata;
+  private metadata: ImageMetadataV2;
   private namespace: string;
 
-  private selectedAttribute!: Attribute;
-  private hasMinimap: boolean;
+  private selectedAttribute: Attribute;
 
   constructor(
     scene: Scene,
     workerPool: WorkerPool,
-    tileSize: number,
     imageOptions: ImageOptions
   ) {
-    const xIndex = imageOptions.levels[0].axes.indexOf('X');
-    const yIndex = imageOptions.levels[0].axes.indexOf('Y');
+    super(imageOptions.metadata.root, scene, workerPool);
 
-    const baseWidth = imageOptions.levels[0].dimensions[xIndex];
-    const baseHeight = imageOptions.levels[0].dimensions[yIndex];
+    this.errorLimit = Math.max(
+      this.scene.getEngine().getRenderWidth(),
+      this.scene.getEngine().getRenderHeight()
+    );
 
-    super(scene, workerPool, tileSize, baseWidth, baseHeight);
-
-    this.workerPool.callbacks.image.push(this.onImageTileDataLoad.bind(this));
-    this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
-
-    this.levels = imageOptions.levels;
-    this.dimensions = imageOptions.dimensions;
-    this.attributes = imageOptions.attributes;
     this.metadata = imageOptions.metadata;
     this.namespace = imageOptions.namespace;
 
-    this.selectedAttribute = this.attributes.filter(item => item.visible)[0];
+    this.selectedAttribute = this.metadata.attributes.filter(
+      item => item.visible
+    )[0];
 
     const channelCount =
       this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
@@ -101,7 +99,9 @@ export class ImageManager extends Manager<ImageTile> {
       this.metadata.channels
         .get(this.selectedAttribute.name)
         ?.map((x: Channel) =>
-          x.color.map(item => Math.min(Math.max(item / 255, 0), 1))
+          Object.values(x.color).map(item =>
+            Math.min(Math.max(item / 255, 0), 1)
+          )
         )
         .flat() ?? []
     );
@@ -109,10 +109,11 @@ export class ImageManager extends Manager<ImageTile> {
     calculateChannelMapping(this.channelMapping);
     this.channelRanges = calculateChannelRanges(this.channelMapping);
     this.initializeUniformBuffer();
-    this.hasMinimap =
-      (this.scene.activeCameras?.filter(x => x.name === 'Minimap').length ??
-        0) > 0;
+    console.log(this);
+    this.registerEventListeners();
+  }
 
+  public registerEventListeners(): void {
     window.addEventListener(
       Events.SLIDER_CHANGE,
       this.sliderHandler.bind(this) as any,
@@ -136,173 +137,7 @@ export class ImageManager extends Manager<ImageTile> {
     );
   }
 
-  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
-    for (const [key, value] of this.tileStatus) {
-      value.evict = this.hasMinimap ? !key.endsWith('0') : true;
-    }
-
-    const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getTileIndexRange(
-      camera,
-      frameDetails.level
-    );
-
-    for (let x = minXIndex; x <= maxXIndex; ++x) {
-      for (let y = minYIndex; y <= maxYIndex; ++y) {
-        const tileIndex = `image_${x}_${y}_${frameDetails.level}`;
-        const status =
-          this.tileStatus.get(tileIndex) ??
-          ({ evict: false, type: 'IMAGE', nonce: 0 } as TileStatus<ImageTile>);
-
-        status.evict = false;
-
-        if (status.state === TileState.LOADING) {
-          let parent = getParent([x, y, frameDetails.level]);
-
-          while (parent !== undefined) {
-            const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
-            const parentState = this.tileStatus.get(parentIndex);
-            if (parentState && parentState.state === TileState.VISIBLE) {
-              parentState.evict = false;
-              break;
-            }
-
-            parent = getParent(parent);
-          }
-        } else if (status.state === undefined) {
-          this.workerPool.postMessage({
-            type: RequestType.IMAGE,
-            id: tileIndex,
-            request: {
-              index: [x, y, frameDetails.level],
-              tileSize: this.tileSize,
-              levelRecord: this.levels[frameDetails.level],
-              namespace: this.namespace,
-              attribute: this.selectedAttribute,
-              channelRanges: this.channelRanges,
-              dimensions: this.dimensions,
-              nonce: ++this.nonce
-            } as ImageMessage
-          } as DataRequest);
-
-          status.state = TileState.LOADING;
-          status.nonce = this.nonce;
-          this.tileStatus.set(tileIndex, status);
-
-          this.updateLoadingStatus(false);
-
-          let parent = getParent([x, y, frameDetails.level]);
-          while (parent !== undefined) {
-            const parentIndex = `image_${parent[0]}_${parent[1]}_${parent[2]}`;
-            const parentState = this.tileStatus.get(parentIndex);
-            if (parentState && parentState.state === TileState.VISIBLE) {
-              parentState.evict = false;
-              break;
-            }
-
-            parent = getParent(parent);
-          }
-        }
-      }
-    }
-
-    for (const key of this.tileStatus.keys()) {
-      const status = this.tileStatus.get(key);
-      if (!status?.evict) {
-        continue;
-      }
-
-      if (status.state !== TileState.VISIBLE) {
-        this.workerPool.cancelRequest({
-          type: RequestType.CANCEL,
-          id: key
-        } as DataRequest);
-
-        this.updateLoadingStatus(true);
-      } else if (status.state === TileState.VISIBLE) {
-        status.tile?.dispose();
-      }
-
-      this.tileStatus.delete(key);
-    }
-  }
-
-  public onImageTileDataLoad(id: string, response: ImageResponse) {
-    if (response.canceled) {
-      return;
-    }
-
-    const status = this.tileStatus.get(id);
-
-    if (!status || status.nonce !== response.nonce) {
-      // Tile was removed from the tileset but canceling missed timing
-      return;
-    }
-
-    if (status.tile) {
-      status.tile.update({ uniformBuffer: this.tileOptions, response });
-    } else {
-      status.tile = new ImageTile(
-        [0, 0, this.baseWidth, this.baseHeight],
-        this.tileSize,
-        this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0,
-        this.tileOptions,
-        this.hasMinimap,
-        response,
-        this.scene
-      );
-    }
-
-    status.state = TileState.VISIBLE;
-    status.evict = false;
-    this.updateLoadingStatus(true);
-  }
-
-  private update() {
-    for (const key of this.tileStatus.keys()) {
-      const index = key
-        .split('_')
-        .map(x => parseInt(x))
-        .filter(x => !Number.isNaN(x));
-
-      const status = this.tileStatus.get(key);
-
-      if (!status) {
-        console.error(`Unexpected key ${key}`);
-        continue;
-      }
-
-      if (status.state === TileState.LOADING) {
-        this.workerPool.cancelRequest({
-          type: RequestType.CANCEL,
-          id: key
-        } as DataRequest);
-
-        this.updateLoadingStatus(true);
-      }
-
-      status.state = TileState.LOADING;
-
-      this.workerPool.postMessage({
-        id: key,
-        type: RequestType.IMAGE,
-        request: {
-          index: index,
-          tileSize: this.tileSize,
-          levelRecord: this.levels[index[2]],
-          namespace: this.namespace,
-          attribute: this.selectedAttribute,
-          channelRanges: this.channelRanges,
-          dimensions: this.dimensions,
-          nonce: ++this.nonce
-        }
-      });
-
-      status.nonce = this.nonce;
-      this.updateLoadingStatus(false);
-    }
-  }
-
-  protected stopEventListeners(): void {
+  public removeEventListeners(): void {
     window.removeEventListener(
       Events.SLIDER_CHANGE,
       this.sliderHandler.bind(this) as any,
@@ -324,6 +159,65 @@ export class ImageManager extends Manager<ImageTile> {
         capture: true
       }
     );
+  }
+
+  public requestTile(tile: Tile<ImageDataContent, ImageContent>): Promise<any> {
+    // Initialize tile data if not
+    if (!tile.data) {
+      tile.data = new ImageContent(this.scene, tile);
+    }
+
+    if (tile.content.length === 0) {
+      return new Promise((resolve, _) => resolve(true));
+    }
+
+    this.workerPool.postMessage({
+      type: RequestType.IMAGE,
+      id: tile.id,
+      payload: {
+        index: tile.index,
+        uri: tile.content[0].uri,
+        region: tile.content[0].region,
+        namespace: this.namespace,
+        attribute: this.selectedAttribute,
+        channelRanges: this.channelRanges,
+        dimensions: this.metadata.extraDimensions,
+        loaderOptions: this.metadata.loaderMetadata?.get(tile.content[0].uri)
+      } as ImagePayload
+    });
+
+    // TODO: Rewrite worker pool to store resolve functions of promises
+    return new Promise((resolve, _) => {
+      this.workerPool.callbacks.set(tile.id, resolve);
+    });
+  }
+
+  public cancelTile(tile: Tile<ImageDataContent, ImageContent>): void {
+    this.workerPool.cancelRequest({
+      type: RequestType.CANCEL,
+      id: tile.id
+    } as DataRequest);
+  }
+
+  public onLoaded(
+    tile: Tile<ImageDataContent, ImageContent>,
+    data: ImageResponse
+  ): void {
+    if (tile.content.length === 0) {
+      return;
+    }
+
+    tile.data?.update({
+      data: {
+        raw: data.data,
+        width: data.width,
+        height: data.height,
+        depth: data.channels,
+        dtype: data.dtype.toUpperCase(),
+        channelLimit: this.intensityRanges.length / 4
+      },
+      UBO: this.tileOptions
+    });
   }
 
   private initializeUniformBuffer() {
@@ -346,11 +240,15 @@ export class ImageManager extends Manager<ImageTile> {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'channel') {
+    if (target[0] !== this.metadata.id) {
       return;
     }
 
-    const index = Number(target[1]);
+    if (target[1] !== 'channel') {
+      return;
+    }
+
+    const index = Number(target[2]);
 
     switch (event.detail.props.command) {
       case Commands.COLOR:
@@ -369,7 +267,7 @@ export class ImageManager extends Manager<ImageTile> {
 
         this.channelRanges = calculateChannelRanges(this.channelMapping);
         this.initializeUniformBuffer();
-        this.update();
+        this.forceReloadTiles();
         break;
     }
   }
@@ -377,22 +275,34 @@ export class ImageManager extends Manager<ImageTile> {
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
     const target = event.detail.target.split('_');
 
-    switch (target[0]) {
+    if (target[0] !== this.metadata.id) {
+      return;
+    }
+
+    switch (target[1]) {
       case 'channel':
         {
-          const index = Number(target[1]);
+          if (!event.detail.props.range) {
+            break;
+          }
 
-          this.intensityRanges[4 * index + 1] = event.detail.props.value;
+          const index = Number(target[2]);
+
+          this.intensityRanges[4 * index + 1] = event.detail.props.range[1];
           this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
           this.tileOptions.update();
         }
         break;
       case 'dimension':
         {
-          const index = Number(target[1]);
+          if (!event.detail.props.value) {
+            break;
+          }
 
-          this.dimensions[index].value = event.detail.props.value;
-          this.update();
+          const index = Number(target[2]);
+
+          this.metadata.extraDimensions[index].value = event.detail.props.value;
+          this.forceReloadTiles();
         }
         break;
       default:
@@ -400,46 +310,49 @@ export class ImageManager extends Manager<ImageTile> {
     }
   }
 
-  private onCancel(id: string, response: BaseResponse) {
-    const tile = this.tileStatus.get(id);
-    if (
-      tile &&
-      tile.state === TileState.LOADING &&
-      tile.nonce === response.nonce
-    ) {
-      console.warn(`Tile '${id}' aborted unexpectedly. Retrying...`);
-
-      const index = id
-        .split('_')
-        .map(x => parseInt(x))
-        .filter(x => !Number.isNaN(x));
-
-      this.workerPool.postMessage({
-        id: id,
-        type: RequestType.IMAGE,
-        request: {
-          index: index,
-          tileSize: this.tileSize,
-          levelRecord: this.levels[index[2]],
-          namespace: this.namespace,
-          attribute: this.selectedAttribute,
-          channelRanges: this.channelRanges,
-          dimensions: this.dimensions,
-          nonce: response.nonce
-        }
+  public initializeGUIProperties(): void {
+    const channelEntries: Record<string, GUIChannelProperty[]> = {};
+    for (const [attribute, channels] of this.metadata.channels.entries()) {
+      channelEntries[attribute] = channels.map((x, idx) => {
+        return {
+          name: x.name,
+          id: `channel_${idx}`,
+          min: x.min,
+          max: x.max,
+          color: `#${x.color.red.toString(16).padStart(2, '0')}${x.color.green
+            .toString(16)
+            .padStart(2, '0')}${x.color.blue.toString(16).padStart(2, '0')}`,
+          defaultMin: x.min,
+          defaultMax: x.max,
+          visible: x.visible,
+          step: 0.1
+        } as GUIChannelProperty;
       });
     }
-  }
 
-  public initializeGUIProperties(): void {
-    /** ignore */
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ImagePanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'image-panel',
+            props: {
+              id: this.metadata.id,
+              name: this.metadata.name,
+              attribute: {
+                name: 'Attribute',
+                id: 'attribute',
+                entries: this.metadata.attributes.map((x, idx) => {
+                  return { value: idx, name: x.name };
+                }),
+                default: 0
+              } as GUISelectProperty,
+              channels: channelEntries
+            }
+          }
+        }
+      )
+    );
   }
-}
-
-function getParent(index: number[]): number[] | undefined {
-  if (index[2] === 0) {
-    return undefined;
-  }
-
-  return [index[0] >> 1, index[1] >> 1, index[2] - 1];
 }

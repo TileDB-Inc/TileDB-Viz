@@ -5,9 +5,7 @@ import {
   Events,
   GUIEvent
 } from '@tiledb-inc/viz-components';
-import { Channel, ImageMetadata } from '../types';
-import { Dimension, AssetEntry } from '../../types';
-import { GeometryMetadata, PointCloudMetadata } from '@tiledb-inc/viz-common';
+import { AssetEntry } from '../../types';
 
 // const styleElement = document.createElement('style');
 // styleElement.textContent = stylesString;
@@ -28,12 +26,7 @@ class TileImageGUI {
 
   constructor(
     rootElement: HTMLElement,
-    channels: Channel[],
-    dimensions: Dimension[],
     assets: AssetEntry[],
-    imageMetadata: ImageMetadata,
-    geometryMetadata: Map<string, GeometryMetadata>,
-    pointMetadata: Map<string, PointCloudMetadata>,
     clearCache: () => void,
     assetSelectionCallback: (
       namespace: string,
@@ -64,28 +57,6 @@ class TileImageGUI {
     </selection-panel>
     <asset-panel>
     </asset-panel>
-    <sidebar-menu>
-      <channel-panel channels='${JSON.stringify(channels)}'>
-      </channel-panel>
-      ${
-        dimensions.length > 0
-          ? `<dimension-panel dimensions='${JSON.stringify(
-              dimensions
-            )}'></dimension-panel>`
-          : ''
-      }
-      ${
-        assets.length > 0
-          ? `<group-panel groups='${JSON.stringify(assets)}'></group-panel>`
-          : ''
-      }
-    </sidebar-menu>
-    <scale-bar basePhysicalSize='${
-      imageMetadata.physicalSizeX
-    }' basePhysicalSizeUnit='${imageMetadata.physicalSizeXUnit}' levels='${
-      imageMetadata.axes.length - 1
-    }' zoom='-2'>
-    </scale-bar>
       `;
 
     this.buttonEventHandler = (e: CustomEvent<GUIEvent<ButtonProps>>) =>

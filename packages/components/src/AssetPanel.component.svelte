@@ -11,7 +11,8 @@
   import TilePanel from './TilePanel.component.svelte';
   import PointPanel from './PointPanel.component.svelte';
   import GeometryPanel from './GeometryPanel.component.svelte';
-    import OptionsPanel from './OptionsPanel.component.svelte';
+  import OptionsPanel from './OptionsPanel.component.svelte';
+  import ImagePanel from './ImagePanel.component.svelte';
 
   let expandableWindowsState: Record<
     string,
@@ -98,7 +99,7 @@
     </button>
     <div class="separator"></div>
 
-    <!-- <button
+    <button
       title="Image Layers"
       class="Viewer-SelectionPanel__option"
       class:selected={expandableWindowsState['image-panel'].active}
@@ -120,7 +121,7 @@
           d="M4.41309 44.1692V4.16919H44.4131V44.1692H4.41309ZM8.67938 39.9584H40.1468V8.37994H8.67938V39.9584Z"
         ></path>
       </svg>
-    </button> -->
+    </button>
     <button
       title="Polygon Layers"
       class="Viewer-SelectionPanel__option"
@@ -247,6 +248,21 @@
     style="--expanded-width: 400px"
   >
     <ScenePanel></ScenePanel>
+  </div>
+</div>
+
+<div
+  bind:this={expandableWindowsState['image-panel'].reference}
+  class="Viewer-SelectionPanel__container"
+  style="max-width: {expandableWindowsState['image-panel'].active
+    ? expandableWindowsState['image-panel'].width
+    : 0}px; transition: 0.8s max-width; overflow: hidden;"
+>
+  <div
+    class="Viewer-SelectionPanel__sidewindow"
+    style="--expanded-width: 400px"
+  >
+    <ImagePanel></ImagePanel>
   </div>
 </div>
 
