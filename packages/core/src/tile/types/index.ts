@@ -11,7 +11,7 @@ import {
 import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
-import { Matrix } from 'mathjs';
+import { Matrix, string } from 'mathjs';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
@@ -181,6 +181,7 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
+  id: string;
   /**
    * The display anme of the point cloud asset.
    */
@@ -207,11 +208,20 @@ export type PointCloudMetadata = {
   features: Feature[];
 
   /**
+   * The list af all available attributes to fetch when loading point cloud features.
+   */
+  attributes: Attribute[];
+
+  /**
    * Point cloud loader specific metadata.
    */
   loaderMetadata: PointCloudLoaderMetadata;
 
-  groupID: string;
+  /**
+   * The coordinate system of the point cloud
+   */
+  crs?: string;
+
   domain: Domain[];
 };
 
@@ -481,18 +491,21 @@ export interface GeometryInfoMessage {
   geotransformCoefficients: number[];
 }
 
-export interface PointMessage {
+export interface PointCloudPayload {
   index: number[];
   arrayID: string;
   namespace: string;
+  region: {
+    dimension: string;
+    min: number;
+    max: number;
+  }[];
   imageCRS?: string;
   pointCRS?: string;
-  geotransformCoefficients: number[];
+  geotransformCoefficients: number[][];
   features: Feature[];
   attributes: Attribute[];
   nonce: number;
-  minPoint: number[];
-  maxPoint: number[];
   domain: Domain[];
 }
 

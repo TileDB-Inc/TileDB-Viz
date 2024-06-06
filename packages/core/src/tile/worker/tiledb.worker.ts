@@ -14,7 +14,8 @@ import {
   InfoResponse,
   AssetInitializationRequest,
   ImageLoaderMetadata,
-  InitializationPayload
+  InitializationPayload,
+  PointCloudPayload
 } from '../types';
 import { getQueryDataFromCache } from '../../utils/cache';
 import axios, { CancelTokenSource } from 'axios';
@@ -52,7 +53,6 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
         tokenSource,
         event.data.payload
       ).catch(_ => {
-        console.log(_);
         self.postMessage({
           id: event.data.id,
           type: RequestType.CANCEL
@@ -82,7 +82,8 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
             ).map(x => x.buffer) as any
           );
         })
-        .catch(x => {
+        .catch(_ => {
+          console.log(_);
           self.postMessage({
             id: event.data.id,
             type: RequestType.CANCEL,
@@ -102,7 +103,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
         event.data.id,
         tiledbClient,
         tokenSource,
-        event.data.request as PointMessage
+        event.data.payload as PointCloudPayload
       )
         .then(response => {
           self.postMessage(
@@ -112,7 +113,8 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
             ) as any
           );
         })
-        .catch(x => {
+        .catch(_ => {
+          console.log(_);
           self.postMessage({
             id: event.data.id,
             type: RequestType.CANCEL,

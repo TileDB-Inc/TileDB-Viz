@@ -1,33 +1,16 @@
-import {
-  Scene,
-  ArcRotateCamera,
-  Vector3,
-  UniformBuffer,
-  Vector4,
-  Frustum
-} from '@babylonjs/core';
+import { Scene, UniformBuffer, Vector4 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Manager, TileStatus } from '../manager';
-import { PointTile, PointUpdateOptions } from './point';
+import { Manager } from '../manager';
 import {
   PointShape,
   colorScheme,
   DataRequest,
   RequestType,
-  PointMessage,
-  PointResponse,
-  BaseResponse,
-  PointInfoMessage,
-  InfoResponse
+  PointCloudMetadata,
+  PointCloudPayload,
+  PointResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
-import { inv, MathArray, matrix, max, min, multiply } from 'mathjs';
-import { PriorityQueue } from '../../../point-cloud/utils/priority-queue';
-import {
-  encodeMorton,
-  Moctree,
-  MoctreeBlock
-} from '../../../point-cloud/octree';
 import {
   ButtonProps,
   Events,
@@ -37,46 +20,33 @@ import {
   SelectProps
 } from '@tiledb-inc/viz-components';
 import {
-  AddOctreeNodeOperation,
-  IntersectOperation,
-  PointCloudMetadata,
-  InitializeOctreeOperation,
-  OperationResult,
-  IntersectionResult,
   Feature,
   FeatureType,
   PointPanelInitializationEvent,
   GUIFlatColorFeature,
   GUICategoricalFeature,
-  TileState,
   GUIFeature
 } from '@tiledb-inc/viz-common';
-import { PickingTool } from '../../utils/picking-tool';
-import { constructOctree } from './utils';
-import proj4 from 'proj4';
-import { FrameDetails } from '../../../types';
+import { Tile } from '../tile';
+import { PointDataContent, SceneOptions } from '../../../types';
+import { PointTileContent } from './pointContent';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
-  transformationCoefficients: number[];
   namespace: string;
-  baseCRS?: string;
+  sceneOptions: SceneOptions;
 }
 
-export class PointManager extends Manager<PointTile> {
+export class PointManager extends Manager<
+  Tile<PointDataContent, PointTileContent>
+> {
   private pointOptions!: UniformBuffer;
   private metadata: PointCloudMetadata;
-  private transformationCoefficients: number[];
   private activeFeature: Feature;
-  private blockQueue: PriorityQueue;
-  private octree: Moctree;
   private pointBudget: number;
-  private screenSizeLimit: number;
   private namespace: string;
-  private pickingTool: PickingTool;
-  private baseCRS?: string;
   private pointSize: number;
-  private zoom: number;
+  private sceneOptions: SceneOptions;
   private styleOptions = {
     pointShape: PointShape.SQUARE,
     pointSize: 1,
@@ -101,114 +71,21 @@ export class PointManager extends Manager<PointTile> {
   constructor(
     scene: Scene,
     workerPool: WorkerPool,
-    pickingTool: PickingTool,
     options: PointOptions
   ) {
-    super(scene, workerPool, 0, 0, 0);
+    super(options.metadata.root, scene, workerPool);
 
-    this.nonce = 0;
-    this.blockQueue = new PriorityQueue(100);
+    console.log(options.metadata.root);
+
     this.metadata = options.metadata;
-    this.transformationCoefficients = options.transformationCoefficients;
     this.activeFeature = this.metadata.features[0];
-    this.initializeUniformBuffer();
     this.pointBudget = 1_000_000;
-    this.screenSizeLimit = 10;
+    this.errorLimit = 10;
     this.namespace = options.namespace;
-    this.baseCRS = options.baseCRS;
-    this.pickingTool = pickingTool;
+    this.sceneOptions = options.sceneOptions;
     this.pointSize = 1;
-    this.zoom = 0.25;
 
-    // To be in accordance with the image layer the UP direction align with
-    // the Y-axis and flips the Z direction. This means during block selection the camera should be flipped in the Z-direction.
-    // TODO: Add the default rotations back to the 4D matrix
-    const affineMatrix = matrix([
-      [
-        options.transformationCoefficients[1],
-        0,
-        0,
-        options.transformationCoefficients[0]
-      ],
-      [
-        0,
-        options.transformationCoefficients[5],
-        0,
-        options.transformationCoefficients[3]
-      ],
-      [0, 0, options.transformationCoefficients[1], 0],
-      [0, 0, 0, 1]
-    ] as MathArray);
-
-    let minPoint = [
-      this.metadata.minPoint.x,
-      this.metadata.minPoint.y,
-      this.metadata.minPoint.z,
-      1
-    ];
-
-    let maxPoint = [
-      this.metadata.maxPoint.x,
-      this.metadata.maxPoint.y,
-      this.metadata.maxPoint.z,
-      1
-    ];
-
-    if (
-      options.baseCRS &&
-      options.metadata.crs &&
-      options.baseCRS !== options.metadata.crs
-    ) {
-      const converter = proj4(options.metadata.crs, options.baseCRS);
-
-      minPoint = [...converter.forward(minPoint.slice(0, 3)), 1];
-      maxPoint = [...converter.forward(maxPoint.slice(0, 3)), 1];
-    }
-
-    const affineInverted = inv(affineMatrix);
-
-    const minPointTransformed = multiply(affineInverted, minPoint);
-    const maxPointTransformed = multiply(affineInverted, maxPoint);
-
-    // Type info is wrong since min and max when applied to 2D arrays with 0 as the selected dimension will return back an array
-    [minPoint, maxPoint] = [
-      matrix(
-        min(
-          [
-            minPointTransformed.toArray(),
-            maxPointTransformed.toArray()
-          ] as number[][],
-          0
-        ) as any
-      ).toArray() as number[],
-      matrix(
-        max(
-          [
-            minPointTransformed.toArray(),
-            maxPointTransformed.toArray()
-          ] as number[][],
-          0
-        ) as any
-      ).toArray() as number[]
-    ];
-
-    this.octree = constructOctree(
-      new Vector3(minPoint[0], minPoint[2], minPoint[1]),
-      new Vector3(maxPoint[0], maxPoint[2], maxPoint[1]),
-      options.metadata.minPoint,
-      options.metadata.maxPoint,
-      [
-        options.transformationCoefficients[1],
-        options.transformationCoefficients[5],
-        options.transformationCoefficients[1]
-      ],
-      this.metadata.levels.length,
-      this.metadata.octreeData
-    );
     this.initializeUniformBuffer();
-    this.setupEventListeners();
-    this.workerPool.callbacks.point.push(this.onPointTileDataLoad.bind(this));
-    this.workerPool.callbacks.cancel.push(this.onCancel.bind(this));
 
     if (this.metadata.idAttribute) {
       this.metadata.features.push({
@@ -217,54 +94,13 @@ export class PointManager extends Manager<PointTile> {
         attributes: [{ name: this.metadata.idAttribute.name }],
         interleaved: false
       });
-
-      this.pickingTool.pickCallbacks.push(this.pickPoints.bind(this));
-      this.workerPool.callbacks.pointOperation.push(
-        this.onPointOperation.bind(this)
-      );
-      this.workerPool.callbacks.info.push(this.onPointInfo.bind(this));
-
-      this.workerPool.postOperation({
-        operation: 'INITIALIZE',
-        id: this.metadata.groupID,
-        minPoint: minPoint,
-        maxPoint: maxPoint,
-        maxDepth: this.metadata.levels.length,
-        blocks: this.metadata.octreeData
-      } as InitializeOctreeOperation);
     }
+
+    this.registerEventListeners();
+    this.initializeGUIProperties();
   }
 
-  private onPointOperation(id: string, response: OperationResult) {
-    if (!response.done || id !== this.metadata.groupID) {
-      return;
-    }
-
-    switch (response.operation) {
-      case 'INTERSECT':
-        this.workerPool.postMessage({
-          id: this.metadata.groupID,
-          type: RequestType.POINT_INFO,
-          request: {
-            namespace: this.namespace,
-            levels: (response as IntersectionResult).levelIncides.map(
-              x => this.metadata.levels[x]
-            ),
-            geotransformCoefficients: this.transformationCoefficients,
-            domain: this.metadata.domain,
-            idAttribute: this.metadata.idAttribute?.name ?? '',
-            ids: (response as IntersectionResult).ids,
-            bbox: (response as IntersectionResult).bbox,
-            nonce: this.nonce++
-          } as PointInfoMessage
-        } as DataRequest);
-        break;
-      default:
-        break;
-    }
-  }
-
-  private setupEventListeners() {
+  public registerEventListeners(): void {
     window.addEventListener(
       Events.BUTTON_CLICK,
       this.buttonHandler.bind(this) as any,
@@ -287,10 +123,64 @@ export class PointManager extends Manager<PointTile> {
     );
   }
 
+  public removeEventListeners(): void {
+    throw new Error('Method not implemented.');
+  }
+
+  public requestTile(tile: Tile<PointDataContent, PointTileContent>): Promise<any> {
+    
+    if (!tile.data) {
+      tile.data = new PointTileContent(this.scene, tile);
+    }
+
+    console.log(tile);
+
+    this.workerPool.postMessage({
+      type: RequestType.POINT,
+      id: tile.id,
+      payload: {
+        index: tile.index,
+        namespace: this.namespace,
+        arrayID: tile.content[0].uri,
+        region: tile.content[0].region,
+        features: this.metadata.features,
+        attributes: this.metadata.attributes,
+        geotransformCoefficients: this.sceneOptions.transformation?.toArray(),
+        domain: this.metadata.domain,
+        imageCRS: this.sceneOptions.crs,
+        pointCRS: this.metadata.crs
+      } as PointCloudPayload
+    } as DataRequest);
+
+    return new Promise((resolve, _) =>
+      this.workerPool.callbacks.set(tile.id, resolve)
+    );
+  }
+
+  public cancelTile(tile: Tile<PointDataContent, PointTileContent>): void {
+    this.workerPool.cancelRequest({
+      type: RequestType.CANCEL,
+      id: tile.id
+    } as DataRequest);
+  }
+
+  public onLoaded(
+    tile: Tile<PointDataContent, PointTileContent>,
+    data: PointResponse
+  ): void {
+    tile.data?.update({
+      data: {
+        position: data.attributes['position'] as Float32Array,
+        attributes: data.attributes
+      },
+      UBO: this.pointOptions
+    });
+  }
+
   private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== this.metadata.groupID) {
+    if (target[0] !== this.metadata.id) {
       return;
     }
 
@@ -312,9 +202,9 @@ export class PointManager extends Manager<PointTile> {
         return;
     }
 
-    for (const [, status] of this.tileStatus) {
-      if (status.state === TileState.VISIBLE) {
-        status.tile?.update(updateOptions);
+    for (const tile of this.visibleTiles.values()) {
+      if (tile.state & TileState.VISIBLE) {
+        tile.data?.update(updateOptions);
       }
     }
   }
@@ -322,7 +212,7 @@ export class PointManager extends Manager<PointTile> {
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== this.metadata.groupID) {
+    if (target[0] !== this.metadata.id) {
       return;
     }
 
@@ -355,28 +245,11 @@ export class PointManager extends Manager<PointTile> {
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== this.metadata.groupID) {
+    if (target[0] !== this.metadata.id) {
       return;
     }
 
     switch (event.detail.props.command) {
-      case Commands.CLEAR:
-        for (const [, status] of this.tileStatus) {
-          if (status.state === TileState.VISIBLE) {
-            status.tile?.updateSelection([]);
-          }
-        }
-        break;
-      case Commands.SELECT:
-        for (const [, status] of this.tileStatus) {
-          if (status.state === TileState.VISIBLE) {
-            status.tile?.updatePicked(
-              BigInt(event.detail.props.data?.id),
-              BigInt(event.detail.props.data?.previousID ?? -1)
-            );
-          }
-        }
-        break;
       case Commands.COLOR:
         {
           if (target[1] === 'fill') {
@@ -420,8 +293,8 @@ export class PointManager extends Manager<PointTile> {
             event.detail.props.data.group
           );
 
-          for (const [, status] of this.tileStatus) {
-            status.tile?.update({
+          for (const tile of this.visibleTiles.values()) {
+            tile.data?.update({
               ...this.styleOptions,
               groupUpdate: {
                 categoryIndex: event.detail.props.data.category,
@@ -434,212 +307,6 @@ export class PointManager extends Manager<PointTile> {
       default:
         break;
     }
-  }
-
-  private onPointTileDataLoad(id: string, response: PointResponse) {
-    if (response.canceled) {
-      return;
-    }
-
-    const status =
-      this.tileStatus.get(id) ??
-      ({
-        evict: false,
-        state: TileState.VISIBLE
-      } as TileStatus<PointTile>);
-
-    if (!status || status.nonce !== response.nonce) {
-      // Tile was removed from the tileset but canceling missed timing
-      return;
-    }
-
-    if (this.metadata.idAttribute) {
-      this.workerPool.postOperation({
-        operation: 'ADD',
-        id: this.metadata.groupID,
-        mortonCode: response.index[0],
-        data: response.attributes['position'],
-        ids: response.attributes['Picking ID']
-      } as AddOctreeNodeOperation);
-    }
-
-    if (status.tile) {
-      status.tile.update({ response });
-    } else {
-      status.tile = new PointTile(this.scene, response);
-      status.tile.update({
-        ...this.styleOptions,
-        pointOptions: this.pointOptions,
-        feature: this.activeFeature
-      });
-    }
-
-    status.state = TileState.VISIBLE;
-    this.updateLoadingStatus(true);
-  }
-
-  public loadTiles(camera: ArcRotateCamera, frameDetails: FrameDetails): void {
-    for (const [, value] of this.tileStatus) {
-      value.evict = true;
-    }
-
-    if (this.scene.getEngine().isWebGPU) {
-      this.zoom = frameDetails.zoom;
-      this.pointOptions.updateFloat('pointSize', this.pointSize / this.zoom);
-      this.pointOptions.update();
-    }
-
-    this.blockQueue.reset();
-
-    const scoreMetric = (block: MoctreeBlock) =>
-      this.orthographicScore(
-        block,
-        Math.max(
-          (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0),
-          (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0)
-        )
-      );
-    const frustrum = Frustum.GetPlanes(camera.getTransformationMatrix());
-
-    const root = this.octree.blocklist.get(
-      encodeMorton(Vector3.ZeroReadOnly, 0)
-    );
-
-    if (!root) {
-      return;
-    }
-
-    const rootScore = scoreMetric(root);
-    this.blockQueue.insert(rootScore, root);
-
-    let points = 0;
-    let blocks = 0;
-
-    while (
-      !this.blockQueue.isEmpty() &&
-      points < this.pointBudget &&
-      blocks < 200
-    ) {
-      // Extract all blocks (they belong to the same lod) and determine visibility
-      const visibleBlocks = [];
-      while (!this.blockQueue.isEmpty()) {
-        const block = this.blockQueue.extractMax().octreeBlock;
-
-        if (!block || !block.boundingInfo.isInFrustum(frustrum)) {
-          continue;
-        }
-
-        visibleBlocks.push(block);
-      }
-
-      // Check is the point budget is enough to hold all blocks
-      if (
-        visibleBlocks.reduce((a, b) => {
-          return a + b.pointCount;
-        }, 0) +
-          points >
-        this.pointBudget
-      ) {
-        continue;
-      }
-
-      // Add child blocks to the queue and load blocks
-      for (const block of visibleBlocks) {
-        const tileIndex = `${this.metadata.name}_${block.mortonNumber}`;
-        const status =
-          this.tileStatus.get(tileIndex) ??
-          ({ evict: false, nonce: 0 } as TileStatus<PointTile>);
-        status.evict = false;
-
-        if (status.state === undefined) {
-          this.workerPool.postMessage({
-            type: RequestType.POINT,
-            id: tileIndex,
-            request: {
-              index: [block.mortonNumber],
-              minPoint:
-                block.nativeMinPoint?.asArray() ?? block.minPoint.asArray(),
-              maxPoint:
-                block.nativeMaxPoint?.asArray() ?? block.maxPoint.asArray(),
-              namespace: this.namespace,
-              arrayID: this.metadata.levels[block.lod],
-              features: this.metadata.features,
-              nonce: ++this.nonce,
-              attributes: this.metadata.attributes,
-              geotransformCoefficients: this.transformationCoefficients,
-              domain: this.metadata.domain,
-              imageCRS: this.baseCRS,
-              pointCRS: this.metadata.crs
-            } as PointMessage
-          } as DataRequest);
-
-          status.state = TileState.LOADING;
-          status.nonce = this.nonce;
-          this.tileStatus.set(tileIndex, status);
-
-          this.updateLoadingStatus(false);
-        }
-
-        points += block.pointCount || 0;
-        ++blocks;
-
-        for (let i = 0; i < 8; ++i) {
-          const code = (block.mortonNumber << 3) + i;
-
-          if (!this.octree.blocklist.has(code)) {
-            continue;
-          }
-
-          const child = this.octree.blocklist.get(code);
-          if (child) {
-            // All child blocks should have the same score needs assertion
-            const childScore = scoreMetric(child);
-
-            if (childScore < 51 - this.screenSizeLimit) {
-              continue;
-            }
-            this.blockQueue.insert(childScore, child);
-          }
-        }
-      }
-    }
-
-    for (const key of this.tileStatus.keys()) {
-      const status = this.tileStatus.get(key);
-      if (!status?.evict) {
-        continue;
-      }
-
-      if (status.state !== TileState.VISIBLE) {
-        this.workerPool.cancelRequest({
-          type: RequestType.CANCEL,
-          id: key
-        } as DataRequest);
-
-        this.updateLoadingStatus(true);
-      } else if (status.state === TileState.VISIBLE) {
-        status.tile?.dispose();
-      }
-
-      this.tileStatus.delete(key);
-    }
-  }
-
-  public pickPoints(
-    bbox: number[],
-    constraints?: {
-      path?: number[];
-      tiles?: number[][];
-      enclosureMeshPositions?: Float32Array;
-      enclosureMeshIndices?: Int32Array;
-    }
-  ) {
-    this.workerPool.postOperation({
-      operation: 'INTERSECT',
-      id: this.metadata.groupID,
-      positions: constraints?.enclosureMeshPositions,
-      indices: constraints?.enclosureMeshIndices
-    } as IntersectOperation);
   }
 
   private initializeUniformBuffer() {
@@ -662,74 +329,6 @@ export class PointManager extends Manager<PointTile> {
     );
 
     this.pointOptions.update();
-  }
-
-  private orthographicScore(
-    block: MoctreeBlock,
-    viewportRadius: number
-  ): number {
-    return (
-      (block.boundingInfo.boundingSphere.radiusWorld / viewportRadius) * 100
-    );
-  }
-
-  private onCancel(id: string, response: BaseResponse) {
-    const tile = this.tileStatus.get(id);
-    if (
-      tile &&
-      tile.state === TileState.LOADING &&
-      tile.nonce === response.nonce
-    ) {
-      console.warn(`Tile '${id}' aborted unexpectedly. Retrying...`);
-
-      const index = id
-        .split('_')
-        .map(x => parseInt(x))
-        .filter(x => !Number.isNaN(x));
-
-      const block = this.octree.blocklist.get(index[0]);
-
-      this.workerPool.postMessage({
-        type: RequestType.POINT,
-        id: id,
-        request: {
-          index: index,
-          minPoint: block!.minPoint.asArray(),
-          maxPoint: block!.maxPoint.asArray(),
-          namespace: this.namespace,
-          arrayID: this.metadata.levels[block!.lod],
-          features: this.metadata.features,
-          nonce: ++this.nonce,
-          attributes: this.metadata.attributes,
-          geotransformCoefficients: this.transformationCoefficients,
-          imageCRS: this.baseCRS,
-          pointCRS: this.metadata.crs,
-          domain: this.metadata.domain
-        } as PointMessage
-      } as DataRequest);
-    }
-  }
-
-  private onPointInfo(id: string, response: InfoResponse) {
-    if (id !== this.metadata.groupID) {
-      return;
-    }
-
-    for (const [, status] of this.tileStatus) {
-      if (status.state === TileState.VISIBLE) {
-        status.tile?.updateSelection(response.ids);
-      }
-    }
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent>(Events.PICK_OBJECT, {
-        bubbles: true,
-        detail: {
-          target: `geometry_info_${this.metadata.groupID}`,
-          props: response.info
-        }
-      })
-    );
   }
 
   public initializeGUIProperties() {

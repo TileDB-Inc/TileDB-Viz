@@ -5,8 +5,8 @@ import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
+  PointCloudPayload,
   PointInfoMessage,
-  PointMessage,
   PointResponse,
   TypedArray,
   WorkerResponse
@@ -18,7 +18,6 @@ import {
   min,
   max,
   multiply,
-  inv,
   Matrix,
   index
 } from 'mathjs';
@@ -32,10 +31,10 @@ import {
 import proj4 from 'proj4';
 
 export async function pointRequest(
-  id: string,
+  id: number,
   client: Client,
   tokenSource: CancelTokenSource,
-  request: PointMessage
+  request: PointCloudPayload
 ) {
   const mortonIndex = request.index;
   const cacheTableID = request.arrayID;
@@ -45,16 +44,8 @@ export async function pointRequest(
     canceled: false,
     attributes: {}
   };
-
-  const geotransformCoefficients = request.geotransformCoefficients;
-  const affineMatrix = matrix([
-    [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
-    [0, -geotransformCoefficients[5], 0, geotransformCoefficients[3]],
-    [0, 0, geotransformCoefficients[1], 0],
-    [0, 0, 0, 1]
-  ] as MathArray);
-
-  const affineInverted = inv(affineMatrix);
+  console.log(request);
+  const affineInverted = matrix(request.geotransformCoefficients);
 
   const uniqueAttributes = new Set<string>(
     request.features.flatMap(x => x.attributes.map(y => y.name))
@@ -82,9 +73,9 @@ export async function pointRequest(
   }
 
   const ranges = [
-    [request.minPoint[0], request.maxPoint[0]],
-    [request.minPoint[1], request.maxPoint[1]],
-    [request.minPoint[2], request.maxPoint[2]]
+    [request.region[0].min, request.region[0].max],
+    [request.region[1].min, request.region[1].max],
+    [request.region[2].min, request.region[2].max]
   ];
 
   const query = {
@@ -243,7 +234,7 @@ export async function pointRequest(
 }
 
 export async function pointInfoRequest(
-  id: string,
+  id: number,
   client: Client,
   tokenSource: CancelTokenSource,
   request: PointInfoMessage
