@@ -27,9 +27,9 @@ import {
   GUICategoricalFeature,
   GUIFeature
 } from '@tiledb-inc/viz-common';
-import { Tile } from '../tile';
+import { Tile, TileState } from '../tile';
 import { PointDataContent, SceneOptions } from '../../../types';
-import { PointTileContent } from './pointContent';
+import { PointCloudUpdateOptions, PointTileContent } from './pointContent';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -43,7 +43,6 @@ export class PointManager extends Manager<
   private pointOptions!: UniformBuffer;
   private metadata: PointCloudMetadata;
   private activeFeature: Feature;
-  private pointBudget: number;
   private namespace: string;
   private pointSize: number;
   private sceneOptions: SceneOptions;
@@ -68,19 +67,15 @@ export class PointManager extends Manager<
     groupState: new Map<string, Map<number, number>>()
   };
 
-  constructor(
-    scene: Scene,
-    workerPool: WorkerPool,
-    options: PointOptions
-  ) {
+  constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
     super(options.metadata.root, scene, workerPool);
-
-    console.log(options.metadata.root);
 
     this.metadata = options.metadata;
     this.activeFeature = this.metadata.features[0];
-    this.pointBudget = 1_000_000;
-    this.errorLimit = 10;
+    this.errorLimit = Math.max(
+      this.scene.getEngine().getRenderWidth(),
+      this.scene.getEngine().getRenderHeight()
+    );
     this.namespace = options.namespace;
     this.sceneOptions = options.sceneOptions;
     this.pointSize = 1;
@@ -127,13 +122,12 @@ export class PointManager extends Manager<
     throw new Error('Method not implemented.');
   }
 
-  public requestTile(tile: Tile<PointDataContent, PointTileContent>): Promise<any> {
-    
+  public requestTile(
+    tile: Tile<PointDataContent, PointTileContent>
+  ): Promise<any> {
     if (!tile.data) {
       tile.data = new PointTileContent(this.scene, tile);
     }
-
-    console.log(tile);
 
     this.workerPool.postMessage({
       type: RequestType.POINT,
@@ -173,7 +167,8 @@ export class PointManager extends Manager<
         position: data.attributes['position'] as Float32Array,
         attributes: data.attributes
       },
-      UBO: this.pointOptions
+      UBO: this.pointOptions,
+      FrameUBO: this.frameOptions
     });
   }
 
@@ -184,10 +179,7 @@ export class PointManager extends Manager<
       return;
     }
 
-    let updateOptions: PointUpdateOptions = {
-      ...this.styleOptions,
-      pointOptions: this.pointOptions
-    };
+    let updateOptions: PointCloudUpdateOptions = {};
 
     switch (target[1]) {
       case 'pointShape':
@@ -218,25 +210,24 @@ export class PointManager extends Manager<
 
     switch (target[1]) {
       case 'pointSize':
-        this.pointSize = event.detail.props.value;
-        if (this.scene.getEngine().isWebGPU) {
-          this.pointOptions.updateFloat(
-            'pointSize',
-            this.pointSize / this.zoom
-          );
-        } else {
-          this.pointOptions.updateFloat('pointSize', this.pointSize);
-        }
+        this.pointSize = event.detail.props.value ?? 1;
+        this.pointOptions.updateFloat('pointSize', this.pointSize);
+
         this.pointOptions.update();
         break;
-      case 'pointBudget':
-        this.pointBudget = event.detail.props.value;
-        break;
       case 'quality':
-        this.screenSizeLimit = 51 - event.detail.props.value;
+        this.errorLimit =
+          Math.max(
+            this.scene.getEngine().getRenderWidth(),
+            this.scene.getEngine().getRenderHeight()
+          ) *
+          (50 / (event.detail.props.value ?? 50));
         break;
       case 'pointOpacity':
-        this.pointOptions.updateFloat('pointOpacity', event.detail.props.value);
+        this.pointOptions.updateFloat(
+          'pointOpacity',
+          event.detail.props.value ?? 1
+        );
         this.pointOptions.update();
         break;
     }
@@ -281,29 +272,6 @@ export class PointManager extends Manager<
           this.pointOptions.update();
         }
         break;
-      case Commands.GROUP:
-        {
-          let state = this.styleOptions.groupState.get(this.activeFeature.name);
-          if (!state) {
-            state = new Map<number, number>();
-            this.styleOptions.groupState.set(this.activeFeature.name, state);
-          }
-          state.set(
-            event.detail.props.data.category,
-            event.detail.props.data.group
-          );
-
-          for (const tile of this.visibleTiles.values()) {
-            tile.data?.update({
-              ...this.styleOptions,
-              groupUpdate: {
-                categoryIndex: event.detail.props.data.category,
-                group: event.detail.props.data.group
-              }
-            });
-          }
-        }
-        break;
       default:
         break;
     }
@@ -340,7 +308,7 @@ export class PointManager extends Manager<
           detail: {
             target: 'point-panel',
             props: {
-              id: this.metadata.groupID,
+              id: this.metadata.id,
               name: this.metadata.name,
               pointBudget: {
                 name: 'Point budget',
@@ -354,8 +322,8 @@ export class PointManager extends Manager<
                 name: 'Quality',
                 id: 'quality',
                 min: 1,
-                max: 50,
-                default: 40,
+                max: 100,
+                default: 50,
                 step: 1
               },
               pointShape: {

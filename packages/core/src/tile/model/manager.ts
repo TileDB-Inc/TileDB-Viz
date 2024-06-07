@@ -1,4 +1,4 @@
-import { Camera, Scene } from '@babylonjs/core';
+import { Camera, Scene, UniformBuffer } from '@babylonjs/core';
 import { WorkerPool } from '../worker/tiledb.worker.pool';
 import { Events } from '@tiledb-inc/viz-components';
 import { FrameDetails, RefineStrategy } from '../../types';
@@ -17,6 +17,7 @@ export abstract class Manager<T extends Tile<any>> {
   protected workerPool: WorkerPool;
   protected errorLimit: number;
   protected visibleTiles: Map<number, T>;
+  protected frameOptions: UniformBuffer;
 
   private rejectHandlers: Map<number, Function>;
   private traverser: Traverser<T>;
@@ -29,6 +30,9 @@ export abstract class Manager<T extends Tile<any>> {
     this.errorLimit = -1;
     this.rejectHandlers = new Map();
     this.traverser = new Traverser(root);
+
+    this.frameOptions = new UniformBuffer(this.scene.getEngine());
+    this.frameOptions.addUniform('zoom', 1);
   }
 
   public loadTiles(camera: Camera, frameDetails: FrameDetails): void {
@@ -36,6 +40,10 @@ export abstract class Manager<T extends Tile<any>> {
     for (const [_, tile] of this.visibleTiles) {
       tile.state = tile.state | TileState.PENDING_DELETE;
     }
+
+    // Update uniform buffer
+    this.frameOptions.updateFloat('zoom', frameDetails.zoom);
+    this.frameOptions.update();
 
     // Reset the traverser state
     this.traverser.reset(camera);
@@ -104,7 +112,10 @@ export abstract class Manager<T extends Tile<any>> {
       ) {
         this._requestTileInternal(tile)
           .then(x => this._onLoadedInternal(tile, x))
-          .catch(_ => this._removeTileInternal(tile));
+          .catch(_ => {
+            console.log(_);
+            this._removeTileInternal(tile);
+          });
       } else {
         // Clear pending load flag
         tile.state = tile.state & ~TileState.PENDING_LOAD;
@@ -168,7 +179,10 @@ export abstract class Manager<T extends Tile<any>> {
 
       this._requestTileInternal(tile)
         .then(x => this._onLoadedInternal(tile, x))
-        .catch(_ => this._removeTileInternal(tile));
+        .catch(_ => {
+          console.log(_);
+          this._removeTileInternal(tile);
+        });
     }
   }
 

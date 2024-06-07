@@ -41,6 +41,12 @@ export function PointCloudMaterialWebGPU(
   attribute loc: vec3<f32>;
   attribute state: f32;
 
+  struct FrameOptions {
+    zoom: f32
+  };
+
+  var<uniform> frameOptions : FrameOptions;
+
   ${attributeName ? `attribute ${attributeName}: ${attributeType};` : ''}
 
   const selectionColor: vec4<f32> = vec4<f32>(0.0, 1.0, 0.0, 1.0);

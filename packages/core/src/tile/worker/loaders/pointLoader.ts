@@ -12,15 +12,7 @@ import {
   WorkerResponse
 } from '../../types';
 import { RequestType } from '../../types';
-import {
-  MathArray,
-  matrix,
-  min,
-  max,
-  multiply,
-  Matrix,
-  index
-} from 'mathjs';
+import { MathArray, matrix, min, max, multiply, Matrix, index } from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
 import {
   createRGB,
@@ -53,24 +45,24 @@ export async function pointRequest(
 
   request.domain.forEach(x => uniqueAttributes.add(x.name));
 
-  const cachedArrays = await loadCachedGeometry(
-    cacheTableID,
-    `${mortonIndex}`,
-    [
-      ...request.features.filter(x => x.attributes.length).map(x => x.name),
-      'position'
-    ]
-  );
+  // const cachedArrays = await loadCachedGeometry(
+  //   cacheTableID,
+  //   `${mortonIndex}`,
+  //   [
+  //     ...request.features.filter(x => x.attributes.length).map(x => x.name),
+  //     'position'
+  //   ]
+  // );
 
-  if (cachedArrays) {
-    result.attributes = cachedArrays;
+  // if (cachedArrays) {
+  //   result.attributes = cachedArrays;
 
-    return {
-      id: id,
-      type: RequestType.POINT,
-      response: result
-    } as WorkerResponse;
-  }
+  //   return {
+  //     id: id,
+  //     type: RequestType.POINT,
+  //     response: result
+  //   } as WorkerResponse;
+  // }
 
   const ranges = [
     [request.region[0].min, request.region[0].max],
@@ -107,6 +99,7 @@ export async function pointRequest(
       }
     }
   } catch (e) {
+    console.log(e);
     throw new Error('Request cancelled by the user');
   }
 
@@ -154,6 +147,9 @@ export async function pointRequest(
         arrays['Z'][idx],
         1
       ] as number[]).toArray() as number[];
+
+    // Invert Z component
+    positions[3 * idx + 2] = -positions[3 * idx + 2];
   }
 
   result.attributes['position'] = positions;
@@ -220,11 +216,11 @@ export async function pointRequest(
     }
   }
 
-  await Promise.all(
-    Object.entries(result.attributes).map(([name, array]) => {
-      return writeToCache(cacheTableID, `${name}_${mortonIndex}`, array);
-    })
-  );
+  // await Promise.all(
+  //   Object.entries(result.attributes).map(([name, array]) => {
+  //     return writeToCache(cacheTableID, `${name}_${mortonIndex}`, array);
+  //   })
+  // );
 
   return {
     id: id,
