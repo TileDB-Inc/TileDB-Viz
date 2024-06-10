@@ -201,8 +201,6 @@ export async function imageRequest(
       return;
     }
 
-    console.log(data);
-
     const shape: number[] = [];
 
     for (const axis of sourceAxes) {

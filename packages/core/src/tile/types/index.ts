@@ -11,7 +11,7 @@ import {
 import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
-import { Matrix, string } from 'mathjs';
+import { Matrix } from 'mathjs';
 import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
@@ -163,6 +163,12 @@ export type GeometryMetadata = {
    * The available renderable features of the dataset.
    */
   features: Feature[];
+
+  geometryAttribute: Attribute;
+  idAttribute?: Attribute;
+  extrudeAttribute?: Attribute;
+  crs?: string;
+  type: string;
 
   /**
    * The list af all available attributes to fetch when loading geometry features.
@@ -452,6 +458,15 @@ export type GeometryPayload = {
   region: { dimension: string; min: number; max: number }[];
   index: number[];
   namespace: string;
+
+  type: string;
+  features: Feature[];
+  geometryAttribute: Attribute;
+  idAttribute?: Attribute;
+  heightAttribute?: Attribute;
+  attributes: Attribute[];
+
+  sourceCRS?: string;
   targetCRS?: string;
   transformation: number[];
 };
@@ -544,6 +559,8 @@ export interface ImageResponse extends BaseResponse {
 
 export interface GeometryResponse extends BaseResponse {
   type: GeometryType;
+  position: Float32Array;
+  indices: Int32Array;
   attributes: { [attribute: string]: TypedArray };
 }
 

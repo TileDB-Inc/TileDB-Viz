@@ -5,17 +5,16 @@ import {
   RequestType,
   WorkerResponse,
   GeometryResponse,
-  GeometryMessage,
   GeometryInfoMessage,
   BaseResponse,
-  PointMessage,
   PointResponse,
   PointInfoMessage,
   InfoResponse,
   AssetInitializationRequest,
   ImageLoaderMetadata,
   InitializationPayload,
-  PointCloudPayload
+  PointCloudPayload,
+  GeometryPayload
 } from '../types';
 import { getQueryDataFromCache } from '../../utils/cache';
 import axios, { CancelTokenSource } from 'axios';
@@ -72,7 +71,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
         event.data.id,
         tiledbClient,
         tokenSource,
-        event.data.request as GeometryMessage
+        event.data.payload as GeometryPayload
       )
         .then(response => {
           self.postMessage(

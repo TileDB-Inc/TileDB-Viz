@@ -1,5 +1,10 @@
 import { Matrix } from 'mathjs';
 
+export type TDBNonEmptyDomain = {
+  isEmpty: boolean;
+  nonEmptyDomain: Record<string, number[]>;
+};
+
 export interface AssetMetadata {
   dataset_type: string;
 }
@@ -74,18 +79,13 @@ export type SceneOptions = {
 };
 
 export type GeometryDataContent = {
-  dimension: string;
-  min: number;
-  max: number;
+  uri: string;
+  region: { dimension: string; min: number; max: number }[];
 };
 
 export type ImageDataContent = {
   uri: string;
-  region: {
-    dimension: string;
-    min: number;
-    max: number;
-  }[];
+  region: { dimension: string; min: number; max: number }[];
 };
 
 export type PointDataContent = {

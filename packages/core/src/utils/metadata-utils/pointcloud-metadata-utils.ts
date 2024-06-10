@@ -1,9 +1,10 @@
+import { PointConfig, RefineStrategy } from '@tiledb-inc/viz-common';
 import {
-  PointConfig,
-  RefineStrategy,
+  AssetOptions,
+  PointDataContent,
+  SceneOptions,
   TillingScheme
-} from '@tiledb-inc/viz-common';
-import { AssetOptions, PointDataContent, SceneOptions } from '../../types';
+} from '../../types';
 import { PointCloudMetadata } from '../../tile';
 import getTileDBClient from '../getTileDBClient';
 import { deserializeBuffer, get3DTransformedBoundingInfo } from './utils';

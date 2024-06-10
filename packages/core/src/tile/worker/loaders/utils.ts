@@ -178,7 +178,7 @@ export function getWebPRanges(
   for (let x = range[0]; x < range[1]; ++x) {
     for (let idx = 0; idx < channelRanges.length; idx += 2) {
       result.push([
-        x * channelCount + channelRanges[idx + 0],
+        x * channelCount + channelRanges[idx],
         x * channelCount + channelRanges[idx + 1]
       ]);
     }

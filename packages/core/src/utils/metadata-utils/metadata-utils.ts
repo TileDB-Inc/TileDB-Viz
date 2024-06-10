@@ -6,7 +6,8 @@ import {
   RefineStrategy,
   SceneOptions,
   ImageDataContent,
-  GeometryDataContent
+  GeometryDataContent,
+  TDBNonEmptyDomain
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -35,8 +36,8 @@ import { Tile } from '../../tile/model/tile';
 import { ImageContent } from '../../tile/model/image/imageContent';
 import { GeometryContent } from '../../tile/model/geometry/geometryContent';
 
-const WIDTH_ALIASES = ['X', 'WIDTH'];
-const HEIGHT_ALIASES = ['Y', 'HEIGHT'];
+const WIDTH_ALIASES = ['X', 'WIDTH', '_X'];
+const HEIGHT_ALIASES = ['Y', 'HEIGHT', '_Y'];
 const CHANNEL_ALIASES = ['C', 'BANDS'];
 
 export function tileDBUriParser(
@@ -505,34 +506,54 @@ export async function getGeometryMetadata(
       .filter(x => x !== undefined) as Feature[])
   );
 
-  const geometryMetadata = {
-    name: info.name,
-    extent: [
-      arrayMetadata['LAYER_EXTENT_MINX'],
-      arrayMetadata['LAYER_EXTENT_MINY'],
-      arrayMetadata['LAYER_EXTENT_MAXX'],
-      arrayMetadata['LAYER_EXTENT_MAXY']
-    ],
-    type: arrayMetadata['GeometryType'],
-    idAttribute: attributes.find(
-      x =>
-        x.name ===
-          (config?.pickAttribute ?? arrayMetadata['FID_ATTRIBUTE_NAME']) &&
-        (config?.pickable ?? true)
-    ),
-    extrudeAttribute: attributes.find(
-      x => x.name === config?.extrudeAttribute && (config?.extrude ?? true)
-    ),
-    geometryAttribute: attributes.find(
-      x =>
-        x.name ===
-        (config?.geometryAttribute ?? arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'])
-    ),
-    pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
-    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined,
-    features: features,
-    attributes
-  } as GeometryMetadata;
+  const domain = arraySchemaResponse.domain.dimensions.map(x => {
+    const dimensionDomain = getDomain(x.domain);
+    return {
+      name: x.name ?? '',
+      type: x.type,
+      min: dimensionDomain[0],
+      max: dimensionDomain[1]
+    } as Domain;
+  });
+
+  console.log(domain, arraySchemaResponse);
+
+  const widthIndex = domain.findIndex(x => WIDTH_ALIASES.includes(x.name));
+  const heightIndex = domain.findIndex(x => HEIGHT_ALIASES.includes(x.name));
+
+  if (widthIndex == -1 || heightIndex == -1) {
+    throw new Error('Missing known dimension for geometry array');
+  }
+
+  const extents = await client.ArrayApi.getArrayNonEmptyDomainJson(
+    options.namespace,
+    options.geometryArrayID
+  )
+    .then(x => x.data as TDBNonEmptyDomain)
+    .then(x => {
+      if (x.isEmpty) {
+        const widthDim = domain[widthIndex];
+        const heightDim = domain[heightIndex];
+        return [widthDim.min, heightDim.min, widthDim.min, heightDim.min];
+      } else {
+        const values = Object.values(x.nonEmptyDomain)[0];
+        return [
+          values[2 * widthIndex],
+          values[2 * heightIndex],
+          values[2 * widthIndex + 1],
+          values[2 * heightIndex + 1]
+        ];
+      }
+    });
+
+  const root = constructGeometryTileset(
+    extents,
+    options.geometryArrayID,
+    sceneOptions?.crs && arrayMetadata['CRS']
+      ? proj4(arrayMetadata['CRS'], sceneOptions?.crs)
+      : undefined,
+    sceneOptions?.transformation
+  );
 
   const enumarations = new Set(
     [...attributes.values()]
@@ -540,7 +561,7 @@ export async function getGeometryMetadata(
       .filter(x => x !== undefined) as string[]
   );
 
-  geometryMetadata.categories =
+  const categories =
     enumarations.size === 0
       ? new Map()
       : new Map(
@@ -560,6 +581,32 @@ export async function getGeometryMetadata(
           })
         );
 
+  const geometryMetadata = {
+    name: info.name,
+    root: root,
+    extent: extents,
+    type: arrayMetadata['GeometryType'],
+    idAttribute: attributes.find(
+      x =>
+        x.name ===
+          (config?.pickAttribute ?? arrayMetadata['FID_ATTRIBUTE_NAME']) &&
+        (config?.pickable ?? true)
+    ),
+    extrudeAttribute: attributes.find(
+      x => x.name === config?.extrudeAttribute && (config?.extrude ?? true)
+    ),
+    geometryAttribute: attributes.find(
+      x =>
+        x.name ===
+        (config?.geometryAttribute ?? arrayMetadata['GEOMETRY_ATTRIBUTE_NAME'])
+    ),
+    pad: [arrayMetadata['PAD_X'], arrayMetadata['PAD_Y']],
+    crs: 'CRS' in arrayMetadata ? arrayMetadata['CRS'] : undefined,
+    features: features,
+    attributes,
+    categories: categories
+  } as GeometryMetadata;
+
   await writeToCache(options.geometryArrayID, 'metadata', geometryMetadata);
 
   // Construct `TileV2` tileset
@@ -570,21 +617,6 @@ export async function getGeometryMetadata(
   // We can pass a scene options parameter with that data to all metadata loaders
 
   // Tileset creation should happen after reading the cached values which should be the raw values that come from the array
-
-  const root = constructGeometryTileset(
-    [
-      arrayMetadata['LAYER_EXTENT_MINX'],
-      arrayMetadata['LAYER_EXTENT_MINY'],
-      arrayMetadata['LAYER_EXTENT_MAXX'],
-      arrayMetadata['LAYER_EXTENT_MAXY']
-    ],
-    sceneOptions?.crs && arrayMetadata['CRS']
-      ? proj4(arrayMetadata['CRS'], sceneOptions?.crs)
-      : undefined,
-    sceneOptions?.transformation
-  );
-
-  console.log(root);
 
   // End
 
@@ -706,6 +738,7 @@ function constructImageTileset(
 
 function constructGeometryTileset(
   extent: Array<number>,
+  uri: string,
   converter?: proj4.Converter,
   transformation?: Matrix
 ): Tile<GeometryDataContent, GeometryContent> {
@@ -737,24 +770,30 @@ function constructGeometryTileset(
         converter,
         transformation
       );
+      child.index = [x, y];
       child.parent = root;
       child.refineStrategy = RefineStrategy.ADD;
-      child.content.push(
-        {
-          dimension: 'X',
-          min: childExtent[0],
-          max: childExtent[2]
-        },
-        {
-          dimension: 'Y',
-          min: childExtent[1],
-          max: childExtent[3]
-        }
-      );
+      child.content.push({
+        uri: uri,
+        region: [
+          {
+            dimension: 'X',
+            min: childExtent[0],
+            max: childExtent[2]
+          },
+          {
+            dimension: 'Y',
+            min: childExtent[1],
+            max: childExtent[3]
+          }
+        ]
+      });
 
       root.children.push(child);
     }
   }
+
+  root.geometricError = root.children[0].boundingInfo.boundingSphere.radius;
 
   return root;
 }

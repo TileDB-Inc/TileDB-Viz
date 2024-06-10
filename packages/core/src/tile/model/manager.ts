@@ -113,7 +113,6 @@ export abstract class Manager<T extends Tile<any>> {
         this._requestTileInternal(tile)
           .then(x => this._onLoadedInternal(tile, x))
           .catch(_ => {
-            console.log(_);
             this._removeTileInternal(tile);
           });
       } else {
@@ -151,10 +150,12 @@ export abstract class Manager<T extends Tile<any>> {
     this.onLoaded(tile, data);
 
     tile.state = TileState.VISIBLE;
+    this.updateLoadingStatus(true);
   }
 
   private _cancelTileInternal(tile: T): void {
     tile.state = TileState.HIDDEN;
+    this.updateLoadingStatus(true);
 
     this.cancelTile(tile);
     this.rejectHandlers.get(tile.id)?.(`Cancelled by the user ${tile.id}`);
@@ -163,6 +164,7 @@ export abstract class Manager<T extends Tile<any>> {
 
   private _requestTileInternal(tile: T): Promise<any> {
     tile.state = TileState.LOADING;
+    this.updateLoadingStatus(false);
 
     const cancelation = new Promise((_, reject) => {
       this.rejectHandlers.set(tile.id, reject);
@@ -180,7 +182,6 @@ export abstract class Manager<T extends Tile<any>> {
       this._requestTileInternal(tile)
         .then(x => this._onLoadedInternal(tile, x))
         .catch(_ => {
-          console.log(_);
           this._removeTileInternal(tile);
         });
     }

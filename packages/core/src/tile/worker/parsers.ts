@@ -61,8 +61,8 @@ export function parsePolygon(
       }
 
       shape.push(
-        multiply(affineTransform, [point.x!, point.y!, 1])
-          .subset(index([true, true, false]))
+        multiply(affineTransform, [point.x!, point.y!, 0, 1])
+          .subset(index([true, true, false, false]))
           .toArray() as number[]
       );
     }
@@ -85,8 +85,8 @@ export function parsePolygon(
         }
 
         hole.push(
-          multiply(affineTransform, [point.x, point.y, 1])
-            .subset(index([true, true, false]))
+          multiply(affineTransform, [point.x, point.y, 0, 1])
+            .subset(index([true, true, false, false]))
             .toArray()
         );
       }
@@ -111,7 +111,7 @@ export function parsePolygon(
         polygon.position[3 * vertexIndex + 2]
       ] = [
         polygon.position[3 * vertexIndex + 2],
-        polygon.position[3 * vertexIndex + 1]
+        -polygon.position[3 * vertexIndex + 1]
       ];
       [
         polygon.normal[3 * vertexIndex + 1],

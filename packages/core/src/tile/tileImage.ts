@@ -1,6 +1,10 @@
 import { TileDBVisualization } from '../base';
 import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
-import { PointCloudMetadata, TileDBTileImageOptions } from './types';
+import {
+  GeometryMetadata,
+  PointCloudMetadata,
+  TileDBTileImageOptions
+} from './types';
 import getTileDBClient from '../utils/getTileDBClient';
 import { ImageMetadataV2 } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
@@ -8,6 +12,7 @@ import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
 import { WorkerPool } from './worker/tiledb.worker.pool';
 import {
+  getGeometryMetadata,
   getGroupContents,
   getImageMetadata,
   tileDBUriParser
@@ -28,6 +33,7 @@ import { inv } from 'mathjs';
 // import { GeometryManager } from './model/geometry/geometryManager';
 import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
 import { PointManager } from './model/point/pointManager';
+import { GeometryManager } from './model/geometry/geometryManager';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -37,7 +43,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
   private pickingTool!: PickingTool;
-  //private geometryMetadata: Map<string, GeometryMetadata>;
+  private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: Manager<Tile<any>>[];
   private frameDetails: FrameDetails;
@@ -63,7 +69,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       basePath: options.tiledbEnv
     });
 
-    // this.geometryMetadata = new Map();
+    this.geometryMetadata = new Map();
     this.pointMetadata = new Map();
     this.assetManagers = [];
     this.frameDetails = {
@@ -175,55 +181,55 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     // const pipeline = new GeometryPipeline(this.scene);
     // const renderTarget = pipeline.initializeRTT();
 
-    // if (this.options.geometryArrayID) {
-    //   const light = new DirectionalLight(
-    //     'light',
-    //     new Vector3(0.5, -1, 0.5),
-    //     this.scene
-    //   );
-    //   light.diffuse = new Color3(1, 1, 1);
-    //   light.specular = new Color3(0.1, 0.1, 0.1);
-    //   light.intensity = 1;
+    if (this.options.geometryArrayID) {
+      const light = new DirectionalLight(
+        'light',
+        new Vector3(0.5, -1, 0.5),
+        this.scene
+      );
+      light.diffuse = new Color3(1, 1, 1);
+      light.specular = new Color3(0.1, 0.1, 0.1);
+      light.intensity = 1;
 
-    //   for (const [
-    //     index,
-    //     geometryArrayID
-    //   ] of this.options.geometryArrayID.entries()) {
-    //     this.updateLoadingScreen(
-    //       `Loading geometry asset metadata ${index + 1} out of ${
-    //         this.options.geometryArrayID.length
-    //       }`,
-    //       true
-    //     );
-    //     const { namespace, id } = tileDBUriParser(
-    //       geometryArrayID,
-    //       this.options.namespace
-    //     );
+      for (const [
+        index,
+        geometryArrayID
+      ] of this.options.geometryArrayID.entries()) {
+        this.updateLoadingScreen(
+          `Loading geometry asset metadata ${index + 1} out of ${
+            this.options.geometryArrayID.length
+          }`,
+          true
+        );
+        const { namespace, id } = tileDBUriParser(
+          geometryArrayID,
+          this.options.namespace
+        );
 
-    //     const metadata = await getGeometryMetadata(
-    //       {
-    //         namespace: namespace,
-    //         token: this.options.token,
-    //         tiledbEnv: this.options.tiledbEnv,
-    //         geometryArrayID: id
-    //       },
-    //       undefined,
-    //       this.sceneOptions
-    //     );
+        const metadata = await getGeometryMetadata(
+          {
+            namespace: namespace,
+            token: this.options.token,
+            tiledbEnv: this.options.tiledbEnv,
+            geometryArrayID: id
+          },
+          undefined,
+          this.sceneOptions
+        );
 
-    //     this.geometryMetadata.set(id, metadata);
-    //     this.assetManagers.push(
-    //       new GeometryManager(this.scene, this.workerPool, {
-    //         arrayID: id,
-    //         namespace: namespace,
-    //         metadata: metadata,
-    //         baseCRS: this.metadata.crs ?? ''
-    //       })
-    //     );
+        this.geometryMetadata.set(id, metadata);
+        this.assetManagers.push(
+          new GeometryManager(this.scene, this.workerPool, {
+            arrayID: id,
+            namespace: namespace,
+            metadata: metadata,
+            sceneOptions: this.sceneOptions
+          })
+        );
 
-    //     // await initializeCacheDB([`${id}_${this.tileSize / 2 ** nativeZoom}`]);
-    //   }
-    // }
+        // await initializeCacheDB([`${id}_${this.tileSize / 2 ** nativeZoom}`]);
+      }
+    }
 
     if (this.options.pointGroupID) {
       for (const [index, pointGroupID] of this.options.pointGroupID.entries()) {
