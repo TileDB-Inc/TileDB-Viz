@@ -27,7 +27,7 @@ import {
   GUICategoricalFeature,
   GUIFeature
 } from '@tiledb-inc/viz-common';
-import { Tile, TileState } from '../tile';
+import { Tile } from '../tile';
 import { PointDataContent, SceneOptions } from '../../../types';
 import { PointCloudUpdateOptions, PointTileContent } from './pointContent';
 
@@ -64,7 +64,7 @@ export class PointManager extends Manager<
     // This map is shared by reference and will be updated
     // automatically for all geometry tiles.
     // It is only used when the active attribute is changed
-    groupState: new Map<string, Map<number, number>>()
+    groupMap: new Map<string, Float32Array>()
   };
 
   constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
@@ -168,7 +168,8 @@ export class PointManager extends Manager<
         attributes: data.attributes
       },
       UBO: this.pointOptions,
-      FrameUBO: this.frameOptions
+      FrameUBO: this.frameOptions,
+      feature: this.activeFeature
     });
   }
 
@@ -187,17 +188,27 @@ export class PointManager extends Manager<
         updateOptions = { ...this.styleOptions };
         break;
       case 'displayFeature':
-        this.activeFeature = this.metadata.features[event.detail.props.value];
-        updateOptions.feature = this.activeFeature;
+        {
+          this.activeFeature = this.metadata.features[event.detail.props.value];
+          updateOptions.feature = this.activeFeature;
+          updateOptions.UBO = this.pointOptions;
+          updateOptions.FrameUBO = this.frameOptions;
+
+          let state = this.styleOptions.groupMap.get(this.activeFeature.name);
+          if (!state) {
+            state = new Float32Array(512).fill(32);
+            this.styleOptions.groupMap.set(this.activeFeature.name, state);
+          }
+          this.pointOptions.updateFloatArray('groupMap', state);
+          this.pointOptions.update();
+        }
         break;
       default:
         return;
     }
 
     for (const tile of this.visibleTiles.values()) {
-      if (tile.state & TileState.VISIBLE) {
-        tile.data?.update(updateOptions);
-      }
+      tile.data?.update(updateOptions);
     }
   }
 
@@ -272,6 +283,21 @@ export class PointManager extends Manager<
           this.pointOptions.update();
         }
         break;
+      case Commands.GROUP:
+        {
+          let state = this.styleOptions.groupMap.get(this.activeFeature.name);
+          if (!state) {
+            state = new Float32Array(512).fill(32);
+            this.styleOptions.groupMap.set(this.activeFeature.name, state);
+          }
+
+          state[event.detail.props.data.category] =
+            event.detail.props.data.group;
+
+          this.pointOptions.updateFloatArray('groupMap', state);
+          this.pointOptions.update();
+        }
+        break;
       default:
         break;
     }
@@ -284,6 +310,7 @@ export class PointManager extends Manager<
     this.pointOptions.addUniform('color', 4, 0);
     this.pointOptions.addUniform('colorScheme', 4, 32);
     this.pointOptions.addUniform('pointOpacity', 1, 0);
+    this.pointOptions.addUniform('groupMap', 4, 128);
 
     this.pointOptions.updateFloat('pointSize', this.styleOptions.pointSize);
     this.pointOptions.updateVector4('color', this.styleOptions.color);

@@ -1,5 +1,6 @@
 import {
   CreateBox,
+  Nullable,
   Scene,
   ShaderMaterial,
   UniformBuffer,
@@ -12,8 +13,8 @@ import {
   PointCloudMaterial,
   PointCloudMaterialWebGPU
 } from '../../materials/pointShaderMaterial';
-import { FeatureType } from '@tiledb-inc/viz-common';
 import { Feature } from '@tiledb-inc/viz-common';
+import { FeatureType } from '@tiledb-inc/viz-common';
 
 type PointCloudData = {
   position: Float32Array;
@@ -30,21 +31,13 @@ export type PointCloudUpdateOptions = TileUpdateOptions & {
 
 export class PointTileContent extends TileContent {
   private pointCount: number;
-  private material: ShaderMaterial;
+  private material: Nullable<ShaderMaterial>;
 
   constructor(scene: Scene, tile: Tile<PointDataContent, PointTileContent>) {
     super(scene, tile);
 
     this.pointCount = 0;
-
-    if (this.scene.getEngine().isWebGPU) {
-      this.material = PointCloudMaterialWebGPU(
-        this.scene,
-        FeatureType.FLAT_COLOR
-      );
-    } else {
-      this.material = PointCloudMaterial(this.scene);
-    }
+    this.material = null;
   }
 
   public update(options: PointCloudUpdateOptions): void {
@@ -59,16 +52,20 @@ export class PointTileContent extends TileContent {
 
   private onDataUpdateWebGPU(data: PointCloudData) {
     this.pointCount = data.position.length / 3;
+    this.buffers = data.attributes;
 
     if (this.meshes.length === 0) {
       this.meshes.push(
-        CreateBox(`${this.tile.id}`, {
-          size: 1,
-          updatable: true
-        })
+        CreateBox(
+          `${this.tile.id}`,
+          {
+            size: 1,
+            updatable: true
+          },
+          this.scene
+        )
       );
 
-      this.meshes[0].material = this.material;
       this.meshes[0].setBoundingInfo(this.tile.boundingInfo);
     }
 
@@ -91,12 +88,62 @@ export class PointTileContent extends TileContent {
       this.onDataUpdateWebGPU(options.data);
     }
 
+    if (options.feature) {
+      this.onFeatureUpdateWebGPU(options.feature);
+
+      if (this.scene.getEngine().isWebGPU) {
+        this.material = PointCloudMaterialWebGPU(
+          this.scene,
+          options.feature.type
+        );
+      } else {
+        this.material = PointCloudMaterial(this.scene);
+      }
+
+      for (const mesh of this.meshes) {
+        mesh.material = this.material;
+      }
+    }
+
     if (options.UBO) {
-      this.material.setUniformBuffer('pointOptions', options.UBO);
+      this.material?.setUniformBuffer('pointOptions', options.UBO);
     }
 
     if (options.FrameUBO) {
-      this.material.setUniformBuffer('frameOptions', options.FrameUBO);
+      this.material?.setUniformBuffer('frameOptions', options.FrameUBO);
+    }
+  }
+
+  private onFeatureUpdateWebGPU(feature: Feature) {
+    switch (feature.type) {
+      case FeatureType.FLAT_COLOR:
+        for (const mesh of this.meshes) {
+          mesh.removeVerticesData('group');
+        }
+        break;
+      case FeatureType.CATEGORICAL:
+        for (const mesh of this.meshes) {
+          if (mesh.isVerticesDataPresent('group')) {
+            mesh.updateVerticesData(
+              'group',
+              this.buffers[feature.attributes[0].name] as Float32Array
+            );
+          } else {
+            mesh.setVerticesBuffer(
+              new VertexBuffer(
+                this.scene.getEngine(),
+                this.buffers[feature.attributes[0].name],
+                'group',
+                {
+                  stride: 1,
+                  instanced: true,
+                  updatable: true
+                }
+              )
+            );
+          }
+        }
+        break;
     }
   }
 
