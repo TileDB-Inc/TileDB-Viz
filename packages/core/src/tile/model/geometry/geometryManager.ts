@@ -7,7 +7,7 @@ import {
   GeometryMetadata,
   GeometryResponse
 } from '../../types';
-import { Scene, Color3, UniformBuffer } from '@babylonjs/core';
+import { Scene, Color3 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager } from '../manager';
 import {
@@ -65,11 +65,9 @@ export class GeometryManager extends Manager<
     // This map is shared by reference and will be updated
     // automatically for all geometry tiles.
     // It is only used when the active attribute is changed
-    groupState: new Map<string, Map<number, number>>()
+    groupMap: new Map<string, Float32Array>()
   };
   private activeFeature: Feature;
-  private UBO: UniformBuffer;
-  private groupState: Map<string, Int32Array>;
 
   constructor(
     scene: Scene,
@@ -82,8 +80,6 @@ export class GeometryManager extends Manager<
     this.id = geometryOptions.arrayID;
     this.namespace = geometryOptions.namespace;
     this.activeFeature = this.metadata.features[0];
-    this.UBO = new UniformBuffer(this.scene.getEngine());
-    this.groupState = new Map();
     this.sceneOptions = geometryOptions.sceneOptions;
 
     this.errorLimit = Math.max(
@@ -92,7 +88,6 @@ export class GeometryManager extends Manager<
     );
 
     this.registerEventListeners();
-    this.UBO;
   }
 
   public registerEventListeners(): void {
@@ -197,7 +192,6 @@ export class GeometryManager extends Manager<
         indices: data.indices,
         attributes: data.attributes
       },
-      UBO: this.UBO,
       feature: this.activeFeature,
       fill: this.styleOptions.fill,
       fillOpacity: this.styleOptions.fillOpacity,
@@ -245,6 +239,24 @@ export class GeometryManager extends Manager<
           }
         }
         break;
+      case Commands.GROUP:
+        {
+          let state = this.styleOptions.groupMap.get(this.activeFeature.name);
+          if (!state) {
+            state = new Float32Array(512).fill(32);
+            this.styleOptions.groupMap.set(this.activeFeature.name, state);
+          }
+
+          state[event.detail.props.data.category] =
+            event.detail.props.data.group;
+
+          for (const tile of this.visibleTiles.values()) {
+            tile.data?.update({
+              groupMap: state
+            });
+          }
+        }
+        break;
       default:
         break;
     }
@@ -265,9 +277,17 @@ export class GeometryManager extends Manager<
         updateOptions.styleOptions = { style: event.detail.props.value };
         break;
       case 'displayFeature':
-        this.activeFeature = this.metadata.features[event.detail.props.value];
-        updateOptions.feature = this.activeFeature;
-        updateOptions.colorScheme = this.styleOptions.colorScheme;
+        {
+          this.activeFeature = this.metadata.features[event.detail.props.value];
+          updateOptions.feature = this.activeFeature;
+          updateOptions.colorScheme = this.styleOptions.colorScheme;
+          let state = this.styleOptions.groupMap.get(this.activeFeature.name);
+          if (!state) {
+            state = new Float32Array(512).fill(32);
+            this.styleOptions.groupMap.set(this.activeFeature.name, state);
+          }
+          updateOptions.groupMap = state;
+        }
         break;
       case 'renderingGroup':
         this.styleOptions.renderingGroup = event.detail.props.value;

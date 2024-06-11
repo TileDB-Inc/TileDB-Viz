@@ -13,8 +13,9 @@ import { Feature, FeatureType } from '@tiledb-inc/viz-common';
 
 export class CategoricalMaterialPlugin extends MaterialPluginBase {
   private _isEnabled = false;
-  private _feature: Feature;
+  private _feature?: Feature;
   private _colorScheme: Float32Array;
+  private _groupMap: Float32Array;
 
   public get colorScheme(): Float32Array {
     return this._colorScheme;
@@ -24,23 +25,31 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
     this._colorScheme = value;
   }
 
-  public get feature(): Feature {
+  public get groupMap(): Float32Array {
+    return this._groupMap;
+  }
+
+  public set groupMap(value: Float32Array) {
+    this._groupMap = value;
+  }
+
+  public get feature(): Feature | undefined {
     return this._feature;
   }
 
-  public set feature(value: Feature) {
+  public set feature(value: Feature | undefined) {
     this._feature = value;
 
     this.markAllDefinesAsDirty();
   }
 
-  constructor(material: Material, feature: Feature) {
+  constructor(material: Material) {
     super(material, 'Categorical', 199, {
-      FEATURE_TYPE: feature.type
+      FEATURE_TYPE: FeatureType.NON_RENDERABLE
     });
 
-    this._feature = feature;
     this._colorScheme = new Float32Array(128).fill(1);
+    this._groupMap = new Float32Array(512).fill(32);
   }
 
   getUniforms(): {
@@ -56,7 +65,10 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
     fragment?: string | undefined;
   } {
     return {
-      ubo: [{ name: 'colorScheme', size: 4, type: 'vec4', arraySize: 32 }]
+      ubo: [
+        { name: 'colorScheme', size: 4, type: 'vec4', arraySize: 32 },
+        { name: 'groupMap', size: 4, type: 'vec4', arraySize: 128 } // Arbitrary upper limit to conform with 896 minimum. Deprecating WebGL2 will result in removing that limit
+      ]
     };
   }
 
@@ -73,7 +85,7 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
     scene: Scene,
     mesh: AbstractMesh
   ): void {
-    defines['FEATURE_TYPE'] = this._feature.type;
+    defines['FEATURE_TYPE'] = this._feature?.type ?? FeatureType.NON_RENDERABLE;
   }
 
   getCustomCode(shaderType: string): Nullable<{ [pointName: string]: string }> {
@@ -89,11 +101,12 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
           `,
           CUSTOM_VERTEX_MAIN_END: `
             #if (FEATURE_TYPE == ${FeatureType.CATEGORICAL})
-              if (group > 31) {
+              int category = int(groupMap[group / 4][group % 4]);
+              if (category > 31) {
                 vColor = vec4(0.0);
               }
               else {
-                vColor = colorScheme[group];
+                vColor = colorScheme[category];
               }
             #endif
           `
@@ -131,6 +144,7 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
     }
 
     uniformBuffer.updateFloatArray('colorScheme', this._colorScheme);
+    uniformBuffer.updateFloatArray('groupMap', this._groupMap);
   }
 
   get isEnabled(): boolean {

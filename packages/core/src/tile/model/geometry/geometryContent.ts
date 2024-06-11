@@ -13,11 +13,12 @@ import { GeometryStyle, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { CategoricalMaterialPlugin } from '../../materials/plugins/categoricalPlugin';
 import { Tile } from '../tile';
 import { GeometryDataContent } from '../../../types';
+import { TypedArray } from '../../types';
 
 type GeometryData = {
   position: Float32Array;
   indices: Int32Array;
-  attributes: Record<string, Float32Array>;
+  attributes: Record<string, TypedArray>;
 };
 
 type GeometryStyleOptions = {
@@ -35,6 +36,7 @@ export type GeometryUpdateOptions = TileUpdateOptions & {
   styleOptions?: GeometryStyleOptions;
   feature?: Feature;
   colorScheme?: Float32Array;
+  groupMap?: Float32Array;
 };
 
 export class GeometryContent extends TileContent {
@@ -70,13 +72,16 @@ export class GeometryContent extends TileContent {
 
     this.material.diffuseColor = options.fill ?? this.material.diffuseColor;
     this.material.alpha = options.fillOpacity ?? this.material.alpha;
+
+    this.categoricalPlugin.colorScheme =
+      options.colorScheme ?? this.categoricalPlugin.colorScheme;
+    this.categoricalPlugin.groupMap =
+      options.groupMap ?? this.categoricalPlugin.groupMap;
   }
 
   onFeatureUpdate(options: GeometryUpdateOptions) {
     const feature = options.feature!;
     this.categoricalPlugin.feature = feature;
-    this.categoricalPlugin.colorScheme =
-      options.colorScheme ?? this.categoricalPlugin.colorScheme;
 
     switch (feature.type) {
       case FeatureType.FLAT_COLOR:
@@ -86,6 +91,7 @@ export class GeometryContent extends TileContent {
         break;
       case FeatureType.CATEGORICAL:
         for (const mesh of this.meshes) {
+          console.log(this.buffers[feature.attributes[0].name]);
           if (mesh.isVerticesDataPresent('group')) {
             mesh.updateVerticesData(
               'group',
@@ -127,6 +133,8 @@ export class GeometryContent extends TileContent {
 
     mesh.material = this.material;
     this.meshes.push(mesh);
+
+    console.log(this.material);
   }
 
   private onStyleUpdate(options: GeometryStyleOptions) {
