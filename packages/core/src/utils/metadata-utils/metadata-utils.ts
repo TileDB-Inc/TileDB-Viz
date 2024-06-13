@@ -16,12 +16,11 @@ import {
   ImageMetadataV2,
   ImageMetadata,
   ImageLoaderMetadata,
-  GeometryMetadata,
-  PointCloudMetadata
+  GeometryMetadata
 } from '../../tile/types';
 import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { GeometryConfig, PointConfig } from '@tiledb-inc/viz-common';
+import { GeometryConfig } from '@tiledb-inc/viz-common';
 import {
   Feature,
   FeatureType,
@@ -521,7 +520,7 @@ export async function getGeometryMetadata(
   const widthIndex = domain.findIndex(x => WIDTH_ALIASES.includes(x.name));
   const heightIndex = domain.findIndex(x => HEIGHT_ALIASES.includes(x.name));
 
-  if (widthIndex == -1 || heightIndex == -1) {
+  if (widthIndex === -1 || heightIndex === -1) {
     throw new Error('Missing known dimension for geometry array');
   }
 

@@ -164,9 +164,10 @@ export class PointManager extends Manager<
   ): void {
     tile.data?.update({
       data: {
-        position: data.attributes['position'] as Float32Array,
+        position: data.position,
         attributes: data.attributes
       },
+      pointShape: this.styleOptions.pointShape,
       UBO: this.pointOptions,
       FrameUBO: this.frameOptions,
       feature: this.activeFeature
@@ -180,12 +181,12 @@ export class PointManager extends Manager<
       return;
     }
 
-    let updateOptions: PointCloudUpdateOptions = {};
+    const updateOptions: PointCloudUpdateOptions = {};
 
     switch (target[1]) {
       case 'pointShape':
         this.styleOptions.pointShape = event.detail.props.value;
-        updateOptions = { ...this.styleOptions };
+        updateOptions.pointShape = event.detail.props.value;
         break;
       case 'displayFeature':
         {
@@ -196,7 +197,7 @@ export class PointManager extends Manager<
 
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(512).fill(32);
+            state = new Float32Array(768).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
           this.pointOptions.updateFloatArray('groupMap', state);
@@ -287,7 +288,7 @@ export class PointManager extends Manager<
         {
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(512).fill(32);
+            state = new Float32Array(768).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
 
@@ -310,7 +311,7 @@ export class PointManager extends Manager<
     this.pointOptions.addUniform('color', 4, 0);
     this.pointOptions.addUniform('colorScheme', 4, 32);
     this.pointOptions.addUniform('pointOpacity', 1, 0);
-    this.pointOptions.addUniform('groupMap', 4, 128);
+    this.pointOptions.addUniform('groupMap', 4, 192);
 
     this.pointOptions.updateFloat('pointSize', this.styleOptions.pointSize);
     this.pointOptions.updateVector4('color', this.styleOptions.color);
@@ -418,5 +419,7 @@ export class PointManager extends Manager<
         }
       )
     );
+
+    console.log(Object.fromEntries(this.metadata.categories));
   }
 }

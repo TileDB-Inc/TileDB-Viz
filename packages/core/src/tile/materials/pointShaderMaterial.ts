@@ -56,7 +56,7 @@ export function PointCloudMaterialWebGPU(
     color: vec4<f32>,
     colorScheme: array<vec4<f32>, 32>,
     pointOpacity: f32,
-    groupMap: array<vec4<f32>, 128>
+    groupMap: array<vec4<f32>, 192>
   };
 
   var<uniform> pointOptions : PointOptions;
@@ -138,6 +138,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       vec4 color;
       vec4 colorScheme[32];
       float pointOpacity;
+      vec4 groupMap[192];
     };
 
     flat out vec4 vColor;
@@ -152,11 +153,12 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       #if (FEATURE_TYPE == ${FeatureType.RGB})
         vColor = vec4(colorAttr, 1.0);
       #elif (FEATURE_TYPE == ${FeatureType.CATEGORICAL})
-        if (group > 31) {
+        int category = int(groupMap[group / 4][group % 4]);
+        if (category > 31) {
           vColor = vec4(0.0);
         }
         else {
-          vColor = colorScheme[group];
+          vColor = colorScheme[category];
         }
       #elif (FEATURE_TYPE == ${FeatureType.FLAT_COLOR})
         vColor = color;
@@ -181,6 +183,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       vec4 color;
       vec4 colorScheme[32];
       float pointOpacity;
+      vec4 groupMap[192];
     };
 
     flat in vec4 vColor;

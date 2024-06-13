@@ -290,7 +290,9 @@ export type GeometryLoaderMetadata = {
   additionalAttributes?: Attribute[];
 };
 
-export type PointCloudLoaderMetadata = {};
+export type PointCloudLoaderMetadata = {
+  // TODO: move crs and attributes here
+};
 
 export type TDB3DTileMetadata = {
   /**
@@ -565,6 +567,7 @@ export interface GeometryResponse extends BaseResponse {
 }
 
 export interface PointResponse extends BaseResponse {
+  position: Float32Array;
   attributes: { [attribute: string]: TypedArray };
 }
 

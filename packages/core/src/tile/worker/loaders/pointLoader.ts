@@ -152,7 +152,7 @@ export async function pointRequest(
     positions[3 * idx + 2] = -positions[3 * idx + 2];
   }
 
-  result.attributes['position'] = positions;
+  result.position = positions;
 
   for (const feature of request.features) {
     if (!feature.attributes.length) {

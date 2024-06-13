@@ -158,14 +158,7 @@ export async function getPointCloudMetadata(
     loaderMetadata: {}
   };
 
-  if ('octree-bounds-conforming' in arrayMetadata) {
-    const boundsConforming = Float64Array.from(
-      JSON.parse(arrayMetadata['octree-bounds-conforming'])
-    );
-
-    metadata.minPointConforming = Vector3.FromArray(boundsConforming, 0);
-    metadata.maxPointConforming = Vector3.FromArray(boundsConforming, 3);
-  }
+  //TODO: Query conforming bounds directly from the array
 
   const enumarations = new Set(
     [...attributes.values()]
