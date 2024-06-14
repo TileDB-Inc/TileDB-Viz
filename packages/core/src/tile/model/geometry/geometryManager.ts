@@ -243,7 +243,7 @@ export class GeometryManager extends Manager<
         {
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(512).fill(32);
+            state = new Float32Array(768).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
 
@@ -283,7 +283,7 @@ export class GeometryManager extends Manager<
           updateOptions.colorScheme = this.styleOptions.colorScheme;
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(512).fill(32);
+            state = new Float32Array(768).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
           updateOptions.groupMap = state;

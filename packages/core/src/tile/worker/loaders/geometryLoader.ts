@@ -23,7 +23,6 @@ export async function geometryRequest(
   payload: GeometryPayload
 ) {
   const [x, y] = payload.index;
-  const cacheTableID = `${payload.uri}_${x}_${y}`;
   const result: Partial<GeometryResponse> = {
     index: payload.index,
     canceled: false,
@@ -37,28 +36,28 @@ export async function geometryRequest(
     payload.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
-  // const cachedArrays = await loadCachedGeometry(cacheTableID, x, y, [
-  //   ...payload.features.filter(x => x.attributes.length).map(x => x.name),
-  //   'positions',
-  //   'ids',
-  //   'indices'
-  // ]);
+  const cachedArrays = await loadCachedGeometry(payload.uri, x, y, [
+    ...payload.features.filter(x => x.attributes.length).map(x => x.name),
+    'positions',
+    'ids',
+    'indices'
+  ]);
 
-  // if (cachedArrays) {
-  //   result.attributes = cachedArrays;
+  if (cachedArrays) {
+    result.attributes = cachedArrays;
 
-  //   result.position = cachedArrays['positions'] as Float32Array;
-  //   result.indices = cachedArrays['indices'] as Int32Array;
+    result.position = cachedArrays['positions'] as Float32Array;
+    result.indices = cachedArrays['indices'] as Int32Array;
 
-  //   delete cachedArrays.positions;
-  //   delete cachedArrays.indices;
+    delete cachedArrays.positions;
+    delete cachedArrays.indices;
 
-  //   return {
-  //     id: id,
-  //     type: RequestType.GEOMETRY,
-  //     response: result
-  //   } as WorkerResponse;
-  // }
+    return {
+      id: id,
+      type: RequestType.GEOMETRY,
+      response: result
+    } as WorkerResponse;
+  }
 
   // Add additional attributes
   uniqueAttributes.add(payload.geometryAttribute.name);
@@ -187,7 +186,7 @@ export async function geometryRequest(
 
   await Promise.all(
     Object.entries(result.attributes).map(([name, array]) => {
-      return writeToCache(cacheTableID, `${name}_${x}_${y}`, array);
+      return writeToCache(payload.uri, `${name}_${x}_${y}`, array);
     })
   );
 

@@ -108,6 +108,9 @@ export class ImageContent extends TileContent {
     mesh.isPickable = false;
     mesh.position = tile.boundingInfo.boundingBox.center;
 
+    // The it the top level image tile so add both layer mask to be renderered by all cameras
+    mesh.layerMask = tile.mask;
+
     // Remove unwanted rotations added by default
     mesh.rotation.x = Math.PI * 1.5;
     mesh.rotation.y = 0;

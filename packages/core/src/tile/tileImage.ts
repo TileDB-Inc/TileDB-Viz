@@ -1,5 +1,11 @@
 import { TileDBVisualization } from '../base';
-import { Color3, DirectionalLight, Scene, Vector3 } from '@babylonjs/core';
+import {
+  BoundingInfo,
+  Color3,
+  DirectionalLight,
+  Scene,
+  Vector3
+} from '@babylonjs/core';
 import {
   GeometryMetadata,
   PointCloudMetadata,
@@ -30,19 +36,19 @@ import {
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
 import { inv } from 'mathjs';
-// import { GeometryManager } from './model/geometry/geometryManager';
 import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
 import { PointManager } from './model/point/pointManager';
 import { GeometryManager } from './model/geometry/geometryManager';
+import { initializeCacheDB } from '../utils/cache';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
   private options: TileDBTileImageOptions;
-  private metadata!: ImageMetadataV2;
   private gui!: TileImageGUI;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
   private pickingTool!: PickingTool;
+  private imageMetadata!: ImageMetadataV2;
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: Manager<Tile<any>>[];
@@ -54,7 +60,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     super(options);
 
     this.options = options;
-    this.sceneOptions = {};
+    this.sceneOptions = {
+      extents: new BoundingInfo(Vector3.ZeroReadOnly, Vector3.ZeroReadOnly)
+    };
     this.groupAssets = [];
 
     if (options.token || options.tiledbEnv) {
@@ -81,7 +89,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
-      this.scene.debugLayer.show();
+      // this.scene.debugLayer.show();
       await this.initializeScene();
 
       return scene;
@@ -89,6 +97,15 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private async initializeScene() {
+    const light = new DirectionalLight(
+      'Global Light',
+      new Vector3(0.5, -1, 0.5),
+      this.scene
+    );
+    light.diffuse = new Color3(1, 1, 1);
+    light.specular = new Color3(0.1, 0.1, 0.1);
+    light.intensity = 1;
+
     let imageNamespace = this.options.namespace;
     let imageArrayID: string | undefined = undefined;
     let imageGroupID: string | undefined = undefined;
@@ -104,14 +121,24 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.options.namespace
       ));
     }
+
     this.updateLoadingScreen('Loading image asset metadata', true);
-    this.metadata = await getImageMetadata({
+    this.imageMetadata = await getImageMetadata({
       token: this.options.token,
       tiledbEnv: this.options.tiledbEnv,
       namespace: imageNamespace,
       arrayID: imageArrayID,
       groupID: imageGroupID
     });
+
+    this.assetManagers.push(
+      new ImageManager(this.scene, this.workerPool, {
+        metadata: this.imageMetadata,
+        namespace: imageNamespace
+      })
+    );
+
+    await initializeCacheDB(this.imageMetadata.uris);
 
     // Draw image tileset
     // const explore = (tile: ImageTile) => {
@@ -130,13 +157,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     // explore(this.metadata.root);
 
     // Everthing should be transformed to the image coordinate system if it exists
-    this.sceneOptions.crs = this.metadata.crs;
+    this.sceneOptions.crs = this.imageMetadata.crs;
 
     // The transformation matrix is defined at base level of the image
     // The scene units are bases on the smallest level se we need to adjust the scaling coefficients
-    this.sceneOptions.transformation = this.metadata.pixelToCRS
-      ? inv(this.metadata.pixelToCRS)
+    this.sceneOptions.transformation = this.imageMetadata.pixelToCRS
+      ? inv(this.imageMetadata.pixelToCRS)
       : undefined;
+    this.sceneOptions.extents.encapsulateBoundingInfo(
+      this.imageMetadata.root.boundingInfo
+    );
 
     this.groupAssets = await getGroupContents({
       token: this.options.token,
@@ -169,12 +199,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     //   }
     // }
 
+    // Force enable uniform buffers for the material to work properly
     this.scene.getEngine().disableUniformBuffers = false;
-
-    // TODO: Change camera initialization to accept scene extents ans not asset exents
-    this.cameraManager = new CameraManager(this.scene, 0.25, 1000, 1000);
-    // TODO: Make it user configurable in the UI
-    this.cameraManager.upperZoomLimit = 2 ** 10;
 
     // this.pickingTool = new PickingTool(this.scene);
 
@@ -182,15 +208,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     // const renderTarget = pipeline.initializeRTT();
 
     if (this.options.geometryArrayID) {
-      const light = new DirectionalLight(
-        'light',
-        new Vector3(0.5, -1, 0.5),
-        this.scene
-      );
-      light.diffuse = new Color3(1, 1, 1);
-      light.specular = new Color3(0.1, 0.1, 0.1);
-      light.intensity = 1;
-
       for (const [
         index,
         geometryArrayID
@@ -227,7 +244,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           })
         );
 
-        // await initializeCacheDB([`${id}_${this.tileSize / 2 ** nativeZoom}`]);
+        this.sceneOptions.extents.encapsulateBoundingInfo(
+          metadata.root.boundingInfo
+        );
+
+        await initializeCacheDB([id]);
       }
     }
 
@@ -264,32 +285,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           })
         );
 
-        // await initializeCacheDB(
-        //   metadata.levels
-        //     .map(x => `${x}`)
-        //     .filter(
-        //       (value: string, index: number, array: string[]) =>
-        //         array.indexOf(value) === index
-        //     )
-        // );
+        await initializeCacheDB(metadata.uris);
       }
     }
-
-    // await initializeCacheDB(
-    //   this.levels
-    //     .map(x => `${x.id}_${this.tileSize}`)
-    //     .filter(
-    //       (value: string, index: number, array: string[]) =>
-    //         array.indexOf(value) === index
-    //     )
-    // );
-
-    this.assetManagers.push(
-      new ImageManager(this.scene, this.workerPool, {
-        metadata: this.metadata,
-        namespace: imageNamespace
-      })
-    );
 
     // proj4.defs("EPSG:4978","+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs");
     // if (this.options.tileUris) {
@@ -309,6 +307,15 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     //     );
     //   }
     // }
+
+    //Extract scene dimensions to use for camera initialization
+    this.cameraManager = new CameraManager(
+      this.scene,
+      0.25,
+      this.sceneOptions.extents
+    );
+    // TODO: Make it user configurable in the UI
+    this.cameraManager.upperZoomLimit = 2 ** 10;
 
     this.scene.getEngine().onResizeObservable.add(() => {
       this.resizeViewport();
@@ -390,7 +397,13 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
   private fetchTiles() {
     for (const manager of this.assetManagers) {
-      manager.loadTiles(this.cameraManager.getMainCamera(), this.frameDetails);
+      manager.loadTiles(
+        [
+          this.cameraManager.getMainCamera(),
+          this.cameraManager.getMinimapCamera()
+        ],
+        this.frameDetails
+      );
     }
   }
 
@@ -486,9 +499,9 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.cameraManager.initializeGUIProperties();
     const projections: { value: number; name: string }[] = [];
 
-    if (this.metadata.crs) {
+    if (this.imageMetadata.crs) {
       // Type definitions are incorrect/incomplete for proj4
-      const projection = proj4.Proj(this.metadata.crs) as any;
+      const projection = proj4.Proj(this.imageMetadata.crs) as any;
       projections.push({ value: 0, name: projection.name ?? projection.title });
     } else {
       projections.push({ value: 0, name: 'None' });

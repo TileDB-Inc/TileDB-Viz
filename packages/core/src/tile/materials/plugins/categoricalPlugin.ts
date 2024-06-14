@@ -67,7 +67,9 @@ export class CategoricalMaterialPlugin extends MaterialPluginBase {
     return {
       ubo: [
         { name: 'colorScheme', size: 4, type: 'vec4', arraySize: 32 },
-        { name: 'groupMap', size: 4, type: 'vec4', arraySize: 128 } // Arbitrary upper limit to conform with 896 minimum. Deprecating WebGL2 will result in removing that limit
+        { name: 'groupMap', size: 4, type: 'vec4', arraySize: 192 }
+        // Arbitrary upper limit to conform with 896 minimum. Deprecating WebGL2 will result in removing that limit
+        // Workaround for alignment issue with float/int array
       ]
     };
   }

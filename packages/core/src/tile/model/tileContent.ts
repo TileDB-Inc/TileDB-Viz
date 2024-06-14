@@ -32,4 +32,13 @@ export class TileContent {
       mesh.visibility = options.opacity || mesh.visibility;
     }
   }
+
+  /**
+   * Handles updates generated automatically by the rendering engine
+   */
+  public engineUpdate() {
+    for (const mesh of this.meshes) {
+      mesh.layerMask = this.tile.mask;
+    }
+  }
 }

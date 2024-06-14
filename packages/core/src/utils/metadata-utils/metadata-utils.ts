@@ -280,6 +280,7 @@ export async function getImageMetadata(
     id: options.groupID ?? options.arrayID,
     name: name,
     root: tilesetRoot,
+    uris: uris,
     channels: channels,
     attributes: attributes,
     extraDimensions: dimensions,
@@ -643,7 +644,7 @@ function constructImageTileset(
   const root = new Tile<ImageDataContent, ImageContent>();
   root.boundingInfo = getBoundingInfo([0, 0, baseWidth, baseHeight]);
   root.geometricError = 16 * errorBase;
-  root.refineStrategy = RefineStrategy.ADD;
+  root.refineStrategy = RefineStrategy.REPLACE;
 
   for (const [idx, level] of levels.entries()) {
     if (idx >= EXPLORATION_LIMIT) {

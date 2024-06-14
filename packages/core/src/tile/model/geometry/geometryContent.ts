@@ -46,7 +46,7 @@ export class GeometryContent extends TileContent {
   constructor(scene: Scene, tile: Tile<GeometryDataContent, GeometryContent>) {
     super(scene, tile);
 
-    this.material = new StandardMaterial(`geometry_${tile.id}`, this.scene);
+    this.material = new StandardMaterial(tile.id.toString(), this.scene);
     this.material.backFaceCulling = false;
 
     this.categoricalPlugin = new CategoricalMaterialPlugin(this.material);
@@ -55,8 +55,6 @@ export class GeometryContent extends TileContent {
 
   public update(options: GeometryUpdateOptions): void {
     super.update(options);
-
-    console.log(options);
 
     if (options.data) {
       this.onDataUpdate(options.data);
@@ -91,7 +89,6 @@ export class GeometryContent extends TileContent {
         break;
       case FeatureType.CATEGORICAL:
         for (const mesh of this.meshes) {
-          console.log(this.buffers[feature.attributes[0].name]);
           if (mesh.isVerticesDataPresent('group')) {
             mesh.updateVerticesData(
               'group',
@@ -132,9 +129,8 @@ export class GeometryContent extends TileContent {
     vertexData.applyToMesh(mesh, false);
 
     mesh.material = this.material;
+    mesh.layerMask = this.tile.mask;
     this.meshes.push(mesh);
-
-    console.log(this.material);
   }
 
   private onStyleUpdate(options: GeometryStyleOptions) {

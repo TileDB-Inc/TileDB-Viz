@@ -1,3 +1,4 @@
+import { BoundingInfo } from '@babylonjs/core';
 import { Matrix } from 'mathjs';
 
 export type TDBNonEmptyDomain = {
@@ -76,6 +77,11 @@ export type SceneOptions = {
    * image layer if it exists.
    */
   transformation?: Matrix;
+
+  /**
+   * The scene's bounding volume to be used for initializing cameras
+   */
+  extents: BoundingInfo;
 };
 
 export type GeometryDataContent = {

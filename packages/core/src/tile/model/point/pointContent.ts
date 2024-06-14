@@ -64,6 +64,7 @@ export class PointTileContent extends TileContent {
     }
 
     this.meshes[0]._thinInstanceDataStorage.instancesCount = this.pointCount;
+    this.meshes[0].layerMask = this.tile.mask;
     this.meshes[0].setVerticesBuffer(
       new VertexBuffer(this.scene.getEngine(), data.position, 'loc', {
         size: 3,
@@ -82,6 +83,7 @@ export class PointTileContent extends TileContent {
       this.meshes.push(new Mesh(this.tile.id.toString(), this.scene));
       this.meshes[0].setBoundingInfo(this.tile.boundingInfo);
       this.meshes[0].material = this.material;
+      this.meshes[0].layerMask = this.tile.mask;
     }
 
     const vertexData = new VertexData();

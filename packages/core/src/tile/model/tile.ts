@@ -85,6 +85,11 @@ export class Tile<T, C extends TileContent = TileContent> {
   public state: TileState;
 
   /**
+   *
+   */
+  public mask: number;
+
+  /**
    * The tiles renderable data object used for updating the data state
    */
   public data?: C;
@@ -102,6 +107,7 @@ export class Tile<T, C extends TileContent = TileContent> {
     this.tillingScheme = TillingScheme.NONE;
     this.geometricError = 0;
     this.state = TileState.HIDDEN;
+    this.mask = 0;
   }
 
   public dispose() {

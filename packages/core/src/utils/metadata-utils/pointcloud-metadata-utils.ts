@@ -150,6 +150,7 @@ export async function getPointCloudMetadata(
     attributes: attributes,
     domain: domain,
     features: features,
+    uris: uris,
     categories: new Map<string, string[]>(),
     crs: groupMetadata['crs'],
     idAttribute: attributes.find(

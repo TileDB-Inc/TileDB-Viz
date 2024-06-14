@@ -133,6 +133,11 @@ export type ImageMetadataV2 = {
   extraDimensions: Dimension[];
 
   /**
+   *
+   */
+  uris: string[];
+
+  /**
    * The coordinate system of the image
    */
   crs?: string;
@@ -217,6 +222,11 @@ export type PointCloudMetadata = {
    * The list af all available attributes to fetch when loading point cloud features.
    */
   attributes: Attribute[];
+
+  /**
+   *
+   */
+  uris: string[];
 
   /**
    * Point cloud loader specific metadata.
