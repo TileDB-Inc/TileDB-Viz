@@ -12,7 +12,7 @@ import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
 import { parsePolygon } from '../parsers';
-import { matrix, Matrix, min, max, multiply, add, index, inv } from 'mathjs';
+import { matrix, Matrix, min, max, multiply, add, index } from 'mathjs';
 import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 

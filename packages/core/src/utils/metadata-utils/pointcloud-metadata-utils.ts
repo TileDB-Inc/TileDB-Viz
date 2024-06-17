@@ -18,6 +18,12 @@ import { Domain } from '@tiledb-inc/viz-common';
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { Feature } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
+import { getQueryDataFromCache, writeToCache } from '../cache';
+import {
+  ArraySchema,
+  GroupContents,
+  GroupInfo
+} from '@tiledb-inc/tiledb-cloud/lib/v1';
 
 export async function getPointCloudMetadata(
   options: AssetOptions,
@@ -33,21 +39,42 @@ export async function getPointCloudMetadata(
     throw new Error('Point group ID is undefined');
   }
 
-  const [info, members, groupMetadata] = await Promise.all([
-    client.groups.API.getGroup(options.namespace, options.pointGroupID),
-    client.groups.getGroupContents(options.namespace, options.pointGroupID),
-    client.groups.V2API.getGroupMetadata(
-      options.namespace,
-      options.pointGroupID
-    )
-      .then((response: any) => response.data.entries ?? [])
-      .then((data: any) => {
-        return data.reduce((map: any, obj: any) => {
-          map[obj.key] = deserializeBuffer(obj.type, obj.value);
-          return map;
-        }, {});
-      })
-  ]);
+  let info: GroupInfo = await getQueryDataFromCache(
+    options.pointGroupID,
+    'info'
+  );
+  let members: GroupContents = await getQueryDataFromCache(
+    options.pointGroupID,
+    'members'
+  );
+  let groupMetadata = await getQueryDataFromCache(
+    options.pointGroupID,
+    'groupMetadata'
+  );
+
+  if (!info || !members || !groupMetadata) {
+    [info, members, groupMetadata] = await Promise.all([
+      client.groups.API.getGroup(options.namespace, options.pointGroupID).then(
+        x => x.data
+      ),
+      client.groups.getGroupContents(options.namespace, options.pointGroupID),
+      client.groups.V2API.getGroupMetadata(
+        options.namespace,
+        options.pointGroupID
+      )
+        .then((response: any) => response.data.entries ?? [])
+        .then((data: any) => {
+          return data.reduce((map: any, obj: any) => {
+            map[obj.key] = deserializeBuffer(obj.type, obj.value);
+            return map;
+          }, {});
+        })
+    ]);
+
+    await writeToCache(options.pointGroupID, 'info', info);
+    await writeToCache(options.pointGroupID, 'members', members);
+    await writeToCache(options.pointGroupID, 'groupMetadata', groupMetadata);
+  }
 
   const uris =
     members.entries
@@ -55,17 +82,35 @@ export async function getPointCloudMetadata(
       .sort((a, b) => a.array?.name?.localeCompare(b.array?.name ?? '') ?? 0)
       .map(x => x.array?.id as string) ?? [];
 
-  const [arrayMetadata, arraySchemaResponse] = await Promise.all([
-    client.ArrayApi.getArrayMetaDataJson(options.namespace, uris[0]).then(
-      (response: any) => response.data
-    ),
-    client.ArrayApi.getArray(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace,
-      uris[0],
-      'application/json'
-    ).then(x => x.data)
-  ]);
+  let arrayMetadata = await getQueryDataFromCache(
+    options.pointGroupID,
+    'arrayMetadata'
+  );
+  let arraySchemaResponse: ArraySchema = await getQueryDataFromCache(
+    options.pointGroupID,
+    'arraySchemaResponse'
+  );
+
+  if (!arrayMetadata || !arraySchemaResponse) {
+    [arrayMetadata, arraySchemaResponse] = await Promise.all([
+      client.ArrayApi.getArrayMetaDataJson(options.namespace, uris[0]).then(
+        (response: any) => response.data
+      ),
+      client.ArrayApi.getArray(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        options.namespace,
+        uris[0],
+        'application/json'
+      ).then(x => x.data)
+    ]);
+
+    await writeToCache(options.pointGroupID, 'arrayMetadata', arrayMetadata);
+    await writeToCache(
+      options.pointGroupID,
+      'arraySchemaResponse',
+      arraySchemaResponse
+    );
+  }
 
   const attributes = arraySchemaResponse.attributes.map((value, index) => {
     return {
@@ -146,7 +191,7 @@ export async function getPointCloudMetadata(
   const metadata: PointCloudMetadata = {
     id: options.pointGroupID,
     root: root,
-    name: info.data.name ?? options.pointGroupID,
+    name: info.name ?? options.pointGroupID,
     attributes: attributes,
     domain: domain,
     features: features,
@@ -185,7 +230,6 @@ export async function getPointCloudMetadata(
           })
         );
 
-  // await writeToCache(options.pointGroupID, 'metadata', metadata);
   return metadata;
 }
 
@@ -203,9 +247,7 @@ function constructPointCloudTileset(
     Tile<PointDataContent, PointTileContent>
   > = new Map();
 
-  console.log(blocks);
-
-  for (const [index, _] of Object.entries(blocks)) {
+  for (const index of Object.keys(blocks)) {
     //These idices are in a right handed XYZ coordinate system
     const [lod, x, y, z] = index.split('-').map(Number);
     const mortonIndex = encode3D(x, y, z, lod);

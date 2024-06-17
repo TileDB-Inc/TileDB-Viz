@@ -7,7 +7,8 @@ import {
   SceneOptions,
   ImageDataContent,
   GeometryDataContent,
-  TDBNonEmptyDomain
+  TDBNonEmptyDomain,
+  ImageAssetMetadata
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -168,22 +169,36 @@ export async function getImageMetadata(
     throw new Error('No asset selected.');
   }
 
-  const imageMetadata = JSON.parse(assetMetadata.metadata) as ImageMetadata;
-
-  const schemas = await Promise.all(
-    uris.map(x => {
-      return client.ArrayApi.getArray(
-        options.namespace,
-        x,
-        'application/json'
-      ).then(y => {
-        const schema = y.data as ArraySchema;
-        schema.uri = x;
-
-        return schema;
-      });
-    })
+  const imageMetadata = JSON.parse(
+    (assetMetadata as ImageAssetMetadata).metadata
+  ) as ImageMetadata;
+  let schemas: ArraySchema[] = await getQueryDataFromCache(
+    options.groupID ?? options.arrayID ?? '',
+    'schemas'
   );
+
+  if (!schemas) {
+    schemas = await Promise.all(
+      uris.map(x => {
+        return client.ArrayApi.getArray(
+          options.namespace,
+          x,
+          'application/json'
+        ).then(y => {
+          const schema = y.data as ArraySchema;
+          schema.uri = x;
+
+          return schema;
+        });
+      })
+    );
+
+    await writeToCache(
+      options.groupID ?? options.arrayID ?? '',
+      'schemas',
+      schemas
+    );
+  }
 
   const loaderMetadata: Map<string, ImageLoaderMetadata> = new Map(
     schemas.map(x => {
@@ -191,6 +206,23 @@ export async function getImageMetadata(
         x.uri ?? '',
         {
           schema: x,
+          domain: x.domain.dimensions
+            .filter(x => {
+              return (
+                WIDTH_ALIASES.includes(x.name ?? '') ||
+                HEIGHT_ALIASES.includes(x.name ?? '') ||
+                CHANNEL_ALIASES.includes(x.name ?? '')
+              );
+            })
+            .map(x => {
+              const domain = getDomain(x.domain);
+              return {
+                name: x.name ?? '',
+                type: x.type,
+                min: domain[0],
+                max: domain[1]
+              } as Domain;
+            }),
           implicitChannel: !x.domain.dimensions.some(y =>
             CHANNEL_ALIASES.includes(y.name ?? '')
           ),
@@ -395,10 +427,19 @@ async function getArrayMetadata(
     throw new Error('Array ID is undefined');
   }
 
-  const arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
-    options.namespace,
-    options.arrayID
-  ).then((response: any) => response.data);
+  let arrayMetadata = await getQueryDataFromCache(
+    options.arrayID,
+    'arrayMetadata'
+  );
+
+  if (!arrayMetadata) {
+    arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
+      options.namespace,
+      options.arrayID
+    ).then((response: any) => response.data);
+
+    await writeToCache(options.arrayID, 'arrayMetadata', arrayMetadata);
+  }
 
   return [arrayMetadata, [options.arrayID]];
 }
@@ -415,23 +456,34 @@ async function getGroupMetadata(
     throw new Error('Group ID is undefined');
   }
 
-  const [groupMetadata, memberUris] = await Promise.all([
-    client.groups.V2API.getGroupMetadata(options.namespace, options.groupID)
-      .then((response: any) => response.data.entries)
-      .then((data: any) => {
-        console.log(data);
-        return data.reduce((map: any, obj: any) => {
-          map[obj.key] = deserializeBuffer(obj.type, obj.value);
-          return map;
-        }, {});
-      }),
-    client.groups.API.getGroupContents(options.namespace, options.groupID)
-      .then((response: any) => response.data.entries)
-      .then((data: any) => {
-        data.sort((a: any, b: any) => a.array.size - b.array.size);
-        return data.map((a: any) => a.array.id);
-      })
-  ]);
+  // Check if the are cached result for the queries
+  let groupMetadata = await getQueryDataFromCache(
+    options.groupID,
+    'groupMetadata'
+  );
+  let memberUris = await getQueryDataFromCache(options.groupID, 'memberUris');
+
+  if (!groupMetadata || !memberUris) {
+    [groupMetadata, memberUris] = await Promise.all([
+      client.groups.V2API.getGroupMetadata(options.namespace, options.groupID)
+        .then((response: any) => response.data.entries)
+        .then((data: any) => {
+          return data.reduce((map: any, obj: any) => {
+            map[obj.key] = deserializeBuffer(obj.type, obj.value);
+            return map;
+          }, {});
+        }),
+      client.groups.API.getGroupContents(options.namespace, options.groupID)
+        .then((response: any) => response.data.entries)
+        .then((data: any) => {
+          data.sort((a: any, b: any) => a.array.size - b.array.size);
+          return data.map((a: any) => a.array.id);
+        })
+    ]);
+
+    await writeToCache(options.groupID, 'groupMetadata', groupMetadata);
+    await writeToCache(options.groupID, 'memberUris', memberUris);
+  }
 
   return [groupMetadata, memberUris];
 }
@@ -515,8 +567,6 @@ export async function getGeometryMetadata(
       max: dimensionDomain[1]
     } as Domain;
   });
-
-  console.log(domain, arraySchemaResponse);
 
   const widthIndex = domain.findIndex(x => WIDTH_ALIASES.includes(x.name));
   const heightIndex = domain.findIndex(x => HEIGHT_ALIASES.includes(x.name));
@@ -644,7 +694,7 @@ function constructImageTileset(
   const root = new Tile<ImageDataContent, ImageContent>();
   root.boundingInfo = getBoundingInfo([0, 0, baseWidth, baseHeight]);
   root.geometricError = 16 * errorBase;
-  root.refineStrategy = RefineStrategy.REPLACE;
+  root.refineStrategy = RefineStrategy.ADD;
 
   for (const [idx, level] of levels.entries()) {
     if (idx >= EXPLORATION_LIMIT) {
@@ -873,19 +923,17 @@ function getDomain(domain: DomainArray): [number, number] {
 function getCRS(assetMetadata: AssetMetadata): string | undefined {
   let crs: string | undefined;
 
-  switch (assetMetadata.dataset_type.toUpperCase()) {
-    case 'RASTER':
-      {
-        const xml = new DOMParser().parseFromString(
-          (assetMetadata as RasterAssetMetadata)._gdal ?? '',
-          'text/xml'
-        );
+  if (
+    (assetMetadata as RasterAssetMetadata)._gdal ||
+    assetMetadata.dataset_type?.toUpperCase() === 'RASTER'
+  ) {
+    const xml = new DOMParser().parseFromString(
+      (assetMetadata as RasterAssetMetadata)._gdal ?? '',
+      'text/xml'
+    );
 
-        crs =
-          xml.getElementsByTagName('SRS')[0].childNodes[0].nodeValue ??
-          undefined;
-      }
-      break;
+    crs =
+      xml.getElementsByTagName('SRS')[0].childNodes[0].nodeValue ?? undefined;
   }
 
   return crs;
@@ -897,7 +945,7 @@ function getTransformationMatrix(
 ): Matrix | undefined {
   let pixelToCRS: Matrix | undefined;
 
-  switch (assetMetadata.dataset_type.toUpperCase()) {
+  switch (assetMetadata.dataset_type?.toUpperCase()) {
     case 'BIOIMG':
       {
         const metadata = JSON.parse(
@@ -914,6 +962,7 @@ function getTransformationMatrix(
       }
       break;
     case 'RASTER':
+    default:
       {
         const xml = new DOMParser().parseFromString(
           (assetMetadata as RasterAssetMetadata)._gdal ?? '',

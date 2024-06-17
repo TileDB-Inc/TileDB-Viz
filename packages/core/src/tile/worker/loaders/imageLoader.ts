@@ -7,7 +7,7 @@ import {
   WorkerResponse,
   types
 } from '../../types';
-import { DomainArray, Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { Axes, transpose } from '../../utils';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
 import { getWebPRanges } from './utils';
@@ -20,7 +20,7 @@ export async function imageRequest(
   tokenSource: CancelTokenSource,
   payload: ImagePayload
 ) {
-  const format = payload.attribute.type.toLowerCase();
+  const format = payload.attribute.type;
   const metadata = payload.loaderOptions;
   let channelAxis = 'C';
 
@@ -74,6 +74,7 @@ export async function imageRequest(
   tokenSource.token.throwIfRequested();
 
   const calculatedRanges: Map<string, number[]> = new Map();
+
   // Width dimension
   calculatedRanges.set(payload.region[0].dimension, [
     payload.region[0].min,
@@ -142,18 +143,22 @@ export async function imageRequest(
       size = 1;
       metadata.dimensions.map(x => {
         const range = calculatedRanges.get(x)!;
+        const domain = metadata.domain.find(y => y.name === x) ?? { min: 0 };
 
         if (range.length > 2) {
           const subrange = [];
           let subsize = 0;
           for (let idx = 0; idx < range.length; idx += 2) {
-            subrange.push([range[idx], range[idx + 1]]);
+            subrange.push([
+              range[idx] + domain.min,
+              range[idx + 1] + domain.min
+            ]);
             subsize += range[idx + 1] - range[idx] + 1;
           }
           size *= subsize;
           ranges.push(subrange);
         } else {
-          ranges.push(range);
+          ranges.push([range[0] + domain.min, range[1] + domain.min]);
           size *= range[1] - range[0] + 1;
         }
       });
@@ -166,7 +171,7 @@ export async function imageRequest(
     const query = {
       layout: Layout.RowMajor,
       ranges: ranges,
-      bufferSize: size * (types as any)[format].bytes,
+      bufferSize: size * (types as any)[format.toLowerCase()].bytes,
       attributes: [payload.attribute.name],
       returnRawBuffers: true,
       cancelToken: tokenSource.token
@@ -182,13 +187,15 @@ export async function imageRequest(
     tokenSource.token.throwIfRequested();
 
     let offset = 0;
-    const data: ImageDataArray = (types as any)[format].create(size);
+    const data: ImageDataArray = (types as any)[format.toLowerCase()].create(
+      size
+    );
 
     try {
       for await (const rawResult of generator) {
-        const result: ImageDataArray = (types as any)[format].create(
-          (rawResult as any)[payload.attribute.name]
-        );
+        const result: ImageDataArray = (types as any)[
+          format.toLowerCase()
+        ].create((rawResult as any)[payload.attribute.name]);
         data.set(result, offset);
         offset += result.length;
       }
@@ -236,7 +243,7 @@ export async function imageRequest(
     }
   }
 
-  const imageData: ImageDataArray = (types as any)[format].create(
+  const imageData: ImageDataArray = (types as any)[format.toLowerCase()].create(
     channelSlices.size * width * height
   );
 
@@ -275,16 +282,4 @@ export async function imageRequest(
     } as WorkerResponse,
     [imageData.buffer] as any
   );
-}
-
-function getDomain(domain: DomainArray): [number, number] {
-  for (const values of Object.values(domain)) {
-    if (values === undefined) {
-      continue;
-    }
-
-    return [Number(values[0]), Number(values[1])];
-  }
-
-  return [0, 0];
 }

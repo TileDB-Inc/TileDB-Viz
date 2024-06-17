@@ -18,8 +18,9 @@ export abstract class Manager<T extends Tile<any>> {
   protected errorLimit: number;
   protected visibleTiles: Map<number, T>;
   protected frameOptions: UniformBuffer;
+  protected nonce: Map<number, number>;
 
-  private rejectHandlers: Map<number, Function>;
+  private rejectHandlers: Map<number, (reason: any) => void>;
   private traverser: Traverser<T>;
 
   constructor(root: T, scene: Scene, workerPool: WorkerPool) {
@@ -30,6 +31,7 @@ export abstract class Manager<T extends Tile<any>> {
     this.errorLimit = -1;
     this.rejectHandlers = new Map();
     this.traverser = new Traverser(root);
+    this.nonce = new Map();
 
     this.frameOptions = new UniformBuffer(this.scene.getEngine());
     this.frameOptions.addUniform('zoom', 1);
@@ -120,8 +122,9 @@ export abstract class Manager<T extends Tile<any>> {
           tile.state & TileState.PENDING_LOAD &&
           !(tile.state & (TileState.VISIBLE | TileState.LOADING))
         ) {
+          console.log(`Normal request ${tile.id} ${tile.state}`);
           this._requestTileInternal(tile)
-            .then(x => this._onLoadedInternal(tile, x))
+            .then(x => this._onLoadedInternal(tile, x.repsonse, x.nonce))
             .catch(_ => {
               this._removeTileInternal(tile);
             });
@@ -146,27 +149,38 @@ export abstract class Manager<T extends Tile<any>> {
 
   public abstract removeEventListeners(): void;
 
-  public abstract requestTile(tile: T): Promise<any>;
+  public abstract requestTile(tile: T, nonce?: number): Promise<any>;
 
   public abstract cancelTile(tile: T): void;
 
   public abstract onLoaded(tile: T, data: any): void;
 
   private _removeTileInternal(tile: T): void {
-    tile.state = TileState.HIDDEN;
+    if (tile.state & TileState.PENDING_DELETE) {
+      tile.state = TileState.HIDDEN;
 
-    tile.dispose();
+      tile.dispose();
+    }
   }
 
-  private _onLoadedInternal(tile: T, data: any): void {
-    this.onLoaded(tile, data);
+  private _onLoadedInternal(tile: T, response: any, nonce: number): void {
+    if (
+      this.nonce.get(tile.id) !== nonce ||
+      !(tile.state & TileState.LOADING)
+    ) {
+      console.log(response, nonce, false);
+      return;
+    }
+
+    console.log(response, nonce);
+
+    this.onLoaded(tile, response);
 
     tile.state = TileState.VISIBLE;
     this.updateLoadingStatus(true);
   }
 
   private _cancelTileInternal(tile: T): void {
-    tile.state = TileState.HIDDEN;
     this.updateLoadingStatus(true);
 
     this.cancelTile(tile);
@@ -174,28 +188,43 @@ export abstract class Manager<T extends Tile<any>> {
     this.updateLoadingStatus(true);
   }
 
-  private _requestTileInternal(tile: T): Promise<any> {
+  private _requestTileInternal(
+    tile: T
+  ): Promise<{ repsonse: any; nonce: number }> {
     tile.state = TileState.LOADING;
     this.updateLoadingStatus(false);
 
-    const cancelation = new Promise((_, reject) => {
-      this.rejectHandlers.set(tile.id, reject);
-    });
+    const nonce = (this.nonce.get(tile.id) ?? 0) + 1;
+    this.nonce.set(tile.id, nonce);
 
-    return Promise.race([this.requestTile(tile), cancelation]);
+    const cancelation = new Promise<{ repsonse: any; nonce: number }>(
+      (_, reject) => {
+        this.rejectHandlers.set(tile.id, reject);
+      }
+    );
+
+    return Promise.race([
+      this.requestTile(tile, nonce).then(response => {
+        return { repsonse: response, nonce: nonce };
+      }),
+      cancelation
+    ]);
   }
 
   protected forceReloadTiles(): void {
     for (const tile of this.visibleTiles.values()) {
       if (tile.state & TileState.LOADING) {
         this._cancelTileInternal(tile);
+        console.log(`Cancelled ${tile.id} ${tile.state}`);
       }
 
       this._requestTileInternal(tile)
-        .then(x => this._onLoadedInternal(tile, x))
+        .then(x => this._onLoadedInternal(tile, x.repsonse, x.nonce))
         .catch(_ => {
           this._removeTileInternal(tile);
         });
+
+      console.log(`Request ${tile.id} ${tile.state}`);
     }
   }
 

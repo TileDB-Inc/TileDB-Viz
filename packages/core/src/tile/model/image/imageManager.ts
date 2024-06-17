@@ -1,6 +1,5 @@
 /**
  * TODO: Need to add dimension control back
- * TODO: Need to add back non WebP compresses image support
  */
 
 import { Scene, UniformBuffer } from '@babylonjs/core';
@@ -14,7 +13,6 @@ import {
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager } from '../manager';
-import { range } from '../../utils/helpers';
 import { calculateChannelRanges, calculateChannelMapping } from './imageUtils';
 import {
   Events,
@@ -70,14 +68,6 @@ export class ImageManager extends Manager<
       item => item.visible
     )[0];
 
-    const channelCount =
-      this.metadata.channels.get(this.selectedAttribute.name)?.length ?? 0;
-
-    this.channelMapping = new Uint32Array(
-      range(0, channelCount)
-        .map(x => [x, 0, 0, 0])
-        .flat()
-    );
     this.channelMapping = new Uint32Array(
       this.metadata.channels
         .get(this.selectedAttribute.name)
@@ -109,7 +99,6 @@ export class ImageManager extends Manager<
     calculateChannelMapping(this.channelMapping);
     this.channelRanges = calculateChannelRanges(this.channelMapping);
     this.initializeUniformBuffer();
-    console.log(this);
     this.registerEventListeners();
   }
 
@@ -161,7 +150,10 @@ export class ImageManager extends Manager<
     );
   }
 
-  public requestTile(tile: Tile<ImageDataContent, ImageContent>): Promise<any> {
+  public requestTile(
+    tile: Tile<ImageDataContent, ImageContent>,
+    nonce?: number
+  ): Promise<any> {
     // Initialize tile data if not
     if (!tile.data) {
       tile.data = new ImageContent(this.scene, tile);
@@ -182,20 +174,25 @@ export class ImageManager extends Manager<
         attribute: this.selectedAttribute,
         channelRanges: this.channelRanges,
         dimensions: this.metadata.extraDimensions,
-        loaderOptions: this.metadata.loaderMetadata?.get(tile.content[0].uri)
+        loaderOptions: this.metadata.loaderMetadata?.get(tile.content[0].uri),
+        nonce: nonce
       } as ImagePayload
     });
 
     // TODO: Rewrite worker pool to store resolve functions of promises
     return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(tile.id, resolve);
+      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve);
     });
   }
 
-  public cancelTile(tile: Tile<ImageDataContent, ImageContent>): void {
+  public cancelTile(
+    tile: Tile<ImageDataContent, ImageContent>,
+    nonce?: number
+  ): void {
     this.workerPool.cancelRequest({
       type: RequestType.CANCEL,
-      id: tile.id
+      id: tile.id,
+      payload: { nonce: nonce }
     } as DataRequest);
   }
 
@@ -213,7 +210,7 @@ export class ImageManager extends Manager<
         width: data.width,
         height: data.height,
         depth: data.channels,
-        dtype: data.dtype.toUpperCase(),
+        dtype: data.dtype,
         channelLimit: this.intensityRanges.length / 4
       },
       UBO: this.tileOptions
@@ -323,7 +320,7 @@ export class ImageManager extends Manager<
             .toString(16)
             .padStart(2, '0')}${x.color.blue.toString(16).padStart(2, '0')}`,
           defaultMin: x.min,
-          defaultMax: x.max,
+          defaultMax: x.intensity,
           visible: x.visible,
           step: 0.1
         } as GUIChannelProperty;

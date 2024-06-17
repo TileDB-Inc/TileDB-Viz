@@ -140,7 +140,8 @@ export class GeometryManager extends Manager<
   }
 
   public requestTile(
-    tile: Tile<GeometryDataContent, GeometryContent>
+    tile: Tile<GeometryDataContent, GeometryContent>,
+    nonce?: number
   ): Promise<any> {
     if (tile.content.length === 0) {
       return new Promise((resolve, _) => resolve(true));
@@ -166,12 +167,13 @@ export class GeometryManager extends Manager<
         features: this.metadata.features,
         geometryAttribute: this.metadata.geometryAttribute,
         idAttribute: this.metadata.idAttribute,
-        heightAttribute: this.metadata.extrudeAttribute
+        heightAttribute: this.metadata.extrudeAttribute,
+        nonce: nonce
       } as GeometryPayload
     } as DataRequest);
 
     return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(tile.id, resolve);
+      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve);
     });
   }
 

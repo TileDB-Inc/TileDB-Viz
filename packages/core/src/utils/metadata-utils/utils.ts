@@ -63,9 +63,9 @@ function _getTransformBoundingInfo(
 ) {
   // When contructing the bounding boxes we need all corners because with the transformation between different
   // coordinate system using only two corners can result in invalid bounding boxes
-  for (const [idx, corner] of box.entries()) {
+  for (let idx = 0; idx < box.length; ++idx) {
     if (converter) {
-      box[idx] = [...converter.forward(corner.slice(0, 2)), 0, 1] as [
+      box[idx] = [...converter.forward(box[idx].slice(0, 3)), 1] as [
         number,
         number,
         number,
@@ -74,7 +74,7 @@ function _getTransformBoundingInfo(
     }
 
     if (pixelToCRS) {
-      box[idx] = multiply(pixelToCRS, corner).toArray() as [
+      box[idx] = multiply(pixelToCRS, box[idx]).toArray() as [
         number,
         number,
         number,

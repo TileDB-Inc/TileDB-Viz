@@ -222,12 +222,13 @@ export class CameraManager {
 
     switch (target[1]) {
       case 'pitch':
-        this.mainCamera.beta = (event.detail.props.value * Math.PI) / 180;
+        this.mainCamera.beta =
+          ((event.detail.props.value ?? 0) * Math.PI) / 180;
         break;
       case 'rotation':
         {
           const angle =
-            (event.detail.props.value * Math.PI) / 180 - Math.PI / 2;
+            ((event.detail.props.value ?? 0) * Math.PI) / 180 - Math.PI / 2;
           if (angle > Math.PI) {
             this.mainCamera.alpha = angle - 2 * Math.PI;
           } else {
@@ -238,7 +239,7 @@ export class CameraManager {
       case 'zoom':
         this.zoom = Math.max(
           this.lowerZoomLimit,
-          Math.min(this.upperZoomLimit, 2 ** event.detail.props.value)
+          Math.min(this.upperZoomLimit, 2 ** (event.detail.props.value ?? 0))
         );
         this.resizeCameraViewport();
     }
@@ -481,7 +482,7 @@ export class CameraManager {
     return this.mainCamera;
   }
 
-  public getMinimapCamera(): ArcRotateCamera {
+  public getMinimapCamera(): ArcRotateCamera | undefined {
     return this.minimapCamera;
   }
 

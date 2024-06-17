@@ -13,7 +13,7 @@ export interface WorkerPoolOptions {
 }
 
 export class WorkerPool {
-  public callbacks: Map<number, Function>;
+  public callbacks: Map<string, (value: any) => void>;
 
   private poolSize: number;
   private workers: Worker[] = [];
@@ -70,15 +70,17 @@ export class WorkerPool {
     }
 
     if (response.type !== RequestType.CANCEL) {
-      this.callbacks.get(response.id)?.(response.response);
+      this.callbacks.get(`${response.id}_${response.response.nonce}`)?.(
+        response.response
+      );
     }
-    this.callbacks.delete(response.id);
+    this.callbacks.delete(`${response.id}_${response.response.nonce}`);
 
-    const request = this.messageQueue.pop();
+    const request = this.messageQueue.shift();
 
     if (request) {
       this.workers[workerIndex].postMessage(request);
-      this.taskMap.set(request?.id, workerIndex);
+      this.taskMap.set(request.id, workerIndex);
     } else {
       this.status[workerIndex] = false;
     }
@@ -89,6 +91,8 @@ export class WorkerPool {
     const index = this.messageQueue.findIndex(
       (item: DataRequest) => item.id === request.id
     );
+
+    this.callbacks.delete(`${request.id}_${request.payload.nonce}`);
 
     if (workerIndex !== undefined) {
       this.workers[workerIndex].postMessage({
@@ -104,6 +108,7 @@ export class WorkerPool {
 
   public postMessage(request: DataRequest, transferables?: Transferable[]) {
     let dispached = false;
+    console.log(request);
     for (const [index, status] of this.status.entries()) {
       if (!status && index !== this.poolSize - 1) {
         this.workers[index].postMessage(request, transferables ?? []);

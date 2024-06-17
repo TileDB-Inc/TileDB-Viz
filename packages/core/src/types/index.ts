@@ -7,8 +7,12 @@ export type TDBNonEmptyDomain = {
 };
 
 export interface AssetMetadata {
-  dataset_type: string;
+  dataset_type?: string;
 }
+
+export type ImageAssetMetadata = AssetMetadata & {
+  metadata: string;
+};
 
 export interface AssetEntry {
   namespace: string;

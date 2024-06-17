@@ -123,7 +123,8 @@ export class PointManager extends Manager<
   }
 
   public requestTile(
-    tile: Tile<PointDataContent, PointTileContent>
+    tile: Tile<PointDataContent, PointTileContent>,
+    nonce?: number
   ): Promise<any> {
     if (!tile.data) {
       tile.data = new PointTileContent(this.scene, tile);
@@ -142,12 +143,13 @@ export class PointManager extends Manager<
         geotransformCoefficients: this.sceneOptions.transformation?.toArray(),
         domain: this.metadata.domain,
         imageCRS: this.sceneOptions.crs,
-        pointCRS: this.metadata.crs
+        pointCRS: this.metadata.crs,
+        nonce: nonce
       } as PointCloudPayload
     } as DataRequest);
 
     return new Promise((resolve, _) =>
-      this.workerPool.callbacks.set(tile.id, resolve)
+      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve)
     );
   }
 
@@ -419,7 +421,5 @@ export class PointManager extends Manager<
         }
       )
     );
-
-    console.log(Object.fromEntries(this.metadata.categories));
   }
 }

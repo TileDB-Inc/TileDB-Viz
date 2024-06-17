@@ -12,7 +12,7 @@ import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
 import { PointTileContent } from '../model/point/pointContent';
@@ -246,6 +246,11 @@ export type ImageLoaderMetadata = {
    * TileDB array schemas of all arrays of the image.
    */
   schema: ArraySchema;
+
+  /**
+   *
+   */
+  domain: Domain[];
 
   /**
    * The dimension of each image array in the order that exist in each image.
@@ -566,7 +571,7 @@ export interface ImageResponse extends BaseResponse {
   width: number;
   height: number;
   channels: number;
-  dtype: keyof typeof types;
+  dtype: Datatype;
 }
 
 export interface GeometryResponse extends BaseResponse {

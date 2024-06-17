@@ -39,7 +39,7 @@ import { inv } from 'mathjs';
 import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
 import { PointManager } from './model/point/pointManager';
 import { GeometryManager } from './model/geometry/geometryManager';
-import { initializeCacheDB } from '../utils/cache';
+import { clearMultiCache, initializeCacheDB } from '../utils/cache';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -131,6 +131,38 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       groupID: imageGroupID
     });
 
+    if (this.options.defaultChannels) {
+      const defaultAttribute = this.imageMetadata.attributes.filter(
+        x => x.visible
+      )[0].name;
+
+      for (const entry of this.imageMetadata.channels.get(defaultAttribute) ??
+        []) {
+        entry.visible = false;
+      }
+
+      for (const entry of this.options.defaultChannels) {
+        const channel = this.imageMetadata.channels
+          .get(defaultAttribute)
+          ?.at(entry.index);
+
+        if (!channel) {
+          continue;
+        }
+
+        channel.visible = true;
+        channel.intensity = entry.intensity ?? channel.intensity;
+        channel.color = entry.color
+          ? {
+              red: entry.color.r,
+              green: entry.color.g,
+              blue: entry.color.b,
+              alpha: 1.0
+            }
+          : channel.color;
+      }
+    }
+
     this.assetManagers.push(
       new ImageManager(this.scene, this.workerPool, {
         metadata: this.imageMetadata,
@@ -175,37 +207,10 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       baseGroup: this.options.baseGroup
     });
 
-    // if (this.options.defaultChannels) {
-    //   const defaultAttribute = this.attributes.filter(x => x.visible)[0].name;
-
-    //   for (const entry of this.metadata.channels.get(defaultAttribute) ?? []) {
-    //     entry.visible = false;
-    //   }
-
-    //   for (const entry of this.options.defaultChannels) {
-    //     const channel = this.metadata.channels
-    //       .get(defaultAttribute)
-    //       ?.at(entry.index);
-
-    //     if (!channel) {
-    //       continue;
-    //     }
-
-    //     channel.visible = true;
-    //     channel.intensity = entry.intensity ?? channel.intensity;
-    //     channel.color = entry.color
-    //       ? [entry.color.r, entry.color.g, entry.color.b]
-    //       : channel.color;
-    //   }
-    // }
-
     // Force enable uniform buffers for the material to work properly
     this.scene.getEngine().disableUniformBuffers = false;
 
     // this.pickingTool = new PickingTool(this.scene);
-
-    // const pipeline = new GeometryPipeline(this.scene);
-    // const renderTarget = pipeline.initializeRTT();
 
     if (this.options.geometryArrayID) {
       for (const [
@@ -354,20 +359,20 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.updateLoadingScreen('', false);
   }
 
-  // private clearScene() {
-  //   this.scene.onDisposeObservable.clear();
-  //   this.scene.onBeforeRenderObservable.clear();
+  private clearScene() {
+    this.scene.onDisposeObservable.clear();
+    this.scene.onBeforeRenderObservable.clear();
 
-  //   for (const manager of this.assetManagers) {
-  //     manager.dispose();
-  //   }
+    for (const manager of this.assetManagers) {
+      manager.dispose();
+    }
 
-  //   this.workerPool.cleanUp();
-  //   this.gui.dispose();
-  //   this.cameraManager.dispose();
-  //   this.pickingTool.dispose();
-  //   this.scene.getEngine().clearInternalTexturesCache();
-  // }
+    this.workerPool.cleanUp();
+    this.gui.dispose();
+    this.cameraManager.dispose();
+    this.pickingTool.dispose();
+    this.scene.getEngine().clearInternalTexturesCache();
+  }
 
   // private updateEngineInfo() {
   //   getTileCount(this.levels.map(x => `${x.id}_${this.tileSize}`)).then(
@@ -398,10 +403,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private fetchTiles() {
     for (const manager of this.assetManagers) {
       manager.loadTiles(
-        [
-          this.cameraManager.getMainCamera(),
-          this.cameraManager.getMinimapCamera()
-        ],
+        this.cameraManager.getMinimapCamera()
+          ? [
+              this.cameraManager.getMinimapCamera()!,
+              this.cameraManager.getMainCamera()
+            ]
+          : [this.cameraManager.getMainCamera()],
         this.frameDetails
       );
     }
@@ -416,34 +423,35 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     groupID?: string,
     arrayID?: string
   ) {
-    // this.scene.getEngine().stopRenderLoop();
-    // this.clearScene();
-    // this.options.groupID = groupID;
-    // this.options.arrayID = arrayID;
-    // this.options.namespace = namespace;
-    // this.initializeScene().then(() =>
-    //   this.scene.getEngine().runRenderLoop(() => this.scene.render())
-    // );
+    this.scene.getEngine().stopRenderLoop();
+    this.clearScene();
+    this.options.groupID = groupID;
+    this.options.arrayID = arrayID;
+    this.options.namespace = namespace;
+    this.initializeScene().then(() =>
+      this.scene.getEngine().runRenderLoop(() => this.scene.render())
+    );
   }
 
   private clearCache() {
-    // clearMultiCache(this.levels.map(x => `${x.id}_${this.tileSize}`));
-    // clearMultiCache(
-    //   [this.options.arrayID ?? this.options.groupID ?? ''].map(
-    //     x => x.split('/').at(-1)!
-    //   )
-    // );
-    // if (this.options.pointGroupID && this.options.pointGroupID.length !== 0) {
-    //   clearMultiCache(this.options.pointGroupID.map(x => x.split('/').at(-1)!));
-    // }
-    // if (
-    //   this.options.geometryArrayID &&
-    //   this.options.geometryArrayID.length !== 0
-    // ) {
-    //   clearMultiCache(
-    //     this.options.geometryArrayID.map(x => x.split('/').at(-1)!)
-    //   );
-    // }
+    // Clear image tiles
+    clearMultiCache(this.imageMetadata.uris);
+    clearMultiCache(
+      [this.options.arrayID ?? this.options.groupID ?? ''].map(
+        x => x.split('/').at(-1)!
+      )
+    );
+    for (const metadata of this.pointMetadata.values()) {
+      clearMultiCache(metadata.uris);
+    }
+    if (
+      this.options.geometryArrayID &&
+      this.options.geometryArrayID.length !== 0
+    ) {
+      clearMultiCache(
+        this.options.geometryArrayID.map(x => x.split('/').at(-1)!)
+      );
+    }
   }
 
   private initializeGUI() {

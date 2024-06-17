@@ -10,8 +10,6 @@ import {
   PointResponse,
   PointInfoMessage,
   InfoResponse,
-  AssetInitializationRequest,
-  ImageLoaderMetadata,
   InitializationPayload,
   PointCloudPayload,
   GeometryPayload
@@ -30,7 +28,6 @@ let cancelSignal = false;
 let tokenSource: CancelTokenSource | undefined = undefined;
 let currentId = 0;
 const CancelToken = axios.CancelToken;
-const metadata: Map<string, ImageLoaderMetadata> = new Map();
 
 self.onmessage = function (event: MessageEvent<DataRequest>) {
   if (event.data.type === RequestType.INITIALIZE) {
@@ -85,8 +82,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
           console.log(_);
           self.postMessage({
             id: event.data.id,
-            type: RequestType.CANCEL,
-            response: { nonce: event.data.request.nonce } as BaseResponse
+            type: RequestType.CANCEL
           } as WorkerResponse);
         });
       break;
@@ -116,8 +112,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
           console.log(_);
           self.postMessage({
             id: event.data.id,
-            type: RequestType.CANCEL,
-            response: { nonce: event.data.request.nonce } as BaseResponse
+            type: RequestType.CANCEL
           } as WorkerResponse);
         });
       break;
@@ -158,12 +153,6 @@ function initialize(request: InitializationPayload) {
     ...(request.token ? { apiKey: request.token } : {}),
     ...(request.basePath ? { basePath: request.basePath } : {})
   });
-}
-
-function initializeAssetMetadata(request: AssetInitializationRequest): void {
-  for (const assetMetadata of request.loaderMetadata) {
-    metadata.set(assetMetadata.schema.uri ?? '', assetMetadata);
-  }
 }
 
 async function geometryInfoRequest(id: number, request: GeometryInfoMessage) {
