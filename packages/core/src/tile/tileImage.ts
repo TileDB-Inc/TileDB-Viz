@@ -40,6 +40,8 @@ import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metada
 import { PointManager } from './model/point/pointManager';
 import { GeometryManager } from './model/geometry/geometryManager';
 import { clearMultiCache, initializeCacheDB } from '../utils/cache';
+import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
+import { TileManager } from './model/3d/3DTileManager';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -89,7 +91,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
-      // this.scene.debugLayer.show();
       await this.initializeScene();
 
       return scene;
@@ -295,23 +296,22 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     }
 
     // proj4.defs("EPSG:4978","+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs");
-    // if (this.options.tileUris) {
-    //   for (const tileURI of this.options.tileUris) {
-    //     const res = await load3DTileset(tileURI, {
-    //       sourceCRS: '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs',
-    //       targetCRS: this.metadata.crs,
-    //       transformation: this.metadata.transformationCoefficients
-    //     });
+    if (this.options.tileUris) {
+      if (!this.scene.getEngine().isWebGPU) {
+        console.warn('3D Tiles overlay are only supported using WebGPU');
+      } else {
+        for (const tileURI of this.options.tileUris) {
+          const tileset = await load3DTileset(tileURI, this.sceneOptions);
 
-    //     this.assetManagers.push(
-    //       new TileManager(this.scene, this.workerPool, 0, {
-    //         metadata: res,
-    //         baseCRS: this.metadata.crs,
-    //         transformation: this.metadata.transformationCoefficients
-    //       })
-    //     );
-    //   }
-    // }
+          this.assetManagers.push(
+            new TileManager(this.scene, {
+              metadata: tileset,
+              sceneOptions: this.sceneOptions
+            })
+          );
+        }
+      }
+    }
 
     //Extract scene dimensions to use for camera initialization
     this.cameraManager = new CameraManager(

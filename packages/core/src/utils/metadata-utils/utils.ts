@@ -56,7 +56,7 @@ export function get3DTransformedBoundingInfo(
   return _getTransformBoundingInfo(box, converter, pixelToCRS);
 }
 
-function _getTransformBoundingInfo(
+export function _getTransformBoundingInfo(
   box: [number, number, number, number][],
   converter?: proj4.Converter,
   pixelToCRS?: Matrix

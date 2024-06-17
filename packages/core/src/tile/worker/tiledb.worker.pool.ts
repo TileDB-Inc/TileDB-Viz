@@ -108,7 +108,6 @@ export class WorkerPool {
 
   public postMessage(request: DataRequest, transferables?: Transferable[]) {
     let dispached = false;
-    console.log(request);
     for (const [index, status] of this.status.entries()) {
       if (!status && index !== this.poolSize - 1) {
         this.workers[index].postMessage(request, transferables ?? []);

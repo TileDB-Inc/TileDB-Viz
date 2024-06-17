@@ -40,6 +40,7 @@ interface PointOptions {
 export class PointManager extends Manager<
   Tile<PointDataContent, PointTileContent>
 > {
+  private workerPool: WorkerPool;
   private pointOptions!: UniformBuffer;
   private metadata: PointCloudMetadata;
   private activeFeature: Feature;
@@ -68,8 +69,9 @@ export class PointManager extends Manager<
   };
 
   constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
-    super(options.metadata.root, scene, workerPool);
+    super(options.metadata.root, scene);
 
+    this.workerPool = workerPool;
     this.metadata = options.metadata;
     this.activeFeature = this.metadata.features[0];
     this.errorLimit = Math.max(

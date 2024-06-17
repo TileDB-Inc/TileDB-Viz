@@ -1,5 +1,4 @@
 import { Camera, Scene, UniformBuffer } from '@babylonjs/core';
-import { WorkerPool } from '../worker/tiledb.worker.pool';
 import { Events } from '@tiledb-inc/viz-components';
 import { FrameDetails, RefineStrategy } from '../../types';
 import { Traverser } from './traverser';
@@ -14,7 +13,6 @@ export interface TileStatus<T> {
 
 export abstract class Manager<T extends Tile<any>> {
   protected scene: Scene;
-  protected workerPool: WorkerPool;
   protected errorLimit: number;
   protected visibleTiles: Map<number, T>;
   protected frameOptions: UniformBuffer;
@@ -23,9 +21,8 @@ export abstract class Manager<T extends Tile<any>> {
   private rejectHandlers: Map<number, (reason: any) => void>;
   private traverser: Traverser<T>;
 
-  constructor(root: T, scene: Scene, workerPool: WorkerPool) {
+  constructor(root: T, scene: Scene) {
     this.scene = scene;
-    this.workerPool = workerPool;
 
     this.visibleTiles = new Map();
     this.errorLimit = -1;
@@ -122,7 +119,6 @@ export abstract class Manager<T extends Tile<any>> {
           tile.state & TileState.PENDING_LOAD &&
           !(tile.state & (TileState.VISIBLE | TileState.LOADING))
         ) {
-          console.log(`Normal request ${tile.id} ${tile.state}`);
           this._requestTileInternal(tile)
             .then(x => this._onLoadedInternal(tile, x.repsonse, x.nonce))
             .catch(_ => {
@@ -168,11 +164,8 @@ export abstract class Manager<T extends Tile<any>> {
       this.nonce.get(tile.id) !== nonce ||
       !(tile.state & TileState.LOADING)
     ) {
-      console.log(response, nonce, false);
       return;
     }
-
-    console.log(response, nonce);
 
     this.onLoaded(tile, response);
 
@@ -215,7 +208,6 @@ export abstract class Manager<T extends Tile<any>> {
     for (const tile of this.visibleTiles.values()) {
       if (tile.state & TileState.LOADING) {
         this._cancelTileInternal(tile);
-        console.log(`Cancelled ${tile.id} ${tile.state}`);
       }
 
       this._requestTileInternal(tile)
@@ -223,8 +215,6 @@ export abstract class Manager<T extends Tile<any>> {
         .catch(_ => {
           this._removeTileInternal(tile);
         });
-
-      console.log(`Request ${tile.id} ${tile.state}`);
     }
   }
 

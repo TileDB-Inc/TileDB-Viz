@@ -39,6 +39,7 @@ interface ImageOptions {
 export class ImageManager extends Manager<
   Tile<ImageDataContent, ImageContent>
 > {
+  private workerPool: WorkerPool;
   private channelRanges: number[] = [];
   private channelMapping: Uint32Array;
   private intensityRanges: Float32Array;
@@ -54,8 +55,9 @@ export class ImageManager extends Manager<
     workerPool: WorkerPool,
     imageOptions: ImageOptions
   ) {
-    super(imageOptions.metadata.root, scene, workerPool);
+    super(imageOptions.metadata.root, scene);
 
+    this.workerPool = workerPool;
     this.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()

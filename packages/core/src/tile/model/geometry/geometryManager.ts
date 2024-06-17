@@ -41,6 +41,7 @@ interface GeometryOptions {
 export class GeometryManager extends Manager<
   Tile<GeometryDataContent, GeometryContent>
 > {
+  private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
   private id: string;
   private namespace: string;
@@ -74,8 +75,9 @@ export class GeometryManager extends Manager<
     workerPool: WorkerPool,
     geometryOptions: GeometryOptions
   ) {
-    super(geometryOptions.metadata.root, scene, workerPool);
+    super(geometryOptions.metadata.root, scene);
 
+    this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
     this.id = geometryOptions.arrayID;
     this.namespace = geometryOptions.namespace;
