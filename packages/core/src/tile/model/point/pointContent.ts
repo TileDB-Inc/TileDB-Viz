@@ -19,10 +19,11 @@ import {
 import { Feature } from '@tiledb-inc/viz-common';
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '@tiledb-inc/viz-common';
+import { TypedArray } from '../../types';
 
 type PointCloudData = {
   position: Float32Array;
-  attributes: Record<string, Float32Array>;
+  attributes: Record<string, TypedArray>;
 };
 
 export type PointCloudUpdateOptions = TileUpdateOptions & {

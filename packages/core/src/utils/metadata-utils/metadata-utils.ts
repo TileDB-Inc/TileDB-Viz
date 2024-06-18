@@ -111,12 +111,15 @@ export function getImageDomain(schema: ArraySchema): {
 } {
   // If schema has a WebP compressed attribute last dimension needs special handling
   const filter = schema.attributes
+    // @ts-expect-error Filter type does not match the type returned from REST
     .find(x => x.filterPipeline.filters?.some(y => y.type === 'WEBP') ?? false)
+    // @ts-expect-error Filter type does not match the type returned from REST
     ?.filterPipeline.filters?.find(z => z.type === 'WEBP');
 
   if (filter) {
     // When WebP is found the array schema has 2 dimension of which the last one has a 2 dimensions interleaved
     // To determine the length of the interleaved dimension we read the WebP config
+    // @ts-expect-error Missing optional webpConfig field
     const channelCount = filter.webpConfig.format < 3 ? 3 : 4;
     const widthChannelDomain = getDomain(schema.domain.dimensions[1].domain);
 
@@ -227,6 +230,7 @@ export async function getImageMetadata(
             CHANNEL_ALIASES.includes(y.name ?? '')
           ),
           isWebPCompressed: x.attributes.some(y =>
+            // @ts-expect-error Filter type does not match the type returned from REST
             y.filterPipeline.filters?.some(z => z.type === 'WEBP')
           ),
           dimensions: x.domain.dimensions.map(y => y.name ?? '')

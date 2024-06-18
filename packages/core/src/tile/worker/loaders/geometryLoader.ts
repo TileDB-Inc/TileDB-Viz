@@ -164,7 +164,7 @@ export async function geometryRequest(
   const rawIndices = Int32Array.from(geometryOutput.indices);
 
   result.attributes = {};
-  result.attributes['ids'] = rawIds;
+  result.ids = rawIds;
 
   result.position = rawPositions;
   result.indices = rawIndices;

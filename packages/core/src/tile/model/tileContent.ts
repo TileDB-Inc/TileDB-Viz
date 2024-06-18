@@ -1,5 +1,6 @@
 import { Mesh, Scene } from '@babylonjs/core';
 import { Tile } from './tile';
+import { TypedArray } from '../types';
 
 export type TileUpdateOptions = {
   opacity?: number;
@@ -8,7 +9,7 @@ export type TileUpdateOptions = {
 export class TileContent {
   public meshes: Array<Mesh>;
 
-  public buffers: Record<string, Float32Array | Int32Array>;
+  public buffers: Record<string, TypedArray>;
 
   protected scene: Scene;
   protected tile: Tile<any, any>;

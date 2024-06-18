@@ -353,10 +353,7 @@ export type TypedArray =
   | Int32Array
   | Uint32Array
   | Uint8ClampedArray
-  | Float32Array
-  | Float64Array
-  | BigInt64Array
-  | BigUint64Array;
+  | Float32Array;
 
 export type TypedArrayInterface =
   | typeof Int8Array
@@ -366,10 +363,7 @@ export type TypedArrayInterface =
   | typeof Int32Array
   | typeof Uint32Array
   | typeof Uint8ClampedArray
-  | typeof Float32Array
-  | typeof Float64Array
-  | typeof BigInt64Array
-  | typeof BigUint64Array;
+  | typeof Float32Array;
 
 export const types = {
   uint8: {
@@ -578,12 +572,14 @@ export interface GeometryResponse extends BaseResponse {
   type: GeometryType;
   position: Float32Array;
   indices: Int32Array;
-  attributes: { [attribute: string]: TypedArray };
+  ids?: BigInt64Array;
+  attributes: Record<string, TypedArray>;
 }
 
 export interface PointResponse extends BaseResponse {
   position: Float32Array;
-  attributes: { [attribute: string]: TypedArray };
+  ids?: BigInt64Array;
+  attributes: Record<string, TypedArray>;
 }
 
 export interface InfoResponse {
