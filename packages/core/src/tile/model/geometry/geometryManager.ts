@@ -179,10 +179,14 @@ export class GeometryManager extends Manager<
     });
   }
 
-  public cancelTile(tile: Tile<GeometryDataContent, GeometryContent>): void {
+  public cancelTile(
+    tile: Tile<GeometryDataContent, GeometryContent>,
+    nonce?: number
+  ): void {
     this.workerPool.cancelRequest({
       type: RequestType.CANCEL,
-      id: tile.id
+      id: tile.id,
+      payload: { nonce: nonce }
     } as DataRequest);
   }
 

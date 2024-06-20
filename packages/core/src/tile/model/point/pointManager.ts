@@ -155,10 +155,14 @@ export class PointManager extends Manager<
     );
   }
 
-  public cancelTile(tile: Tile<PointDataContent, PointTileContent>): void {
+  public cancelTile(
+    tile: Tile<PointDataContent, PointTileContent>,
+    nonce?: number
+  ): void {
     this.workerPool.cancelRequest({
       type: RequestType.CANCEL,
-      id: tile.id
+      id: tile.id,
+      payload: { nonce: nonce }
     } as DataRequest);
   }
 

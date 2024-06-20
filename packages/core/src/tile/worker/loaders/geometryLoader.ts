@@ -27,7 +27,8 @@ export async function geometryRequest(
     index: payload.index,
     canceled: false,
     type: GeometryType.POLYGON,
-    attributes: {}
+    attributes: {},
+    nonce: payload.nonce
   };
 
   const affineMatrix = matrix(payload.transformation);

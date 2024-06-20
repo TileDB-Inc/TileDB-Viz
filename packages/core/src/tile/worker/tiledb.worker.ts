@@ -8,7 +8,6 @@ import {
   GeometryInfoMessage,
   BaseResponse,
   PointResponse,
-  PointInfoMessage,
   InfoResponse,
   InitializationPayload,
   PointCloudPayload,
@@ -20,7 +19,7 @@ import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
 import proj4 from 'proj4';
 import { geometryRequest } from './loaders/geometryLoader';
-import { pointInfoRequest, pointRequest } from './loaders/pointLoader';
+import { pointRequest } from './loaders/pointLoader';
 import { imageRequest } from './loaders/imageLoader';
 
 let tiledbClient: Client | undefined = undefined;
@@ -35,116 +34,88 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
   } else if (!tiledbClient) {
     console.warn('TileDB client is not initialized');
     return;
-  }
+  } else {
+    switch (event.data.type) {
+      case RequestType.IMAGE:
+        cancelSignal = false;
+        currentId = event.data.id;
+        tokenSource = CancelToken.source();
 
-  switch (event.data.type) {
-    case RequestType.IMAGE:
-      cancelSignal = false;
-      currentId = event.data.id;
-      tokenSource = CancelToken.source();
-
-      imageRequest(
-        event.data.id,
-        tiledbClient!,
-        tokenSource,
-        event.data.payload
-      ).catch(_ => {
-        self.postMessage({
-          id: event.data.id,
-          type: RequestType.CANCEL
-        } as WorkerResponse);
-      });
-
-      break;
-    case RequestType.GEOMETRY:
-      if (!tiledbClient) {
-        break;
-      }
-
-      cancelSignal = false;
-      currentId = event.data.id;
-      tokenSource = CancelToken.source();
-      geometryRequest(
-        event.data.id,
-        tiledbClient,
-        tokenSource,
-        event.data.payload as GeometryPayload
-      )
-        .then(response => {
-          self.postMessage(
-            response,
-            Object.values(
-              (response.response as GeometryResponse).attributes
-            ).map(x => x.buffer) as any
-          );
-        })
-        .catch(_ => {
-          console.log(_);
+        imageRequest(
+          event.data.id,
+          tiledbClient,
+          tokenSource,
+          event.data.payload
+        ).catch(_ => {
           self.postMessage({
             id: event.data.id,
-            type: RequestType.CANCEL
+            type: RequestType.CANCEL,
+            response: { nonce: event.data.payload.nonce }
           } as WorkerResponse);
         });
-      break;
-    case RequestType.POINT:
-      if (!tiledbClient) {
-        break;
-      }
 
-      cancelSignal = false;
-      currentId = event.data.id;
-      tokenSource = CancelToken.source();
-      pointRequest(
-        event.data.id,
-        tiledbClient,
-        tokenSource,
-        event.data.payload as PointCloudPayload
-      )
-        .then(response => {
-          self.postMessage(
-            response,
-            Object.values((response.response as PointResponse).attributes).map(
-              x => x.buffer
-            ) as any
-          );
-        })
-        .catch(_ => {
-          console.log(_);
-          self.postMessage({
-            id: event.data.id,
-            type: RequestType.CANCEL
-          } as WorkerResponse);
-        });
-      break;
-    case RequestType.POINT_INFO:
-      cancelSignal = false;
-      currentId = event.data.id;
-      tokenSource = CancelToken.source();
-      pointInfoRequest(
-        event.data.id,
-        tiledbClient,
-        tokenSource,
-        event.data.request as PointInfoMessage
-      );
-      break;
-      break;
-    case RequestType.GEOMETRY_INFO:
-      cancelSignal = false;
-      currentId = event.data.id;
-      tokenSource = CancelToken.source();
-      geometryInfoRequest(
-        event.data.id,
-        event.data.request as GeometryInfoMessage
-      );
-      break;
-    case RequestType.CANCEL:
-      cancelSignal = currentId === event.data.id;
-      if (cancelSignal) {
-        tokenSource?.cancel('Operation canceled by the user.');
-      }
-      break;
-    default:
-      break;
+        break;
+      case RequestType.GEOMETRY:
+        cancelSignal = false;
+        currentId = event.data.id;
+        tokenSource = CancelToken.source();
+        geometryRequest(
+          event.data.id,
+          tiledbClient,
+          tokenSource,
+          event.data.payload as GeometryPayload
+        )
+          .then(response => {
+            self.postMessage(
+              response,
+              Object.values(
+                (response.response as GeometryResponse).attributes
+              ).map(x => x.buffer) as any
+            );
+          })
+          .catch(_ => {
+            self.postMessage({
+              id: event.data.id,
+              type: RequestType.CANCEL,
+              response: { nonce: event.data.payload.nonce }
+            } as WorkerResponse);
+          });
+        break;
+      case RequestType.POINT:
+        cancelSignal = false;
+        currentId = event.data.id;
+        tokenSource = CancelToken.source();
+        pointRequest(
+          event.data.id,
+          tiledbClient,
+          tokenSource,
+          event.data.payload as PointCloudPayload
+        )
+          .then(response => {
+            self.postMessage(
+              response,
+              Object.values(
+                (response.response as PointResponse).attributes
+              ).map(x => x.buffer) as any
+            );
+          })
+          .catch(_ => {
+            self.postMessage({
+              id: event.data.id,
+              type: RequestType.CANCEL,
+              response: { nonce: event.data.payload.nonce }
+            } as WorkerResponse);
+          });
+        break;
+      case RequestType.CANCEL:
+        cancelSignal = currentId === event.data.id;
+        if (cancelSignal) {
+          tokenSource?.cancel('Operation canceled by the user.');
+        }
+        break;
+      default:
+        break;
+    }
   }
 };
 

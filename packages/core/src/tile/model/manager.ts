@@ -147,7 +147,7 @@ export abstract class Manager<T extends Tile<any>> {
 
   public abstract requestTile(tile: T, nonce?: number): Promise<any>;
 
-  public abstract cancelTile(tile: T): void;
+  public abstract cancelTile(tile: T, nonce?: number): void;
 
   public abstract onLoaded(tile: T, data: any): void;
 
@@ -176,7 +176,7 @@ export abstract class Manager<T extends Tile<any>> {
   private _cancelTileInternal(tile: T): void {
     this.updateLoadingStatus(true);
 
-    this.cancelTile(tile);
+    this.cancelTile(tile, this.nonce.get(tile.id));
     this.rejectHandlers.get(tile.id)?.(`Cancelled by the user ${tile.id}`);
     this.updateLoadingStatus(true);
   }

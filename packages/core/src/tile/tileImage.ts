@@ -25,7 +25,6 @@ import {
 } from '../utils/metadata-utils/metadata-utils';
 import { ImageManager } from './model/image/imageManager';
 import { CameraManager } from './utils/camera-utils';
-import { PickingTool } from './utils/picking-tool';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
 import {
@@ -39,7 +38,11 @@ import { inv } from 'mathjs';
 import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
 import { PointManager } from './model/point/pointManager';
 import { GeometryManager } from './model/geometry/geometryManager';
-import { clearMultiCache, initializeCacheDB } from '../utils/cache';
+import {
+  clearMultiCache,
+  getTileCount,
+  initializeCacheDB
+} from '../utils/cache';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
 
@@ -49,11 +52,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private gui!: TileImageGUI;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
-  private pickingTool!: PickingTool;
   private imageMetadata!: ImageMetadataV2;
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
-  private assetManagers: Manager<Tile<any>>[];
+  private assetManagers: {
+    manager: Manager<Tile<any>>;
+    pickable: boolean;
+    minimap: boolean;
+  }[];
   private frameDetails: FrameDetails;
   private sceneOptions: SceneOptions;
   private groupAssets: AssetEntry[];
@@ -164,12 +170,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       }
     }
 
-    this.assetManagers.push(
-      new ImageManager(this.scene, this.workerPool, {
+    this.assetManagers.push({
+      manager: new ImageManager(this.scene, this.workerPool, {
         metadata: this.imageMetadata,
         namespace: imageNamespace
-      })
-    );
+      }),
+      pickable: false,
+      minimap: true
+    });
 
     await initializeCacheDB(this.imageMetadata.uris);
 
@@ -211,8 +219,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     // Force enable uniform buffers for the material to work properly
     this.scene.getEngine().disableUniformBuffers = false;
 
-    // this.pickingTool = new PickingTool(this.scene);
-
     if (this.options.geometryArrayID) {
       for (const [
         index,
@@ -241,14 +247,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         );
 
         this.geometryMetadata.set(id, metadata);
-        this.assetManagers.push(
-          new GeometryManager(this.scene, this.workerPool, {
+        this.assetManagers.push({
+          manager: new GeometryManager(this.scene, this.workerPool, {
             arrayID: id,
             namespace: namespace,
             metadata: metadata,
             sceneOptions: this.sceneOptions
-          })
-        );
+          }),
+          pickable: false,
+          minimap: false
+        });
 
         this.sceneOptions.extents.encapsulateBoundingInfo(
           metadata.root.boundingInfo
@@ -283,13 +291,15 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         );
 
         this.pointMetadata.set(id, metadata);
-        this.assetManagers.push(
-          new PointManager(this.scene, this.workerPool, {
+        this.assetManagers.push({
+          manager: new PointManager(this.scene, this.workerPool, {
             namespace: namespace,
             metadata: metadata,
             sceneOptions: this.sceneOptions
-          })
-        );
+          }),
+          pickable: false,
+          minimap: false
+        });
 
         await initializeCacheDB(metadata.uris);
       }
@@ -303,12 +313,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         for (const tileURI of this.options.tileUris) {
           const tileset = await load3DTileset(tileURI, this.sceneOptions);
 
-          this.assetManagers.push(
-            new TileManager(this.scene, {
+          this.assetManagers.push({
+            manager: new TileManager(this.scene, {
               metadata: tileset,
               sceneOptions: this.sceneOptions
-            })
-          );
+            }),
+            pickable: false,
+            minimap: false
+          });
         }
       }
     }
@@ -334,21 +346,20 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.onAssetSelection(namespace, groupID, arrayID)
     );
 
-    // this.updateEngineInfo();
+    this.updateEngineInfo();
 
-    // const intervalID = setInterval(() => this.updateEngineInfo(), 30 * 1000);
+    const intervalID = setInterval(() => this.updateEngineInfo(), 30 * 1000);
 
     this.scene.onDisposeObservable.add(() => {
-      //clearInterval(intervalID);
+      clearInterval(intervalID);
 
-      for (const manager of this.assetManagers) {
-        manager.dispose();
+      for (const entry of this.assetManagers) {
+        entry.manager.dispose();
       }
 
       this.workerPool.dispose();
       this.gui.dispose();
       this.cameraManager.dispose();
-      this.pickingTool.dispose();
     });
 
     this.scene.onBeforeRenderObservable.addOnce(() => this.initializeGUI());
@@ -363,51 +374,48 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.scene.onDisposeObservable.clear();
     this.scene.onBeforeRenderObservable.clear();
 
-    for (const manager of this.assetManagers) {
-      manager.dispose();
+    for (const entry of this.assetManagers) {
+      entry.manager.dispose();
     }
 
     this.workerPool.cleanUp();
     this.gui.dispose();
     this.cameraManager.dispose();
-    this.pickingTool.dispose();
     this.scene.getEngine().clearInternalTexturesCache();
   }
 
-  // private updateEngineInfo() {
-  //   getTileCount(this.levels.map(x => `${x.id}_${this.tileSize}`)).then(
-  //     (tileCount: number) => {
-  //       const selectedAttribute = this.attributes
-  //         .filter(x => x.visible)[0]
-  //         .type.toLowerCase();
-  //       const size =
-  //         (tileCount *
-  //           (types as any)[selectedAttribute].bytes *
-  //           this.tileSize ** 2) /
-  //         2 ** 30;
+  private updateEngineInfo() {
+    const uris = [...this.imageMetadata.uris];
+    for (const metadata of this.pointMetadata.values()) {
+      uris.push(...metadata.uris);
+    }
+    for (const key of this.geometryMetadata.keys()) {
+      uris.push(key);
+    }
 
-  //       window.dispatchEvent(
-  //         new CustomEvent(Events.ENGINE_INFO_UPDATE, {
-  //           bubbles: true,
-  //           detail: {
-  //             type: 'CACHE_INFO',
-  //             tiles: tileCount,
-  //             diskSpace: size
-  //           }
-  //         })
-  //       );
-  //     }
-  //   );
-  // }
+    Promise.all([navigator.storage.estimate(), getTileCount(uris)]).then(
+      results => {
+        window.dispatchEvent(
+          new CustomEvent(Events.ENGINE_INFO_UPDATE, {
+            bubbles: true,
+            detail: {
+              type: 'CACHE_INFO',
+              tiles: results[1],
+              diskSpace: (results[0].usage ?? 0) / 2 ** 30
+            }
+          })
+        );
+      }
+    );
+  }
 
   private fetchTiles() {
-    for (const manager of this.assetManagers) {
-      manager.loadTiles(
-        this.cameraManager.getMinimapCamera()
-          ? [
-              this.cameraManager.getMinimapCamera()!,
-              this.cameraManager.getMainCamera()
-            ]
+    const minimapCamera = this.cameraManager.getMinimapCamera();
+
+    for (const entry of this.assetManagers) {
+      entry.manager.loadTiles(
+        minimapCamera && entry.minimap
+          ? [minimapCamera, this.cameraManager.getMainCamera()]
           : [this.cameraManager.getMainCamera()],
         this.frameDetails
       );
@@ -441,16 +449,14 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         x => x.split('/').at(-1)!
       )
     );
+    for (const key of this.pointMetadata.keys()) {
+      clearMultiCache([key]);
+    }
     for (const metadata of this.pointMetadata.values()) {
       clearMultiCache(metadata.uris);
     }
-    if (
-      this.options.geometryArrayID &&
-      this.options.geometryArrayID.length !== 0
-    ) {
-      clearMultiCache(
-        this.options.geometryArrayID.map(x => x.split('/').at(-1)!)
-      );
+    for (const key of this.geometryMetadata.keys()) {
+      clearMultiCache([key]);
     }
   }
 
@@ -498,8 +504,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
     this.initializeGUIProperties();
 
-    for (const manager of this.assetManagers) {
-      manager.initializeGUIProperties();
+    for (const entry of this.assetManagers) {
+      entry.manager.initializeGUIProperties();
     }
   }
 

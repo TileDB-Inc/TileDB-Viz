@@ -480,6 +480,7 @@ export type GeometryPayload = {
   sourceCRS?: string;
   targetCRS?: string;
   transformation: number[];
+  nonce: number;
 };
 
 export interface GeometryMessage {
