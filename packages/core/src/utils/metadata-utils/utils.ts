@@ -41,7 +41,7 @@ export function get3DTransformedBoundingInfo(
   converter?: proj4.Converter,
   pixelToCRS?: Matrix
 ) {
-  // Transform 3D box in 4D homogenous coordinates
+  // Transform 3D box in 4D homogeneous coordinates
   const box: [number, number, number, number][] = [
     [minPoint[0], minPoint[1], minPoint[2], 1],
     [minPoint[0], minPoint[1], maxPoint[2], 1],
@@ -83,6 +83,7 @@ export function _getTransformBoundingInfo(
     }
   }
 
+  // Switch from Z-up to Y-up
   const minPoint = [
     Math.min(...box.map(x => x[0])),
     Math.min(...box.map(x => x[2])),

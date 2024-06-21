@@ -113,7 +113,7 @@ export class GeometryContent extends TileContent {
   }
 
   private onDataUpdate(data: GeometryData): void {
-    // Clear any pre existing mesh
+    // Clear any pre-existing mesh
     for (const mesh of this.meshes) {
       mesh.dispose();
     }

@@ -248,7 +248,7 @@ export type ImageLoaderMetadata = {
   schema: ArraySchema;
 
   /**
-   *
+   * The array domain.
    */
   domain: Domain[];
 
@@ -263,7 +263,7 @@ export type ImageLoaderMetadata = {
   implicitChannel: boolean;
 
   /**
-   * if true, the image array is WebP compressed and follows a known 2D schema.
+   * If true, the image array is WebP compressed and follows a known 2D schema.
    */
   isWebPCompressed: boolean;
 };
@@ -445,62 +445,83 @@ export interface InitializationPayload {
   basePath?: string;
 }
 
-export type AssetInitializationRequest = {
-  loaderMetadata: ImageLoaderMetadata[];
+export type TileDBPayload = {
+  /**
+   * The TileDB array id holding the image data.
+   */
+  uri: string;
+
+  /**
+   * The namespace of the array.
+   */
+  namespace: string;
+
+  /**
+   * The data ranges per dimension. The dimension should be the TileDB array dimension name.
+   */
+  region: { dimension: string; min: number; max: number }[];
+
+  /**
+   * A nonce value to destinguish between different requests for the same tile
+   */
+  nonce: number;
 };
 
-export type ImagePayload = {
-  uri: string;
-  region: { dimension: string; min: number; max: number }[];
+export type TileDBSpatialPayload = {
+  /**
+   * The coordinate system of the asset.
+   */
+  sourceCRS?: string;
+
+  /**
+   * The coordinate system of the scene.
+   */
+  targetCRS?: string;
+
+  /**
+   * The affine transformation to go from CRS to pixel space.
+   */
+  transformation?: number[][];
+};
+
+export type ImagePayload = TileDBPayload & {
+  /**
+   * The [X, Y] index of the image tile used identifying the tile in the cache.
+   */
   index: number[];
-  namespace: string;
+
+  /**
+   * The ranges of channels that should be loaded.
+   */
   channelRanges: number[];
-  channelMapping: number[];
+
+  /**
+   * The attribute which contains the image data.
+   */
   attribute: Attribute;
-  token: string;
-  basePath: string;
+
+  /**
+   * The additional dimension that may exist (except XYC) to slice from.
+   */
   dimensions: Dimension[];
-  nonce: number;
+
+  /**
+   * Additional metadata for the loader worker only.
+   */
   loaderOptions: ImageLoaderMetadata;
 };
 
-export type GeometryPayload = {
-  uri: string;
-  region: { dimension: string; min: number; max: number }[];
-  index: number[];
-  namespace: string;
+export type GeometryPayload = TileDBPayload &
+  TileDBSpatialPayload & {
+    index: number[];
 
-  type: string;
-  features: Feature[];
-  geometryAttribute: Attribute;
-  idAttribute?: Attribute;
-  heightAttribute?: Attribute;
-  attributes: Attribute[];
-
-  sourceCRS?: string;
-  targetCRS?: string;
-  transformation: number[];
-  nonce: number;
-};
-
-export interface GeometryMessage {
-  index: number[];
-  tileSize: number;
-  arrayID: string;
-  namespace: string;
-  idAttribute: Attribute;
-  geometryAttribute: Attribute;
-  heightAttribute?: Attribute;
-  pad: number[];
-  additionalAttributes?: Attribute[];
-  type: string;
-  imageCRS?: string;
-  geometryCRS?: string;
-  geotransformCoefficients: number[];
-  metersPerUnit: number;
-  nonce: number;
-  features: Feature[];
-}
+    type: string;
+    features: Feature[];
+    geometryAttribute: Attribute;
+    idAttribute?: Attribute;
+    heightAttribute?: Attribute;
+    attributes: Attribute[];
+  };
 
 export interface GeometryInfoMessage {
   tileSize: number;
@@ -518,23 +539,13 @@ export interface GeometryInfoMessage {
   geotransformCoefficients: number[];
 }
 
-export interface PointCloudPayload {
-  index: number[];
-  arrayID: string;
-  namespace: string;
-  region: {
-    dimension: string;
-    min: number;
-    max: number;
-  }[];
-  imageCRS?: string;
-  pointCRS?: string;
-  geotransformCoefficients: number[][];
-  features: Feature[];
-  attributes: Attribute[];
-  nonce: number;
-  domain: Domain[];
-}
+export type PointCloudPayload = TileDBPayload &
+  TileDBSpatialPayload & {
+    index: number[];
+    features: Feature[];
+    attributes: Attribute[];
+    domain: Domain[];
+  };
 
 export interface PointInfoMessage {
   namespace: string;

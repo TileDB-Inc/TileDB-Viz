@@ -3,7 +3,7 @@ import {
   AssetOptions,
   PointDataContent,
   SceneOptions,
-  TillingScheme
+  TilingScheme
 } from '../../types';
 import { PointCloudMetadata } from '../../tile';
 import getTileDBClient from '../getTileDBClient';
@@ -293,7 +293,7 @@ function constructPointCloudTileset(
       }
     ];
     tile.refineStrategy = RefineStrategy.ADD;
-    tile.tillingScheme = TillingScheme.NONE;
+    tile.tilingScheme = TilingScheme.NONE;
     tile.boundingInfo = get3DTransformedBoundingInfo(
       boxMinPoint,
       boxMaxPoint,

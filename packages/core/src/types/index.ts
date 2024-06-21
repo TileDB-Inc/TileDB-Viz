@@ -53,7 +53,7 @@ export enum RefineStrategy {
   REPLACE = 2
 }
 
-export enum TillingScheme {
+export enum TilingScheme {
   NONE = 0,
   QUADTREE = 2,
   OCTREE = 3

@@ -12,7 +12,16 @@ import {
   WorkerResponse
 } from '../../types';
 import { RequestType } from '../../types';
-import { MathArray, matrix, min, max, multiply, Matrix, index } from 'mathjs';
+import {
+  MathArray,
+  matrix,
+  min,
+  max,
+  multiply,
+  Matrix,
+  index,
+  identity
+} from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
 import {
   createRGB,
@@ -35,7 +44,9 @@ export async function pointRequest(
     canceled: false,
     attributes: {}
   };
-  const affineInverted = matrix(request.geotransformCoefficients);
+  const CRStoPixel = request.transformation
+    ? matrix(request.transformation)
+    : (identity(4) as Matrix);
 
   const uniqueAttributes = new Set<string>(
     request.features.flatMap(x => x.attributes.map(y => y.name))
@@ -44,7 +55,7 @@ export async function pointRequest(
   request.domain.forEach(x => uniqueAttributes.add(x.name));
 
   const cachedArrays = await loadCachedGeometry(
-    request.arrayID,
+    request.uri,
     mortonIndex.toString(),
     [
       ...request.features.filter(x => x.attributes.length).map(x => x.name),
@@ -79,7 +90,7 @@ export async function pointRequest(
 
   const generator = client.query.ReadQuery(
     request.namespace,
-    request.arrayID,
+    request.uri,
     query
     //arraySchema
   );
@@ -122,10 +133,10 @@ export async function pointRequest(
   const positions = new Float32Array(3 * elementCount);
 
   const converter =
-    request.imageCRS &&
-    request.pointCRS &&
-    request.imageCRS !== request.pointCRS
-      ? proj4(request.pointCRS, request.imageCRS)
+    request.sourceCRS &&
+    request.targetCRS &&
+    request.sourceCRS !== request.targetCRS
+      ? proj4(request.sourceCRS, request.targetCRS)
       : undefined;
   for (let idx = 0; idx < elementCount; ++idx) {
     if (converter) {
@@ -139,7 +150,7 @@ export async function pointRequest(
 
     // Apply the inverted transform and swap Y-Z axes
     [positions[3 * idx], positions[3 * idx + 2], positions[3 * idx + 1]] =
-      multiply(affineInverted, [
+      multiply(CRStoPixel, [
         arrays['X'][idx],
         arrays['Y'][idx],
         arrays['Z'][idx],
@@ -217,7 +228,7 @@ export async function pointRequest(
 
   await Promise.all(
     Object.entries(result.attributes).map(([name, array]) => {
-      return writeToCache(request.arrayID, `${name}_${mortonIndex}`, array);
+      return writeToCache(request.uri, `${name}_${mortonIndex}`, array);
     })
   );
 

@@ -1,6 +1,6 @@
 import { BoundingInfo, Camera, Vector3 } from '@babylonjs/core';
 import { TileContent } from './tileContent';
-import { RefineStrategy, TillingScheme } from '../../types';
+import { RefineStrategy, TilingScheme } from '../../types';
 
 export enum TileState {
   HIDDEN = 0b0,
@@ -74,10 +74,10 @@ export class Tile<T, C extends TileContent = TileContent> {
   public content: Array<T>;
 
   /**
-   * The tiles tilling scheme. If value is `TillingScheme.NONE` indication of explicit tileset.
-   * Default value is `TillingScheme.NONE`.
+   * The tiles tiling scheme. If value is `TilingScheme.NONE` indication of explicit tileset.
+   * Default value is `TilingScheme.NONE`.
    */
-  public tillingScheme: TillingScheme;
+  public tilingScheme: TilingScheme;
 
   /**
    * The tile state the provides info regarding the loading and visibility state of the tile.
@@ -104,7 +104,7 @@ export class Tile<T, C extends TileContent = TileContent> {
     this.content = [];
     this.index = [];
     this.parent = undefined;
-    this.tillingScheme = TillingScheme.NONE;
+    this.tilingScheme = TilingScheme.NONE;
     this.geometricError = 0;
     this.state = TileState.HIDDEN;
     this.mask = 0;

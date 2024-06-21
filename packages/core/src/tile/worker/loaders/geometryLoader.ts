@@ -12,7 +12,16 @@ import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
 import { parsePolygon } from '../parsers';
-import { matrix, Matrix, min, max, multiply, add, index } from 'mathjs';
+import {
+  matrix,
+  Matrix,
+  min,
+  max,
+  multiply,
+  add,
+  index,
+  identity
+} from 'mathjs';
 import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 
@@ -31,7 +40,9 @@ export async function geometryRequest(
     nonce: payload.nonce
   };
 
-  const affineMatrix = matrix(payload.transformation);
+  const CRStoPixel = payload.transformation
+    ? matrix(payload.transformation)
+    : (identity(4) as Matrix);
 
   const uniqueAttributes = new Set<string>(
     payload.features.flatMap(x => x.attributes.map(y => y.name))
@@ -133,7 +144,7 @@ export async function geometryRequest(
             attributes,
             payload.features,
             payload.type,
-            affineMatrix,
+            CRStoPixel,
             converter,
             geometryOutput
           );
@@ -144,7 +155,7 @@ export async function geometryRequest(
             attributes,
             payload.features,
             payload.type,
-            affineMatrix,
+            CRStoPixel,
             converter,
             geometryOutput
           );

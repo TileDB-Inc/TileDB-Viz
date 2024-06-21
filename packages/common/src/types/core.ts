@@ -250,19 +250,19 @@ export enum RefineStrategy {
   REPLACE = 2
 }
 
-export enum TillingScheme {
+export enum TilingScheme {
   /**
-   * Unstructured tilling scheme
+   * Unstructured tiling scheme
    */
   NONE = 0b1,
 
   /**
-   * Quadtree tilling scheme. Each tile has 4 child tiles
+   * Quadtree tiling scheme. Each tile has 4 child tiles
    */
   QUADTREE = 0b10,
 
   /**
-   * Octree tilling scheme. Each tile has 8 child tiles
+   * Octree tiling scheme. Each tile has 8 child tiles
    */
   OCTREE = 0b100
 }

@@ -102,13 +102,13 @@ export class ImageContent extends TileContent {
       scene
     );
 
-    // Hide image tile untill data are loaded
+    // Hide image tile until data are loaded
     // Visibility should be restored once the data are loaded
     mesh.visibility = 0;
     mesh.isPickable = false;
     mesh.position = tile.boundingInfo.boundingBox.center;
 
-    // The it the top level image tile so add both layer mask to be renderered by all cameras
+    // This is the top level image tile so add both layer masks in order to be renderered by all cameras
     mesh.layerMask = tile.mask;
 
     // Remove unwanted rotations added by default

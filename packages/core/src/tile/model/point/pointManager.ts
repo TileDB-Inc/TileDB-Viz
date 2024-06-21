@@ -138,14 +138,14 @@ export class PointManager extends Manager<
       payload: {
         index: tile.index,
         namespace: this.namespace,
-        arrayID: tile.content[0].uri,
+        uri: tile.content[0].uri,
         region: tile.content[0].region,
         features: this.metadata.features,
         attributes: this.metadata.attributes,
-        geotransformCoefficients: this.sceneOptions.transformation?.toArray(),
         domain: this.metadata.domain,
-        imageCRS: this.sceneOptions.crs,
-        pointCRS: this.metadata.crs,
+        transformation: this.sceneOptions.transformation?.toArray(),
+        targetCRS: this.sceneOptions.crs,
+        sourceCRS: this.metadata.crs,
         nonce: nonce
       } as PointCloudPayload
     } as DataRequest);

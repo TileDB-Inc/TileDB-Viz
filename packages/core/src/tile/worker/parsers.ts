@@ -57,9 +57,13 @@ export function parsePolygon(
     ) {
       const point = entry.exteriorRing[pointIndex];
       if (converter) {
-        [point.x, point.y] = converter.forward([point.x, point.y]);
+        [point.x, point.y] = converter.forward([point.x!, point.y!]);
       }
 
+      // The polygon data is 2D and always on the XY plane
+      // We trnasform the polygon vertices to 4D hemogeneous coordinates
+      // in order to apply the affine tranformation tha brings the coordinates from CRS to pixel space
+      // Then we only take the XY component to contstruct the polygon mesh
       shape.push(
         multiply(affineTransform, [point.x!, point.y!, 0, 1])
           .subset(index([true, true, false, false]))
@@ -81,13 +85,13 @@ export function parsePolygon(
       ) {
         const point = entry.interiorRings[holeIndex][pointIndex];
         if (converter) {
-          [point.x, point.y] = converter.forward([point.x, point.y]);
+          [point.x, point.y] = converter.forward([point.x!, point.y!]);
         }
 
         hole.push(
-          multiply(affineTransform, [point.x, point.y, 0, 1])
+          multiply(affineTransform, [point.x!, point.y!, 0, 1])
             .subset(index([true, true, false, false]))
-            .toArray()
+            .toArray() as number[]
         );
       }
       data.push(hole);
