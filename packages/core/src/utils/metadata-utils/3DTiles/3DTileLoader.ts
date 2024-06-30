@@ -52,27 +52,39 @@ function getBoundingInfo(
   transformation?: Matrix
 ): BoundingInfo {
   if (boundingVolume.box) {
-    const center = Vector3.FromArray(boundingVolume.box.slice(0, 3));
-    const halfX = Vector3.FromArray(boundingVolume.box.slice(3, 6));
-    const halfY = Vector3.FromArray(boundingVolume.box.slice(6, 9));
-    const halfZ = Vector3.FromArray(boundingVolume.box.slice(9, 12));
-
-    // Construct all 8 corners of the bounding box
-    const box: [number, number, number, number][] = [
-      [...center.subtract(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
-      [...center.subtract(halfX).subtract(halfY).add(halfZ).asArray(), 1],
-      [...center.subtract(halfX).add(halfY).subtract(halfZ).asArray(), 1],
-      [...center.subtract(halfX).add(halfY).add(halfZ).asArray(), 1],
-      [...center.add(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
-      [...center.add(halfX).subtract(halfY).add(halfZ).asArray(), 1],
-      [...center.add(halfX).add(halfY).subtract(halfZ).asArray(), 1],
-      [...center.add(halfX).add(halfY).add(halfZ).asArray(), 1]
-    ];
-
-    return _getTransformBoundingInfo(box, converter, transformation);
+    return _getTransformBoundingInfo(
+      parseBoundingVolumeBox(boundingVolume.box),
+      converter,
+      transformation
+    );
   } else {
     return new BoundingInfo(Vector3.ZeroReadOnly, Vector3.ZeroReadOnly);
   }
+}
+
+/**
+ * Construct all 8 corners of the bounding box from the bounding volume description.
+ * @param box An array containing the center and half sides of the bounding box
+ * @see https://docs.ogc.org/cs/22-025r4/22-025r4.html
+ */
+function parseBoundingVolumeBox(
+  box: number[]
+): [number, number, number, number][] {
+  const center = Vector3.FromArray(box.slice(0, 3));
+  const halfX = Vector3.FromArray(box.slice(3, 6));
+  const halfY = Vector3.FromArray(box.slice(6, 9));
+  const halfZ = Vector3.FromArray(box.slice(9, 12));
+
+  return [
+    [...center.subtract(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
+    [...center.subtract(halfX).subtract(halfY).add(halfZ).asArray(), 1],
+    [...center.subtract(halfX).add(halfY).subtract(halfZ).asArray(), 1],
+    [...center.subtract(halfX).add(halfY).add(halfZ).asArray(), 1],
+    [...center.add(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
+    [...center.add(halfX).subtract(halfY).add(halfZ).asArray(), 1],
+    [...center.add(halfX).add(halfY).subtract(halfZ).asArray(), 1],
+    [...center.add(halfX).add(halfY).add(halfZ).asArray(), 1]
+  ];
 }
 
 function getErrorScaling(
