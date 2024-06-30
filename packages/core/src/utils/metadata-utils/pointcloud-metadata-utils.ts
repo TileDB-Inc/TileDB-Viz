@@ -36,7 +36,7 @@ export async function getPointCloudMetadata(
   });
 
   if (!options.pointGroupID) {
-    throw new Error('Point group ID is undefined');
+    throw new Error('options.pointGroupID is undefined');
   }
 
   let info: GroupInfo = await getQueryDataFromCache(

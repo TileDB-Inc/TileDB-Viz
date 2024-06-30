@@ -6,8 +6,13 @@ export type TDBNonEmptyDomain = {
   nonEmptyDomain: Record<string, number[]>;
 };
 
+export enum DatasetType {
+  BIOIMG = 'bioimg',
+  RASTER = 'raster'
+}
+
 export interface AssetMetadata {
-  dataset_type?: string;
+  dataset_type?: DatasetType;
 }
 
 export type ImageAssetMetadata = AssetMetadata & {
@@ -89,20 +94,37 @@ export type SceneOptions = {
 };
 
 export type GeometryDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
   uri: string;
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
   region: { dimension: string; min: number; max: number }[];
 };
 
 export type ImageDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
   uri: string;
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
   region: { dimension: string; min: number; max: number }[];
 };
 
 export type PointDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
   uri: string;
-  region: {
-    dimension: string;
-    min: number;
-    max: number;
-  }[];
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
+  region: { dimension: string; min: number; max: number }[];
 };

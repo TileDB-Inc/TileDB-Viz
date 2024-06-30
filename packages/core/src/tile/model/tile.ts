@@ -115,6 +115,9 @@ export class Tile<T, C extends TileContent = TileContent> {
     this.data = undefined;
   }
 
+  /**
+   * @see https://stackoverflow.com/questions/1104939/calculating-screen-space-error
+   */
   public screenSpaceError(camera: Camera): number {
     if (camera.mode === Camera.ORTHOGRAPHIC_CAMERA) {
       return (

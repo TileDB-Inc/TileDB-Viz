@@ -8,7 +8,8 @@ import {
   ImageDataContent,
   GeometryDataContent,
   TDBNonEmptyDomain,
-  ImageAssetMetadata
+  ImageAssetMetadata,
+  DatasetType
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
@@ -31,7 +32,7 @@ import {
 import { getQueryDataFromCache, writeToCache } from '../cache';
 import proj4 from 'proj4';
 import { MathArray, Matrix, matrix, multiply } from 'mathjs';
-import { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Tile } from '../../tile/model/tile';
 import { ImageContent } from '../../tile/model/image/imageContent';
 import { GeometryContent } from '../../tile/model/geometry/geometryContent';
@@ -506,27 +507,39 @@ export async function getGeometryMetadata(
     throw new Error('Geometry array ID is undefined');
   }
 
-  // const cachedMetadata = await getQueryDataFromCache(
-  //   options.geometryArrayID,
-  //   'metadata'
-  // );
-  // if (cachedMetadata) {
-  //   return cachedMetadata;
-  // }
+  let arraySchemaResponse: ArraySchema = await getQueryDataFromCache(
+    options.geometryArrayID,
+    'arraySchemaResponse'
+  );
+  let info = await getQueryDataFromCache(options.geometryArrayID, 'info');
+  let arrayMetadata = await getQueryDataFromCache(
+    options.geometryArrayID,
+    'arrayMetadata'
+  );
 
-  const [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
-    client.ArrayApi.getArray(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace,
+  if (!arraySchemaResponse || !info || !arrayMetadata) {
+    [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
+      client.ArrayApi.getArray(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        options.namespace,
+        options.geometryArrayID,
+        'application/json'
+      ).then(x => x.data),
+      client.info(options.namespace, options.geometryArrayID).then(x => x.data),
+      client.ArrayApi.getArrayMetaDataJson(
+        options.namespace,
+        options.geometryArrayID
+      ).then(x => x.data as any)
+    ]);
+
+    await writeToCache(
       options.geometryArrayID,
-      'application/json'
-    ).then(x => x.data),
-    client.info(options.namespace, options.geometryArrayID).then(x => x.data),
-    client.ArrayApi.getArrayMetaDataJson(
-      options.namespace,
-      options.geometryArrayID
-    ).then(x => x.data as any)
-  ]);
+      'arraySchemaResponse',
+      arraySchemaResponse
+    );
+    await writeToCache(options.geometryArrayID, 'info', info);
+    await writeToCache(options.geometryArrayID, 'arrayMetadata', arrayMetadata);
+  }
 
   const attributes = arraySchemaResponse.attributes.map((value, index) => {
     return {
@@ -660,19 +673,6 @@ export async function getGeometryMetadata(
     attributes,
     categories: categories
   } as GeometryMetadata;
-
-  await writeToCache(options.geometryArrayID, 'metadata', geometryMetadata);
-
-  // Construct `TileV2` tileset
-
-  // We need the coordinate system of the scene to transform the bounding boxes if necessary
-  // We need the affine transformation
-
-  // We can pass a scene options parameter with that data to all metadata loaders
-
-  // Tileset creation should happen after reading the cached values which should be the raw values that come from the array
-
-  // End
 
   return geometryMetadata;
 }
@@ -929,7 +929,7 @@ function getCRS(assetMetadata: AssetMetadata): string | undefined {
 
   if (
     (assetMetadata as RasterAssetMetadata)._gdal ||
-    assetMetadata.dataset_type?.toUpperCase() === 'RASTER'
+    assetMetadata.dataset_type?.toLowerCase() === DatasetType.RASTER
   ) {
     const xml = new DOMParser().parseFromString(
       (assetMetadata as RasterAssetMetadata)._gdal ?? '',
@@ -949,8 +949,8 @@ function getTransformationMatrix(
 ): Matrix | undefined {
   let pixelToCRS: Matrix | undefined;
 
-  switch (assetMetadata.dataset_type?.toUpperCase()) {
-    case 'BIOIMG':
+  switch (assetMetadata.dataset_type?.toLowerCase()) {
+    case DatasetType.BIOIMG:
       {
         const metadata = JSON.parse(
           (assetMetadata as BiomedicalAssetMetadata).metadata ?? ''
@@ -965,7 +965,7 @@ function getTransformationMatrix(
         ] as MathArray);
       }
       break;
-    case 'RASTER':
+    case DatasetType.RASTER:
     default:
       {
         const xml = new DOMParser().parseFromString(
