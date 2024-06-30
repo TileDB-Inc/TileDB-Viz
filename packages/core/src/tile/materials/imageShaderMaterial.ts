@@ -48,14 +48,15 @@ export function ImageShaderMaterialWebGPU(
     @fragment
     fn main(input : FragmentInputs) -> FragmentOutputs {
       var color : vec4<f32> = vec4f(0.0);
-      var coords = vec2<u32>(vec2<f32>(textureDimensions(texture_arr) - vec2<u32>(1)) * fragmentInputs.vTexCoord);
+      let textureSize: vec2<u32> = textureDimensions(texture_arr) - vec2<u32>(1);
+      var coords = clamp(vec2<u32>(vec2<f32>(textureSize) * fragmentInputs.vTexCoord), vec2<u32>(0u), textureSize);
       
       for (var i : i32 = 0; i < ${channelCount.toFixed(0)}; i++) {
-        if (tileOptions.channelMapping[i].r > ${channelCount.toFixed(0)}u) {
+        if (tileOptions.channelMapping[i].x > ${channelCount.toFixed(0)}u) {
           continue;
         }
 
-        let intensity : f32 = f32(textureLoad(texture_arr, coords, tileOptions.channelMapping[i].x, 0u).x);
+        let intensity: f32 = f32(textureLoad(texture_arr, coords, tileOptions.channelMapping[i].x, 0u).x);
 
         color += tileOptions.colors[i] * clamp((intensity - tileOptions.ranges[i].x) / (tileOptions.ranges[i].y - tileOptions.ranges[i].x + 0.01), 0.0, 1.0);
       }
@@ -77,6 +78,8 @@ export function ImageShaderMaterialWebGPU(
       shaderLanguage: ShaderLanguage.WGSL
     }
   );
+
+  material;
 
   material.backFaceCulling = false;
 

@@ -1,5 +1,5 @@
 import {
-  GeometryMessage,
+  GeometryPayload,
   GeometryResponse,
   GeometryType,
   TypedArray,
@@ -13,7 +13,6 @@ import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
 import { parsePolygon } from '../parsers';
 import {
-  MathArray,
   matrix,
   Matrix,
   min,
@@ -21,49 +20,36 @@ import {
   multiply,
   add,
   index,
-  inv
+  identity
 } from 'mathjs';
 import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 
 export async function geometryRequest(
-  id: string,
+  id: number,
   client: Client,
   tokenSource: CancelTokenSource,
-  request: GeometryMessage
+  payload: GeometryPayload
 ) {
-  const [x, y] = request.index;
-  const tileSize = request.tileSize;
-  const cacheTableID = `${request.arrayID}_${tileSize}`;
-  const result: GeometryResponse = {
-    index: request.index,
-    nonce: request.nonce,
+  const [x, y] = payload.index;
+  const result: Partial<GeometryResponse> = {
+    index: payload.index,
     canceled: false,
     type: GeometryType.POLYGON,
-    attributes: {}
+    attributes: {},
+    nonce: payload.nonce
   };
 
-  const geotransformCoefficients = request.geotransformCoefficients;
-  const affineMatrix = matrix([
-    [
-      geotransformCoefficients[1],
-      geotransformCoefficients[2],
-      geotransformCoefficients[0]
-    ],
-    [
-      geotransformCoefficients[4],
-      geotransformCoefficients[5],
-      geotransformCoefficients[3]
-    ],
-    [0, 0, 1]
-  ] as MathArray);
+  const CRStoPixel = payload.transformation
+    ? matrix(payload.transformation)
+    : (identity(4) as Matrix);
 
   const uniqueAttributes = new Set<string>(
-    request.features.flatMap(x => x.attributes.map(y => y.name))
+    payload.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
-  const cachedArrays = await loadCachedGeometry(cacheTableID, x, y, [
-    ...request.features.filter(x => x.attributes.length).map(x => x.name),
+  const cachedArrays = await loadCachedGeometry(payload.uri, x, y, [
+    ...payload.features.filter(x => x.attributes.length).map(x => x.name),
     'positions',
     'ids',
     'indices'
@@ -72,6 +58,12 @@ export async function geometryRequest(
   if (cachedArrays) {
     result.attributes = cachedArrays;
 
+    result.position = cachedArrays['positions'] as Float32Array;
+    result.indices = cachedArrays['indices'] as Int32Array;
+
+    delete cachedArrays.positions;
+    delete cachedArrays.indices;
+
     return {
       id: id,
       type: RequestType.GEOMETRY,
@@ -79,23 +71,21 @@ export async function geometryRequest(
     } as WorkerResponse;
   }
 
-  const ranges = calculateQueryRanges(
-    request.index,
-    tileSize,
-    affineMatrix,
-    request.pad,
-    request.imageCRS,
-    request.geometryCRS
-  );
-
   // Add additional attributes
-  uniqueAttributes.add(request.geometryAttribute.name);
-  uniqueAttributes.add(request.idAttribute.name);
-  if (request.heightAttribute) {
-    uniqueAttributes.add(request.heightAttribute.name);
+  uniqueAttributes.add(payload.geometryAttribute.name);
+
+  if (payload.idAttribute) {
+    uniqueAttributes.add(payload.idAttribute.name);
+  }
+  if (payload.heightAttribute) {
+    uniqueAttributes.add(payload.heightAttribute.name);
   }
 
-  const isBinary = request.geometryAttribute.type === Datatype.Blob;
+  const isBinary = payload.geometryAttribute.type === Datatype.Blob;
+  const ranges = [
+    [payload.region[0].min, payload.region[0].max],
+    [payload.region[1].min, payload.region[1].max]
+  ];
 
   const query = {
     layout: Layout.Unordered,
@@ -109,20 +99,23 @@ export async function geometryRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    request.namespace,
-    request.arrayID,
+    payload.namespace,
+    payload.uri,
     query
   );
 
-  const attributes = {
-    geometry: request.geometryAttribute,
-    height: request.heightAttribute,
-    id: request.idAttribute
-  };
+  const attributes: Record<string, Attribute> = {};
+  attributes.geometry = payload.geometryAttribute;
+  if (payload.heightAttribute) {
+    attributes.height = payload.heightAttribute;
+  }
+  if (payload.idAttribute) {
+    attributes.id = payload.idAttribute;
+  }
 
-  for (const feature of request.features) {
+  for (const feature of payload.features) {
     for (const attribute of feature.attributes) {
-      attributes[attribute.name] = request.additionalAttributes?.filter(
+      attributes[attribute.name] = payload.attributes.filter(
         x => x.name === attribute.name
       )[0];
     }
@@ -133,24 +126,25 @@ export async function geometryRequest(
     normals: [] as number[],
     indices: [] as number[],
     faceMapping: [] as bigint[],
-    vertexMap: new Map<bigint, number[]>()
+    vertexMap: new Map<bigint, number[]>(),
+    features: {}
   };
 
   const converter =
-    request.imageCRS && request.geometryCRS
-      ? proj4(request.geometryCRS, request.imageCRS)
+    payload.targetCRS && payload.sourceCRS
+      ? proj4(payload.sourceCRS, payload.targetCRS)
       : null;
 
   try {
     for await (const result of generator) {
-      switch (request.geometryAttribute.type) {
+      switch (payload.geometryAttribute.type) {
         case Datatype.Blob:
           loadBinaryGeometry(
             result,
             attributes,
-            request.features,
-            request.type,
-            inv(affineMatrix),
+            payload.features,
+            payload.type,
+            CRStoPixel,
             converter,
             geometryOutput
           );
@@ -159,20 +153,21 @@ export async function geometryRequest(
           loadStringGeometry(
             result,
             attributes,
-            request.features,
-            request.type,
-            inv(affineMatrix),
+            payload.features,
+            payload.type,
+            CRStoPixel,
             converter,
             geometryOutput
           );
           break;
         default:
           throw new Error(
-            `Unknown geometry attribute "${request.geometryAttribute.type}"`
+            `Unknown geometry attribute "${payload.geometryAttribute.type}"`
           );
       }
     }
   } catch (e) {
+    console.log(e);
     throw new Error('Request cancelled by the user');
   }
 
@@ -180,11 +175,13 @@ export async function geometryRequest(
   const rawIds = BigInt64Array.from(geometryOutput.faceMapping);
   const rawIndices = Int32Array.from(geometryOutput.indices);
 
-  result.attributes['positions'] = rawPositions;
-  result.attributes['ids'] = rawIds;
-  result.attributes['indices'] = rawIndices;
+  result.attributes = {};
+  result.ids = rawIds;
 
-  for (const feature of request.features) {
+  result.position = rawPositions;
+  result.indices = rawIndices;
+
+  for (const feature of payload.features) {
     switch (feature.type) {
       case FeatureType.CATEGORICAL:
         result.attributes[feature.name] = Int32Array.from(
@@ -201,7 +198,7 @@ export async function geometryRequest(
 
   await Promise.all(
     Object.entries(result.attributes).map(([name, array]) => {
-      return writeToCache(cacheTableID, `${name}_${x}_${y}`, array);
+      return writeToCache(payload.uri, `${name}_${x}_${y}`, array);
     })
   );
 

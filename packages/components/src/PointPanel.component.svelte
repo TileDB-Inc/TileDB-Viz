@@ -29,7 +29,6 @@
   };
   let globalState: {
     datasetID: string;
-    pointBudget: GUISliderPropertyState;
     quality: GUISliderPropertyState;
     pointShape: GUISelectPropertyState<PointShape>;
     pointSize: GUISliderPropertyState;
@@ -52,7 +51,6 @@
 
     globalState.push({
       datasetID: event.detail.props.id,
-      pointBudget: {property: payload.pointBudget, value: payload.pointBudget.default},
       quality: {property: payload.quality, value: payload.quality.default},
       pointShape: {property: payload.pointShape, value: payload.pointShape.default},
       pointSize: {property: payload.pointSize, value: payload.pointSize.default},
@@ -100,7 +98,6 @@
       No point cloud asset found
     {:else}
       <Select state={datasetPropertyState} dataset={''} callback={(index) => datasetPropertyState.value = index}/>
-      <Slider state={globalState[datasetPropertyState.value].pointBudget} dataset={currentDataset}/>
       <Slider state={globalState[datasetPropertyState.value].quality} dataset={currentDataset}/>
       <Select state={globalState[datasetPropertyState.value].pointShape} dataset={currentDataset}/>
       <Slider state={globalState[datasetPropertyState.value].pointSize} dataset={currentDataset}/>

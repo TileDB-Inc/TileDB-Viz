@@ -1,7 +1,8 @@
-import { Attribute, Domain } from '../../../types';
+import { Domain } from '../../../types';
 import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { getQueryDataFromCache } from '../../../utils/cache';
 import { TypedArray } from '../../types';
+import { Attribute } from '@tiledb-inc/viz-common';
 
 export function transformBufferToInt64(
   buffer: ArrayBuffer,
@@ -165,4 +166,23 @@ export function createRGB(
   }
 
   return output;
+}
+
+export function getWebPRanges(
+  range: [number, number],
+  channelCount: number,
+  channelRanges: number[]
+): number[][] {
+  const result: number[][] = [];
+
+  for (let x = range[0]; x < range[1]; ++x) {
+    for (let idx = 0; idx < channelRanges.length; idx += 2) {
+      result.push([
+        x * channelCount + channelRanges[idx],
+        x * channelCount + channelRanges[idx + 1]
+      ]);
+    }
+  }
+
+  return result;
 }

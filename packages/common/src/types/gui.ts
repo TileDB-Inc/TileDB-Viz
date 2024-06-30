@@ -68,6 +68,33 @@ export type GUISliderProperty = GUIProperty & {
   step: number;
 };
 
+export type GUIDualSliderProperty = GUIProperty & {
+  /**
+   * Minimum range value
+   */
+  min: number;
+
+  /**
+   * Maximum range value
+   */
+  max: number;
+
+  /**
+   * Default min range value
+   */
+  defaultMin: number;
+
+  /**
+   * Default max range value
+   */
+  defaultMax: number;
+
+  /**
+   * Default step value
+   */
+  step: number;
+};
+
 export type GUISelectProperty<T = number> = GUIProperty & {
   /**
    * Selectable options
@@ -104,6 +131,18 @@ export type GUICategoricalFeature = GUIFeature & {
 
 export type GUIVectorProperty = GUIProperty & {
   value: [number, number, number];
+};
+
+export type GUIChannelProperty = GUIDualSliderProperty & {
+  /**
+   * Render color of the channel.
+   */
+  color: string;
+
+  /**
+   * If true, the channel should be rendered.
+   */
+  visible: boolean;
 };
 
 export type GeometryPanelInitializationEvent = {
@@ -150,4 +189,11 @@ export type CameraPanelInitializationEvent = {
   pitch: GUISliderProperty;
   rotation: GUISliderProperty;
   zoom: GUISliderProperty;
+};
+
+export type ImagePanelInitializationEvent = {
+  id: string;
+  name: string;
+  attribute: GUISelectProperty;
+  channels: Record<string, GUIChannelProperty[]>;
 };

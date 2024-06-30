@@ -5,8 +5,8 @@ import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
+  PointCloudPayload,
   PointInfoMessage,
-  PointMessage,
   PointResponse,
   TypedArray,
   WorkerResponse
@@ -18,9 +18,9 @@ import {
   min,
   max,
   multiply,
-  inv,
   Matrix,
-  index
+  index,
+  identity
 } from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
 import {
@@ -32,29 +32,21 @@ import {
 import proj4 from 'proj4';
 
 export async function pointRequest(
-  id: string,
+  id: number,
   client: Client,
   tokenSource: CancelTokenSource,
-  request: PointMessage
+  request: PointCloudPayload
 ) {
-  const mortonIndex = request.index;
-  const cacheTableID = request.arrayID;
-  const result: PointResponse = {
+  const mortonIndex = request.index[0];
+  const result: Partial<PointResponse> = {
     index: request.index,
     nonce: request.nonce,
     canceled: false,
     attributes: {}
   };
-
-  const geotransformCoefficients = request.geotransformCoefficients;
-  const affineMatrix = matrix([
-    [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
-    [0, -geotransformCoefficients[5], 0, geotransformCoefficients[3]],
-    [0, 0, geotransformCoefficients[1], 0],
-    [0, 0, 0, 1]
-  ] as MathArray);
-
-  const affineInverted = inv(affineMatrix);
+  const CRStoPixel = request.transformation
+    ? matrix(request.transformation)
+    : (identity(4) as Matrix);
 
   const uniqueAttributes = new Set<string>(
     request.features.flatMap(x => x.attributes.map(y => y.name))
@@ -63,8 +55,8 @@ export async function pointRequest(
   request.domain.forEach(x => uniqueAttributes.add(x.name));
 
   const cachedArrays = await loadCachedGeometry(
-    cacheTableID,
-    `${mortonIndex}`,
+    request.uri,
+    mortonIndex.toString(),
     [
       ...request.features.filter(x => x.attributes.length).map(x => x.name),
       'position'
@@ -82,9 +74,9 @@ export async function pointRequest(
   }
 
   const ranges = [
-    [request.minPoint[0], request.maxPoint[0]],
-    [request.minPoint[1], request.maxPoint[1]],
-    [request.minPoint[2], request.maxPoint[2]]
+    [request.region[0].min, request.region[0].max],
+    [request.region[1].min, request.region[1].max],
+    [request.region[2].min, request.region[2].max]
   ];
 
   const query = {
@@ -98,7 +90,7 @@ export async function pointRequest(
 
   const generator = client.query.ReadQuery(
     request.namespace,
-    request.arrayID,
+    request.uri,
     query
     //arraySchema
   );
@@ -116,6 +108,7 @@ export async function pointRequest(
       }
     }
   } catch (e) {
+    console.log(e);
     throw new Error('Request cancelled by the user');
   }
 
@@ -140,10 +133,10 @@ export async function pointRequest(
   const positions = new Float32Array(3 * elementCount);
 
   const converter =
-    request.imageCRS &&
-    request.pointCRS &&
-    request.imageCRS !== request.pointCRS
-      ? proj4(request.pointCRS, request.imageCRS)
+    request.sourceCRS &&
+    request.targetCRS &&
+    request.sourceCRS !== request.targetCRS
+      ? proj4(request.sourceCRS, request.targetCRS)
       : undefined;
   for (let idx = 0; idx < elementCount; ++idx) {
     if (converter) {
@@ -157,15 +150,19 @@ export async function pointRequest(
 
     // Apply the inverted transform and swap Y-Z axes
     [positions[3 * idx], positions[3 * idx + 2], positions[3 * idx + 1]] =
-      multiply(affineInverted, [
+      multiply(CRStoPixel, [
         arrays['X'][idx],
         arrays['Y'][idx],
         arrays['Z'][idx],
         1
       ] as number[]).toArray() as number[];
+
+    // Invert Z component
+    positions[3 * idx + 2] = -positions[3 * idx + 2];
   }
 
-  result.attributes['position'] = positions;
+  result.position = positions;
+  result.attributes = {};
 
   for (const feature of request.features) {
     if (!feature.attributes.length) {
@@ -231,7 +228,7 @@ export async function pointRequest(
 
   await Promise.all(
     Object.entries(result.attributes).map(([name, array]) => {
-      return writeToCache(cacheTableID, `${name}_${mortonIndex}`, array);
+      return writeToCache(request.uri, `${name}_${mortonIndex}`, array);
     })
   );
 
@@ -243,7 +240,7 @@ export async function pointRequest(
 }
 
 export async function pointInfoRequest(
-  id: string,
+  id: number,
   client: Client,
   tokenSource: CancelTokenSource,
   request: PointInfoMessage

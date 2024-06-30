@@ -3,7 +3,7 @@
   "include": [
     "src",
     "src/custom.d.ts"
-  ],
+, "../core/src/tile/containers", "../core/src/tile/model/tileContent.ts"  ],
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",

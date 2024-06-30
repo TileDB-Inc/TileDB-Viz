@@ -1,51 +1,38 @@
-import { OperationResult, PointCloudOperation } from '@tiledb-inc/viz-common';
+// import { OperationResult, PointCloudOperation } from '@tiledb-inc/viz-common';
 import {
   DataRequest,
-  InitializeMessage,
+  InitializationPayload,
   RequestType,
-  WorkerResponse,
-  ImageResponse,
-  ResponseCallback,
-  GeometryResponse,
-  InfoResponse,
-  PointResponse
+  WorkerResponse
 } from '../types';
 
 export interface WorkerPoolOptions {
   token?: string;
   basePath?: string;
   poolSize?: number;
-  callbacks?: ResponseCallback;
 }
 
 export class WorkerPool {
-  public callbacks: ResponseCallback;
+  public callbacks: Map<string, (value: any) => void>;
 
   private poolSize: number;
   private workers: Worker[] = [];
-  private operationsQueue: PointCloudOperation[] = [];
+  // private operationsQueue: PointCloudOperation[] = [];
   private status: boolean[] = [];
-  private taskMap: Map<string, number>;
+  private taskMap: Map<number, number>;
   private messageQueue: DataRequest[] = [];
   private initilizeMessage: DataRequest;
 
   constructor(options?: WorkerPoolOptions) {
     this.poolSize = options?.poolSize ?? window.navigator.hardwareConcurrency;
-    this.callbacks = options?.callbacks ?? {
-      image: [],
-      geometry: [],
-      point: [],
-      pointOperation: [],
-      info: [],
-      cancel: []
-    };
-    this.taskMap = new Map<string, number>();
+    this.taskMap = new Map();
+    this.callbacks = new Map();
     this.initilizeMessage = {
       type: RequestType.INITIALIZE,
-      request: {
+      payload: {
         token: options?.token ?? '',
         basePath: options?.basePath
-      } as InitializeMessage
+      } as InitializationPayload
     } as DataRequest;
 
     for (let index = 0; index < this.poolSize - 1; index++) {
@@ -60,17 +47,17 @@ export class WorkerPool {
       this.status.push(false);
     }
 
-    const worker = new Worker(
-      new URL('tiledb.worker.pointcloud', import.meta.url),
-      {
-        type: 'module',
-        name: 'Point Cloud Operations Worker'
-      }
-    );
+    // const worker = new Worker(
+    //   new URL('tiledb.worker.pointcloud', import.meta.url),
+    //   {
+    //     type: 'module',
+    //     name: 'Point Cloud Operations Worker'
+    //   }
+    // );
 
-    worker.onmessage = this.operationOnMessage.bind(this);
-    this.workers.push(worker);
-    this.status.push(false);
+    // worker.onmessage = this.operationOnMessage.bind(this);
+    // this.workers.push(worker);
+    // this.status.push(false);
   }
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {
@@ -82,42 +69,18 @@ export class WorkerPool {
       return;
     }
 
-    switch (response.type) {
-      case RequestType.IMAGE:
-        for (const callback of this.callbacks.image) {
-          callback(response.id, response.response as ImageResponse);
-        }
-        break;
-      case RequestType.GEOMETRY:
-        for (const callback of this.callbacks.geometry) {
-          callback(response.id, response.response as GeometryResponse);
-        }
-        break;
-      case RequestType.GEOMETRY_INFO:
-      case RequestType.POINT_INFO:
-        for (const callback of this.callbacks.info) {
-          callback(response.id, response.response as InfoResponse);
-        }
-        break;
-      case RequestType.POINT:
-        for (const callback of this.callbacks.point) {
-          callback(response.id, response.response as PointResponse);
-        }
-        break;
-      case RequestType.CANCEL:
-        for (const callback of this.callbacks.cancel) {
-          callback(response.id, response.response);
-        }
-        break;
-      default:
-        console.warn(`Unknown response type ${response.type}`);
+    if (response.type !== RequestType.CANCEL) {
+      this.callbacks.get(`${response.id}_${response.response.nonce}`)?.(
+        response.response
+      );
     }
+    this.callbacks.delete(`${response.id}_${response.response.nonce}`);
 
-    const request = this.messageQueue.pop();
+    const request = this.messageQueue.shift();
 
     if (request) {
       this.workers[workerIndex].postMessage(request);
-      this.taskMap.set(request?.id, workerIndex);
+      this.taskMap.set(request.id, workerIndex);
     } else {
       this.status[workerIndex] = false;
     }
@@ -128,6 +91,8 @@ export class WorkerPool {
     const index = this.messageQueue.findIndex(
       (item: DataRequest) => item.id === request.id
     );
+
+    this.callbacks.delete(`${request.id}_${request.payload.nonce}`);
 
     if (workerIndex !== undefined) {
       this.workers[workerIndex].postMessage({
@@ -195,27 +160,27 @@ export class WorkerPool {
     return this.numActive() === this.workers.length;
   }
 
-  public postOperation(operation: PointCloudOperation) {
-    if (!this.status[this.poolSize - 1]) {
-      this.workers[this.poolSize - 1].postMessage(operation);
-    } else {
-      this.operationsQueue.push(operation);
-    }
-  }
+  // public postOperation(operation: PointCloudOperation) {
+  //   if (!this.status[this.poolSize - 1]) {
+  //     this.workers[this.poolSize - 1].postMessage(operation);
+  //   } else {
+  //     this.operationsQueue.push(operation);
+  //   }
+  // }
 
-  private async operationOnMessage(event: MessageEvent<OperationResult>) {
-    const response = event.data;
+  // private async operationOnMessage(event: MessageEvent<OperationResult>) {
+  //   const response = event.data;
 
-    for (const callback of this.callbacks.pointOperation) {
-      callback(response.id, response);
-    }
+  //   for (const callback of this.callbacks.pointOperation) {
+  //     callback(response.id, response);
+  //   }
 
-    const request = this.operationsQueue.pop();
+  //   const request = this.operationsQueue.pop();
 
-    if (request) {
-      this.workers[this.poolSize - 1].postMessage(request);
-    } else {
-      this.status[this.poolSize - 1] = false;
-    }
-  }
+  //   if (request) {
+  //     this.workers[this.poolSize - 1].postMessage(request);
+  //   } else {
+  //     this.status[this.poolSize - 1] = false;
+  //   }
+  // }
 }

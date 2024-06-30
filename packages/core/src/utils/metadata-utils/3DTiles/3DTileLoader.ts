@@ -1,23 +1,21 @@
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { TilesMetadata } from '@tiledb-inc/viz-common';
 import {
   OGC3DTilesBoundingVolume,
   OGC3DTilesTile,
   OGC3DTilesTileset
 } from '@tiledb-inc/viz-common/src/types/3DTiles/index';
-import { RefineStrategy } from '../../../types';
-import { TDB3DTile } from '../../../tile/model/3d/3DTile';
+import { RefineStrategy, SceneOptions } from '../../../types';
 import proj4 from 'proj4';
-import { Matrix, inv, matrix, multiply } from 'mathjs';
+import { Matrix } from 'mathjs';
+import { TDB3DTileMetadata } from '../../../tile';
+import { TDB3DTileContent } from '../../../tile/model/3d/3DTileContent';
+import { Tile } from '../../../tile/model/tile';
+import { _getTransformBoundingInfo } from '../utils';
 
 export async function load3DTileset(
   uri: string,
-  options?: {
-    sourceCRS?: string;
-    targetCRS?: string;
-    transformation?: number[];
-  }
-): Promise<TilesMetadata<TDB3DTile>> {
+  sceneOptions: SceneOptions
+): Promise<TDB3DTileMetadata> {
   const tileset = (await (await fetch(uri)).json()) as OGC3DTilesTileset;
 
   // Validate tileset
@@ -27,14 +25,22 @@ export async function load3DTileset(
     );
   }
 
-  const metadata: TilesMetadata<TDB3DTile> = {
+  // TODO: Determine tileset CRS
+  const sourceCRS = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs';
+
+  const converter: proj4.Converter | undefined = sceneOptions.crs
+    ? proj4(sourceCRS, sceneOptions.crs)
+    : undefined;
+
+  const metadata: TDB3DTileMetadata = {
     name: uri.split('//')[1],
-    root: extractBVH(tileset, options)[0],
+    root: extractBVH(tileset, {
+      converter: converter,
+      transformation: sceneOptions.transformation
+    }),
     baseUrl: uri.substring(0, uri.lastIndexOf('/') + 1),
     id: crypto.randomUUID(),
-    features: [],
-    categories: new Map(),
-    attributes: []
+    crs: sourceCRS
   };
 
   return metadata;
@@ -46,57 +52,39 @@ function getBoundingInfo(
   transformation?: Matrix
 ): BoundingInfo {
   if (boundingVolume.box) {
-    const center = Vector3.FromArray(boundingVolume.box.slice(0, 3));
-    const halfX = Vector3.FromArray(boundingVolume.box.slice(3, 6));
-    const halfY = Vector3.FromArray(boundingVolume.box.slice(6, 9));
-    const halfZ = Vector3.FromArray(boundingVolume.box.slice(9, 12));
-
-    // Construct all 8 corners of the bounding box
-    const corners = [
-      center
-        .subtract(halfX)
-        .subtract(halfY)
-        .subtract(halfZ)
-        .asArray() as number[],
-      center.subtract(halfX).subtract(halfY).add(halfZ).asArray() as number[],
-      center.subtract(halfX).add(halfY).subtract(halfZ).asArray() as number[],
-      center.subtract(halfX).add(halfY).add(halfZ).asArray() as number[],
-      center.add(halfX).subtract(halfY).subtract(halfZ).asArray() as number[],
-      center.add(halfX).subtract(halfY).add(halfZ).asArray() as number[],
-      center.add(halfX).add(halfY).subtract(halfZ).asArray() as number[],
-      center.add(halfX).add(halfY).add(halfZ).asArray() as number[]
-    ];
-
-    if (converter) {
-      for (const [idx, corner] of corners.entries()) {
-        corners[idx] = [...converter.forward(corner), 1];
-      }
-    }
-
-    if (transformation) {
-      for (const [idx, corner] of corners.entries()) {
-        corners[idx] = multiply(transformation, corner).toArray() as number[];
-      }
-    }
-
-    const minPoint = [
-      Math.min(...corners.map(x => x[0])),
-      Math.min(...corners.map(x => x[2])),
-      Math.min(...corners.map(x => -x[1]))
-    ];
-    const maxPoint = [
-      Math.max(...corners.map(x => x[0])),
-      Math.max(...corners.map(x => x[2])),
-      Math.max(...corners.map(x => -x[1]))
-    ];
-
-    return new BoundingInfo(
-      Vector3.FromArray(minPoint.slice(0, 3)),
-      Vector3.FromArray(maxPoint.slice(0, 3))
+    return _getTransformBoundingInfo(
+      parseBoundingVolumeBox(boundingVolume.box),
+      converter,
+      transformation
     );
   } else {
     return new BoundingInfo(Vector3.ZeroReadOnly, Vector3.ZeroReadOnly);
   }
+}
+
+/**
+ * Construct all 8 corners of the bounding box from the bounding volume description.
+ * @param box An array containing the center and half sides of the bounding box
+ * @see https://docs.ogc.org/cs/22-025r4/22-025r4.html
+ */
+function parseBoundingVolumeBox(
+  box: number[]
+): [number, number, number, number][] {
+  const center = Vector3.FromArray(box.slice(0, 3));
+  const halfX = Vector3.FromArray(box.slice(3, 6));
+  const halfY = Vector3.FromArray(box.slice(6, 9));
+  const halfZ = Vector3.FromArray(box.slice(9, 12));
+
+  return [
+    [...center.subtract(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
+    [...center.subtract(halfX).subtract(halfY).add(halfZ).asArray(), 1],
+    [...center.subtract(halfX).add(halfY).subtract(halfZ).asArray(), 1],
+    [...center.subtract(halfX).add(halfY).add(halfZ).asArray(), 1],
+    [...center.add(halfX).subtract(halfY).subtract(halfZ).asArray(), 1],
+    [...center.add(halfX).subtract(halfY).add(halfZ).asArray(), 1],
+    [...center.add(halfX).add(halfY).subtract(halfZ).asArray(), 1],
+    [...center.add(halfX).add(halfY).add(halfZ).asArray(), 1]
+  ];
 }
 
 function getErrorScaling(
@@ -120,45 +108,29 @@ function getErrorScaling(
 
 export function extractBVH(
   tileset: OGC3DTilesTileset,
-  options?: {
-    sourceCRS?: string;
-    targetCRS?: string;
-    transformation?: number[];
+  options: {
+    converter?: proj4.Converter;
+    transformation?: Matrix;
   }
-): TDB3DTile[] {
-  const pendingNodes: Array<{ parent?: TDB3DTile; data: OGC3DTilesTile }> = [
-    { data: tileset.root }
-  ];
-  const tiles: TDB3DTile[] = [];
-
-  const converter: proj4.Converter | undefined =
-    options?.sourceCRS && options.targetCRS
-      ? proj4(options.sourceCRS, options.targetCRS)
-      : undefined;
-
-  const transform: Matrix | undefined = options?.transformation
-    ? inv(
-        matrix([
-          [options.transformation[1], 0, 0, options.transformation[0]],
-          [0, options.transformation[5], 0, options.transformation[3]],
-          [0, 0, options.transformation[1], 0],
-          [0, 0, 0, 1]
-        ])
-      )
-    : undefined;
+): Tile<string, TDB3DTileContent> {
+  const pendingNodes: Array<{
+    parent?: Tile<string, TDB3DTileContent>;
+    data: OGC3DTilesTile;
+  }> = [{ data: tileset.root }];
+  const tiles: Tile<string, TDB3DTileContent>[] = [];
 
   while (pendingNodes.length) {
     const { parent, data } = pendingNodes.pop()!;
 
-    const tile = new TDB3DTile();
+    const tile = new Tile<string, TDB3DTileContent>();
 
-    tile.contents = data.content
+    tile.content = data.content
       ? [data.content.uri]
       : (data.contents ?? []).map(x => x.uri);
     tile.boundingInfo = getBoundingInfo(
       data.boundingVolume,
-      converter,
-      transform
+      options.converter,
+      options.transformation
     );
     tile.refineStrategy = RefineStrategy[data.refine ?? 'ADD'];
     tile.geometricError =
@@ -174,5 +146,5 @@ export function extractBVH(
     }
   }
 
-  return tiles;
+  return tiles[0];
 }
