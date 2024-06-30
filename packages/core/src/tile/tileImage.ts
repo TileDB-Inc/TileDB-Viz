@@ -412,6 +412,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private fetchTiles() {
     const minimapCamera = this.cameraManager.getMinimapCamera();
 
+    this.frameDetails.zoom = this.cameraManager.getZoom();
+
     for (const entry of this.assetManagers) {
       entry.manager.loadTiles(
         minimapCamera && entry.minimap
