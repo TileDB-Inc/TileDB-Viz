@@ -216,7 +216,7 @@ export class PointManager extends Manager<
         return;
     }
 
-    for (const tile of this.visibleTiles.values()) {
+    for (const tile of this.tiles.values()) {
       tile.data?.update(updateOptions);
     }
   }

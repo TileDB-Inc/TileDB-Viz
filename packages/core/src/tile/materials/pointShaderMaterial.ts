@@ -40,6 +40,7 @@ export function PointCloudMaterialWebGPU(
 
   attribute position: vec3<f32>;
   attribute loc: vec3<f32>;
+  attribute state: u32;
   ${attributeName ? `attribute ${attributeName}: ${attributeType};` : ''}
 
   struct FrameOptions {
@@ -79,6 +80,8 @@ export function PointCloudMaterialWebGPU(
         ? coloring
         : 'vertexOutputs.vColor = vec4<f32>(pointOptions.color.rgb, pointOptions.pointOpacity);'
     }
+
+    vertexOutputs.vColor = mix(vertexOutputs.vColor, selectionColor, f32(vertexInputs.state));
   }
 `;
 

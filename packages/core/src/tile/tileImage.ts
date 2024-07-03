@@ -45,6 +45,7 @@ import {
 } from '../utils/cache';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
+import { PickingTool } from './utils/picking-tool';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -63,6 +64,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private frameDetails: FrameDetails;
   private sceneOptions: SceneOptions;
   private groupAssets: AssetEntry[];
+  private pickingTool?: PickingTool;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -297,7 +299,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: true,
           minimap: false
         });
 
@@ -344,6 +346,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)
+    );
+
+    this.pickingTool = new PickingTool(this.scene);
+    this.pickingTool.managers.push(
+      ...this.assetManagers.filter(x => x.pickable).map(x => x.manager)
     );
 
     this.updateEngineInfo();

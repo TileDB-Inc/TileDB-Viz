@@ -9,9 +9,8 @@ import {
   VertexData,
   EventState,
   VertexBuffer,
-  MeshBuilder,
-  Vector3,
-  ArcRotateCamera
+  Camera,
+  Matrix
 } from '@babylonjs/core';
 import {
   ScreenSpaceLineMaterial,
@@ -25,6 +24,9 @@ import {
   GUIEvent
 } from '@tiledb-inc/viz-components';
 import { PickingMode } from '@tiledb-inc/viz-common';
+import { Manager } from '../model/manager';
+import { Tile } from '../model/tile';
+import { TileContent } from '../model/tileContent';
 
 export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
   // calculate world space bbox to use for geometry query
@@ -72,7 +74,7 @@ export class PickingTool {
   private mode: PickingMode;
   private scene: Scene;
   private utilityLayer: UtilityLayerRenderer;
-  private camera: ArcRotateCamera;
+  private camera: Camera;
 
   private selectionBbox: number[];
   private selectionBuffer: number[];
@@ -87,6 +89,7 @@ export class PickingTool {
   private selectedTiles: Set<string>;
 
   private active: boolean;
+  public managers: Manager<Tile<TileContent>>[] = [];
 
   constructor(scene: Scene) {
     this.camera = getCamera(scene, 'Main')!;
@@ -159,30 +162,53 @@ export class PickingTool {
   private singlePicker(pointerInfo: PointerInfo, state: EventState): void {
     switch (pointerInfo.type) {
       case PointerEventTypes.POINTERTAP: {
-        const [x, y] = [
-          pointerInfo.event.offsetX,
-          this.scene.getEngine().getRenderHeight() - pointerInfo.event.offsetY
-        ];
-
-        this.selectionBbox = [
-          Number.MAX_VALUE,
-          Number.MAX_VALUE,
-          -Number.MAX_VALUE,
-          -Number.MAX_VALUE
-        ];
-
-        this.selectionBbox[0] = Math.min(this.selectionBbox[0], Math.round(x));
-        this.selectionBbox[1] = Math.min(this.selectionBbox[1], Math.round(y));
-        this.selectionBbox[2] = Math.max(this.selectionBbox[2], Math.round(x));
-        this.selectionBbox[3] = Math.max(this.selectionBbox[3], Math.round(y));
-
-        const tile = pointerInfo.pickInfo?.pickedMesh?.name
-          .split(',')
-          .map(x => Number.parseInt(x));
-
-        this.pickCallbacks.forEach(callback =>
-          callback(this.selectionBbox, { tiles: tile ? [tile] : undefined })
+        const pickingRay = this.scene.createPickingRay(
+          this.scene.pointerX,
+          this.scene.pointerY,
+          Matrix.Identity(),
+          this.camera
         );
+
+        const tiles = [];
+
+        // Find intersecting tiles
+        for (const manager of this.managers) {
+          for (const tile of manager.tiles.values()) {
+            if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
+              tiles.push(tile);
+
+              console.log(tile.id);
+
+              if (tile.data?.intersector) {
+                tile.data.intersector.intersect(pickingRay);
+              } else {
+                console.log(
+                  pickingRay.intersectsMeshes(tile.data?.meshes ?? [])
+                );
+              }
+            }
+          }
+        }
+
+        // this.selectionBbox = [
+        //   Number.MAX_VALUE,
+        //   Number.MAX_VALUE,
+        //   -Number.MAX_VALUE,
+        //   -Number.MAX_VALUE
+        // ];
+
+        // this.selectionBbox[0] = Math.min(this.selectionBbox[0], Math.round(x));
+        // this.selectionBbox[1] = Math.min(this.selectionBbox[1], Math.round(y));
+        // this.selectionBbox[2] = Math.max(this.selectionBbox[2], Math.round(x));
+        // this.selectionBbox[3] = Math.max(this.selectionBbox[3], Math.round(y));
+
+        // const tile = pointerInfo.pickInfo?.pickedMesh?.name
+        //   .split(',')
+        //   .map(x => Number.parseInt(x));
+
+        // this.pickCallbacks.forEach(callback =>
+        //   callback(this.selectionBbox, { tiles: tile ? [tile] : undefined })
+        // );
 
         break;
       }
@@ -218,62 +244,65 @@ export class PickingTool {
           break;
         }
 
-        const shape = [];
-        const zoom =
-          this.scene.getEngine().getRenderWidth() /
-          ((this.camera.orthoRight ?? 1) - (this.camera.orthoLeft ?? 0));
-        const midX = (this.selectionBbox[2] + this.selectionBbox[0]) / 2;
-        const midY = (this.selectionBbox[3] + this.selectionBbox[1]) / 2;
+        const vertexCount = this.selectionBuffer.length / 2;
 
-        const minX = this.camera.target.x + (this.camera.orthoLeft ?? 1);
-        const minZ = this.camera.target.z + (this.camera.orthoBottom ?? 1);
+        // 3D shape extrusion
+        // We need 3 number per vertex and we will double the vertices το create the other side
+        const position = new Float32Array(6 * vertexCount);
+        const indices = new Int32Array(6 * vertexCount);
 
-        for (let i = 0; i < this.selectionBuffer.length; i += 2) {
-          const x = (this.selectionBuffer[i] - midX) / zoom;
-          const y = (this.selectionBuffer[i + 1] - midY) / zoom;
+        for (let idx = 0; idx < vertexCount; ++idx) {
+          const ray = this.scene.createPickingRay(
+            this.selectionBuffer[2 * idx],
+            this.scene.getEngine().getRenderHeight() -
+              this.selectionBuffer[2 * idx + 1],
+            Matrix.Identity(),
+            this.camera
+          );
 
-          shape.push(new Vector3(-y, -x, 0));
+          position[3 * idx] = ray.origin.x;
+          position[3 * idx + 1] = ray.origin.y;
+          position[3 * idx + 2] = ray.origin.z;
+
+          ray.origin.addInPlace(
+            ray.direction.multiplyByFloats(5000, 5000, 5000)
+          );
+
+          position[3 * idx + 3 * vertexCount] = ray.origin.x;
+          position[3 * idx + 1 + 3 * vertexCount] = ray.origin.y;
+          position[3 * idx + 2 + 3 * vertexCount] = ray.origin.z;
+
+          // Face A
+          indices[6 * idx] = idx;
+          indices[6 * idx + 1] = idx + vertexCount;
+          indices[6 * idx + 2] = (idx + 1) % vertexCount;
+
+          // Face B
+          indices[6 * idx + 3] = (idx + 1) % vertexCount;
+          indices[6 * idx + 4] = idx + vertexCount;
+          indices[6 * idx + 5] = ((idx + 1) % vertexCount) + vertexCount;
         }
 
-        const offset = new Vector3(0, 3000, -10);
+        const mesh = new Mesh('Selection mesh', this.scene);
+        const vertexData = new VertexData();
+        vertexData.positions = position;
+        vertexData.indices = indices;
 
-        const start = new Vector3(minX + midX / zoom, 0, minZ + midY / zoom);
-        const end = new Vector3(
-          minX + midX / zoom,
-          offset.y,
-          minZ + midY / zoom
-        );
-
-        start.addInPlace(
-          start.subtract(end).normalize().multiplyByFloats(1, 1000, 1)
-        );
-
-        const mesh = MeshBuilder.ExtrudeShape('Selection mesh', {
-          shape: shape,
-          path: [start, end],
-          sideOrientation: Mesh.DOUBLESIDE,
-          closeShape: true
-        });
-
-        mesh.setPivotPoint(this.camera.target);
-        mesh.addRotation(-this.camera.beta, 0, 0);
-        mesh.bakeCurrentTransformIntoVertices();
-        mesh.addRotation(0, -(this.camera.alpha + Math.PI * 0.5), 0);
-        mesh.bakeCurrentTransformIntoVertices();
+        vertexData.applyToMesh(mesh);
         mesh.visibility = 0;
 
-        this.pickCallbacks.forEach(callback =>
-          callback(this.selectionBbox, {
-            path: this.selectionBuffer,
-            enclosureMeshPositions: mesh.getVerticesData(
-              VertexBuffer.PositionKind,
-              true,
-              true
-            ) as Float32Array,
-            enclosureMeshIndices: mesh.getIndices(true, true) as Int32Array
-          })
-        );
-        this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
+        // this.pickCallbacks.forEach(callback =>
+        //   callback(this.selectionBbox, {
+        //     path: this.selectionBuffer,
+        //     enclosureMeshPositions: mesh.getVerticesData(
+        //       VertexBuffer.PositionKind,
+        //       true,
+        //       true
+        //     ) as Float32Array,
+        //     enclosureMeshIndices: mesh.getIndices(true, true) as Int32Array
+        //   })
+        // );
+        // this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         break;
       }

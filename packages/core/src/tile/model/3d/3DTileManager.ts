@@ -126,7 +126,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     switch (target[1]) {
       case 'opacity':
         this.visibility = event.detail.props.value ?? 1;
-        for (const tile of this.visibleTiles.values()) {
+        for (const tile of this.tiles.values()) {
           tile.data?.update({ opacity: this.visibility });
         }
         break;
