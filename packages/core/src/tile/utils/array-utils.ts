@@ -33,25 +33,16 @@ export class Axes {
 export function transpose(
   array: TypedArray,
   axes: Axes,
-  shape: Array<number>,
-  downsample: Array<number>
+  shape: Array<number>
 ): TypedArray {
-  if (
-    axes.baseAxes.toString() === axes.targetAxes.toString() &&
-    Math.max(...downsample) === 1
-  ) {
+  if (axes.baseAxes.toString() === axes.targetAxes.toString()) {
     return array;
   }
 
   const transposedShape = axes.reshape(shape);
-  const transposedDownsample = axes.reshape(downsample);
 
   let transposedSize = 1;
   for (let index = 0; index < transposedShape.length; ++index) {
-    transposedShape[index] = ~~(
-      transposedShape[index] / transposedDownsample[index]
-    );
-
     transposedSize *= transposedShape[index];
   }
 
@@ -74,7 +65,6 @@ export function transpose(
   }
 
   let transposedPosition = 0;
-  const averagingFactor = downsample.reduce((a: number, b: number) => a * b, 1);
   const indices = new Array(axes.baseAxes.length);
 
   for (let position = 0; position < array.length; ++position) {
@@ -82,11 +72,10 @@ export function transpose(
     for (let j = 0; j < stride.length - 1; ++j) {
       indices[j] = ~~((position % stride[j]) / stride[j + 1]);
       transposedPosition +=
-        ~~(indices[j] / transposedDownsample[axes.permutationMatrix[j]]) *
-        transposedStride[axes.permutationMatrix[j]];
+        indices[j] * transposedStride[axes.permutationMatrix[j]];
     }
 
-    result[transposedPosition] += array[position] / averagingFactor;
+    result[transposedPosition] = array[position];
   }
 
   return result;

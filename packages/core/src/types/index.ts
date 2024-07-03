@@ -1,9 +1,23 @@
-import { Camera, Frustum } from '@babylonjs/core';
-import { Tile, PriorityQueue } from '@tiledb-inc/viz-common';
+import { BoundingInfo } from '@babylonjs/core';
+import { Matrix } from 'mathjs';
+
+export type TDBNonEmptyDomain = {
+  isEmpty: boolean;
+  nonEmptyDomain: Record<string, number[]>;
+};
+
+export enum DatasetType {
+  BIOIMG = 'bioimg',
+  RASTER = 'raster'
+}
 
 export interface AssetMetadata {
-  dataset_type: string;
+  dataset_type?: DatasetType;
 }
+
+export type ImageAssetMetadata = AssetMetadata & {
+  metadata: string;
+};
 
 export interface AssetEntry {
   namespace: string;
@@ -44,10 +58,10 @@ export enum RefineStrategy {
   REPLACE = 2
 }
 
-export enum TillingScheme {
+export enum TilingScheme {
   NONE = 0,
-  QUADTREE = 1,
-  OCTREE = 2
+  QUADTREE = 2,
+  OCTREE = 3
 }
 
 export enum TileState {
@@ -55,67 +69,62 @@ export enum TileState {
   VISIBLE = 2
 }
 
-export class Tileset<T extends Tile<T>> {
-  public root: T;
-  public state: Map<number, TileState>;
-
-  private queue: PriorityQueue<T>;
-
-  constructor(root: T) {
-    this.root = root;
-    this.state = new Map();
-    this.queue = new PriorityQueue(400);
-  }
-
-  public getTiles(camera: Camera, threshold: number): T[] {
-    const planes = Frustum.GetPlanes(camera.getTransformationMatrix());
-
-    this.queue.reset();
-    this.queue.insert(this.root.screenSpaceError(camera), this.root);
-
-    const result: T[] = [];
-
-    while (!this.queue.isEmpty()) {
-      const { score: error, data: tile } = this.queue.extractMax();
-      if (!tile) {
-        break;
-      }
-
-      // Determine visibility
-      if (!tile.boundingInfo.isInFrustum(planes)) {
-        continue;
-      }
-
-      // If error below threshold skip loading child nodes
-      if (error < threshold) {
-        // If tile is already loading skip
-        if (this.state.get(tile.id) === TileState.LOADING) {
-          continue;
-        }
-
-        result.push(tile);
-      } else {
-        // If refine stategy is `ADD` add current node
-        if (tile.refineStrategy === RefineStrategy.ADD) {
-          // If tile is already loading skip
-          if (this.state.get(tile.id) === TileState.LOADING) {
-            continue;
-          }
-
-          result.push(tile);
-        }
-
-        for (const child of tile.children) {
-          this.queue.insert(child.screenSpaceError(camera), child);
-        }
-      }
-    }
-
-    return result;
-  }
-}
-
 export type FrameDetails = {
   zoom: number;
   level: number;
+};
+
+export type SceneOptions = {
+  /**
+   * Global coordinate system of the scene. It will be inherited from the
+   * image layer if it exists.
+   */
+  crs?: string;
+
+  /**
+   * Global trnasformation from coordinate system to pixel space. It will be inherited from the
+   * image layer if it exists.
+   */
+  transformation?: Matrix;
+
+  /**
+   * The scene's bounding volume to be used for initializing cameras
+   */
+  extents: BoundingInfo;
+};
+
+export type GeometryDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
+  uri: string;
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
+  region: { dimension: string; min: number; max: number }[];
+};
+
+export type ImageDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
+  uri: string;
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
+  region: { dimension: string; min: number; max: number }[];
+};
+
+export type PointDataContent = {
+  /**
+   * The TileDB array uri containing the data
+   */
+  uri: string;
+
+  /**
+   * An array of ranges to slice the array dimensions. Dimension should match the dimension name of the array.
+   */
+  region: { dimension: string; min: number; max: number }[];
 };

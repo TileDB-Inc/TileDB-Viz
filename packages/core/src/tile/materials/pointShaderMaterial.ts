@@ -26,8 +26,9 @@ export function PointCloudMaterialWebGPU(
     case FeatureType.CATEGORICAL:
       attributeName = 'group';
       attributeType = 'i32';
-      coloring =
-        'vertexOutputs.vColor = mix(vec4<f32>(pointOptions.colorScheme[vertexInputs.group].rgb, pointOptions.pointOpacity), vec4<f32>(0), f32(vertexInputs.group > 31));';
+      coloring = `
+        let category: i32 = i32(pointOptions.groupMap[vertexInputs.group / 4][vertexInputs.group % 4]);
+        vertexOutputs.vColor = mix(vec4<f32>(pointOptions.colorScheme[category].rgb, pointOptions.pointOpacity), vec4<f32>(0), f32(category > 31));`;
       break;
   }
 
@@ -39,9 +40,13 @@ export function PointCloudMaterialWebGPU(
 
   attribute position: vec3<f32>;
   attribute loc: vec3<f32>;
-  attribute state: f32;
-
   ${attributeName ? `attribute ${attributeName}: ${attributeType};` : ''}
+
+  struct FrameOptions {
+    zoom: f32
+  };
+
+  var<uniform> frameOptions : FrameOptions;
 
   const selectionColor: vec4<f32> = vec4<f32>(0.0, 1.0, 0.0, 1.0);
   const pickColor: vec4<f32> = vec4<f32>(1.0, 0.0, 0.0, 1.0);
@@ -50,7 +55,8 @@ export function PointCloudMaterialWebGPU(
     pointSize: f32,
     color: vec4<f32>,
     colorScheme: array<vec4<f32>, 32>,
-    pointOpacity: f32
+    pointOpacity: f32,
+    groupMap: array<vec4<f32>, 192>
   };
 
   var<uniform> pointOptions : PointOptions;
@@ -63,20 +69,15 @@ export function PointCloudMaterialWebGPU(
     //var p: vec4<f32> = pointOptions.transformation * vec4<f32>(vertexInputs.loc, 1.0);
     //vertexOutputs.position = scene.viewProjection * (vec4<f32>(p.x, p.z, p.y, 1.0) + vec4<f32>(vertexInputs.position, 0.0));
 
-    var scale: mat4x4<f32> = mat4x4<f32>(vec4<f32>(pointOptions.pointSize, 0, 0, 0), vec4<f32>(0, pointOptions.pointSize, 0, 0), vec4<f32>(0, 0, pointOptions.pointSize, 0), vec4<f32>(0, 0, 0, 1));
+    let scale_coeff: f32 = pointOptions.pointSize / frameOptions.zoom;
+
+    var scale: mat4x4<f32> = mat4x4<f32>(vec4<f32>(scale_coeff, 0, 0, 0), vec4<f32>(0, scale_coeff, 0, 0), vec4<f32>(0, 0, scale_coeff, 0), vec4<f32>(0, 0, 0, 1));
     vertexOutputs.position = scene.viewProjection * mesh.world * (vec4<f32>(vertexInputs.loc, 1.0) + scale * vec4<f32>(vertexInputs.position, 0.0));
     
     ${
       attributeName
         ? coloring
         : 'vertexOutputs.vColor = vec4<f32>(pointOptions.color.rgb, pointOptions.pointOpacity);'
-    }
-    
-    if (vertexInputs.state == 1.0) {
-      vertexOutputs.vColor = selectionColor;
-    }
-    else if (vertexInputs.state == 2.0) {
-      vertexOutputs.vColor = pickColor;
     }
   }
 `;
@@ -139,6 +140,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       vec4 color;
       vec4 colorScheme[32];
       float pointOpacity;
+      vec4 groupMap[192];
     };
 
     flat out vec4 vColor;
@@ -153,11 +155,12 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       #if (FEATURE_TYPE == ${FeatureType.RGB})
         vColor = vec4(colorAttr, 1.0);
       #elif (FEATURE_TYPE == ${FeatureType.CATEGORICAL})
-        if (group > 31) {
+        int category = int(groupMap[group / 4][group % 4]);
+        if (category > 31) {
           vColor = vec4(0.0);
         }
         else {
-          vColor = colorScheme[group];
+          vColor = colorScheme[category];
         }
       #elif (FEATURE_TYPE == ${FeatureType.FLAT_COLOR})
         vColor = color;
@@ -182,6 +185,7 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
       vec4 color;
       vec4 colorScheme[32];
       float pointOpacity;
+      vec4 groupMap[192];
     };
 
     flat in vec4 vColor;

@@ -1,4 +1,4 @@
-import { GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
+import { GUIChannelProperty, GUIDualSliderProperty, GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
 
 export type Theme = 'system' | 'light' | 'dark';
 
@@ -8,7 +8,8 @@ export interface GUIEvent<T = any> {
 }
 
 export interface SliderProps {
-  value: number;
+  value?: number;
+  range?: [number, number];
 }
 
 export interface TextBoxProps {
@@ -67,6 +68,11 @@ export type GUISliderPropertyState = GUIPropertyState<GUISliderProperty> & {
   value: number;
 }
 
+export type GUIDualSliderPropertyState = GUIPropertyState<GUIDualSliderProperty> & {
+  valueMin: number;
+  valueMax: number;
+}
+
 export type GUISelectPropertyState<T = number> = GUIPropertyState<GUISelectProperty<T>> & {
   value: T;
 }
@@ -86,4 +92,11 @@ export type GUIFeaturePropertyState = GUIPropertyState<GUIFeatureProperty> & {
 
 export type GUIVectorPropertyState = GUIPropertyState<GUIVectorProperty> & {
   value: [number, number, number];
+}
+
+export type GUIChannelPropertyState = GUIPropertyState<GUIChannelProperty> & {
+  valueMin: number;
+  valueMax: number;
+  color: string;
+  visible: boolean;
 }

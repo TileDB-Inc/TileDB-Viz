@@ -5,7 +5,8 @@ import {
   Viewport,
   PointerInfo,
   PointerEventTypes,
-  Quaternion
+  Quaternion,
+  BoundingInfo
 } from '@babylonjs/core';
 import { MinimapPipeline } from '../pipelines/minimapPostProcess';
 import { MinimapPipelineWebGPU } from '../pipelines/minimapPostProcessWebGPU';
@@ -41,12 +42,11 @@ export class CameraManager {
   public constructor(
     scene: Scene,
     initialZoom: number,
-    baseWidth: number,
-    baseHeight: number
+    boundingInfo: BoundingInfo
   ) {
     this.scene = scene;
-    this.baseWidth = baseWidth;
-    this.baseHeight = baseHeight;
+    this.baseWidth = 2 * boundingInfo.boundingBox.extendSize.x;
+    this.baseHeight = 2 * boundingInfo.boundingBox.extendSize.z;
     this.lowerZoomLimit = this.upperZoomLimit = this.zoom = initialZoom;
 
     const target = new Vector3(this.baseWidth / 2, 0, -this.baseHeight / 2);
@@ -67,7 +67,7 @@ export class CameraManager {
     this.mainCamera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
     this.mainCamera.lowerBetaLimit = 0;
     this.mainCamera.upperBetaLimit = Math.PI / 4;
-    this.mainCamera.layerMask = 0x0fffffff;
+    this.mainCamera.layerMask = 0b1;
     for (const [, input] of Object.entries(this.mainCamera.inputs.attached)) {
       input.detachControl();
     }
@@ -85,7 +85,7 @@ export class CameraManager {
       );
 
       this.minimapCamera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
-      this.minimapCamera.layerMask = 0b100;
+      this.minimapCamera.layerMask = 0b10;
       this.minimapCamera.detachControl();
 
       this.scene.activeCameras?.push(this.minimapCamera);
@@ -222,12 +222,13 @@ export class CameraManager {
 
     switch (target[1]) {
       case 'pitch':
-        this.mainCamera.beta = (event.detail.props.value * Math.PI) / 180;
+        this.mainCamera.beta =
+          ((event.detail.props.value ?? 0) * Math.PI) / 180;
         break;
       case 'rotation':
         {
           const angle =
-            (event.detail.props.value * Math.PI) / 180 - Math.PI / 2;
+            ((event.detail.props.value ?? 0) * Math.PI) / 180 - Math.PI / 2;
           if (angle > Math.PI) {
             this.mainCamera.alpha = angle - 2 * Math.PI;
           } else {
@@ -238,7 +239,7 @@ export class CameraManager {
       case 'zoom':
         this.zoom = Math.max(
           this.lowerZoomLimit,
-          Math.min(this.upperZoomLimit, 2 ** event.detail.props.value)
+          Math.min(this.upperZoomLimit, 2 ** (event.detail.props.value ?? 0))
         );
         this.resizeCameraViewport();
     }
@@ -479,6 +480,10 @@ export class CameraManager {
 
   public getMainCamera(): ArcRotateCamera {
     return this.mainCamera;
+  }
+
+  public getMinimapCamera(): ArcRotateCamera | undefined {
+    return this.minimapCamera;
   }
 
   public getZoom(): number {

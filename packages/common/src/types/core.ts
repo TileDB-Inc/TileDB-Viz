@@ -1,6 +1,4 @@
-import { Vector3 } from '@babylonjs/core';
 import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
-import { Tile } from '../model';
 
 export type TileDBScene = {
   /**
@@ -177,8 +175,6 @@ export type Domain = {
   max: number;
 };
 
-type octreeIndex = `${number}-${number}-${number}-${number}`;
-
 export enum PointShape {
   SQUARE = 0b1,
   CIRCLE = 0b10,
@@ -186,92 +182,10 @@ export enum PointShape {
 }
 
 export enum GeometryStyle {
-  FILLED = 0b01,
+  FILLED = 0b1,
   OUTLINED = 0b10,
   FILLED_OUTLINED = 0b11
 }
-
-//#region Asset Metadata
-
-type CommonAssetMetadata = {
-  /**
-   * The asset's display name
-   */
-  name: string;
-
-  /**
-   * A map between enumeration names and string values
-   */
-  categories: Map<string, string[]>;
-
-  /**
-   * The map projection which the geometries are stored
-   */
-  crs?: string;
-
-  /**
-   * A list of all available attributes per geometry entity
-   */
-  attributes: Attribute[];
-
-  /**
-   * A list of all the renderable attribute configurations
-   */
-  features: Feature[];
-};
-
-export type GeometryMetadata = CommonAssetMetadata & {
-  /**
-   * The type of the stored geometries
-   */
-  type: string;
-
-  /**
-   * An attribute containing a unique number per polygon to use for picking, if it exists
-   */
-  idAttribute?: Attribute;
-
-  /**
-   * An attribute containing the height information for each polygon, if it exists
-   */
-  extrudeAttribute?: Attribute;
-
-  /**
-   * The attribute storing the geometry information
-   */
-  geometryAttribute: Attribute;
-
-  /**
-   *
-   */
-  extent: number[]; // [minX, minY, maxX, maxY]
-
-  /**
-   * The internal R-tree padding used for quering
-   */
-  pad: number[]; // [padX, padY]
-};
-
-export type PointCloudMetadata = CommonAssetMetadata & {
-  /**
-   * An attribute containing a unique number per polygon to use for picking, if it exists
-   */
-  idAttribute?: Attribute;
-
-  minPoint: Vector3;
-  maxPoint: Vector3;
-
-  minPointConforming?: Vector3;
-  maxPointConforming?: Vector3;
-
-  octreeData: { [index: octreeIndex]: number };
-
-  groupID: string;
-  levels: string[];
-  domain: Domain[];
-};
-
-//#endregion
 
 //#region Point Cloud Operations
 
@@ -321,12 +235,36 @@ export type IntersectionResult = OperationResult & {
 
 //#endregion
 
-//#region 3D Tiles metadata
+//#region Common Enums
 
-export type TilesMetadata<T extends Tile<T>> = CommonAssetMetadata & {
-  root: T;
-  baseUrl: string;
-  id: string;
-};
+export enum RefineStrategy {
+  /**
+   * Maintain parent tile when rendering child tiles
+   */
+  ADD = 1,
+
+  /**
+   * Replace parent tile with child tiles when rendering.
+   * Parent tile should unload once all requested child tiles have loaded to avoid holes.
+   */
+  REPLACE = 2
+}
+
+export enum TilingScheme {
+  /**
+   * Unstructured tiling scheme
+   */
+  NONE = 0b1,
+
+  /**
+   * Quadtree tiling scheme. Each tile has 4 child tiles
+   */
+  QUADTREE = 0b10,
+
+  /**
+   * Octree tiling scheme. Each tile has 8 child tiles
+   */
+  OCTREE = 0b100
+}
 
 //#endregion
