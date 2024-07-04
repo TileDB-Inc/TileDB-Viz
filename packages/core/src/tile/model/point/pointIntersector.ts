@@ -3,12 +3,13 @@ import { Intersector } from '../intersector';
 import { PointTileContent } from './pointContent';
 
 export class PointIntersector extends Intersector<PointTileContent> {
-  public intersect(ray: Ray): void {
+  public intersectRay(ray: Ray): bigint[] {
     const position = this.data.buffers['position'] as Float32Array | undefined;
     const indices = [];
+    const ids: bigint[] = [];
 
-    if (!position) {
-      return;
+    if (!position || !this.data.ids) {
+      return [];
     }
 
     for (let idx = 0; idx < position.length; idx += 3) {
@@ -22,13 +23,48 @@ export class PointIntersector extends Intersector<PointTileContent> {
         )
       ) {
         indices.push(idx / 3);
+        ids.push(this.data.ids[idx / 3]);
       }
     }
 
     this.data.update({ selection: { indices: indices } });
+
+    return ids;
   }
 
-  private intersectMesh(mesh: Mesh, x: number, y: number, z: number): boolean {
+  public intersectMesh(mesh: Mesh): bigint[] {
+    const position = this.data.buffers['position'];
+    const indices = [];
+    const ids: bigint[] = [];
+
+    if (!position || !this.data.ids) {
+      return [];
+    }
+
+    for (let idx = 0; idx < position.length; idx += 3) {
+      if (
+        this._intersectMesh(
+          mesh,
+          position[idx],
+          position[idx + 1],
+          position[idx + 2]
+        )
+      ) {
+        indices.push(idx / 3);
+        ids.push(this.data.ids[idx / 3]);
+      }
+    }
+
+    this.data.update({ selection: { indices: indices } });
+
+    return ids;
+  }
+
+  public pickObject(id: bigint): void {
+    throw new Error('Method not implemented.');
+  }
+
+  private _intersectMesh(mesh: Mesh, x: number, y: number, z: number): boolean {
     const boundInfo = mesh.getBoundingInfo();
     const max = boundInfo.maximum;
     const min = boundInfo.minimum;

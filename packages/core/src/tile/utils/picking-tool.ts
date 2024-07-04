@@ -27,6 +27,7 @@ import { PickingMode } from '@tiledb-inc/viz-common';
 import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
 import { TileContent } from '../model/tileContent';
+import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
 
 export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
   // calculate world space bbox to use for geometry query
@@ -70,6 +71,7 @@ export class PickingTool {
       }
     ): void;
   }[];
+  public managers: Manager<Tile<TileContent>>[] = [];
 
   private mode: PickingMode;
   private scene: Scene;
@@ -89,7 +91,6 @@ export class PickingTool {
   private selectedTiles: Set<string>;
 
   private active: boolean;
-  public managers: Manager<Tile<TileContent>>[] = [];
 
   constructor(scene: Scene) {
     this.camera = getCamera(scene, 'Main')!;
@@ -117,6 +118,8 @@ export class PickingTool {
     this.selectionBbox = [];
     this.selectedTiles = new Set<string>();
     this.active = false;
+
+    this.initializeGUIProperties();
 
     window.addEventListener(
       Events.BUTTON_CLICK,
@@ -177,10 +180,8 @@ export class PickingTool {
             if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
               tiles.push(tile);
 
-              console.log(tile.id);
-
               if (tile.data?.intersector) {
-                tile.data.intersector.intersect(pickingRay);
+                tile.data.intersector.intersectRay(pickingRay);
               } else {
                 console.log(
                   pickingRay.intersectsMeshes(tile.data?.meshes ?? [])
@@ -244,52 +245,28 @@ export class PickingTool {
           break;
         }
 
-        const vertexCount = this.selectionBuffer.length / 2;
+        const selectionMesh = constructLassoMesh(
+          this.selectionBuffer,
+          this.camera,
+          this.scene
+        );
 
-        // 3D shape extrusion
-        // We need 3 number per vertex and we will double the vertices το create the other side
-        const position = new Float32Array(6 * vertexCount);
-        const indices = new Int32Array(6 * vertexCount);
+        // Find intersecting tiles
+        const tiles = [];
 
-        for (let idx = 0; idx < vertexCount; ++idx) {
-          const ray = this.scene.createPickingRay(
-            this.selectionBuffer[2 * idx],
-            this.scene.getEngine().getRenderHeight() -
-              this.selectionBuffer[2 * idx + 1],
-            Matrix.Identity(),
-            this.camera
-          );
+        for (const manager of this.managers) {
+          for (const tile of manager.tiles.values()) {
+            if (
+              selectionMesh
+                .getBoundingInfo()
+                .intersects(tile.boundingInfo, true)
+            ) {
+              tiles.push(tile);
 
-          position[3 * idx] = ray.origin.x;
-          position[3 * idx + 1] = ray.origin.y;
-          position[3 * idx + 2] = ray.origin.z;
-
-          ray.origin.addInPlace(
-            ray.direction.multiplyByFloats(5000, 5000, 5000)
-          );
-
-          position[3 * idx + 3 * vertexCount] = ray.origin.x;
-          position[3 * idx + 1 + 3 * vertexCount] = ray.origin.y;
-          position[3 * idx + 2 + 3 * vertexCount] = ray.origin.z;
-
-          // Face A
-          indices[6 * idx] = idx;
-          indices[6 * idx + 1] = idx + vertexCount;
-          indices[6 * idx + 2] = (idx + 1) % vertexCount;
-
-          // Face B
-          indices[6 * idx + 3] = (idx + 1) % vertexCount;
-          indices[6 * idx + 4] = idx + vertexCount;
-          indices[6 * idx + 5] = ((idx + 1) % vertexCount) + vertexCount;
+              tile.data?.intersector?.intersectMesh(selectionMesh);
+            }
+          }
         }
-
-        const mesh = new Mesh('Selection mesh', this.scene);
-        const vertexData = new VertexData();
-        vertexData.positions = position;
-        vertexData.indices = indices;
-
-        vertexData.applyToMesh(mesh);
-        mesh.visibility = 0;
 
         // this.pickCallbacks.forEach(callback =>
         //   callback(this.selectionBbox, {
@@ -396,4 +373,80 @@ export class PickingTool {
     this.scene.onPointerObservable.remove(this.singleHandler);
     this.scene.onPointerObservable.remove(this.lassoHandler);
   }
+
+  private initializeGUIProperties() {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'info-panel',
+            props: {
+              config: new Map()
+            }
+          }
+        }
+      )
+    );
+  }
+}
+
+/**
+ * Construct a 3D mesh from a lasso selection to perform inclusion tests.
+ * @param lasso An array with the lasso points in screen space with interleaved XY coordinates.
+ * @param camera The main camera scene.
+ * @param scene The current scene.
+ */
+function constructLassoMesh(
+  lasso: number[],
+  camera: Camera,
+  scene: Scene
+): Mesh {
+  const vertexCount = lasso.length / 2;
+
+  // We need 3 number per vertex and we will double the vertices το create the other side
+  const position = new Float32Array(6 * vertexCount);
+  const indices = new Int32Array(6 * vertexCount);
+
+  for (let idx = 0; idx < vertexCount; ++idx) {
+    // Construct ray to translate the sreen point to world space and also to account for
+    // the correct projection
+    const ray = scene.createPickingRay(
+      lasso[2 * idx],
+      scene.getEngine().getRenderHeight() - lasso[2 * idx + 1],
+      Matrix.Identity(),
+      camera
+    );
+
+    position[3 * idx] = ray.origin.x;
+    position[3 * idx + 1] = ray.origin.y;
+    position[3 * idx + 2] = ray.origin.z;
+
+    ray.origin.addInPlace(ray.direction.multiplyByFloats(5000, 5000, 5000));
+
+    position[3 * idx + 3 * vertexCount] = ray.origin.x;
+    position[3 * idx + 1 + 3 * vertexCount] = ray.origin.y;
+    position[3 * idx + 2 + 3 * vertexCount] = ray.origin.z;
+
+    // Face A
+    indices[6 * idx] = idx;
+    indices[6 * idx + 1] = idx + vertexCount;
+    indices[6 * idx + 2] = (idx + 1) % vertexCount;
+
+    // Face B
+    indices[6 * idx + 3] = (idx + 1) % vertexCount;
+    indices[6 * idx + 4] = idx + vertexCount;
+    indices[6 * idx + 5] = ((idx + 1) % vertexCount) + vertexCount;
+  }
+
+  const mesh = new Mesh('Selection mesh', scene);
+  const vertexData = new VertexData();
+  vertexData.positions = position;
+  vertexData.indices = indices;
+
+  vertexData.applyToMesh(mesh);
+  mesh.visibility = 0;
+
+  return mesh;
 }

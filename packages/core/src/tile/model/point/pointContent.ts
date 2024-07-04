@@ -28,7 +28,8 @@ type PointCloudData = {
 };
 
 type PointSelection = {
-  indices: number[];
+  indices?: number[];
+  pick?: { current: number; previous: number };
 };
 
 export type PointCloudUpdateOptions = TileUpdateOptions & {
@@ -267,11 +268,17 @@ export class PointTileContent extends TileContent {
   }
 
   private onSelectionUpdateWebGPU(selection: PointSelection) {
-    console.log(selection);
     const state = this.buffers['state'] as Uint8Array;
 
-    for (const idx of selection.indices) {
+    // If selection indices is an empty array clear all selection
+
+    for (const idx of selection.indices ?? []) {
       state[idx] = 1;
+    }
+
+    if (selection.pick) {
+      state[selection.pick.current] = 2;
+      state[selection.pick.previous] = 1;
     }
 
     // @ts-expect-error Update vertices data expects only Float arrays but should expect anything

@@ -8,17 +8,16 @@ import {
   ImageDataContent,
   GeometryDataContent,
   TDBNonEmptyDomain,
-  ImageAssetMetadata,
   DatasetType
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
   BiomedicalAssetMetadata,
   RasterAssetMetadata,
-  ImageMetadataV2,
   ImageMetadata,
   ImageLoaderMetadata,
-  GeometryMetadata
+  GeometryMetadata,
+  ImageAssetMetadata
 } from '../../tile/types';
 import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
@@ -152,7 +151,7 @@ export function getImageDomain(schema: ArraySchema): {
 
 export async function getImageMetadata(
   options: AssetOptions
-): Promise<ImageMetadataV2> {
+): Promise<ImageMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -174,8 +173,8 @@ export async function getImageMetadata(
   }
 
   const imageMetadata = JSON.parse(
-    (assetMetadata as ImageAssetMetadata).metadata
-  ) as ImageMetadata;
+    (assetMetadata as BiomedicalAssetMetadata & RasterAssetMetadata).metadata
+  ) as ImageAssetMetadata;
   let schemas: ArraySchema[] = await getQueryDataFromCache(
     options.groupID ?? options.arrayID ?? '',
     'schemas'
@@ -324,7 +323,7 @@ export async function getImageMetadata(
     crs: getCRS(assetMetadata),
     pixelToCRS: getTransformationMatrix(assetMetadata, scale),
     loaderMetadata: loaderMetadata
-  } as ImageMetadataV2;
+  } as ImageMetadata;
 }
 
 // export async function getAssetMetadata(
@@ -954,7 +953,7 @@ function getTransformationMatrix(
       {
         const metadata = JSON.parse(
           (assetMetadata as BiomedicalAssetMetadata).metadata ?? ''
-        ) as ImageMetadata;
+        ) as ImageAssetMetadata;
         const defaultScale = metadata.physicalSizeX ?? 1;
 
         pixelToCRS = matrix([

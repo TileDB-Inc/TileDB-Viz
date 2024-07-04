@@ -1,4 +1,4 @@
-import { Ray } from '@babylonjs/core';
+import { Mesh, Ray } from '@babylonjs/core';
 import { TileContent } from './tileContent';
 
 export abstract class Intersector<T extends TileContent> {
@@ -8,5 +8,9 @@ export abstract class Intersector<T extends TileContent> {
     this.data = data;
   }
 
-  public abstract intersect(ray: Ray): void;
+  public abstract intersectRay(ray: Ray): bigint[];
+
+  public abstract intersectMesh(mesh: Mesh): bigint[];
+
+  public abstract pickObject(id: bigint): void;
 }

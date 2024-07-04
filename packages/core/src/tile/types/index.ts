@@ -86,7 +86,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
   _gdal?: string;
 }
 
-export interface ImageMetadata extends AssetMetadata {
+export interface ImageAssetMetadata extends AssetMetadata {
   channels: Record<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
@@ -101,7 +101,7 @@ export interface ImageMetadata extends AssetMetadata {
   axes: Array<AxesMetadata>;
 }
 
-export type ImageMetadataV2 = {
+export type ImageMetadata = {
   /**
    * Unique dataset id.
    */
