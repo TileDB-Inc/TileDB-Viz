@@ -1,15 +1,29 @@
 import { Axis, Mesh, Ray, Vector3 } from '@babylonjs/core';
-import { Intersector } from '../intersector';
+import { IntersectionResult, Intersector } from '../intersector';
 import { PointTileContent } from './pointContent';
 
 export class PointIntersector extends Intersector<PointTileContent> {
-  public intersectRay(ray: Ray): bigint[] {
+  public intersectRay(ray: Ray): IntersectionResult {
     const position = this.data.buffers['position'] as Float32Array | undefined;
     const indices = [];
     const ids: bigint[] = [];
+    const minPoint = new Vector3(
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER
+    );
+    const maxPoint = new Vector3(
+      Number.MIN_SAFE_INTEGER,
+      Number.MIN_SAFE_INTEGER,
+      Number.MIN_SAFE_INTEGER
+    );
 
     if (!position || !this.data.ids) {
-      return [];
+      return {
+        ids: [],
+        minPoint: Vector3.ZeroReadOnly.asArray(),
+        maxPoint: Vector3.ZeroReadOnly.asArray()
+      };
     }
 
     for (let idx = 0; idx < position.length; idx += 3) {
@@ -24,21 +38,51 @@ export class PointIntersector extends Intersector<PointTileContent> {
       ) {
         indices.push(idx / 3);
         ids.push(this.data.ids[idx / 3]);
+
+        minPoint.minimizeInPlaceFromFloats(
+          position[idx],
+          position[idx + 1],
+          position[idx + 2]
+        );
+        maxPoint.maximizeInPlaceFromFloats(
+          position[idx],
+          position[idx + 1],
+          position[idx + 2]
+        );
       }
     }
 
     this.data.update({ selection: { indices: indices } });
 
-    return ids;
+    return {
+      ids: ids,
+      minPoint: minPoint.asArray(),
+      maxPoint: maxPoint.asArray()
+    };
   }
 
-  public intersectMesh(mesh: Mesh): bigint[] {
+  public intersectMesh(mesh: Mesh): IntersectionResult {
     const position = this.data.buffers['position'];
     const indices = [];
     const ids: bigint[] = [];
+    const minPoint = new Vector3(
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER
+    );
+    const maxPoint = new Vector3(
+      Number.MIN_SAFE_INTEGER,
+      Number.MIN_SAFE_INTEGER,
+      Number.MIN_SAFE_INTEGER
+    );
 
-    if (!position || !this.data.ids) {
-      return [];
+    //if (!position || !this.data.ids) {
+    if (!position) {
+      return {
+        ids: [],
+        minPoint: Vector3.ZeroReadOnly.asArray(),
+        maxPoint: Vector3.ZeroReadOnly.asArray()
+      };
     }
 
     for (let idx = 0; idx < position.length; idx += 3) {
@@ -51,13 +95,28 @@ export class PointIntersector extends Intersector<PointTileContent> {
         )
       ) {
         indices.push(idx / 3);
-        ids.push(this.data.ids[idx / 3]);
+        //ids.push(this.data.ids[idx / 3]);
+
+        minPoint.minimizeInPlaceFromFloats(
+          position[idx],
+          position[idx + 1],
+          position[idx + 2]
+        );
+        maxPoint.maximizeInPlaceFromFloats(
+          position[idx],
+          position[idx + 1],
+          position[idx + 2]
+        );
       }
     }
 
     this.data.update({ selection: { indices: indices } });
 
-    return ids;
+    return {
+      ids: ids,
+      minPoint: minPoint.asArray(),
+      maxPoint: maxPoint.asArray()
+    };
   }
 
   public pickObject(id: bigint): void {

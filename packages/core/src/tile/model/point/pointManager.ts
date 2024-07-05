@@ -7,7 +7,6 @@ import {
   DataRequest,
   RequestType,
   PointCloudMetadata,
-  PointCloudPayload,
   PointResponse
 } from '../../types';
 import { hexToRgb } from '../../utils/helpers';
@@ -30,6 +29,7 @@ import {
 import { Tile } from '../tile';
 import { PointDataContent, SceneOptions } from '../../../types';
 import { PointCloudUpdateOptions, PointTileContent } from './pointContent';
+import { PointCloudFetcher } from './pointFetcher';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -44,7 +44,6 @@ export class PointManager extends Manager<
   private pointOptions!: UniformBuffer;
   private metadata: PointCloudMetadata;
   private activeFeature: Feature;
-  private namespace: string;
   private pointSize: number;
   private sceneOptions: SceneOptions;
   private styleOptions = {
@@ -69,7 +68,11 @@ export class PointManager extends Manager<
   };
 
   constructor(scene: Scene, workerPool: WorkerPool, options: PointOptions) {
-    super(options.metadata.root, scene);
+    super(
+      options.metadata.root,
+      scene,
+      new PointCloudFetcher(workerPool, options.metadata, options.sceneOptions)
+    );
 
     this.workerPool = workerPool;
     this.metadata = options.metadata;
@@ -78,7 +81,6 @@ export class PointManager extends Manager<
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );
-    this.namespace = options.namespace;
     this.sceneOptions = options.sceneOptions;
     this.pointSize = 1;
 
@@ -95,6 +97,15 @@ export class PointManager extends Manager<
 
     this.registerEventListeners();
     this.initializeGUIProperties();
+    this.fetcher = new PointCloudFetcher(
+      this.workerPool,
+      this.metadata,
+      this.sceneOptions
+    );
+  }
+
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
   }
 
   public registerEventListeners(): void {
@@ -132,27 +143,7 @@ export class PointManager extends Manager<
       tile.data = new PointTileContent(this.scene, tile);
     }
 
-    this.workerPool.postMessage({
-      type: RequestType.POINT,
-      id: tile.id,
-      payload: {
-        index: tile.index,
-        namespace: this.namespace,
-        uri: tile.content[0].uri,
-        region: tile.content[0].region,
-        features: this.metadata.features,
-        attributes: this.metadata.attributes,
-        domain: this.metadata.domain,
-        transformation: this.sceneOptions.transformation?.toArray(),
-        targetCRS: this.sceneOptions.crs,
-        sourceCRS: this.metadata.crs,
-        nonce: nonce
-      } as PointCloudPayload
-    } as DataRequest);
-
-    return new Promise((resolve, _) =>
-      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve)
-    );
+    return this.fetcher.fetch(tile);
   }
 
   public cancelTile(

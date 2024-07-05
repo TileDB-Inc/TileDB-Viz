@@ -348,7 +348,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.onAssetSelection(namespace, groupID, arrayID)
     );
 
-    this.pickingTool = new PickingTool(this.scene);
+    this.pickingTool = new PickingTool(this.scene, this.sceneOptions);
     this.pickingTool.managers.push(
       ...this.assetManagers.filter(x => x.pickable).map(x => x.manager)
     );

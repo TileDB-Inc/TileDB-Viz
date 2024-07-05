@@ -92,6 +92,10 @@ export class GeometryManager extends Manager<
     this.registerEventListeners();
   }
 
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
+  }
+
   public registerEventListeners(): void {
     window.addEventListener(
       Events.BUTTON_CLICK,

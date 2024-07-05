@@ -192,6 +192,7 @@ export async function getPointCloudMetadata(
     id: options.pointGroupID,
     root: root,
     name: info.name ?? options.pointGroupID,
+    namespace: options.namespace,
     attributes: attributes,
     domain: domain,
     features: features,

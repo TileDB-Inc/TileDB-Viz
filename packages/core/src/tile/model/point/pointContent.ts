@@ -271,6 +271,11 @@ export class PointTileContent extends TileContent {
     const state = this.buffers['state'] as Uint8Array;
 
     // If selection indices is an empty array clear all selection
+    if (selection.indices && selection.indices.at(0) === -1) {
+      state.fill(0);
+
+      return;
+    }
 
     for (const idx of selection.indices ?? []) {
       state[idx] = 1;

@@ -35,6 +35,10 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     this.registerEventListeners();
   }
 
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
+  }
+
   public registerEventListeners(): void {
     window.addEventListener(
       Events.SLIDER_CHANGE,

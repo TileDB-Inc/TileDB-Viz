@@ -28,6 +28,10 @@ import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
 import { TileContent } from '../model/tileContent';
 import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { SceneOptions } from '../../types';
+import proj4 from 'proj4';
+import { inv } from 'mathjs';
+import { get3DInverseTransformedBoundingInfo } from '../../utils/metadata-utils/utils';
 
 export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
   // calculate world space bbox to use for geometry query
@@ -77,6 +81,7 @@ export class PickingTool {
   private scene: Scene;
   private utilityLayer: UtilityLayerRenderer;
   private camera: Camera;
+  private sceneOptions: SceneOptions;
 
   private selectionBbox: number[];
   private selectionBuffer: number[];
@@ -92,10 +97,11 @@ export class PickingTool {
 
   private active: boolean;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, sceneOptions: SceneOptions) {
+    this.scene = scene;
+    this.sceneOptions = sceneOptions;
     this.camera = getCamera(scene, 'Main')!;
     this.mode = PickingMode.NONE;
-    this.scene = scene;
     this.utilityLayer = new UtilityLayerRenderer(this.scene, false);
     this.utilityLayer.setRenderCamera(this.camera);
     this.selectionRenderVertexData = new VertexData();
@@ -176,40 +182,34 @@ export class PickingTool {
 
         // Find intersecting tiles
         for (const manager of this.managers) {
+          const converter =
+            manager.CRS && this.sceneOptions.crs
+              ? proj4(this.sceneOptions.crs, manager.CRS)
+              : undefined;
+
           for (const tile of manager.tiles.values()) {
             if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
               tiles.push(tile);
 
-              if (tile.data?.intersector) {
-                tile.data.intersector.intersectRay(pickingRay);
-              } else {
-                console.log(
-                  pickingRay.intersectsMeshes(tile.data?.meshes ?? [])
-                );
+              const result = tile.data?.intersector?.intersectRay(pickingRay);
+
+              if (!result) {
+                continue;
               }
+
+              const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
+                result.minPoint,
+                result.maxPoint,
+                converter,
+                this.sceneOptions.transformation
+                  ? inv(this.sceneOptions.transformation)
+                  : undefined
+              );
+
+              console.log(selectionBoundingInfo);
             }
           }
         }
-
-        // this.selectionBbox = [
-        //   Number.MAX_VALUE,
-        //   Number.MAX_VALUE,
-        //   -Number.MAX_VALUE,
-        //   -Number.MAX_VALUE
-        // ];
-
-        // this.selectionBbox[0] = Math.min(this.selectionBbox[0], Math.round(x));
-        // this.selectionBbox[1] = Math.min(this.selectionBbox[1], Math.round(y));
-        // this.selectionBbox[2] = Math.max(this.selectionBbox[2], Math.round(x));
-        // this.selectionBbox[3] = Math.max(this.selectionBbox[3], Math.round(y));
-
-        // const tile = pointerInfo.pickInfo?.pickedMesh?.name
-        //   .split(',')
-        //   .map(x => Number.parseInt(x));
-
-        // this.pickCallbacks.forEach(callback =>
-        //   callback(this.selectionBbox, { tiles: tile ? [tile] : undefined })
-        // );
 
         break;
       }
@@ -255,6 +255,11 @@ export class PickingTool {
         const tiles = [];
 
         for (const manager of this.managers) {
+          const converter =
+            manager.CRS && this.sceneOptions.crs
+              ? proj4(this.sceneOptions.crs, manager.CRS)
+              : undefined;
+
           for (const tile of manager.tiles.values()) {
             if (
               selectionMesh
@@ -263,23 +268,28 @@ export class PickingTool {
             ) {
               tiles.push(tile);
 
-              tile.data?.intersector?.intersectMesh(selectionMesh);
+              const result =
+                tile.data?.intersector?.intersectMesh(selectionMesh);
+
+              if (!result) {
+                continue;
+              }
+
+              const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
+                result.minPoint,
+                result.maxPoint,
+                converter,
+                this.sceneOptions.transformation
+                  ? inv(this.sceneOptions.transformation)
+                  : undefined
+              );
+
+              manager.fetcher.fetchInfo(tile);
+
+              console.log(selectionBoundingInfo);
             }
           }
         }
-
-        // this.pickCallbacks.forEach(callback =>
-        //   callback(this.selectionBbox, {
-        //     path: this.selectionBuffer,
-        //     enclosureMeshPositions: mesh.getVerticesData(
-        //       VertexBuffer.PositionKind,
-        //       true,
-        //       true
-        //     ) as Float32Array,
-        //     enclosureMeshIndices: mesh.getIndices(true, true) as Int32Array
-        //   })
-        // );
-        // this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         break;
       }

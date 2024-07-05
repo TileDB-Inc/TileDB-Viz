@@ -104,6 +104,10 @@ export class ImageManager extends Manager<
     this.registerEventListeners();
   }
 
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
+  }
+
   public registerEventListeners(): void {
     window.addEventListener(
       Events.SLIDER_CHANGE,

@@ -192,7 +192,10 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
+  namespace: string;
+
   id: string;
+
   /**
    * The display anme of the point cloud asset.
    */
@@ -430,6 +433,7 @@ export const enum RequestType {
   GEOMETRY_INFO = 3,
   POINT = 4,
   POINT_INFO = 5,
+  INFO = 6,
 
   INITIALIZE = 100
 }
@@ -482,6 +486,10 @@ export type TileDBSpatialPayload = {
    * The affine transformation to go from CRS to pixel space.
    */
   transformation?: number[][];
+};
+
+export type TileDBInfoPayload = TileDBPayload & {
+  domain: Domain[];
 };
 
 export type ImagePayload = TileDBPayload & {
