@@ -80,7 +80,8 @@ export function toTypedArray(
 export async function loadCachedGeometry(
   arrayID: string,
   index: string,
-  features: string[]
+  features: string[],
+  optionalFeatures: string[] = []
 ): Promise<{ [attribute: string]: TypedArray } | undefined> {
   const cachedArrays = await Promise.all(
     features.map(feature => {
@@ -91,6 +92,14 @@ export async function loadCachedGeometry(
   if (cachedArrays.some(x => x === undefined)) {
     return undefined;
   }
+
+  cachedArrays.push(
+    ...(await Promise.all(
+      optionalFeatures.map(feature => {
+        return getQueryDataFromCache(arrayID, `${feature}_${index}`);
+      })
+    ))
+  );
 
   const result: { [attribute: string]: TypedArray } = {};
 

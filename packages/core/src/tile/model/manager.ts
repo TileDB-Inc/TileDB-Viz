@@ -53,11 +53,9 @@ export abstract class Manager<T extends Tile<any>> {
       this.traverser.reset(camera);
 
       this.traverserOptions.frustumBias = Math.min(
-        512,
+        1024,
         frameDetails.prefetchBias / frameDetails.zoom
       );
-
-      console.log(this.traverserOptions.frustumBias);
 
       for (const tile of this.traverser.visibleNodes(
         camera,
