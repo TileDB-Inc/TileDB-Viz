@@ -1,7 +1,7 @@
 import { Camera, Scene, UniformBuffer } from '@babylonjs/core';
 import { Events } from '@tiledb-inc/viz-components';
 import { FrameDetails, RefineStrategy } from '../../types';
-import { Traverser } from './traverser';
+import { Traverser, TraverserOptions } from './traverser';
 import { Tile, TileState } from './tile';
 
 export interface TileStatus<T> {
@@ -13,7 +13,7 @@ export interface TileStatus<T> {
 
 export abstract class Manager<T extends Tile<any>> {
   protected scene: Scene;
-  protected errorLimit: number;
+  protected traverserOptions: TraverserOptions;
   protected visibleTiles: Map<number, T>;
   protected frameOptions: UniformBuffer;
   protected nonce: Map<number, number>;
@@ -25,7 +25,10 @@ export abstract class Manager<T extends Tile<any>> {
     this.scene = scene;
 
     this.visibleTiles = new Map();
-    this.errorLimit = -1;
+    this.traverserOptions = {
+      errorLimit: -1,
+      frustumBias: 0
+    };
     this.rejectHandlers = new Map();
     this.traverser = new Traverser(root);
     this.nonce = new Map();
@@ -49,7 +52,17 @@ export abstract class Manager<T extends Tile<any>> {
       // Reset the traverser state
       this.traverser.reset(camera);
 
-      for (const tile of this.traverser.visibleNodes(camera, this.errorLimit)) {
+      this.traverserOptions.frustumBias = Math.min(
+        512,
+        frameDetails.prefetchBias / frameDetails.zoom
+      );
+
+      console.log(this.traverserOptions.frustumBias);
+
+      for (const tile of this.traverser.visibleNodes(
+        camera,
+        this.traverserOptions
+      )) {
         // Add the current tile to the list of visible tiles
         this.visibleTiles.set(tile.id, tile);
 
