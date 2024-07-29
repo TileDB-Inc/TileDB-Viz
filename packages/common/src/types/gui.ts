@@ -34,6 +34,10 @@ export type InfoPanelInitializationEvent = {
   config: Map<string, InfoPanelConfigEntry>;
 };
 
+export type OptionsPanelInitializationEvent = {
+  prefetchBias: GUISliderProperty;
+};
+
 export type GUIProperty = {
   /**
    * Display name of property

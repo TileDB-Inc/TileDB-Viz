@@ -2,6 +2,11 @@ import { Camera, Frustum } from '@babylonjs/core';
 import { Tile } from './tile';
 import { Block, PriorityQueue } from '../containers';
 
+export type TraverserOptions = {
+  errorLimit: number;
+  frustumBias: number;
+};
+
 export class Traverser<T extends Tile<any>> {
   protected root: T;
 
@@ -19,8 +24,15 @@ export class Traverser<T extends Tile<any>> {
     this.queue.insert(this.root.screenSpaceError(camera), this.root);
   }
 
-  public *visibleNodes(camera: Camera, errorLimit: number): Generator<T> {
+  public *visibleNodes(
+    camera: Camera,
+    options: TraverserOptions
+  ): Generator<T> {
     const frustrum = Frustum.GetPlanes(camera.getTransformationMatrix());
+
+    for (const plane of frustrum) {
+      plane.d += options.frustumBias;
+    }
 
     while (!this.queue.isEmpty()) {
       const block: Block<T> = this.queue.extractMax();
@@ -37,7 +49,7 @@ export class Traverser<T extends Tile<any>> {
         continue;
       }
 
-      if (error > errorLimit) {
+      if (error > options.errorLimit) {
         // Add the tiles children to the tile queue for processing
         for (const child of tile.children) {
           this.queue.insert(child.screenSpaceError(camera), child as T);

@@ -58,7 +58,7 @@ export class ImageManager extends Manager<
     super(imageOptions.metadata.root, scene);
 
     this.workerPool = workerPool;
-    this.errorLimit = Math.max(
+    this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );

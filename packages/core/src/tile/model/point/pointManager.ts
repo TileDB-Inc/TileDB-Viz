@@ -74,7 +74,7 @@ export class PointManager extends Manager<
     this.workerPool = workerPool;
     this.metadata = options.metadata;
     this.activeFeature = this.metadata.features[0];
-    this.errorLimit = Math.max(
+    this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );
@@ -236,7 +236,7 @@ export class PointManager extends Manager<
         this.pointOptions.update();
         break;
       case 'quality':
-        this.errorLimit =
+        this.traverserOptions.errorLimit =
           Math.max(
             this.scene.getEngine().getRenderWidth(),
             this.scene.getEngine().getRenderHeight()

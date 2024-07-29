@@ -60,10 +60,14 @@ export async function pointRequest(
     [
       ...request.features.filter(x => x.attributes.length).map(x => x.name),
       'position'
-    ]
+    ],
+    ['ids']
   );
 
+  console.log(cachedArrays);
+
   if (cachedArrays) {
+    result.position = cachedArrays['position'] as Float32Array;
     result.attributes = cachedArrays;
 
     return {
@@ -226,11 +230,12 @@ export async function pointRequest(
     }
   }
 
-  await Promise.all(
-    Object.entries(result.attributes).map(([name, array]) => {
+  await Promise.all([
+    ...Object.entries(result.attributes).map(([name, array]) => {
       return writeToCache(request.uri, `${name}_${mortonIndex}`, array);
-    })
-  );
+    }),
+    writeToCache(request.uri, `position_${mortonIndex}`, result.position)
+  ]);
 
   return {
     id: id,

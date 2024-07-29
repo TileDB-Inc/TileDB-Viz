@@ -201,10 +201,7 @@ export async function imageRequest(
       }
     } catch (e) {
       console.log(e);
-      self.postMessage({
-        id: id,
-        type: RequestType.CANCEL
-      } as WorkerResponse);
+      throw new Error('Request cancelled by the user');
       return;
     }
 
