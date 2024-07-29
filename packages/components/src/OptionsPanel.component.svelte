@@ -216,7 +216,8 @@
     &__container {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      padding: 16px;
     }
 
     &__group {
