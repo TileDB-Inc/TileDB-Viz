@@ -30,6 +30,7 @@ import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';
+import { GeometryFetcher } from './geometryFetcher';
 
 interface GeometryOptions {
   arrayID: string;
@@ -75,7 +76,7 @@ export class GeometryManager extends Manager<
     workerPool: WorkerPool,
     geometryOptions: GeometryOptions
   ) {
-    super(geometryOptions.metadata.root, scene);
+    super(geometryOptions.metadata.root, scene, new GeometryFetcher());
 
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
@@ -202,6 +203,7 @@ export class GeometryManager extends Manager<
       data: {
         position: data.position,
         indices: data.indices,
+        ids: data.ids,
         attributes: data.attributes
       },
       feature: this.activeFeature,

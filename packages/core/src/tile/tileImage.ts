@@ -256,9 +256,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: metadata.idAttribute !== undefined,
           minimap: false
         });
+
+        console.log(metadata)
 
         this.sceneOptions.extents.encapsulateBoundingInfo(
           metadata.root.boundingInfo

@@ -159,6 +159,8 @@ export type GeometryMetadata = {
    */
   name: string;
 
+  namespace: string;
+
   /**
    * The root of the geomemtry tileset.
    */

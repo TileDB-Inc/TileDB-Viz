@@ -284,9 +284,7 @@ export class PickingTool {
                   : undefined
               );
 
-              manager.fetcher.fetchInfo(tile);
-
-              console.log(selectionBoundingInfo);
+              // manager.fetcher.fetchInfo(tile);
             }
           }
         }

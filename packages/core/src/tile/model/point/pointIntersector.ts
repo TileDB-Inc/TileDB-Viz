@@ -28,7 +28,7 @@ export class PointIntersector extends Intersector<PointTileContent> {
 
     for (let idx = 0; idx < position.length; idx += 3) {
       if (
-        this.intersectPoint(
+        this._intersectPoint(
           ray,
           position[idx],
           position[idx + 1],
@@ -160,7 +160,7 @@ export class PointIntersector extends Intersector<PointTileContent> {
     return hitCount % 2 === 1;
   }
 
-  private intersectPoint(
+  private _intersectPoint(
     ray: Ray,
     x: number,
     y: number,

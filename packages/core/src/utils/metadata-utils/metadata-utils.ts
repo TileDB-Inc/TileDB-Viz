@@ -649,6 +649,7 @@ export async function getGeometryMetadata(
 
   const geometryMetadata = {
     name: info.name,
+    namespace: options.namespace,
     root: root,
     extent: extents,
     type: arrayMetadata['GeometryType'],
