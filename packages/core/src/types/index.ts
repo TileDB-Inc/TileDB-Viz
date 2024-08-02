@@ -15,10 +15,6 @@ export interface AssetMetadata {
   dataset_type?: DatasetType;
 }
 
-export type ImageAssetMetadata = AssetMetadata & {
-  metadata: string;
-};
-
 export interface AssetEntry {
   namespace: string;
   name: string;

@@ -30,6 +30,7 @@ import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';
+import { GeometryFetcher } from './geometryFetcher';
 
 interface GeometryOptions {
   arrayID: string;
@@ -75,7 +76,7 @@ export class GeometryManager extends Manager<
     workerPool: WorkerPool,
     geometryOptions: GeometryOptions
   ) {
-    super(geometryOptions.metadata.root, scene);
+    super(geometryOptions.metadata.root, scene, new GeometryFetcher());
 
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
@@ -90,6 +91,10 @@ export class GeometryManager extends Manager<
     );
 
     this.registerEventListeners();
+  }
+
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
   }
 
   public registerEventListeners(): void {
@@ -198,6 +203,7 @@ export class GeometryManager extends Manager<
       data: {
         position: data.position,
         indices: data.indices,
+        ids: data.ids,
         attributes: data.attributes
       },
       feature: this.activeFeature,
@@ -236,7 +242,7 @@ export class GeometryManager extends Manager<
             this.styleOptions.colorScheme[4 * groupIndex + 2] = color.b / 255;
           }
 
-          for (const tile of this.visibleTiles.values()) {
+          for (const tile of this.tiles.values()) {
             tile.data?.update({
               fill: this.styleOptions.fill,
               colorScheme: this.styleOptions.colorScheme,
@@ -258,7 +264,7 @@ export class GeometryManager extends Manager<
           state[event.detail.props.data.category] =
             event.detail.props.data.group;
 
-          for (const tile of this.visibleTiles.values()) {
+          for (const tile of this.tiles.values()) {
             tile.data?.update({
               groupMap: state
             });
@@ -307,7 +313,7 @@ export class GeometryManager extends Manager<
         return;
     }
 
-    for (const tile of this.visibleTiles.values()) {
+    for (const tile of this.tiles.values()) {
       tile.data?.update(updateOptions);
     }
   }
@@ -331,7 +337,7 @@ export class GeometryManager extends Manager<
         break;
     }
 
-    for (const tile of this.visibleTiles.values()) {
+    for (const tile of this.tiles.values()) {
       tile.data?.update({
         fillOpacity: this.styleOptions.fillOpacity,
         styleOptions: {

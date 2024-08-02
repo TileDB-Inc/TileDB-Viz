@@ -3,6 +3,7 @@ import { Events } from '@tiledb-inc/viz-components';
 import { FrameDetails, RefineStrategy } from '../../types';
 import { Traverser } from './traverser';
 import { Tile, TileState } from './tile';
+import { Fetcher } from './fetcher';
 
 export interface TileStatus<T> {
   tile?: T;
@@ -12,23 +13,26 @@ export interface TileStatus<T> {
 }
 
 export abstract class Manager<T extends Tile<any>> {
+  public tiles: Map<number, T>;
+  public fetcher: Fetcher<T>;
+
   protected scene: Scene;
   protected errorLimit: number;
-  protected visibleTiles: Map<number, T>;
   protected frameOptions: UniformBuffer;
   protected nonce: Map<number, number>;
 
   private rejectHandlers: Map<number, (reason: any) => void>;
   private traverser: Traverser<T>;
 
-  constructor(root: T, scene: Scene) {
+  constructor(root: T, scene: Scene, fetcher: Fetcher<T>) {
     this.scene = scene;
 
-    this.visibleTiles = new Map();
+    this.tiles = new Map();
     this.errorLimit = -1;
     this.rejectHandlers = new Map();
     this.traverser = new Traverser(root);
     this.nonce = new Map();
+    this.fetcher = fetcher;
 
     this.frameOptions = new UniformBuffer(this.scene.getEngine());
     this.frameOptions.addUniform('zoom', 1);
@@ -41,7 +45,7 @@ export abstract class Manager<T extends Tile<any>> {
 
     for (const camera of cameras) {
       // Mark tile as `PENDING_DELETE` for the current camera and remove mask
-      for (const tile of this.visibleTiles.values()) {
+      for (const tile of this.tiles.values()) {
         tile.state = tile.state | TileState.PENDING_DELETE;
         tile.mask = tile.mask & ~camera.layerMask;
       }
@@ -51,7 +55,7 @@ export abstract class Manager<T extends Tile<any>> {
 
       for (const tile of this.traverser.visibleNodes(camera, this.errorLimit)) {
         // Add the current tile to the list of visible tiles
-        this.visibleTiles.set(tile.id, tile);
+        this.tiles.set(tile.id, tile);
 
         // Remove the `PENDING_DELETE` flag and mark tile as `PENDING_LOAD` since it is inside the camera frustrum
         tile.state =
@@ -79,7 +83,7 @@ export abstract class Manager<T extends Tile<any>> {
         }
       }
 
-      for (const tile of this.visibleTiles.values()) {
+      for (const tile of this.tiles.values()) {
         if (tile.state & (TileState.PENDING_LOAD | TileState.LOADING)) {
           // To avoid holes while rendering tileset with `REPLACE` refinement strategy a parent
           // tile is not deleted until all the child nodes are visible
@@ -97,15 +101,15 @@ export abstract class Manager<T extends Tile<any>> {
       }
     }
 
-    for (const key of this.visibleTiles.keys()) {
-      const tile = this.visibleTiles.get(key)!;
+    for (const key of this.tiles.keys()) {
+      const tile = this.tiles.get(key)!;
 
       // Maks is empty so that means that it will be rendered by no camera
       // so it is safe to delete for sanity check we can also test the `PENDING_DELETE` flag
       if (tile.mask === 0) {
         // Delete tile from list of tiles
         // TODO: Investigate making the delete async and remove after deletion has been completed
-        this.visibleTiles.delete(key);
+        this.tiles.delete(key);
 
         // If tile is not visible cancel the request and update UI
         if (tile.state & TileState.VISIBLE) {
@@ -134,7 +138,7 @@ export abstract class Manager<T extends Tile<any>> {
   }
 
   public dispose() {
-    for (const tile of this.visibleTiles.values()) {
+    for (const tile of this.tiles.values()) {
       tile.dispose();
     }
   }
@@ -150,6 +154,8 @@ export abstract class Manager<T extends Tile<any>> {
   public abstract cancelTile(tile: T, nonce?: number): void;
 
   public abstract onLoaded(tile: T, data: any): void;
+
+  abstract get CRS(): string | undefined;
 
   private _removeTileInternal(tile: T): void {
     if (tile.state & TileState.PENDING_DELETE) {
@@ -205,7 +211,7 @@ export abstract class Manager<T extends Tile<any>> {
   }
 
   protected forceReloadTiles(): void {
-    for (const tile of this.visibleTiles.values()) {
+    for (const tile of this.tiles.values()) {
       if (tile.state & TileState.LOADING) {
         this._cancelTileInternal(tile);
       }

@@ -86,7 +86,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
   _gdal?: string;
 }
 
-export interface ImageMetadata extends AssetMetadata {
+export interface ImageAssetMetadata extends AssetMetadata {
   channels: Record<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
@@ -101,7 +101,7 @@ export interface ImageMetadata extends AssetMetadata {
   axes: Array<AxesMetadata>;
 }
 
-export type ImageMetadataV2 = {
+export type ImageMetadata = {
   /**
    * Unique dataset id.
    */
@@ -159,6 +159,8 @@ export type GeometryMetadata = {
    */
   name: string;
 
+  namespace: string;
+
   /**
    * The root of the geomemtry tileset.
    */
@@ -192,7 +194,10 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
+  namespace: string;
+
   id: string;
+
   /**
    * The display anme of the point cloud asset.
    */
@@ -430,6 +435,7 @@ export const enum RequestType {
   GEOMETRY_INFO = 3,
   POINT = 4,
   POINT_INFO = 5,
+  INFO = 6,
 
   INITIALIZE = 100
 }
@@ -482,6 +488,10 @@ export type TileDBSpatialPayload = {
    * The affine transformation to go from CRS to pixel space.
    */
   transformation?: number[][];
+};
+
+export type TileDBInfoPayload = TileDBPayload & {
+  domain: Domain[];
 };
 
 export type ImagePayload = TileDBPayload & {

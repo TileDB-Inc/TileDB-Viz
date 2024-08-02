@@ -35,6 +35,10 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     this.registerEventListeners();
   }
 
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
+  }
+
   public registerEventListeners(): void {
     window.addEventListener(
       Events.SLIDER_CHANGE,
@@ -126,7 +130,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     switch (target[1]) {
       case 'opacity':
         this.visibility = event.detail.props.value ?? 1;
-        for (const tile of this.visibleTiles.values()) {
+        for (const tile of this.tiles.values()) {
           tile.data?.update({ opacity: this.visibility });
         }
         break;

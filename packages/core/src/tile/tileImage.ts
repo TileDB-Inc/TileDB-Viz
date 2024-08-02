@@ -12,7 +12,7 @@ import {
   TileDBTileImageOptions
 } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
-import { ImageMetadataV2 } from './types';
+import { ImageMetadata } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
 import { Events } from '@tiledb-inc/viz-components';
@@ -45,6 +45,7 @@ import {
 } from '../utils/cache';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
+import { PickingTool } from './utils/picking-tool';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -52,7 +53,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private gui!: TileImageGUI;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
-  private imageMetadata!: ImageMetadataV2;
+  private imageMetadata!: ImageMetadata;
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: {
@@ -63,6 +64,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private frameDetails: FrameDetails;
   private sceneOptions: SceneOptions;
   private groupAssets: AssetEntry[];
+  private pickingTool?: PickingTool;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -254,9 +256,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: metadata.idAttribute !== undefined,
           minimap: false
         });
+
+        console.log(metadata)
 
         this.sceneOptions.extents.encapsulateBoundingInfo(
           metadata.root.boundingInfo
@@ -297,7 +301,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: true,
           minimap: false
         });
 
@@ -344,6 +348,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)
+    );
+
+    this.pickingTool = new PickingTool(this.scene, this.sceneOptions);
+    this.pickingTool.managers.push(
+      ...this.assetManagers.filter(x => x.pickable).map(x => x.manager)
     );
 
     this.updateEngineInfo();

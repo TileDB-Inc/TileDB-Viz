@@ -5,7 +5,7 @@ import {
   BiomedicalAssetMetadata,
   RasterAssetMetadata,
   LevelRecord,
-  ImageMetadata
+  ImageAssetMetadata
 } from '../types';
 import { Attribute } from '@tiledb-inc/viz-common';
 import { Dimension } from '../../types';
@@ -20,8 +20,8 @@ export function getBiomedicalMetadata(
   biomedicalMetadata: BiomedicalAssetMetadata,
   attributes: Attribute[],
   uris: string[]
-): [ImageMetadata, Attribute[], Dimension[], LevelRecord[]] {
-  let imageMetadata = {} as ImageMetadata;
+): [ImageAssetMetadata, Attribute[], Dimension[], LevelRecord[]] {
+  let imageMetadata = {} as ImageAssetMetadata;
 
   if (biomedicalMetadata.fmt_version === 1 && !biomedicalMetadata.metadata) {
     // legacy image support
@@ -86,7 +86,9 @@ export function getBiomedicalMetadata(
       );
     }
 
-    imageMetadata = JSON.parse(biomedicalMetadata.metadata) as ImageMetadata;
+    imageMetadata = JSON.parse(
+      biomedicalMetadata.metadata
+    ) as ImageAssetMetadata;
 
     imageMetadata.channels = new Map(Object.entries(imageMetadata.channels));
     for (const axis of imageMetadata.axes) {
@@ -195,14 +197,14 @@ export function getRasterMetadata(
   rasterMetadata: RasterAssetMetadata,
   attributes: Attribute[],
   uris: string[]
-): [ImageMetadata, Attribute[], Dimension[], LevelRecord[]] {
+): [ImageAssetMetadata, Attribute[], Dimension[], LevelRecord[]] {
   if (!rasterMetadata.metadata) {
     throw new Error(
       "Missing required field from asset's metadata. Missing field name: 'metadata'"
     );
   }
 
-  let imageMetadata = JSON.parse(rasterMetadata.metadata) as ImageMetadata;
+  let imageMetadata = JSON.parse(rasterMetadata.metadata) as ImageAssetMetadata;
   for (const axesMetadata of imageMetadata.axes) {
     if ('axesTranslation' in axesMetadata) {
       for (const [key, value] of new Map(
@@ -214,7 +216,7 @@ export function getRasterMetadata(
         );
       }
 
-      imageMetadata = JSON.parse(rasterMetadata.metadata) as ImageMetadata;
+      imageMetadata = JSON.parse(rasterMetadata.metadata) as ImageAssetMetadata;
     }
   }
 

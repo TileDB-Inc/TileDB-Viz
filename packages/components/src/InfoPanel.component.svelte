@@ -8,10 +8,10 @@
   import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
   import { ButtonProps, GUIEvent } from './types';
-  import { InfoPanelConfigEntry, InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
+  import { InfoPanelConfigEntry, InfoPanelInitializationEvent, PickResult } from '@tiledb-inc/viz-common';
 
   let config = new Map<string, InfoPanelConfigEntry>();
-  let results = new Map<string, any[]>();
+  let results = new Map<string, PickResult[]>();
   let selectedDataset: string | undefined = undefined;
 
   let itemsPerPage: number = 10;
@@ -108,19 +108,21 @@
     );
   }
 
-  function itemOnPick(event: CustomEvent<GUIEvent<any[]>>) {
+  function itemOnPick(event: CustomEvent<GUIEvent<PickResult>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry' || target[1] !== 'info') return;
+    if (target[0] !== 'info-panel') {
+      return;
+    }
 
-    let currentResult = results.get(target[2]) ?? [];
+    let currentResult = results.get(event.detail.props.assetID) ?? [];
 
     currentResult = [
       ...currentResult,
-      ...event.detail.props
+      event.detail.props
     ];
 
-    results.set(target[2], currentResult);
+    results.set(event.detail.props.assetID, currentResult);
 
     // Trigger UI update
     results = results;

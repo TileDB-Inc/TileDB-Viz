@@ -20,10 +20,16 @@ import { Feature } from '@tiledb-inc/viz-common';
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '@tiledb-inc/viz-common';
 import { TypedArray } from '../../types';
+import { PointIntersector } from './pointIntersector';
 
 type PointCloudData = {
   position: Float32Array;
   attributes: Record<string, TypedArray>;
+};
+
+type PointSelection = {
+  indices?: number[];
+  pick?: { current: number; previous: number };
 };
 
 export type PointCloudUpdateOptions = TileUpdateOptions & {
@@ -33,6 +39,7 @@ export type PointCloudUpdateOptions = TileUpdateOptions & {
   feature?: Feature;
   pointSize?: number;
   pointShape?: PointShape;
+  selection?: PointSelection;
 };
 
 export class PointTileContent extends TileContent {
@@ -44,6 +51,7 @@ export class PointTileContent extends TileContent {
 
     this.pointCount = 0;
     this.material = null;
+    this.intersector = new PointIntersector(this);
   }
 
   public update(options: PointCloudUpdateOptions): void {
@@ -59,6 +67,8 @@ export class PointTileContent extends TileContent {
   private onDataUpdateWebGPU(data: PointCloudData) {
     this.pointCount = data.position.length / 3;
     this.buffers = data.attributes;
+    this.buffers['position'] = data.position;
+    this.buffers['state'] = new Uint8Array(this.pointCount).fill(0);
 
     if (this.meshes.length === 0) {
       console.error('Mesh is unitiliazed for point cloud tile');
@@ -71,6 +81,15 @@ export class PointTileContent extends TileContent {
         size: 3,
         stride: 3,
         instanced: true
+      })
+    );
+    this.meshes[0].setVerticesBuffer(
+      new VertexBuffer(this.scene.getEngine(), this.buffers['state'], 'state', {
+        size: 1,
+        stride: 1,
+        instanced: true,
+        type: VertexBuffer.UNSIGNED_BYTE,
+        updatable: true
       })
     );
   }
@@ -93,6 +112,7 @@ export class PointTileContent extends TileContent {
     vertexData.applyToMesh(this.meshes[0], false);
 
     this.buffers = data.attributes;
+    this.buffers['position'] = data.position;
   }
 
   private updateWebGPU(options: PointCloudUpdateOptions) {
@@ -102,6 +122,10 @@ export class PointTileContent extends TileContent {
 
     if (options.data) {
       this.onDataUpdateWebGPU(options.data);
+    }
+
+    if (options.selection) {
+      this.onSelectionUpdateWebGPU(options.selection);
     }
 
     if (options.feature) {
@@ -241,6 +265,29 @@ export class PointTileContent extends TileContent {
     }
 
     this.meshes[0].setBoundingInfo(this.tile.boundingInfo);
+  }
+
+  private onSelectionUpdateWebGPU(selection: PointSelection) {
+    const state = this.buffers['state'] as Uint8Array;
+
+    // If selection indices is an empty array clear all selection
+    if (selection.indices && selection.indices.at(0) === -1) {
+      state.fill(0);
+
+      return;
+    }
+
+    for (const idx of selection.indices ?? []) {
+      state[idx] = 1;
+    }
+
+    if (selection.pick) {
+      state[selection.pick.current] = 2;
+      state[selection.pick.previous] = 1;
+    }
+
+    // @ts-expect-error Update vertices data expects only Float arrays but should expect anything
+    this.meshes[0].updateVerticesData('state', state);
   }
 
   private updateWebGL(options: PointCloudUpdateOptions) {
