@@ -86,15 +86,6 @@ export class PointManager extends Manager<
 
     this.initializeUniformBuffer();
 
-    if (this.metadata.idAttribute) {
-      this.metadata.features.push({
-        name: 'Picking ID',
-        type: FeatureType.NON_RENDERABLE,
-        attributes: [{ name: this.metadata.idAttribute.name }],
-        interleaved: false
-      });
-    }
-
     this.registerEventListeners();
     this.initializeGUIProperties();
     this.fetcher = new PointCloudFetcher(
@@ -164,7 +155,8 @@ export class PointManager extends Manager<
     tile.data?.update({
       data: {
         position: data.position,
-        attributes: data.attributes
+        attributes: data.attributes,
+        ids: data.ids
       },
       pointShape: this.styleOptions.pointShape,
       UBO: this.pointOptions,

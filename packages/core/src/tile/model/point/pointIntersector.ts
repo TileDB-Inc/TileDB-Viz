@@ -76,8 +76,7 @@ export class PointIntersector extends Intersector<PointTileContent> {
       Number.MIN_SAFE_INTEGER
     );
 
-    //if (!position || !this.data.ids) {
-    if (!position) {
+    if (!position || !this.data.ids) {
       return {
         ids: [],
         minPoint: Vector3.ZeroReadOnly.asArray(),
@@ -95,7 +94,7 @@ export class PointIntersector extends Intersector<PointTileContent> {
         )
       ) {
         indices.push(idx / 3);
-        //ids.push(this.data.ids[idx / 3]);
+        ids.push(this.data.ids[idx / 3]);
 
         minPoint.minimizeInPlaceFromFloats(
           position[idx],

@@ -25,6 +25,7 @@ import { PointIntersector } from './pointIntersector';
 type PointCloudData = {
   position: Float32Array;
   attributes: Record<string, TypedArray>;
+  ids?: BigInt64Array;
 };
 
 type PointSelection = {
@@ -67,6 +68,7 @@ export class PointTileContent extends TileContent {
   private onDataUpdateWebGPU(data: PointCloudData) {
     this.pointCount = data.position.length / 3;
     this.buffers = data.attributes;
+    this.ids = data.ids;
     this.buffers['position'] = data.position;
     this.buffers['state'] = new Uint8Array(this.pointCount).fill(0);
 
