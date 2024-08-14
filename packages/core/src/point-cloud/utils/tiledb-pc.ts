@@ -1,4 +1,4 @@
-import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
@@ -165,7 +165,7 @@ export async function getPointCloud(options: TileDBPointCloudOptions) {
       if (options.mode === 'time') {
         data = sortDataArrays(dataUnsorted);
       } else {
-        data = dataUnsorted;
+        data = dataUnsorted as SparseResult;
       }
     } else {
       if (options.data) {
@@ -232,7 +232,10 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
 
   const storeName = `${options.namespace}:${options.arrayName}`;
 
-  const dataFromCache = await getQueryDataFromCache(storeName, queryCacheKey);
+  const dataFromCache = await getQueryDataFromCache<SparseResult>(
+    storeName,
+    queryCacheKey
+  );
 
   if (dataFromCache) {
     return dataFromCache;
@@ -326,7 +329,7 @@ export async function getNonEmptyDomain(
   const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = 0;
   // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache(storeName, key);
+  const dataFromCache = await getQueryDataFromCache<number[]>(storeName, key);
 
   if (!dataFromCache) {
     const config: Record<string, string> = {};
@@ -358,7 +361,10 @@ export async function getArraySchema(options: TileDBPointCloudOptions) {
   const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = -2;
   // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache(storeName, key);
+  const dataFromCache = await getQueryDataFromCache<ArraySchema | undefined>(
+    storeName,
+    key
+  );
 
   if (!dataFromCache) {
     const config: Record<string, string> = {};
@@ -391,7 +397,7 @@ export async function getArrayMetadata(
   const storeName = getStoreName(options.namespace!, options.groupName!);
   const key = -1;
   // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache(storeName, key);
+  const dataFromCache = await getQueryDataFromCache<any>(storeName, key);
 
   if (!dataFromCache) {
     const config: Record<string, string> = {};
