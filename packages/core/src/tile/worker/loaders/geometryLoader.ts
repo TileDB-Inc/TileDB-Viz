@@ -1,27 +1,20 @@
 import {
+  GeometryInfoPayload,
   GeometryPayload,
   GeometryResponse,
   GeometryType,
+  InfoResponse,
   TypedArray,
   WorkerResponse
 } from '../../types';
-import Client, { QueryData, Range } from '@tiledb-inc/tiledb-cloud';
+import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
 import { Datatype, Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
 import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
 import { parsePolygon } from '../parsers';
-import {
-  matrix,
-  Matrix,
-  min,
-  max,
-  multiply,
-  add,
-  index,
-  identity
-} from 'mathjs';
+import { matrix, Matrix, identity } from 'mathjs';
 import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 
@@ -48,21 +41,29 @@ export async function geometryRequest(
     payload.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
-  const cachedArrays = await loadCachedGeometry(payload.uri, x, y, [
-    ...payload.features.filter(x => x.attributes.length).map(x => x.name),
-    'positions',
-    'ids',
-    'indices'
-  ]);
+  const cachedArrays = await loadCachedGeometry(
+    payload.uri,
+    `${x}_${y}`,
+    [
+      ...payload.features.filter(x => x.attributes.length).map(x => x.name),
+      'positions',
+      'indices'
+    ],
+    ['ids']
+  );
 
   if (cachedArrays) {
-    result.attributes = cachedArrays;
+    for (const [name, data] of Object.entries(cachedArrays)) {
+      result.attributes![name] = data as TypedArray;
+    }
 
     result.position = cachedArrays['positions'] as Float32Array;
     result.indices = cachedArrays['indices'] as Int32Array;
+    result.ids = cachedArrays['ids'] as BigInt64Array | undefined;
 
     delete cachedArrays.positions;
     delete cachedArrays.indices;
+    delete cachedArrays.ids;
 
     return {
       id: id,
@@ -171,15 +172,11 @@ export async function geometryRequest(
     throw new Error('Request cancelled by the user');
   }
 
-  const rawPositions = Float32Array.from(geometryOutput.positions);
-  const rawIds = BigInt64Array.from(geometryOutput.faceMapping);
-  const rawIndices = Int32Array.from(geometryOutput.indices);
+  result.position = Float32Array.from(geometryOutput.positions);
+  result.ids = BigInt64Array.from(geometryOutput.faceMapping);
+  result.indices = Int32Array.from(geometryOutput.indices);
 
   result.attributes = {};
-  result.ids = rawIds;
-
-  result.position = rawPositions;
-  result.indices = rawIndices;
 
   for (const feature of payload.features) {
     switch (feature.type) {
@@ -196,10 +193,15 @@ export async function geometryRequest(
     }
   }
 
-  await Promise.all(
-    Object.entries(result.attributes).map(([name, array]) => {
+  await Promise.all([
+    ...Object.entries(result.attributes).map(([name, array]) => {
       return writeToCache(payload.uri, `${name}_${x}_${y}`, array);
-    })
+    }),
+    writeToCache(payload.uri, `positions_${x}_${y}`, result.position),
+    writeToCache(payload.uri, `indices_${x}_${y}`, result.indices),
+    writeToCache(payload.uri, `ids_${x}_${y}`, result.ids)
+  ]).catch(() =>
+    console.error('Error writing geometry response to IndexedDB.')
   );
 
   return {
@@ -209,87 +211,124 @@ export async function geometryRequest(
   } as WorkerResponse;
 }
 
+export async function geometryInfoRequest(
+  id: number,
+  client: Client,
+  tokenSource: CancelTokenSource,
+  payload: GeometryInfoPayload
+) {
+  console.log(payload);
+  const result: InfoResponse = {
+    ids: [],
+    info: []
+  };
+
+  const ranges = [
+    [payload.region[0].min, payload.region[0].max],
+    [payload.region[1].min, payload.region[1].max]
+  ];
+
+  const query = {
+    layout: Layout.Unordered,
+    ranges: ranges,
+    bufferSize: 20_000_000,
+    cancelToken: tokenSource?.token
+  } as QueryData;
+
+  const generator = client.query.ReadQuery(
+    payload.namespace,
+    payload.uri,
+    query
+  );
+
+  try {
+    for await (const response of generator) {
+      if (payload.idAttribute && payload.ids) {
+        console.log(response);
+
+        for (
+          let index = 0;
+          index < response[payload.idAttribute.name].length &&
+          payload.ids.size !== 0;
+          ++index
+        ) {
+          const id = BigInt(response[payload.idAttribute.name][index]);
+
+          if (!payload.ids.has(id)) {
+            continue;
+          }
+
+          result.ids.push(id);
+          payload.ids.delete(id);
+
+          const entry: Record<string, any> = {};
+          for (const [key, val] of Object.entries(response)) {
+            entry[key] = val[index];
+          }
+
+          result.info.push(entry);
+        }
+      } else {
+        for (
+          let index = 0;
+          index < Object.values(response)[0].length;
+          ++index
+        ) {
+          const entry: Record<string, any> = {};
+          for (const [key, val] of Object.entries(result)) {
+            entry[key] = val[index];
+          }
+
+          result.info.push(entry);
+        }
+      }
+    }
+  } catch (e) {
+    console.log(e);
+    throw new Error('Request cancelled by the user');
+  }
+
+  return {
+    id: id,
+    type: RequestType.INFO,
+    response: result
+  } as WorkerResponse;
+}
+
 async function loadCachedGeometry(
   arrayID: string,
-  x: number,
-  y: number,
-  features: string[]
-): Promise<{ [attribute: string]: TypedArray } | undefined> {
+  index: string,
+  features: string[],
+  optionalFeatures: string[] = []
+): Promise<{ [attribute: string]: TypedArray | BigInt64Array } | undefined> {
   const cachedArrays = await Promise.all(
-    features.map(feature => {
-      return getQueryDataFromCache(arrayID, `${feature}_${x}_${y}`);
+    [...features, ...optionalFeatures].map(feature => {
+      return getQueryDataFromCache<TypedArray>(arrayID, `${feature}_${index}`);
     })
   );
 
-  if (cachedArrays.filter(x => x === undefined).length) {
+  if (
+    cachedArrays.filter(
+      (x: TypedArray | undefined, index: number) =>
+        x === undefined && index < features.length
+    ).length === 0
+  ) {
+    console.log('undef');
     return undefined;
   }
 
   const result: { [attribute: string]: TypedArray } = {};
 
-  for (const [index, attribute] of features.entries()) {
-    result[attribute] = cachedArrays[index];
+  for (const [index, attribute] of [
+    ...features,
+    ...optionalFeatures
+  ].entries()) {
+    if (cachedArrays[index]) {
+      result[attribute] = cachedArrays[index];
+    }
   }
 
   return result;
-}
-
-function calculateQueryRanges(
-  tileIndex: number[],
-  tilesize: number,
-  affineMatrix: Matrix,
-  pad?: number[],
-  baseCRS?: string,
-  sourceCRS?: string
-): (Range | Range[])[] {
-  const [x, y] = tileIndex;
-
-  let minPoint = matrix([x * tilesize, y * tilesize, 1]);
-  let maxPoint = matrix([(x + 1) * tilesize, (y + 1) * tilesize, 1]);
-
-  minPoint = multiply(affineMatrix, minPoint);
-  maxPoint = multiply(affineMatrix, maxPoint);
-
-  if (baseCRS && sourceCRS) {
-    const converter = proj4(baseCRS, sourceCRS);
-
-    minPoint.subset(
-      index([true, true, false]),
-      converter.forward(
-        minPoint.subset(index([true, true, false])).toArray() as number[]
-      )
-    );
-    maxPoint.subset(
-      index([true, true, false]),
-      converter.forward(
-        maxPoint.subset(index([true, true, false])).toArray() as number[]
-      )
-    );
-  }
-
-  [minPoint, maxPoint] = [
-    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
-    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
-  ];
-
-  if (pad) {
-    minPoint.subset(
-      index([true, true, false]),
-      add(
-        minPoint.subset(index([true, true, false])),
-        matrix([-pad[0], -pad[1]])
-      )
-    );
-    maxPoint.subset(
-      index([true, true, false]),
-      add(maxPoint.subset(index([true, true, false])), matrix([pad[0], pad[1]]))
-    );
-  }
-
-  return [
-    [minPoint.get([0]), maxPoint.get([0])],
-    [minPoint.get([1]), maxPoint.get([1])]
-  ];
 }
 
 function loadBinaryGeometry(

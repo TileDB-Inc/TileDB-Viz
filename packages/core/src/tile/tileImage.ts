@@ -260,8 +260,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           minimap: false
         });
 
-        console.log(metadata)
-
         this.sceneOptions.extents.encapsulateBoundingInfo(
           metadata.root.boundingInfo
         );
@@ -301,7 +299,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: true,
+          pickable: metadata.idAttribute !== undefined,
           minimap: false
         });
 

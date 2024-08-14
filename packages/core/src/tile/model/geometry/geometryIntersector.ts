@@ -1,11 +1,4 @@
-import {
-  Ray,
-  Mesh,
-  Vector3,
-  BoundingBox,
-  BoundingBlock,
-  BoundingInfo
-} from '@babylonjs/core';
+import { Ray, Mesh, Vector3 } from '@babylonjs/core';
 import { IntersectionResult, Intersector } from '../intersector';
 import { GeometryContent } from './geometryContent';
 import { edgeInMesh, pointInMesh } from '../../utils/geometry';
@@ -150,6 +143,18 @@ export class GeometryIntersector extends Intersector<GeometryContent> {
         idx += 3
       ) {
         selectedIndices.push(indices[idx], indices[idx + 1], indices[idx + 2]);
+
+        Vector3.FromArrayToRef(position, 3 * indices[idx], vertexA);
+        Vector3.FromArrayToRef(position, 3 * indices[idx + 1], vertexB);
+        Vector3.FromArrayToRef(position, 3 * indices[idx + 2], vertexC);
+
+        minPoint.minimizeInPlace(vertexA);
+        minPoint.minimizeInPlace(vertexB);
+        minPoint.minimizeInPlace(vertexC);
+
+        maxPoint.maximizeInPlace(vertexA);
+        maxPoint.maximizeInPlace(vertexB);
+        maxPoint.maximizeInPlace(vertexC);
       }
     }
 
@@ -161,7 +166,6 @@ export class GeometryIntersector extends Intersector<GeometryContent> {
       maxPoint: maxPoint.asArray()
     };
   }
-  
 
   public pickObject(id: bigint): void {
     throw new Error('Method not implemented.');

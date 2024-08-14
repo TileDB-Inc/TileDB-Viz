@@ -431,7 +431,7 @@ async function getArrayMetadata(
     throw new Error('Array ID is undefined');
   }
 
-  let arrayMetadata = await getQueryDataFromCache(
+  let arrayMetadata = await getQueryDataFromCache<AssetMetadata>(
     options.arrayID,
     'arrayMetadata'
   );
@@ -445,7 +445,7 @@ async function getArrayMetadata(
     await writeToCache(options.arrayID, 'arrayMetadata', arrayMetadata);
   }
 
-  return [arrayMetadata, [options.arrayID]];
+  return [arrayMetadata!, [options.arrayID]];
 }
 
 async function getGroupMetadata(
@@ -461,11 +461,14 @@ async function getGroupMetadata(
   }
 
   // Check if the are cached result for the queries
-  let groupMetadata = await getQueryDataFromCache(
+  let groupMetadata = await getQueryDataFromCache<AssetMetadata>(
     options.groupID,
     'groupMetadata'
   );
-  let memberUris = await getQueryDataFromCache(options.groupID, 'memberUris');
+  let memberUris = await getQueryDataFromCache<string[]>(
+    options.groupID,
+    'memberUris'
+  );
 
   if (!groupMetadata || !memberUris) {
     [groupMetadata, memberUris] = await Promise.all([
@@ -489,7 +492,7 @@ async function getGroupMetadata(
     await writeToCache(options.groupID, 'memberUris', memberUris);
   }
 
-  return [groupMetadata, memberUris];
+  return [groupMetadata!, memberUris!];
 }
 
 export async function getGeometryMetadata(
@@ -506,7 +509,7 @@ export async function getGeometryMetadata(
     throw new Error('Geometry array ID is undefined');
   }
 
-  let arraySchemaResponse: ArraySchema = await getQueryDataFromCache(
+  let arraySchemaResponse = await getQueryDataFromCache<ArraySchema>(
     options.geometryArrayID,
     'arraySchemaResponse'
   );

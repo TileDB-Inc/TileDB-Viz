@@ -26,7 +26,6 @@ import {
 import { PickingMode } from '@tiledb-inc/viz-common';
 import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
-import { TileContent } from '../model/tileContent';
 import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { SceneOptions } from '../../types';
 import proj4 from 'proj4';
@@ -75,7 +74,7 @@ export class PickingTool {
       }
     ): void;
   }[];
-  public managers: Manager<Tile<TileContent>>[] = [];
+  public managers: Manager<Tile<any>>[] = [];
 
   private mode: PickingMode;
   private scene: Scene;
@@ -271,9 +270,13 @@ export class PickingTool {
               const result =
                 tile.data?.intersector?.intersectMesh(selectionMesh);
 
-              if (!result) {
+              console.log(result);
+
+              if (!result || result.ids.length === 0) {
                 continue;
               }
+
+              console.log(result);
 
               const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
                 result.minPoint,
@@ -284,7 +287,11 @@ export class PickingTool {
                   : undefined
               );
 
-              // manager.fetcher.fetchInfo(tile);
+              manager.fetcher.fetchInfo(
+                tile,
+                selectionBoundingInfo,
+                result.ids
+              );
             }
           }
         }

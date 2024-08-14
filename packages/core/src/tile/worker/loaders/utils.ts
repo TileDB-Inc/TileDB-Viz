@@ -15,6 +15,8 @@ export function transformBufferToInt64(
       );
     case Datatype.Int64:
       return new BigInt64Array(buffer);
+    case Datatype.Uint64:
+      return BigInt64Array.from(new BigUint64Array(buffer));
     default:
       throw new TypeError('Unsupported type to cast to BigInt');
   }
@@ -77,25 +79,36 @@ export function toTypedArray(
   }
 }
 
-export async function loadCachedGeometry(
+export async function loadCachedData(
   arrayID: string,
   index: string,
-  features: string[]
-): Promise<{ [attribute: string]: TypedArray } | undefined> {
+  features: string[],
+  optionalFeatures: string[] = []
+): Promise<{ [attribute: string]: TypedArray | BigInt64Array } | undefined> {
   const cachedArrays = await Promise.all(
-    features.map(feature => {
-      return getQueryDataFromCache(arrayID, `${feature}_${index}`);
+    [...features, ...optionalFeatures].map(feature => {
+      return getQueryDataFromCache<TypedArray>(arrayID, `${feature}_${index}`);
     })
   );
 
-  if (cachedArrays.some(x => x === undefined)) {
+  if (
+    cachedArrays.filter(
+      (x: TypedArray | undefined, idx: number) =>
+        x === undefined && idx < features.length
+    ).length !== 0
+  ) {
     return undefined;
   }
 
   const result: { [attribute: string]: TypedArray } = {};
 
-  for (const [index, attribute] of features.entries()) {
-    result[attribute] = cachedArrays[index];
+  for (const [index, attribute] of [
+    ...features,
+    ...optionalFeatures
+  ].entries()) {
+    if (cachedArrays[index]) {
+      result[attribute] = cachedArrays[index];
+    }
   }
 
   return result;

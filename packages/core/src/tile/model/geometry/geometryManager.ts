@@ -76,7 +76,15 @@ export class GeometryManager extends Manager<
     workerPool: WorkerPool,
     geometryOptions: GeometryOptions
   ) {
-    super(geometryOptions.metadata.root, scene, new GeometryFetcher());
+    super(
+      geometryOptions.metadata.root,
+      scene,
+      new GeometryFetcher(
+        workerPool,
+        geometryOptions.metadata,
+        geometryOptions.sceneOptions
+      )
+    );
 
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;

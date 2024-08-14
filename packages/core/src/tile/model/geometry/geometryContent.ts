@@ -153,15 +153,10 @@ export class GeometryContent extends TileContent {
     vertexData.applyToMesh(mesh, false);
 
     mesh.setVerticesBuffer(
-      new VertexBuffer(
-        this.scene.getEngine(),
-        this.buffers['state'],
-        'state',
-        {
-          stride: 1,
-          updatable: false
-        }
-      )
+      new VertexBuffer(this.scene.getEngine(), this.buffers['state'], 'state', {
+        stride: 1,
+        updatable: false
+      })
     );
 
     mesh.material = this.material;

@@ -1,6 +1,10 @@
 import { Axis, DeepImmutableObject, Mesh, Ray, Vector3 } from '@babylonjs/core';
 
-export function edgeInMesh(mesh: Mesh, a: DeepImmutableObject<Vector3>, b: DeepImmutableObject<Vector3>): boolean {
+export function edgeInMesh(
+  mesh: Mesh,
+  a: DeepImmutableObject<Vector3>,
+  b: DeepImmutableObject<Vector3>
+): boolean {
   const direction = b.subtract(a);
   const threshold = direction.length();
   const ray = new Ray(a, direction.normalize(), threshold);
@@ -8,7 +12,10 @@ export function edgeInMesh(mesh: Mesh, a: DeepImmutableObject<Vector3>, b: DeepI
   return ray.intersectsMesh(mesh).hit;
 }
 
-export function pointInMesh(mesh: DeepImmutableObject<Mesh>, vertex: DeepImmutableObject<Vector3>): boolean {
+export function pointInMesh(
+  mesh: DeepImmutableObject<Mesh>,
+  vertex: DeepImmutableObject<Vector3>
+): boolean {
   const boundInfo = mesh.getBoundingInfo();
   const max = boundInfo.maximum;
   const min = boundInfo.minimum;
