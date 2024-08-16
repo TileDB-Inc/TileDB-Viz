@@ -4,6 +4,7 @@ import { Tile } from '../tile';
 import { PointTileContent } from './pointContent';
 import {
   DataRequest,
+  InfoResponse,
   PointCloudInfoPayload,
   PointCloudMetadata,
   PointCloudPayload,
@@ -13,7 +14,8 @@ import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { BoundingInfo } from '@babylonjs/core';
 
 export class PointCloudFetcher extends Fetcher<
-  Tile<PointDataContent, PointTileContent>
+  Tile<PointDataContent, PointTileContent>,
+  {}
 > {
   private workerPool: WorkerPool;
   private metadata: PointCloudMetadata;
@@ -86,7 +88,7 @@ export class PointCloudFetcher extends Fetcher<
       } as PointCloudInfoPayload
     } as DataRequest);
 
-    return new Promise((resolve, _) =>
+    return new Promise<InfoResponse>((resolve, _) =>
       this.workerPool.callbacks.set(`${tile.id}_${this.nonce}`, resolve)
     );
   }

@@ -3,7 +3,6 @@ import {
   RequestType,
   GeometryStyle,
   colorScheme,
-  GeometryPayload,
   GeometryMetadata,
   GeometryResponse
 } from '../../types';
@@ -24,7 +23,9 @@ import {
   FeatureType,
   GUIFlatColorFeature,
   GUICategoricalFeature,
-  GUIFeature
+  GUIFeature,
+  InfoPanelInitializationEvent,
+  InfoPanelConfigEntry
 } from '@tiledb-inc/viz-common';
 import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
@@ -44,8 +45,6 @@ export class GeometryManager extends Manager<
 > {
   private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
-  private id: string;
-  private namespace: string;
   private sceneOptions: SceneOptions;
   private styleOptions = {
     style: GeometryStyle.FILLED,
@@ -88,8 +87,6 @@ export class GeometryManager extends Manager<
 
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
-    this.id = geometryOptions.arrayID;
-    this.namespace = geometryOptions.namespace;
     this.activeFeature = this.metadata.features[0];
     this.sceneOptions = geometryOptions.sceneOptions;
 
@@ -166,30 +163,7 @@ export class GeometryManager extends Manager<
       tile.data = new GeometryContent(this.scene, tile);
     }
 
-    this.workerPool.postMessage({
-      type: RequestType.GEOMETRY,
-      id: tile.id,
-      payload: {
-        index: tile.index,
-        uri: tile.content[0].uri,
-        region: tile.content[0].region,
-        namespace: this.namespace,
-        type: this.metadata.type,
-        sourceCRS: this.metadata.crs,
-        targetCRS: this.sceneOptions.crs,
-        transformation: this.sceneOptions.transformation?.toArray(),
-        attributes: this.metadata.attributes,
-        features: this.metadata.features,
-        geometryAttribute: this.metadata.geometryAttribute,
-        idAttribute: this.metadata.idAttribute,
-        heightAttribute: this.metadata.extrudeAttribute,
-        nonce: nonce
-      } as GeometryPayload
-    } as DataRequest);
-
-    return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve);
-    });
+    return this.fetcher.fetch(tile);
   }
 
   public cancelTile(
@@ -356,6 +330,32 @@ export class GeometryManager extends Manager<
   }
 
   public initializeGUIProperties(): void {
+    if (this.metadata.idAttribute) {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+          Events.INITIALIZE,
+          {
+            bubbles: true,
+            detail: {
+              target: 'info-panel',
+              props: {
+                config: new Map([
+                  [
+                    this.id,
+                    {
+                      name: this.metadata.name,
+                      pickAttribute: this.metadata.idAttribute.name,
+                      attributes: this.metadata.attributes
+                    } as InfoPanelConfigEntry
+                  ]
+                ])
+              }
+            }
+          }
+        )
+      );
+    }
+
     window.dispatchEvent(
       new CustomEvent<GUIEvent<GeometryPanelInitializationEvent>>(
         Events.INITIALIZE,

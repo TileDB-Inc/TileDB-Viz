@@ -27,13 +27,15 @@ import {
   GUISelectProperty
 } from '@tiledb-inc/viz-common';
 import { ImageContent } from './imageContent';
-import { ImageDataContent } from '../../../types';
+import { ImageDataContent, SceneOptions } from '../../../types';
 import { Tile } from '../tile';
 import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { ImageFetcher } from './imageFetcher';
 
 interface ImageOptions {
   metadata: ImageMetadata;
   namespace: string;
+  sceneOptions: SceneOptions;
 }
 
 export class ImageManager extends Manager<
@@ -55,7 +57,15 @@ export class ImageManager extends Manager<
     workerPool: WorkerPool,
     imageOptions: ImageOptions
   ) {
-    super(imageOptions.metadata.root, scene);
+    super(
+      imageOptions.metadata.root,
+      scene,
+      new ImageFetcher(
+        workerPool,
+        imageOptions.metadata,
+        imageOptions.sceneOptions
+      )
+    );
 
     this.workerPool = workerPool;
     this.errorLimit = Math.max(

@@ -261,6 +261,7 @@ export async function pointInfoRequest(
   request: PointCloudInfoPayload
 ) {
   const result: InfoResponse = {
+    nonce: request.nonce,
     ids: [],
     info: []
   };

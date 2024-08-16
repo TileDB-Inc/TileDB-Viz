@@ -24,7 +24,9 @@ import {
   PointPanelInitializationEvent,
   GUIFlatColorFeature,
   GUICategoricalFeature,
-  GUIFeature
+  GUIFeature,
+  InfoPanelInitializationEvent,
+  InfoPanelConfigEntry
 } from '@tiledb-inc/viz-common';
 import { Tile } from '../tile';
 import { PointDataContent, SceneOptions } from '../../../types';
@@ -319,6 +321,32 @@ export class PointManager extends Manager<
   }
 
   public initializeGUIProperties() {
+    if (this.metadata.idAttribute) {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+          Events.INITIALIZE,
+          {
+            bubbles: true,
+            detail: {
+              target: 'info-panel',
+              props: {
+                config: new Map([
+                  [
+                    this.id,
+                    {
+                      name: this.metadata.name,
+                      pickAttribute: this.metadata.idAttribute.name,
+                      attributes: this.metadata.attributes
+                    } as InfoPanelConfigEntry
+                  ]
+                ])
+              }
+            }
+          }
+        )
+      );
+    }
+
     window.dispatchEvent(
       new CustomEvent<GUIEvent<PointPanelInitializationEvent>>(
         Events.INITIALIZE,

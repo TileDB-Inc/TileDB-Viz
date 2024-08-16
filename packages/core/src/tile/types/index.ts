@@ -112,6 +112,8 @@ export type ImageMetadata = {
    */
   name: string;
 
+  namespace: string;
+
   /**
    * The root of the image tileset
    */
@@ -620,6 +622,7 @@ export interface PointResponse extends BaseResponse {
 }
 
 export interface InfoResponse {
+  nonce: number;
   info: any[];
   ids: bigint[];
 }

@@ -217,8 +217,8 @@ export async function geometryInfoRequest(
   tokenSource: CancelTokenSource,
   payload: GeometryInfoPayload
 ) {
-  console.log(payload);
   const result: InfoResponse = {
+    nonce: payload.nonce,
     ids: [],
     info: []
   };
@@ -244,8 +244,6 @@ export async function geometryInfoRequest(
   try {
     for await (const response of generator) {
       if (payload.idAttribute && payload.ids) {
-        console.log(response);
-
         for (
           let index = 0;
           index < response[payload.idAttribute.name].length &&
@@ -311,9 +309,8 @@ async function loadCachedGeometry(
     cachedArrays.filter(
       (x: TypedArray | undefined, index: number) =>
         x === undefined && index < features.length
-    ).length === 0
+    ).length !== 0
   ) {
-    console.log('undef');
     return undefined;
   }
 

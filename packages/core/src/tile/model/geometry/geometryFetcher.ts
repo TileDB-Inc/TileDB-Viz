@@ -4,6 +4,7 @@ import {
   DataRequest,
   GeometryInfoPayload,
   GeometryMetadata,
+  GeometryPayload,
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
@@ -12,7 +13,8 @@ import { Tile } from '../tile';
 import { GeometryContent } from './geometryContent';
 
 export class GeometryFetcher extends Fetcher<
-  Tile<GeometryDataContent, GeometryContent>
+  Tile<GeometryDataContent, GeometryContent>,
+  {}
 > {
   private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
@@ -33,9 +35,34 @@ export class GeometryFetcher extends Fetcher<
 
     this.nonce = 0;
   }
+  
   public fetch(tile: Tile<GeometryDataContent, GeometryContent>): Promise<any> {
-    throw new Error('Method not implemented.');
+    this.workerPool.postMessage({
+      type: RequestType.GEOMETRY,
+      id: tile.id,
+      payload: {
+        index: tile.index,
+        uri: tile.content[0].uri,
+        region: tile.content[0].region,
+        namespace: this.metadata.namespace,
+        type: this.metadata.type,
+        sourceCRS: this.metadata.crs,
+        targetCRS: this.sceneOptions.crs,
+        transformation: this.sceneOptions.transformation?.toArray(),
+        attributes: this.metadata.attributes,
+        features: this.metadata.features,
+        geometryAttribute: this.metadata.geometryAttribute,
+        idAttribute: this.metadata.idAttribute,
+        heightAttribute: this.metadata.extrudeAttribute,
+        nonce: ++this.nonce
+      } as GeometryPayload
+    } as DataRequest);
+
+    return new Promise((resolve, _) => {
+      this.workerPool.callbacks.set(`${tile.id}_${this.nonce}`, resolve);
+    });
   }
+
   public fetchInfo(
     tile: Tile<GeometryDataContent, GeometryContent>,
     boundingInfo?: BoundingInfo,

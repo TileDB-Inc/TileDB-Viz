@@ -28,9 +28,7 @@ import { CameraManager } from './utils/camera-utils';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
 import {
-  GUIEvent,
-  InfoPanelConfigEntry,
-  InfoPanelInitializationEvent
+  GUIEvent
 } from '@tiledb-inc/viz-common';
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
@@ -470,47 +468,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private initializeGUI() {
-    const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
-
-    // for (const [key, value] of this.geometryMetadata) {
-    //   if (!value.idAttribute) {
-    //     continue;
-    //   }
-
-    //   infoPanelConfig.set(key, {
-    //     name: value.name,
-    //     pickAttribute: value.idAttribute.name,
-    //     attributes: value.attributes
-    //   });
-    // }
-
-    // for (const [key, value] of this.pointMetadata) {
-    //   if (!value.idAttribute) {
-    //     continue;
-    //   }
-
-    //   infoPanelConfig.set(key, {
-    //     name: value.name,
-    //     pickAttribute: value.idAttribute.name,
-    //     attributes: value.attributes
-    //   });
-    // }
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
-        Events.INITIALIZE,
-        {
-          bubbles: true,
-          detail: {
-            target: 'info-panel',
-            props: {
-              config: infoPanelConfig
-            }
-          }
-        }
-      )
-    );
-
     this.initializeGUIProperties();
 
     for (const entry of this.assetManagers) {

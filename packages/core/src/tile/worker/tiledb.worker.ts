@@ -1,23 +1,16 @@
-import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
-import { Range } from '@tiledb-inc/tiledb-cloud';
 import {
   DataRequest,
   RequestType,
   WorkerResponse,
   GeometryResponse,
-  GeometryInfoMessage,
-  BaseResponse,
   PointResponse,
-  InfoResponse,
   InitializationPayload,
   PointCloudPayload,
   GeometryPayload
 } from '../types';
-import { getQueryDataFromCache } from '../../utils/cache';
 import axios, { CancelTokenSource } from 'axios';
 import getTileDBClient from '../../utils/getTileDBClient';
 import Client from '@tiledb-inc/tiledb-cloud';
-import proj4 from 'proj4';
 import { geometryInfoRequest, geometryRequest } from './loaders/geometryLoader';
 import { pointInfoRequest, pointRequest } from './loaders/pointLoader';
 import { imageRequest } from './loaders/imageLoader';
@@ -119,7 +112,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
           event.data.payload
         )
           .then(response => {
-            console.log(response);
+            self.postMessage(response);
           })
           .catch(_ => {
             self.postMessage({
@@ -140,7 +133,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
           event.data.payload
         )
           .then(response => {
-            console.log(response);
+            self.postMessage(response);
           })
           .catch(_ => {
             self.postMessage({
@@ -167,91 +160,4 @@ function initialize(request: InitializationPayload) {
     ...(request.token ? { apiKey: request.token } : {}),
     ...(request.basePath ? { basePath: request.basePath } : {})
   });
-}
-
-function windingNumber(path: number[], queryPoints: number[]) {
-  // Sunday's variation
-
-  // Close path
-  path.push(path[0], path[1]);
-
-  const insidePoints: number[] = [];
-
-  for (let pointIndex = 0; pointIndex < queryPoints.length; pointIndex += 2) {
-    let winding = 0;
-    const [x, y] = [queryPoints[pointIndex], queryPoints[pointIndex + 1]];
-
-    for (let pathIndex = 0; pathIndex < path.length - 2; pathIndex += 2) {
-      const [startX, startY] = [path[pathIndex], path[pathIndex + 1]];
-      const [endX, endY] = [path[pathIndex + 2], path[pathIndex + 3]];
-
-      if (
-        y >= startY &&
-        y < endY &&
-        (endX - startX) * (y - startY) - (x - startX) * (endY - startY) > 0
-      ) {
-        winding += 1;
-      } else if (
-        y >= endY &&
-        y < startY &&
-        (endX - startX) * (y - startY) - (x - startX) * (endY - startY) < 0
-      ) {
-        winding -= 1;
-      }
-    }
-
-    if (winding !== 0) {
-      insidePoints.push(x, y);
-    }
-  }
-
-  return insidePoints;
-}
-
-async function calculateTileBbox(
-  tiles: number[][],
-  ids: Set<bigint>,
-  arrayID: string,
-  tileSize: number,
-  requestID: string
-) {
-  const xRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  const yRange = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-
-  for (const [x, y] of tiles) {
-    const cachedPositions = (await getQueryDataFromCache(
-      `${arrayID}_${tileSize}`,
-      `${'positions'}_${x}_${y}`
-    )) as Float32Array | undefined;
-
-    const cachedIds = (await getQueryDataFromCache(
-      `${arrayID}_${tileSize}`,
-      `${'ids'}_${x}_${y}`
-    )) as BigInt64Array | undefined;
-
-    if (cancelSignal || !(cachedPositions && cachedIds)) {
-      self.postMessage({
-        id: requestID,
-        type: RequestType.CANCEL
-      } as WorkerResponse);
-      return [];
-    }
-
-    for (const id of ids) {
-      let index = cachedIds.indexOf(id);
-      while (index !== -1) {
-        const pointX = cachedPositions[3 * index];
-        const pointY = cachedPositions[3 * index + 2];
-
-        xRange[0] = Math.min(xRange[0], pointX);
-        xRange[1] = Math.max(xRange[1], pointX);
-        yRange[0] = Math.min(yRange[0], pointY);
-        yRange[1] = Math.max(yRange[1], pointY);
-
-        index = cachedIds.indexOf(id, index + 1);
-      }
-    }
-  }
-
-  return [xRange, yRange];
 }

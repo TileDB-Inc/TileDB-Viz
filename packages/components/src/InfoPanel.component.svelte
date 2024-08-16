@@ -109,6 +109,8 @@
   }
 
   function itemOnPick(event: CustomEvent<GUIEvent<PickResult>>) {
+
+    console.log(event.detail);
     const target = event.detail.target.split('_');
 
     if (target[0] !== 'info-panel') {
@@ -119,13 +121,15 @@
 
     currentResult = [
       ...currentResult,
-      event.detail.props
+      ...event.detail.props.results
     ];
 
     results.set(event.detail.props.assetID, currentResult);
 
     // Trigger UI update
     results = results;
+
+    console.log(results);
 
     event.stopPropagation();
   }
@@ -134,13 +138,11 @@
     if (event.detail.target !== 'info-panel') {
       return;
     }
-
-    window.removeEventListener(Events.INITIALIZE, onInitialize, {
-      capture: true
-    });
     event.stopPropagation();
 
-    config = event.detail.props.config;
+    console.log(event.detail);
+
+    config = new Map([...config, ...event.detail.props.config]);
     selectedDataset = config.keys().next().value;
   }
 
@@ -156,6 +158,10 @@
 
   onDestroy(() => {
     window.removeEventListener(Events.PICK_OBJECT, itemOnPick, {
+      capture: true
+    });
+
+    window.removeEventListener(Events.INITIALIZE, onInitialize, {
       capture: true
     });
   });

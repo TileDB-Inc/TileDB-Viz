@@ -23,7 +23,7 @@ import {
   Events,
   GUIEvent
 } from '@tiledb-inc/viz-components';
-import { PickingMode } from '@tiledb-inc/viz-common';
+import { PickingMode, PickResult } from '@tiledb-inc/viz-common';
 import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
 import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
@@ -270,13 +270,9 @@ export class PickingTool {
               const result =
                 tile.data?.intersector?.intersectMesh(selectionMesh);
 
-              console.log(result);
-
               if (!result || result.ids.length === 0) {
                 continue;
               }
-
-              console.log(result);
 
               const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
                 result.minPoint,
@@ -287,11 +283,23 @@ export class PickingTool {
                   : undefined
               );
 
-              manager.fetcher.fetchInfo(
-                tile,
-                selectionBoundingInfo,
-                result.ids
-              );
+              manager.fetcher
+                .fetchInfo(tile, selectionBoundingInfo, result.ids)
+                .then(response => {
+                  window.dispatchEvent(
+                    new CustomEvent<GUIEvent<PickResult>>(Events.PICK_OBJECT, {
+                      bubbles: true,
+                      detail: {
+                        target: 'info-panel',
+                        props: {
+                          assetID: manager.id,
+                          tileID: tile.id,
+                          results: response.info
+                        }
+                      }
+                    })
+                  );
+                });
             }
           }
         }
