@@ -1,13 +1,19 @@
 <script lang="typescript">
   import ToggleSwitch from './ToggleSwitch.component.svelte';
+  import Slider from './misc/InlineSlider.component.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { Commands, Events } from './constants/events';
-  import { GUIEvent, ButtonProps } from './types/index';
+  import { GUIEvent, ButtonProps, GUISliderPropertyState } from './types/index';
+  import { OptionsPanelInitializationEvent } from '@tiledb-inc/viz-common';
 
   let tiles = 0;
   let diskSpace = 0;
   let cameraTargetX = 0;
   let cameraTargetY = 0;
+
+  let globalState: {
+    prefetchBias: GUISliderPropertyState;
+  } = undefined;
 
   function optionsInfoUpdate(e) {
     switch (e.detail.type) {
@@ -32,8 +38,29 @@
     );
   }
 
+  function onInitialize(event: CustomEvent<GUIEvent<OptionsPanelInitializationEvent>>) {
+    if (event.detail.target !== 'options-panel') {
+      return;
+    }
+
+    window.removeEventListener(Events.INITIALIZE, onInitialize, {
+      capture: true
+    });
+    event.stopPropagation();
+
+    const payload = event.detail.props;
+
+    globalState = {
+      prefetchBias: {property: payload.prefetchBias, value: payload.prefetchBias.default}
+    };
+  }
+
   onMount(() => {
     window.addEventListener(Events.ENGINE_INFO_UPDATE, optionsInfoUpdate, {
+      capture: true
+    });
+
+    window.addEventListener(Events.INITIALIZE, onInitialize, {
       capture: true
     });
   });
@@ -129,6 +156,13 @@
       label={'Display minimap'}
       value={true}
     />
+    {#if globalState !== undefined}
+      <Slider
+        state={globalState.prefetchBias}
+        dataset={'engine'}
+        formatter={val => (val * 100).toFixed(1) + '%'}
+      />
+    {/if}
   </div>
 </div>
 
@@ -182,7 +216,8 @@
     &__container {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      padding: 16px;
     }
 
     &__group {

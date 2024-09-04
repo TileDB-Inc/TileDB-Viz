@@ -33,7 +33,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     this.metadata = tileOptions.metadata;
     this.sceneOptions = tileOptions.sceneOptions;
     this.visibility = 1;
-    this.errorLimit = 15;
+    this.traverserOptions.errorLimit = 15;
 
     this.registerEventListeners();
   }
@@ -108,12 +108,12 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
     switch (target[1]) {
       case 'opacity':
         this.visibility = event.detail.props.value ?? 1;
-        for (const tile of this.tiles.values()) {
+        for (const tile of this.visibleTiles.values()) {
           tile.data?.update({ opacity: this.visibility });
         }
         break;
       case 'sseThreshold':
-        this.errorLimit = event.detail.props.value ?? 15;
+        this.traverserOptions.errorLimit = event.detail.props.value ?? 15;
         break;
     }
   }

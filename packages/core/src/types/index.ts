@@ -68,6 +68,7 @@ export enum TileState {
 export type FrameDetails = {
   zoom: number;
   level: number;
+  prefetchBias: number;
 };
 
 export type SceneOptions = {

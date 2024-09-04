@@ -33,7 +33,6 @@ import { ImageFetcher, ImageFetchOptions } from './imageFetcher';
 
 interface ImageOptions {
   metadata: ImageMetadata;
-  namespace: string;
   sceneOptions: SceneOptions;
 }
 
@@ -62,7 +61,7 @@ export class ImageManager extends Manager<
     );
 
     this.workerPool = workerPool;
-    this.errorLimit = Math.max(
+    this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );

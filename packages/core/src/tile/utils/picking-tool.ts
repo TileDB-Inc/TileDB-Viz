@@ -144,7 +144,7 @@ export class PickingTool {
 
           this.managers
             .find(x => x.id === managerID)
-            ?.tiles.forEach(tile => {
+            ?.visibleTiles.forEach(tile => {
               tile.data?.intersector?.pickObject(id);
             });
         }
@@ -152,7 +152,7 @@ export class PickingTool {
       case Commands.CLEAR:
         {
           this.managers.forEach(manager =>
-            manager.tiles.forEach(tile => {
+            manager.visibleTiles.forEach(tile => {
               (tile.data as ISelectable | undefined)?.update({
                 selection: { indices: [-1] }
               });
@@ -182,7 +182,7 @@ export class PickingTool {
               ? proj4(this.sceneOptions.crs, manager.CRS)
               : undefined;
 
-          for (const tile of manager.tiles.values()) {
+          for (const tile of manager.visibleTiles.values()) {
             if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
               tiles.push(tile);
 
@@ -273,7 +273,7 @@ export class PickingTool {
               ? proj4(this.sceneOptions.crs, manager.CRS)
               : undefined;
 
-          for (const tile of manager.tiles.values()) {
+          for (const tile of manager.visibleTiles.values()) {
             if (
               selectionMesh
                 .getBoundingInfo()

@@ -15,7 +15,7 @@ import getTileDBClient from '../utils/getTileDBClient';
 import { ImageMetadata } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
-import { Events } from '@tiledb-inc/viz-components';
+import { Events, SliderProps } from '@tiledb-inc/viz-components';
 import { WorkerPool } from './worker/tiledb.worker.pool';
 import {
   getGeometryMetadata,
@@ -27,10 +27,13 @@ import { ImageManager } from './model/image/imageManager';
 import { CameraManager } from './utils/camera-utils';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
-import { GUIEvent } from '@tiledb-inc/viz-common';
+import {
+  GUIEvent,
+  OptionsPanelInitializationEvent
+} from '@tiledb-inc/viz-common';
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
-import { inv } from 'mathjs';
+import { inv, max } from 'mathjs';
 import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
 import { PointManager } from './model/point/pointManager';
 import { GeometryManager } from './model/geometry/geometryManager';
@@ -88,7 +91,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.assetManagers = [];
     this.frameDetails = {
       zoom: 0.25,
-      level: -2
+      level: -2,
+      prefetchBias: 0
     };
   }
 
@@ -171,7 +175,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.assetManagers.push({
       manager: new ImageManager(this.scene, this.workerPool, {
         metadata: this.imageMetadata,
-        namespace: imageNamespace,
         sceneOptions: this.sceneOptions
       }),
       pickable: false,
@@ -364,6 +367,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.workerPool.dispose();
       this.gui.dispose();
       this.cameraManager.dispose();
+      this._removeEventListeners();
     });
 
     this.scene.onBeforeRenderObservable.addOnce(() => this.initializeGUI());
@@ -371,6 +375,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.fetchTiles();
     });
 
+    this._registerEventListeners();
     this.updateLoadingScreen('', false);
   }
 
@@ -386,6 +391,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.gui.dispose();
     this.cameraManager.dispose();
     this.scene.getEngine().clearInternalTexturesCache();
+    this._removeEventListeners();
   }
 
   private updateEngineInfo() {
@@ -487,6 +493,28 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     }
 
     window.dispatchEvent(
+      new CustomEvent<GUIEvent<OptionsPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'options-panel',
+            props: {
+              prefetchBias: {
+                id: 'prefetchBias',
+                name: 'Prefetch Bias',
+                min: 0,
+                max: 1,
+                step: 0.01,
+                default: 0
+              }
+            }
+          }
+        }
+      )
+    );
+
+    window.dispatchEvent(
       new CustomEvent<GUIEvent<ScenePanelInitializationEvent>>(
         Events.INITIALIZE,
         {
@@ -505,6 +533,41 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         }
       )
     );
+  }
+
+  private _registerEventListeners() {
+    window.addEventListener(
+      Events.SLIDER_CHANGE,
+      this._sliderHandler.bind(this) as any,
+      { capture: true }
+    );
+  }
+
+  private _removeEventListeners() {
+    window.removeEventListener(
+      Events.SLIDER_CHANGE,
+      this._sliderHandler.bind(this) as any,
+      { capture: true }
+    );
+  }
+
+  private _sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
+    const target = event.detail.target.split('_');
+
+    if (target[0] !== 'engine') {
+      return;
+    }
+
+    switch (target[1]) {
+      case 'prefetchBias':
+        this.frameDetails.prefetchBias =
+          (event.detail.props.value ?? 0) *
+          max(
+            this.scene.getEngine().getRenderHeight(),
+            this.scene.getEngine().getRenderWidth()
+          );
+        break;
+    }
   }
 
   private updateLoadingScreen(message: string, show: boolean): void {

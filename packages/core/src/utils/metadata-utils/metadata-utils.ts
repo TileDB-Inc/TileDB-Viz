@@ -318,6 +318,7 @@ export async function getImageMetadata(
 
   return {
     id: options.groupID ?? options.arrayID,
+    namespace: options.namespace,
     name: name,
     root: tilesetRoot,
     uris: uris,

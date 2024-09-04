@@ -88,7 +88,7 @@ export class GeometryManager extends Manager<
     this.metadata = geometryOptions.metadata;
     this.activeFeature = this.metadata.features[0];
 
-    this.errorLimit = Math.max(
+    this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );
@@ -222,7 +222,7 @@ export class GeometryManager extends Manager<
             this.styleOptions.colorScheme[4 * groupIndex + 2] = color.b / 255;
           }
 
-          for (const tile of this.tiles.values()) {
+          for (const tile of this.visibleTiles.values()) {
             tile.data?.update({
               fill: this.styleOptions.fill,
               colorScheme: this.styleOptions.colorScheme,
@@ -244,7 +244,7 @@ export class GeometryManager extends Manager<
           state[event.detail.props.data.category] =
             event.detail.props.data.group;
 
-          for (const tile of this.tiles.values()) {
+          for (const tile of this.visibleTiles.values()) {
             tile.data?.update({
               groupMap: state
             });
@@ -293,7 +293,7 @@ export class GeometryManager extends Manager<
         return;
     }
 
-    for (const tile of this.tiles.values()) {
+    for (const tile of this.visibleTiles.values()) {
       tile.data?.update(updateOptions);
     }
   }
@@ -317,7 +317,7 @@ export class GeometryManager extends Manager<
         break;
     }
 
-    for (const tile of this.tiles.values()) {
+    for (const tile of this.visibleTiles.values()) {
       tile.data?.update({
         fillOpacity: this.styleOptions.fillOpacity,
         styleOptions: {

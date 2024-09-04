@@ -38,6 +38,7 @@ import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
 import { MeshDepthMaterial } from './materials/depthShaderMaterial';
 import { Events } from '@tiledb-inc/viz-components';
+import { GUIEvent } from '@tiledb-inc/viz-common';
 
 class TileDBPointCloudVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -203,6 +204,22 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   protected async createScene(): Promise<Scene> {
     return super.createScene().then(async scene => {
       this.scene = scene;
+
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<{ message: string; show: boolean }>>(
+          Events.ENGINE_INFO_UPDATE,
+          {
+            bubbles: true,
+            detail: {
+              target: 'LOADING_SCREEN',
+              props: {
+                message: '',
+                show: false
+              }
+            }
+          }
+        )
+      );
 
       this.attachKeys();
 
