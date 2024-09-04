@@ -261,6 +261,10 @@ export async function geometryInfoRequest(
 
           const entry: Record<string, any> = {};
           for (const [key, val] of Object.entries(response)) {
+            if (key === payload.geometryAttribute.name) {
+              continue;
+            }
+
             entry[key] = val[index];
           }
 

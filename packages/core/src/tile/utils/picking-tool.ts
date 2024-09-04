@@ -31,36 +31,7 @@ import { SceneOptions } from '../../types';
 import proj4 from 'proj4';
 import { inv } from 'mathjs';
 import { get3DInverseTransformedBoundingInfo } from '../../utils/metadata-utils/utils';
-
-export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
-  // calculate world space bbox to use for geometry query
-  const camera = getCamera(scene, 'Main');
-
-  const screenBbox = [
-    scene.getEngine().getRenderWidth(),
-    scene.getEngine().getRenderHeight()
-  ];
-  const offset = [
-    (camera?.target.x ?? 0) + (camera?.orthoLeft ?? 0),
-    -(camera?.target.z ?? 0) + (camera?.orthoTop ?? 0)
-  ];
-  const worldBbox = [
-    (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0),
-    (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0)
-  ];
-
-  const selectionWorldBbox = new Array(4);
-  [selectionWorldBbox[0], selectionWorldBbox[2]] = [
-    offset[0] + (bbox[0] / screenBbox[0]) * worldBbox[0],
-    offset[0] + (bbox[2] / screenBbox[0]) * worldBbox[0]
-  ];
-  [selectionWorldBbox[1], selectionWorldBbox[3]] = [
-    offset[1] - (bbox[1] / screenBbox[1]) * worldBbox[1],
-    offset[1] - (bbox[3] / screenBbox[1]) * worldBbox[1]
-  ];
-
-  return selectionWorldBbox;
-}
+import { ISelectable } from '../model/tileContent';
 
 export class PickingTool {
   public pickCallbacks: {
@@ -164,6 +135,31 @@ export class PickingTool {
           this.scene.onPointerObservable.remove(this.lassoHandler);
         }
         break;
+      case Commands.SELECT:
+        {
+          const { managerID, id } = event.detail.props.data as {
+            managerID: string;
+            id: bigint;
+          };
+
+          this.managers
+            .find(x => x.id === managerID)
+            ?.tiles.forEach(tile => {
+              tile.data?.intersector?.pickObject(id);
+            });
+        }
+        break;
+      case Commands.CLEAR:
+        {
+          this.managers.forEach(manager =>
+            manager.tiles.forEach(tile => {
+              (tile.data as ISelectable | undefined)?.update({
+                selection: { indices: [-1] }
+              });
+            })
+          );
+        }
+        break;
     }
   }
 
@@ -190,6 +186,8 @@ export class PickingTool {
             if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
               tiles.push(tile);
 
+              console.log(tile.id);
+
               const result = tile.data?.intersector?.intersectRay(pickingRay);
 
               if (!result) {
@@ -205,7 +203,23 @@ export class PickingTool {
                   : undefined
               );
 
-              console.log(selectionBoundingInfo);
+              manager.fetcher
+                .fetchInfo(tile, selectionBoundingInfo, result.ids)
+                .then(response => {
+                  window.dispatchEvent(
+                    new CustomEvent<GUIEvent<PickResult>>(Events.PICK_OBJECT, {
+                      bubbles: true,
+                      detail: {
+                        target: 'info-panel',
+                        props: {
+                          assetID: manager.id,
+                          tileID: tile.id,
+                          results: response.info
+                        }
+                      }
+                    })
+                  );
+                });
             }
           }
         }
@@ -303,6 +317,9 @@ export class PickingTool {
             }
           }
         }
+
+        selectionMesh.dispose(false, true);
+        this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         break;
       }

@@ -45,7 +45,6 @@ export class GeometryManager extends Manager<
 > {
   private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
-  private sceneOptions: SceneOptions;
   private styleOptions = {
     style: GeometryStyle.FILLED,
     fillOpacity: 1,
@@ -88,7 +87,6 @@ export class GeometryManager extends Manager<
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
     this.activeFeature = this.metadata.features[0];
-    this.sceneOptions = geometryOptions.sceneOptions;
 
     this.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
@@ -163,7 +161,7 @@ export class GeometryManager extends Manager<
       tile.data = new GeometryContent(this.scene, tile);
     }
 
-    return this.fetcher.fetch(tile);
+    return this.fetcher.fetch(tile, { nonce: nonce ?? 0 });
   }
 
   public cancelTile(
@@ -345,7 +343,9 @@ export class GeometryManager extends Manager<
                     {
                       name: this.metadata.name,
                       pickAttribute: this.metadata.idAttribute.name,
-                      attributes: this.metadata.attributes
+                      attributes: this.metadata.attributes.filter(
+                        x => x.name !== this.metadata.geometryAttribute.name
+                      )
                     } as InfoPanelConfigEntry
                   ]
                 ])

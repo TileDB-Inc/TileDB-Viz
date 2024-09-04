@@ -7,6 +7,16 @@ export type TileUpdateOptions = {
   opacity?: number;
 };
 
+export type SelectableTileUpdateOptions = TileUpdateOptions & {
+  selection?: { indices?: number[] };
+};
+
+export interface ISelectable<
+  T extends SelectableTileUpdateOptions = SelectableTileUpdateOptions
+> {
+  update(options: T): void;
+}
+
 export class TileContent {
   public meshes: Array<Mesh>;
   public buffers: Record<string, TypedArray>;

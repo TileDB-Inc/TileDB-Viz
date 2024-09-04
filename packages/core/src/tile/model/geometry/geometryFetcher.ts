@@ -8,13 +8,12 @@ import {
   RequestType
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
-import { Fetcher } from '../fetcher';
+import { BaseFetcherOptions, Fetcher } from '../fetcher';
 import { Tile } from '../tile';
 import { GeometryContent } from './geometryContent';
 
 export class GeometryFetcher extends Fetcher<
-  Tile<GeometryDataContent, GeometryContent>,
-  {}
+  Tile<GeometryDataContent, GeometryContent>
 > {
   private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
@@ -35,8 +34,11 @@ export class GeometryFetcher extends Fetcher<
 
     this.nonce = 0;
   }
-  
-  public fetch(tile: Tile<GeometryDataContent, GeometryContent>): Promise<any> {
+
+  public fetch(
+    tile: Tile<GeometryDataContent, GeometryContent>,
+    options: BaseFetcherOptions
+  ): Promise<any> {
     this.workerPool.postMessage({
       type: RequestType.GEOMETRY,
       id: tile.id,
@@ -54,12 +56,12 @@ export class GeometryFetcher extends Fetcher<
         geometryAttribute: this.metadata.geometryAttribute,
         idAttribute: this.metadata.idAttribute,
         heightAttribute: this.metadata.extrudeAttribute,
-        nonce: ++this.nonce
+        nonce: options.nonce
       } as GeometryPayload
     } as DataRequest);
 
     return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(`${tile.id}_${this.nonce}`, resolve);
+      this.workerPool.callbacks.set(`${tile.id}_${options.nonce}`, resolve);
     });
   }
 
@@ -84,8 +86,9 @@ export class GeometryFetcher extends Fetcher<
             })
           : tile.content[0].region,
         idAttribute: this.metadata.idAttribute,
+        geometryAttribute: this.metadata.geometryAttribute,
         ids: new Set(ids),
-        nonce: this.nonce
+        nonce: ++this.nonce
       } as GeometryInfoPayload
     } as DataRequest);
 

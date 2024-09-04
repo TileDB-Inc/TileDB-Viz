@@ -8,7 +8,7 @@ import {
   VertexBuffer,
   VertexData
 } from '@babylonjs/core';
-import { TileContent, TileUpdateOptions } from '../tileContent';
+import { ISelectable, TileContent, TileUpdateOptions } from '../tileContent';
 import { GeometryStyle, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { CategoricalMaterialPlugin } from '../../materials/plugins/categoricalPlugin';
 import { Tile } from '../tile';
@@ -26,7 +26,7 @@ type GeometryData = {
 
 type GeometrySelection = {
   indices?: number[];
-  pick?: { current: number; previous: number };
+  pick?: { current: [number, number]; previous: [number, number] };
 };
 
 type GeometryStyleOptions = {
@@ -48,7 +48,10 @@ export type GeometryUpdateOptions = TileUpdateOptions & {
   selection?: GeometrySelection;
 };
 
-export class GeometryContent extends TileContent {
+export class GeometryContent
+  extends TileContent
+  implements ISelectable<GeometryUpdateOptions>
+{
   private material: StandardMaterial;
   private categoricalPlugin: CategoricalMaterialPlugin;
   private selectionPlugin: SelectionMaterialPlugin;
@@ -155,7 +158,8 @@ export class GeometryContent extends TileContent {
     mesh.setVerticesBuffer(
       new VertexBuffer(this.scene.getEngine(), this.buffers['state'], 'state', {
         stride: 1,
-        updatable: false
+        updatable: true,
+        type: VertexBuffer.UNSIGNED_BYTE
       })
     );
 
@@ -192,9 +196,17 @@ export class GeometryContent extends TileContent {
 
   private onSelectionUpdate(selection: GeometrySelection) {
     const state = this.buffers['state'] as Uint8Array;
+    const indices = this.buffers['indices'] as Int32Array | undefined;
+
+    if (!indices) {
+      return;
+    }
 
     if (selection.indices && selection.indices.at(0) === -1) {
       state.fill(0);
+
+      // @ts-expect-error Update vertices data expects only Float arrays but should expect anything
+      this.meshes[0].updateVerticesData('state', state);
 
       return;
     }
@@ -204,8 +216,21 @@ export class GeometryContent extends TileContent {
     }
 
     if (selection.pick) {
-      state[selection.pick.current] = 2;
-      state[selection.pick.previous] = 1;
+      for (
+        let idx = selection.pick.current[0];
+        idx < selection.pick.current[1];
+        ++idx
+      ) {
+        state[indices[idx]] = 2;
+      }
+
+      for (
+        let idx = selection.pick.previous[0];
+        idx < selection.pick.previous[1];
+        ++idx
+      ) {
+        state[indices[idx]] = 1;
+      }
     }
 
     // @ts-expect-error Update vertices data expects only Float arrays but should expect anything

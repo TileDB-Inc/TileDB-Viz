@@ -11,7 +11,7 @@
   import { InfoPanelConfigEntry, InfoPanelInitializationEvent, PickResult } from '@tiledb-inc/viz-common';
 
   let config = new Map<string, InfoPanelConfigEntry>();
-  let results = new Map<string, PickResult[]>();
+  let results = new Map<string, any[]>();
   let selectedDataset: string | undefined = undefined;
 
   let itemsPerPage: number = 10;
@@ -41,19 +41,17 @@
   function clear() {
     results = new Map<string, any[]>();
 
-    for (const [key, ] of config) {
-      window.dispatchEvent(
-        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-          bubbles: true,
-          detail: {
-            target: key,
-            props: {
-              command: Commands.CLEAR
-            }
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          target: 'picking-tool',
+          props: {
+            command: Commands.CLEAR
           }
-        })
-      );
-    }
+        }
+      })
+    );
   }
 
   function datasetOnChange(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -63,20 +61,18 @@
   }
 
   function clearSelection() {
-    const pickAttribute = config.get(selectedDataset).pickAttribute;
-    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
     selectedItemIndex = -1;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: selectedDataset,
+          target: 'picking-tool',
           props: {
             command: Commands.SELECT,
             data: {
-              id: -1n,
-              previousID
+              managerID: selectedDataset,
+              id: -1n
             }
           }
         }
@@ -86,7 +82,6 @@
 
   function itemOnSelect(page: number, index: number) {
     const pickAttribute = config.get(selectedDataset).pickAttribute;
-    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
 
     selectedItemIndex = page * itemsPerPage + index;
     const currentID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
@@ -95,12 +90,12 @@
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: selectedDataset,
+          target: 'picking-tool',
           props: {
             command: Commands.SELECT,
             data: {
-              id: currentID,
-              previousID: previousID
+              managerID: selectedDataset,
+              id: currentID ? BigInt(currentID) : undefined
             }
           }
         }
@@ -109,8 +104,6 @@
   }
 
   function itemOnPick(event: CustomEvent<GUIEvent<PickResult>>) {
-
-    console.log(event.detail);
     const target = event.detail.target.split('_');
 
     if (target[0] !== 'info-panel') {
@@ -129,8 +122,6 @@
     // Trigger UI update
     results = results;
 
-    console.log(results);
-
     event.stopPropagation();
   }
 
@@ -139,8 +130,6 @@
       return;
     }
     event.stopPropagation();
-
-    console.log(event.detail);
 
     config = new Map([...config, ...event.detail.props.config]);
     selectedDataset = config.keys().next().value;

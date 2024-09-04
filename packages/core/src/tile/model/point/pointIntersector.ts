@@ -3,6 +3,16 @@ import { IntersectionResult, Intersector } from '../intersector';
 import { PointTileContent } from './pointContent';
 
 export class PointIntersector extends Intersector<PointTileContent> {
+  private inverseIndex: Map<bigint, number>;
+  private selection: bigint[];
+
+  constructor(data: PointTileContent) {
+    super(data);
+
+    this.selection = [];
+    this.inverseIndex = new Map();
+  }
+
   public intersectRay(ray: Ray): IntersectionResult {
     const position = this.data.buffers['position'] as Float32Array | undefined;
     const indices = [];
@@ -95,6 +105,7 @@ export class PointIntersector extends Intersector<PointTileContent> {
       ) {
         indices.push(idx / 3);
         ids.push(this.data.ids[idx / 3]);
+        this.inverseIndex.set(this.data.ids[idx / 3], idx / 3);
 
         minPoint.minimizeInPlaceFromFloats(
           position[idx],
@@ -119,7 +130,16 @@ export class PointIntersector extends Intersector<PointTileContent> {
   }
 
   public pickObject(id: bigint): void {
-    throw new Error('Method not implemented.');
+    this.data.update({
+      selection: {
+        pick: {
+          current: this.inverseIndex.get(id) ?? -1,
+          previous: this.inverseIndex.get(this.selection.at(0) ?? -1n) ?? -1
+        }
+      }
+    });
+
+    this.selection = id >= 0 ? [id] : [];
   }
 
   private _intersectMesh(mesh: Mesh, x: number, y: number, z: number): boolean {

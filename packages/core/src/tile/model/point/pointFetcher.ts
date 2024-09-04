@@ -1,5 +1,5 @@
 import { PointDataContent, SceneOptions } from '../../../types';
-import { Fetcher } from '../fetcher';
+import { BaseFetcherOptions, Fetcher } from '../fetcher';
 import { Tile } from '../tile';
 import { PointTileContent } from './pointContent';
 import {
@@ -14,8 +14,7 @@ import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { BoundingInfo } from '@babylonjs/core';
 
 export class PointCloudFetcher extends Fetcher<
-  Tile<PointDataContent, PointTileContent>,
-  {}
+  Tile<PointDataContent, PointTileContent>
 > {
   private workerPool: WorkerPool;
   private metadata: PointCloudMetadata;
@@ -36,7 +35,10 @@ export class PointCloudFetcher extends Fetcher<
     this.nonce = 0;
   }
 
-  public fetch(tile: Tile<PointDataContent, PointTileContent>): Promise<any> {
+  public fetch(
+    tile: Tile<PointDataContent, PointTileContent>,
+    options: BaseFetcherOptions
+  ): Promise<any> {
     this.workerPool.postMessage({
       type: RequestType.POINT,
       id: tile.id,
@@ -52,12 +54,12 @@ export class PointCloudFetcher extends Fetcher<
         transformation: this.sceneOptions.transformation?.toArray(),
         targetCRS: this.sceneOptions.crs,
         sourceCRS: this.metadata.crs,
-        nonce: ++this.nonce
+        nonce: options.nonce
       } as PointCloudPayload
     } as DataRequest);
 
     return new Promise((resolve, _) =>
-      this.workerPool.callbacks.set(`${tile.id}_${this.nonce}`, resolve)
+      this.workerPool.callbacks.set(`${tile.id}_${options.nonce}`, resolve)
     );
   }
 

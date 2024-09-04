@@ -9,7 +9,7 @@ import {
   VertexBuffer,
   VertexData
 } from '@babylonjs/core';
-import { TileContent, TileUpdateOptions } from '../tileContent';
+import { ISelectable, TileContent, TileUpdateOptions } from '../tileContent';
 import { Tile } from '../tile';
 import { PointDataContent } from '../../../types';
 import {
@@ -43,7 +43,10 @@ export type PointCloudUpdateOptions = TileUpdateOptions & {
   selection?: PointSelection;
 };
 
-export class PointTileContent extends TileContent {
+export class PointTileContent
+  extends TileContent
+  implements ISelectable<PointCloudUpdateOptions>
+{
   private pointCount: number;
   private material: Nullable<ShaderMaterial>;
 
@@ -98,6 +101,10 @@ export class PointTileContent extends TileContent {
 
   private onDataUpdateWebGL(data: PointCloudData) {
     this.pointCount = data.position.length / 3;
+    this.buffers = data.attributes;
+    this.ids = data.ids;
+    this.buffers['position'] = data.position;
+    this.buffers['state'] = new Uint8Array(this.pointCount).fill(0);
 
     if (this.meshes.length === 0) {
       this.material = PointCloudMaterial(this.scene);
@@ -112,9 +119,15 @@ export class PointTileContent extends TileContent {
 
     vertexData.positions = data.position;
     vertexData.applyToMesh(this.meshes[0], false);
-
-    this.buffers = data.attributes;
-    this.buffers['position'] = data.position;
+    this.meshes[0].setVerticesBuffer(
+      new VertexBuffer(this.scene.getEngine(), this.buffers['state'], 'state', {
+        size: 1,
+        stride: 1,
+        instanced: false,
+        type: VertexBuffer.UNSIGNED_BYTE,
+        updatable: true
+      })
+    );
   }
 
   private updateWebGPU(options: PointCloudUpdateOptions) {
@@ -127,7 +140,7 @@ export class PointTileContent extends TileContent {
     }
 
     if (options.selection) {
-      this.onSelectionUpdateWebGPU(options.selection);
+      this.onSelectionUpdate(options.selection);
     }
 
     if (options.feature) {
@@ -269,12 +282,14 @@ export class PointTileContent extends TileContent {
     this.meshes[0].setBoundingInfo(this.tile.boundingInfo);
   }
 
-  private onSelectionUpdateWebGPU(selection: PointSelection) {
+  private onSelectionUpdate(selection: PointSelection) {
     const state = this.buffers['state'] as Uint8Array;
 
     // If selection indices is an empty array clear all selection
     if (selection.indices && selection.indices.at(0) === -1) {
       state.fill(0);
+      // @ts-expect-error Update vertices data expects only Float arrays but should expect anything
+      this.meshes[0].updateVerticesData('state', state);
 
       return;
     }
@@ -284,8 +299,13 @@ export class PointTileContent extends TileContent {
     }
 
     if (selection.pick) {
-      state[selection.pick.current] = 2;
-      state[selection.pick.previous] = 1;
+      if (selection.pick.current >= 0) {
+        state[selection.pick.current] = 2;
+      }
+
+      if (selection.pick.previous >= 0) {
+        state[selection.pick.previous] = 1;
+      }
     }
 
     // @ts-expect-error Update vertices data expects only Float arrays but should expect anything
@@ -299,6 +319,10 @@ export class PointTileContent extends TileContent {
 
     if (options.feature) {
       this.onFeatureUpdateWebGL(options.feature);
+    }
+
+    if (options.selection) {
+      this.onSelectionUpdate(options.selection);
     }
 
     if (options.pointShape) {

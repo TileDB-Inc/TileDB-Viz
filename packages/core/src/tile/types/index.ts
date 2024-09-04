@@ -546,6 +546,8 @@ export type GeometryInfoPayload = TileDBPayload &
      * The attribute to use as a unique polygon identifiers.
      */
     idAttribute?: Attribute;
+
+    geometryAttribute: Attribute;
   };
 
 export type PointCloudPayload = TileDBPayload &

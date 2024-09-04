@@ -19,7 +19,11 @@ import {
   GeometryMetadata,
   ImageAssetMetadata
 } from '../../tile/types';
-import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import {
+  GroupContents,
+  Datatype,
+  ArrayInfo
+} from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
 import { GeometryConfig } from '@tiledb-inc/viz-common';
 import {
@@ -175,7 +179,7 @@ export async function getImageMetadata(
   const imageMetadata = JSON.parse(
     (assetMetadata as BiomedicalAssetMetadata & RasterAssetMetadata).metadata
   ) as ImageAssetMetadata;
-  let schemas: ArraySchema[] = await getQueryDataFromCache(
+  let schemas: ArraySchema[] | undefined = await getQueryDataFromCache(
     options.groupID ?? options.arrayID ?? '',
     'schemas'
   );
@@ -513,8 +517,11 @@ export async function getGeometryMetadata(
     options.geometryArrayID,
     'arraySchemaResponse'
   );
-  let info = await getQueryDataFromCache(options.geometryArrayID, 'info');
-  let arrayMetadata = await getQueryDataFromCache(
+  let info = await getQueryDataFromCache<ArrayInfo>(
+    options.geometryArrayID,
+    'info'
+  );
+  let arrayMetadata = await getQueryDataFromCache<any>(
     options.geometryArrayID,
     'arrayMetadata'
   );

@@ -15,7 +15,7 @@ export interface TileStatus<T> {
 export abstract class Manager<T extends Tile<any>> {
   public readonly id: string;
   public tiles: Map<number, T>;
-  public fetcher: Fetcher<T, any>;
+  public fetcher: Fetcher<T>;
 
   protected scene: Scene;
   protected errorLimit: number;

@@ -52,7 +52,6 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
         cancelSignal = false;
         currentId = event.data.id;
         tokenSource = CancelToken.source();
-        console.log(event.data.id);
         geometryRequest(
           event.data.id,
           tiledbClient,

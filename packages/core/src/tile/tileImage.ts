@@ -27,9 +27,7 @@ import { ImageManager } from './model/image/imageManager';
 import { CameraManager } from './utils/camera-utils';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
-import {
-  GUIEvent
-} from '@tiledb-inc/viz-common';
+import { GUIEvent } from '@tiledb-inc/viz-common';
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
 import { inv } from 'mathjs';
@@ -173,7 +171,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.assetManagers.push({
       manager: new ImageManager(this.scene, this.workerPool, {
         metadata: this.imageMetadata,
-        namespace: imageNamespace
+        namespace: imageNamespace,
+        sceneOptions: this.sceneOptions
       }),
       pickable: false,
       minimap: true

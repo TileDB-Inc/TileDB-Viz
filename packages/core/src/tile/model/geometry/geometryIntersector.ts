@@ -4,6 +4,16 @@ import { GeometryContent } from './geometryContent';
 import { edgeInMesh, pointInMesh } from '../../utils/geometry';
 
 export class GeometryIntersector extends Intersector<GeometryContent> {
+  private inverseIndex: Map<bigint, [number, number]>;
+  private selection: bigint[];
+
+  constructor(data: GeometryContent) {
+    super(data);
+
+    this.selection = [];
+    this.inverseIndex = new Map();
+  }
+
   public intersectRay(ray: Ray): IntersectionResult {
     const position = this.data.buffers['position'] as Float32Array | undefined;
     const indices = this.data.buffers['indices'] as Int32Array | undefined;
@@ -137,6 +147,7 @@ export class GeometryIntersector extends Intersector<GeometryContent> {
       }
 
       // Iterate over all vertices of the polygon
+      const range: [number, number] = [idx, idx];
       for (
         ;
         idx < indices.length && this.data.ids[indices[idx]] === polygonID;
@@ -156,6 +167,9 @@ export class GeometryIntersector extends Intersector<GeometryContent> {
         maxPoint.maximizeInPlace(vertexB);
         maxPoint.maximizeInPlace(vertexC);
       }
+
+      range[1] = idx;
+      this.inverseIndex.set(polygonID, range);
     }
 
     this.data.update({ selection: { indices: selectedIndices } });
@@ -168,6 +182,17 @@ export class GeometryIntersector extends Intersector<GeometryContent> {
   }
 
   public pickObject(id: bigint): void {
-    throw new Error('Method not implemented.');
+    this.data.update({
+      selection: {
+        pick: {
+          current: this.inverseIndex.get(id) ?? [0, -1],
+          previous: this.inverseIndex.get(this.selection.at(0) ?? -1n) ?? [
+            0, -1
+          ]
+        }
+      }
+    });
+
+    this.selection = id >= 0 ? [id] : [];
   }
 }

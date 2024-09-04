@@ -136,7 +136,7 @@ export class PointManager extends Manager<
       tile.data = new PointTileContent(this.scene, tile);
     }
 
-    return this.fetcher.fetch(tile);
+    return this.fetcher.fetch(tile, { nonce: nonce ?? 0 });
   }
 
   public cancelTile(

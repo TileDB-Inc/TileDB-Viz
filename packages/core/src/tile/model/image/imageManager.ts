@@ -7,7 +7,6 @@ import {
   Channel,
   DataRequest,
   ImageMetadata,
-  ImagePayload,
   ImageResponse,
   RequestType
 } from '../../types';
@@ -30,7 +29,7 @@ import { ImageContent } from './imageContent';
 import { ImageDataContent, SceneOptions } from '../../../types';
 import { Tile } from '../tile';
 import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
-import { ImageFetcher } from './imageFetcher';
+import { ImageFetcher, ImageFetchOptions } from './imageFetcher';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -48,7 +47,6 @@ export class ImageManager extends Manager<
   private colors: Float32Array;
   private tileOptions!: UniformBuffer;
   private metadata: ImageMetadata;
-  private namespace: string;
 
   private selectedAttribute: Attribute;
 
@@ -60,11 +58,7 @@ export class ImageManager extends Manager<
     super(
       imageOptions.metadata.root,
       scene,
-      new ImageFetcher(
-        workerPool,
-        imageOptions.metadata,
-        imageOptions.sceneOptions
-      )
+      new ImageFetcher(workerPool, imageOptions.metadata)
     );
 
     this.workerPool = workerPool;
@@ -74,7 +68,6 @@ export class ImageManager extends Manager<
     );
 
     this.metadata = imageOptions.metadata;
-    this.namespace = imageOptions.namespace;
 
     this.selectedAttribute = this.metadata.attributes.filter(
       item => item.visible
@@ -179,26 +172,11 @@ export class ImageManager extends Manager<
       return new Promise((resolve, _) => resolve(true));
     }
 
-    this.workerPool.postMessage({
-      type: RequestType.IMAGE,
-      id: tile.id,
-      payload: {
-        index: tile.index,
-        uri: tile.content[0].uri,
-        region: tile.content[0].region,
-        namespace: this.namespace,
-        attribute: this.selectedAttribute,
-        channelRanges: this.channelRanges,
-        dimensions: this.metadata.extraDimensions,
-        loaderOptions: this.metadata.loaderMetadata?.get(tile.content[0].uri),
-        nonce: nonce
-      } as ImagePayload
-    });
-
-    // TODO: Rewrite worker pool to store resolve functions of promises
-    return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve);
-    });
+    return this.fetcher.fetch(tile, {
+      nonce: nonce,
+      selectedAttribute: this.selectedAttribute,
+      channelRanges: this.channelRanges
+    } as ImageFetchOptions);
   }
 
   public cancelTile(

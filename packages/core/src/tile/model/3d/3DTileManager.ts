@@ -1,11 +1,5 @@
-import {
-  Mesh,
-  Scene,
-  SceneLoader,
-  ISceneLoaderAsyncResult
-} from '@babylonjs/core';
+import { Mesh, Scene, ISceneLoaderAsyncResult } from '@babylonjs/core';
 import { Manager } from '../manager';
-import { load3DTileset } from '../../../utils/metadata-utils/3DTiles/3DTileLoader';
 import { GUIEvent } from '@tiledb-inc/viz-common';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
 import { TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
@@ -13,6 +7,7 @@ import { TDB3DTileContent } from './3DTileContent';
 import { TDB3DTileMetadata } from '../../types';
 import { Tile } from '../tile';
 import { SceneOptions } from '../../../types';
+import { TDB3DTileFetcher } from './3DTileFetcher';
 
 interface TileOptions {
   metadata: TDB3DTileMetadata;
@@ -25,7 +20,15 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
   private visibility: number;
 
   constructor(scene: Scene, tileOptions: TileOptions) {
-    super(tileOptions.metadata.root, scene);
+    super(
+      tileOptions.metadata.root,
+      scene,
+      new TDB3DTileFetcher(
+        scene,
+        tileOptions.metadata,
+        tileOptions.sceneOptions
+      )
+    );
 
     this.metadata = tileOptions.metadata;
     this.sceneOptions = tileOptions.sceneOptions;
@@ -60,32 +63,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
       tile.data = new TDB3DTileContent(this.scene, tile);
     }
 
-    const assetPromises = [];
-
-    for (const content of tile.content) {
-      if (content.endsWith('.json')) {
-        assetPromises.push(
-          load3DTileset(`${this.metadata.baseUrl}${content}`, this.sceneOptions)
-            .then(x => x.root)
-            .then(x => {
-              return { tiles: x };
-            })
-        );
-      } else {
-        assetPromises.push(
-          SceneLoader.ImportMeshAsync(
-            '',
-            this.metadata.baseUrl,
-            content,
-            this.scene
-          ).then(x => {
-            return { assets: x };
-          })
-        );
-      }
-    }
-
-    return Promise.all(assetPromises);
+    return this.fetcher.fetch(tile);
   }
 
   public cancelTile(tile: Tile<string, TDB3DTileContent>): void {

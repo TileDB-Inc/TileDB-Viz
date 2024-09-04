@@ -8,9 +8,12 @@ import {
 
 export class SelectionMaterialPlugin extends MaterialPluginBase {
   private _isEnabled = false;
+  private isWebGPU = false;
 
   constructor(material: Material) {
     super(material, 'Selection', 200);
+
+    this.isWebGPU = material.getScene().getEngine().isWebGPU;
   }
 
   getClassName(): string {
@@ -26,7 +29,7 @@ export class SelectionMaterialPlugin extends MaterialPluginBase {
       case 'vertex':
         return {
           CUSTOM_VERTEX_DEFINITIONS: `
-            attribute uint state;
+            attribute ${this.isWebGPU ? 'uint' : 'float'} state;
             
             const vec4 selectionColor = vec4(0.0, 1.0, 0.0, 1.0);
             const vec4 pickColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -34,10 +37,10 @@ export class SelectionMaterialPlugin extends MaterialPluginBase {
             flat varying vec4 vColor;
           `,
           CUSTOM_VERTEX_MAIN_END: `
-            if (state == 1u) {
+            if (state == ${this.isWebGPU ? '1u' : '1.0'}) {
               vColor = selectionColor;
             }
-            else if (state == 2u) {
+            else if (state == ${this.isWebGPU ? '2u' : '2.0'}) {
               vColor = pickColor;
             }
             else {

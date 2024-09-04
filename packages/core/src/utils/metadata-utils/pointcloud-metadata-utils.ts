@@ -47,7 +47,7 @@ export async function getPointCloudMetadata(
     options.pointGroupID,
     'members'
   );
-  let groupMetadata = await getQueryDataFromCache(
+  let groupMetadata = await getQueryDataFromCache<any>(
     options.pointGroupID,
     'groupMetadata'
   );
