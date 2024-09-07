@@ -58,7 +58,7 @@ export class PointManager extends Manager<
     // should automatically update the uniform value
     colorScheme: Float32Array.from(
       colorScheme
-        .map(x => [...Object.values(hexToRgb(x)!), 255])
+        .map(x => [...Object.values(hexToRgb(x)), 255])
         .flatMap(x => x)
         .map(x => x / 255)
     ),

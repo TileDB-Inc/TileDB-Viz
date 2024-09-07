@@ -219,7 +219,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     });
 
     // Force enable uniform buffers for the material to work properly
-    this.scene.getEngine().disableUniformBuffers = false;
+    // this.scene.getEngine().disableUniformBuffers = false;
 
     if (this.options.geometryArrayID) {
       for (const [

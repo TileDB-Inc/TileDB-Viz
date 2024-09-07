@@ -25,8 +25,8 @@ export class SPSHighQualitySplats {
     const depthRenderTarget = new RenderTargetTexture(
       'LinearDepthRenderTarget',
       {
-        width: this.scene.getEngine()._gl.canvas.width,
-        height: this.scene.getEngine()._gl.canvas.height
+        width: this.scene.getEngine().getRenderWidth(),
+        height: this.scene.getEngine().getRenderHeight()
       },
       this.scene,
       {
@@ -41,8 +41,8 @@ export class SPSHighQualitySplats {
     const additiveColorRenderTarget = new RenderTargetTexture(
       'additiveColorRenderTarget',
       {
-        width: this.scene.getEngine()._gl.canvas.width,
-        height: this.scene.getEngine()._gl.canvas.height
+        width: this.scene.getEngine().getRenderWidth(),
+        height: this.scene.getEngine().getRenderHeight()
       },
       this.scene,
       {
@@ -63,7 +63,7 @@ export class SPSHighQualitySplats {
       throw new Error('Render target initialization failed');
     }
 
-    depthRenderTarget.renderTarget._shareDepth(
+    depthRenderTarget.renderTarget.shareDepth(
       additiveColorRenderTarget.renderTarget
     );
 
