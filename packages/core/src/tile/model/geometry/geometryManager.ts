@@ -84,7 +84,7 @@ export class GeometryManager extends Manager<
     this.activeFeature = this.metadata.features[0];
     this.sceneOptions = geometryOptions.sceneOptions;
 
-    this.errorLimit = Math.max(
+    this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
       this.scene.getEngine().getRenderHeight()
     );
