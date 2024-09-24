@@ -40,6 +40,7 @@ export function PointCloudMaterialWebGPU(
 
   attribute position: vec3<f32>;
   attribute loc: vec3<f32>;
+  attribute state: u32;
   ${attributeName ? `attribute ${attributeName}: ${attributeType};` : ''}
 
   struct FrameOptions {
@@ -48,8 +49,11 @@ export function PointCloudMaterialWebGPU(
 
   var<uniform> frameOptions : FrameOptions;
 
-  const selectionColor: vec4<f32> = vec4<f32>(0.0, 1.0, 0.0, 1.0);
-  const pickColor: vec4<f32> = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  const stateColorMap = array(
+    vec4<f32>(0.0),
+    vec4<f32>(0.0, 1.0, 0.0, 1.0),
+    vec4<f32>(0.0, 0.0, 1.0, 1.0),
+  );
 
   struct PointOptions {
     pointSize: f32,
@@ -79,6 +83,8 @@ export function PointCloudMaterialWebGPU(
         ? coloring
         : 'vertexOutputs.vColor = vec4<f32>(pointOptions.color.rgb, pointOptions.pointOpacity);'
     }
+
+    vertexOutputs.vColor = mix(vertexOutputs.vColor, stateColorMap[vertexInputs.state], f32(vertexInputs.state));
   }
 `;
 
