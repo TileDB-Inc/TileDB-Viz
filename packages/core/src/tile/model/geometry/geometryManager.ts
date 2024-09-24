@@ -3,7 +3,6 @@ import {
   RequestType,
   GeometryStyle,
   colorScheme,
-  GeometryPayload,
   GeometryMetadata,
   GeometryResponse
 } from '../../types';
@@ -24,12 +23,15 @@ import {
   FeatureType,
   GUIFlatColorFeature,
   GUICategoricalFeature,
-  GUIFeature
+  GUIFeature,
+  InfoPanelInitializationEvent,
+  InfoPanelConfigEntry
 } from '@tiledb-inc/viz-common';
 import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';
+import { GeometryFetcher } from './geometryFetcher';
 
 interface GeometryOptions {
   arrayID: string;
@@ -43,9 +45,6 @@ export class GeometryManager extends Manager<
 > {
   private workerPool: WorkerPool;
   private metadata: GeometryMetadata;
-  private id: string;
-  private namespace: string;
-  private sceneOptions: SceneOptions;
   private styleOptions = {
     style: GeometryStyle.FILLED,
     fillOpacity: 1,
@@ -75,14 +74,19 @@ export class GeometryManager extends Manager<
     workerPool: WorkerPool,
     geometryOptions: GeometryOptions
   ) {
-    super(geometryOptions.metadata.root, scene);
+    super(
+      geometryOptions.metadata.root,
+      scene,
+      new GeometryFetcher(
+        workerPool,
+        geometryOptions.metadata,
+        geometryOptions.sceneOptions
+      )
+    );
 
     this.workerPool = workerPool;
     this.metadata = geometryOptions.metadata;
-    this.id = geometryOptions.arrayID;
-    this.namespace = geometryOptions.namespace;
     this.activeFeature = this.metadata.features[0];
-    this.sceneOptions = geometryOptions.sceneOptions;
 
     this.traverserOptions.errorLimit = Math.max(
       this.scene.getEngine().getRenderWidth(),
@@ -90,6 +94,10 @@ export class GeometryManager extends Manager<
     );
 
     this.registerEventListeners();
+  }
+
+  public get CRS(): string | undefined {
+    return this.metadata.crs;
   }
 
   public registerEventListeners(): void {
@@ -153,30 +161,7 @@ export class GeometryManager extends Manager<
       tile.data = new GeometryContent(this.scene, tile);
     }
 
-    this.workerPool.postMessage({
-      type: RequestType.GEOMETRY,
-      id: tile.id,
-      payload: {
-        index: tile.index,
-        uri: tile.content[0].uri,
-        region: tile.content[0].region,
-        namespace: this.namespace,
-        type: this.metadata.type,
-        sourceCRS: this.metadata.crs,
-        targetCRS: this.sceneOptions.crs,
-        transformation: this.sceneOptions.transformation?.toArray(),
-        attributes: this.metadata.attributes,
-        features: this.metadata.features,
-        geometryAttribute: this.metadata.geometryAttribute,
-        idAttribute: this.metadata.idAttribute,
-        heightAttribute: this.metadata.extrudeAttribute,
-        nonce: nonce
-      } as GeometryPayload
-    } as DataRequest);
-
-    return new Promise((resolve, _) => {
-      this.workerPool.callbacks.set(`${tile.id}_${nonce}`, resolve);
-    });
+    return this.fetcher.fetch(tile, { nonce: nonce ?? 0 });
   }
 
   public cancelTile(
@@ -198,6 +183,7 @@ export class GeometryManager extends Manager<
       data: {
         position: data.position,
         indices: data.indices,
+        ids: data.ids,
         attributes: data.attributes
       },
       feature: this.activeFeature,
@@ -342,6 +328,34 @@ export class GeometryManager extends Manager<
   }
 
   public initializeGUIProperties(): void {
+    if (this.metadata.idAttribute) {
+      window.dispatchEvent(
+        new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+          Events.INITIALIZE,
+          {
+            bubbles: true,
+            detail: {
+              target: 'info-panel',
+              props: {
+                config: new Map([
+                  [
+                    this.id,
+                    {
+                      name: this.metadata.name,
+                      pickAttribute: this.metadata.idAttribute.name,
+                      attributes: this.metadata.attributes.filter(
+                        x => x.name !== this.metadata.geometryAttribute.name
+                      )
+                    } as InfoPanelConfigEntry
+                  ]
+                ])
+              }
+            }
+          }
+        )
+      );
+    }
+
     window.dispatchEvent(
       new CustomEvent<GUIEvent<GeometryPanelInitializationEvent>>(
         Events.INITIALIZE,

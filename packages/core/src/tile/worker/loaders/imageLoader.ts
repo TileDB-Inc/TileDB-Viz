@@ -1,4 +1,4 @@
-import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
+import Client from '@tiledb-inc/tiledb-cloud';
 import { CancelTokenSource } from 'axios';
 import {
   ImagePayload,

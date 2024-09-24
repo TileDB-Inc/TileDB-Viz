@@ -10,6 +10,7 @@ export class TileContent {
   public meshes: Array<Mesh>;
 
   public buffers: Record<string, TypedArray>;
+  public ids?: BigInt64Array;
 
   protected scene: Scene;
   protected tile: Tile<any, any>;

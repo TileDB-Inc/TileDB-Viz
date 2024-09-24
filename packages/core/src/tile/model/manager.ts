@@ -3,6 +3,7 @@ import { Events } from '@tiledb-inc/viz-components';
 import { FrameDetails, RefineStrategy } from '../../types';
 import { Traverser, TraverserOptions } from './traverser';
 import { Tile, TileState } from './tile';
+import { Fetcher } from './fetcher';
 
 export interface TileStatus<T> {
   tile?: T;
@@ -12,16 +13,19 @@ export interface TileStatus<T> {
 }
 
 export abstract class Manager<T extends Tile<any>> {
+  public readonly id: string;
+  public fetcher: Fetcher<T>;
+  public visibleTiles: Map<number, T>;
+
   protected scene: Scene;
   protected traverserOptions: TraverserOptions;
-  protected visibleTiles: Map<number, T>;
   protected frameOptions: UniformBuffer;
   protected nonce: Map<number, number>;
 
   private rejectHandlers: Map<number, (reason: any) => void>;
   private traverser: Traverser<T>;
 
-  constructor(root: T, scene: Scene) {
+  constructor(root: T, scene: Scene, fetcher: Fetcher<T, any>) {
     this.scene = scene;
 
     this.visibleTiles = new Map();
@@ -32,6 +36,8 @@ export abstract class Manager<T extends Tile<any>> {
     this.rejectHandlers = new Map();
     this.traverser = new Traverser(root);
     this.nonce = new Map();
+    this.fetcher = fetcher;
+    this.id = crypto.randomUUID();
 
     this.frameOptions = new UniformBuffer(this.scene.getEngine());
     this.frameOptions.addUniform('zoom', 1);
@@ -161,6 +167,8 @@ export abstract class Manager<T extends Tile<any>> {
   public abstract cancelTile(tile: T, nonce?: number): void;
 
   public abstract onLoaded(tile: T, data: any): void;
+
+  abstract get CRS(): string | undefined;
 
   private _removeTileInternal(tile: T): void {
     if (tile.state & TileState.PENDING_DELETE) {

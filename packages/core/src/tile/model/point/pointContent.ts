@@ -23,6 +23,7 @@ import { TypedArray } from '../../types';
 
 type PointCloudData = {
   position: Float32Array;
+  ids?: BigInt64Array;
   attributes: Record<string, TypedArray>;
 };
 
@@ -59,6 +60,8 @@ export class PointTileContent extends TileContent {
   private onDataUpdateWebGPU(data: PointCloudData) {
     this.pointCount = data.position.length / 3;
     this.buffers = data.attributes;
+    this.ids = data.ids;
+    this.buffers['position'] = data.position;
 
     if (this.meshes.length === 0) {
       console.error('Mesh is unitiliazed for point cloud tile');

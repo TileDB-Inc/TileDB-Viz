@@ -18,6 +18,7 @@ import { TypedArray } from '../../types';
 type GeometryData = {
   position: Float32Array;
   indices: Int32Array;
+  ids?: BigInt64Array;
   attributes: Record<string, TypedArray>;
 };
 
