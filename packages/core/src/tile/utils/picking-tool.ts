@@ -9,9 +9,8 @@ import {
   VertexData,
   EventState,
   VertexBuffer,
-  MeshBuilder,
-  Vector3,
-  ArcRotateCamera
+  Camera,
+  Matrix
 } from '@babylonjs/core';
 import {
   ScreenSpaceLineMaterial,
@@ -24,37 +23,15 @@ import {
   Events,
   GUIEvent
 } from '@tiledb-inc/viz-components';
-import { PickingMode } from '@tiledb-inc/viz-common';
-
-export function screenToWorldSpaceBbox(scene: Scene, bbox: number[]) {
-  // calculate world space bbox to use for geometry query
-  const camera = getCamera(scene, 'Main');
-
-  const screenBbox = [
-    scene.getEngine().getRenderWidth(),
-    scene.getEngine().getRenderHeight()
-  ];
-  const offset = [
-    (camera?.target.x ?? 0) + (camera?.orthoLeft ?? 0),
-    -(camera?.target.z ?? 0) + (camera?.orthoTop ?? 0)
-  ];
-  const worldBbox = [
-    (camera?.orthoRight ?? 0) - (camera?.orthoLeft ?? 0),
-    (camera?.orthoTop ?? 0) - (camera?.orthoBottom ?? 0)
-  ];
-
-  const selectionWorldBbox = new Array(4);
-  [selectionWorldBbox[0], selectionWorldBbox[2]] = [
-    offset[0] + (bbox[0] / screenBbox[0]) * worldBbox[0],
-    offset[0] + (bbox[2] / screenBbox[0]) * worldBbox[0]
-  ];
-  [selectionWorldBbox[1], selectionWorldBbox[3]] = [
-    offset[1] - (bbox[1] / screenBbox[1]) * worldBbox[1],
-    offset[1] - (bbox[3] / screenBbox[1]) * worldBbox[1]
-  ];
-
-  return selectionWorldBbox;
-}
+import { PickingMode, PickResult } from '@tiledb-inc/viz-common';
+import { Manager } from '../model/manager';
+import { Tile } from '../model/tile';
+import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { SceneOptions } from '../../types';
+import proj4 from 'proj4';
+import { inv } from 'mathjs';
+import { get3DInverseTransformedBoundingInfo } from '../../utils/metadata-utils/utils';
+import { ISelectable } from '../model/tileContent';
 
 export class PickingTool {
   public pickCallbacks: {
@@ -68,11 +45,13 @@ export class PickingTool {
       }
     ): void;
   }[];
+  public managers: Manager<Tile<any>>[] = [];
 
   private mode: PickingMode;
   private scene: Scene;
   private utilityLayer: UtilityLayerRenderer;
-  private camera: ArcRotateCamera;
+  private camera: Camera;
+  private sceneOptions: SceneOptions;
 
   private selectionBbox: number[];
   private selectionBuffer: number[];
@@ -88,10 +67,11 @@ export class PickingTool {
 
   private active: boolean;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, sceneOptions: SceneOptions) {
+    this.scene = scene;
+    this.sceneOptions = sceneOptions;
     this.camera = getCamera(scene, 'Main')!;
     this.mode = PickingMode.NONE;
-    this.scene = scene;
     this.utilityLayer = new UtilityLayerRenderer(this.scene, false);
     this.utilityLayer.setRenderCamera(this.camera);
     this.selectionRenderVertexData = new VertexData();
@@ -114,6 +94,8 @@ export class PickingTool {
     this.selectionBbox = [];
     this.selectedTiles = new Set<string>();
     this.active = false;
+
+    this.initializeGUIProperties();
 
     window.addEventListener(
       Events.BUTTON_CLICK,
@@ -153,36 +135,94 @@ export class PickingTool {
           this.scene.onPointerObservable.remove(this.lassoHandler);
         }
         break;
+      case Commands.SELECT:
+        {
+          const { managerID, id } = event.detail.props.data as {
+            managerID: string;
+            id: bigint;
+          };
+
+          this.managers
+            .find(x => x.id === managerID)
+            ?.visibleTiles.forEach(tile => {
+              tile.data?.intersector?.pickObject(id);
+            });
+        }
+        break;
+      case Commands.CLEAR:
+        {
+          this.managers.forEach(manager =>
+            manager.visibleTiles.forEach(tile => {
+              (tile.data as ISelectable | undefined)?.update({
+                selection: { indices: [-1] }
+              });
+            })
+          );
+        }
+        break;
     }
   }
 
   private singlePicker(pointerInfo: PointerInfo, state: EventState): void {
     switch (pointerInfo.type) {
       case PointerEventTypes.POINTERTAP: {
-        const [x, y] = [
-          pointerInfo.event.offsetX,
-          this.scene.getEngine().getRenderHeight() - pointerInfo.event.offsetY
-        ];
-
-        this.selectionBbox = [
-          Number.MAX_VALUE,
-          Number.MAX_VALUE,
-          -Number.MAX_VALUE,
-          -Number.MAX_VALUE
-        ];
-
-        this.selectionBbox[0] = Math.min(this.selectionBbox[0], Math.round(x));
-        this.selectionBbox[1] = Math.min(this.selectionBbox[1], Math.round(y));
-        this.selectionBbox[2] = Math.max(this.selectionBbox[2], Math.round(x));
-        this.selectionBbox[3] = Math.max(this.selectionBbox[3], Math.round(y));
-
-        const tile = pointerInfo.pickInfo?.pickedMesh?.name
-          .split(',')
-          .map(x => Number.parseInt(x));
-
-        this.pickCallbacks.forEach(callback =>
-          callback(this.selectionBbox, { tiles: tile ? [tile] : undefined })
+        const pickingRay = this.scene.createPickingRay(
+          this.scene.pointerX,
+          this.scene.pointerY,
+          Matrix.Identity(),
+          this.camera
         );
+
+        const tiles = [];
+
+        // Find intersecting tiles
+        for (const manager of this.managers) {
+          const converter =
+            manager.CRS && this.sceneOptions.crs
+              ? proj4(this.sceneOptions.crs, manager.CRS)
+              : undefined;
+
+          for (const tile of manager.visibleTiles.values()) {
+            if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
+              tiles.push(tile);
+
+              console.log(tile.id);
+
+              const result = tile.data?.intersector?.intersectRay(pickingRay);
+
+              if (!result) {
+                continue;
+              }
+
+              const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
+                result.minPoint,
+                result.maxPoint,
+                converter,
+                this.sceneOptions.transformation
+                  ? inv(this.sceneOptions.transformation)
+                  : undefined
+              );
+
+              manager.fetcher
+                .fetchInfo(tile, selectionBoundingInfo, result.ids)
+                .then(response => {
+                  window.dispatchEvent(
+                    new CustomEvent<GUIEvent<PickResult>>(Events.PICK_OBJECT, {
+                      bubbles: true,
+                      detail: {
+                        target: 'info-panel',
+                        props: {
+                          assetID: manager.id,
+                          tileID: tile.id,
+                          results: response.info
+                        }
+                      }
+                    })
+                  );
+                });
+            }
+          }
+        }
 
         break;
       }
@@ -218,61 +258,67 @@ export class PickingTool {
           break;
         }
 
-        const shape = [];
-        const zoom =
-          this.scene.getEngine().getRenderWidth() /
-          ((this.camera.orthoRight ?? 1) - (this.camera.orthoLeft ?? 0));
-        const midX = (this.selectionBbox[2] + this.selectionBbox[0]) / 2;
-        const midY = (this.selectionBbox[3] + this.selectionBbox[1]) / 2;
+        const selectionMesh = constructLassoMesh(
+          this.selectionBuffer,
+          this.camera,
+          this.scene
+        );
 
-        const minX = this.camera.target.x + (this.camera.orthoLeft ?? 1);
-        const minZ = this.camera.target.z + (this.camera.orthoBottom ?? 1);
+        // Find intersecting tiles
+        const tiles = [];
 
-        for (let i = 0; i < this.selectionBuffer.length; i += 2) {
-          const x = (this.selectionBuffer[i] - midX) / zoom;
-          const y = (this.selectionBuffer[i + 1] - midY) / zoom;
+        for (const manager of this.managers) {
+          const converter =
+            manager.CRS && this.sceneOptions.crs
+              ? proj4(this.sceneOptions.crs, manager.CRS)
+              : undefined;
 
-          shape.push(new Vector3(-y, -x, 0));
+          for (const tile of manager.visibleTiles.values()) {
+            if (
+              selectionMesh
+                .getBoundingInfo()
+                .intersects(tile.boundingInfo, true)
+            ) {
+              tiles.push(tile);
+
+              const result =
+                tile.data?.intersector?.intersectMesh(selectionMesh);
+
+              if (!result || result.ids.length === 0) {
+                continue;
+              }
+
+              const selectionBoundingInfo = get3DInverseTransformedBoundingInfo(
+                result.minPoint,
+                result.maxPoint,
+                converter,
+                this.sceneOptions.transformation
+                  ? inv(this.sceneOptions.transformation)
+                  : undefined
+              );
+
+              manager.fetcher
+                .fetchInfo(tile, selectionBoundingInfo, result.ids)
+                .then(response => {
+                  window.dispatchEvent(
+                    new CustomEvent<GUIEvent<PickResult>>(Events.PICK_OBJECT, {
+                      bubbles: true,
+                      detail: {
+                        target: 'info-panel',
+                        props: {
+                          assetID: manager.id,
+                          tileID: tile.id,
+                          results: response.info
+                        }
+                      }
+                    })
+                  );
+                });
+            }
+          }
         }
 
-        const offset = new Vector3(0, 3000, -10);
-
-        const start = new Vector3(minX + midX / zoom, 0, minZ + midY / zoom);
-        const end = new Vector3(
-          minX + midX / zoom,
-          offset.y,
-          minZ + midY / zoom
-        );
-
-        start.addInPlace(
-          start.subtract(end).normalize().multiplyByFloats(1, 1000, 1)
-        );
-
-        const mesh = MeshBuilder.ExtrudeShape('Selection mesh', {
-          shape: shape,
-          path: [start, end],
-          sideOrientation: Mesh.DOUBLESIDE,
-          closeShape: true
-        });
-
-        mesh.setPivotPoint(this.camera.target);
-        mesh.addRotation(-this.camera.beta, 0, 0);
-        mesh.bakeCurrentTransformIntoVertices();
-        mesh.addRotation(0, -(this.camera.alpha + Math.PI * 0.5), 0);
-        mesh.bakeCurrentTransformIntoVertices();
-        mesh.visibility = 0;
-
-        this.pickCallbacks.forEach(callback =>
-          callback(this.selectionBbox, {
-            path: this.selectionBuffer,
-            enclosureMeshPositions: mesh.getVerticesData(
-              VertexBuffer.PositionKind,
-              true,
-              true
-            ) as Float32Array,
-            enclosureMeshIndices: mesh.getIndices(true, true) as Int32Array
-          })
-        );
+        selectionMesh.dispose(false, true);
         this.selectionRenderMesh.removeVerticesData(VertexBuffer.PositionKind);
 
         break;
@@ -367,4 +413,80 @@ export class PickingTool {
     this.scene.onPointerObservable.remove(this.singleHandler);
     this.scene.onPointerObservable.remove(this.lassoHandler);
   }
+
+  private initializeGUIProperties() {
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
+        Events.INITIALIZE,
+        {
+          bubbles: true,
+          detail: {
+            target: 'info-panel',
+            props: {
+              config: new Map()
+            }
+          }
+        }
+      )
+    );
+  }
+}
+
+/**
+ * Construct a 3D mesh from a lasso selection to perform inclusion tests.
+ * @param lasso An array with the lasso points in screen space with interleaved XY coordinates.
+ * @param camera The main camera scene.
+ * @param scene The current scene.
+ */
+function constructLassoMesh(
+  lasso: number[],
+  camera: Camera,
+  scene: Scene
+): Mesh {
+  const vertexCount = lasso.length / 2;
+
+  // We need 3 number per vertex and we will double the vertices το create the other side
+  const position = new Float32Array(6 * vertexCount);
+  const indices = new Int32Array(6 * vertexCount);
+
+  for (let idx = 0; idx < vertexCount; ++idx) {
+    // Construct ray to translate the sreen point to world space and also to account for
+    // the correct projection
+    const ray = scene.createPickingRay(
+      lasso[2 * idx],
+      scene.getEngine().getRenderHeight() - lasso[2 * idx + 1],
+      Matrix.Identity(),
+      camera
+    );
+
+    position[3 * idx] = ray.origin.x;
+    position[3 * idx + 1] = ray.origin.y;
+    position[3 * idx + 2] = ray.origin.z;
+
+    ray.origin.addInPlace(ray.direction.multiplyByFloats(5000, 5000, 5000));
+
+    position[3 * idx + 3 * vertexCount] = ray.origin.x;
+    position[3 * idx + 1 + 3 * vertexCount] = ray.origin.y;
+    position[3 * idx + 2 + 3 * vertexCount] = ray.origin.z;
+
+    // Face A
+    indices[6 * idx] = idx;
+    indices[6 * idx + 1] = idx + vertexCount;
+    indices[6 * idx + 2] = (idx + 1) % vertexCount;
+
+    // Face B
+    indices[6 * idx + 3] = (idx + 1) % vertexCount;
+    indices[6 * idx + 4] = idx + vertexCount;
+    indices[6 * idx + 5] = ((idx + 1) % vertexCount) + vertexCount;
+  }
+
+  const mesh = new Mesh('Selection mesh', scene);
+  const vertexData = new VertexData();
+  vertexData.positions = position;
+  vertexData.indices = indices;
+
+  vertexData.applyToMesh(mesh);
+  mesh.visibility = 0;
+
+  return mesh;
 }
