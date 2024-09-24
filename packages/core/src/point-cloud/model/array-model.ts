@@ -380,7 +380,7 @@ class ArrayModel {
         const queryCacheKey = block.mortonNumber;
         const storeName = `${this.namespace}:${this.groupName}`;
         // check indexeddb cache
-        const dataFromCache = await getQueryDataFromCache(
+        const dataFromCache = await getQueryDataFromCache<MoctreeBlock>(
           storeName,
           queryCacheKey
         );

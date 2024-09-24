@@ -77,36 +77,38 @@ export const initializeCacheDB = async (storeNames: string[]) => {
   db.close();
 };
 
-export const getQueryDataFromCache = async (
+export async function getQueryDataFromCache<T>(
   storeName: string,
-  key: number | string
-) => {
-  try {
-    const db = await getCacheDB(storeName);
-    const value = await db.get(storeName + '_' + DATA_MODEL_VERSION, key);
-    return value;
-  } catch (e) {
-    return undefined;
-  }
-};
+  key: string | number
+): Promise<T | undefined> {
+  return getCacheDB(storeName)
+    .then(db => db.get(storeName + '_' + DATA_MODEL_VERSION, key))
+    .catch(() => undefined);
+}
 
-export const writeToCache = async (
+export async function writeToCache(
   storeName: string,
   key: number | string,
   data: any
-) => {
-  try {
-    const db = await getCacheDB(storeName);
-    const now = Date.now();
-    await db.put(
-      storeName + '_' + DATA_MODEL_VERSION,
-      Object.assign(data, { __timestamp: now }),
-      key
-    );
-  } catch (e) {
-    console.error(e);
+) {
+  if (data === undefined || data === null) {
+    return true;
   }
-};
+
+  return getCacheDB(storeName)
+    .then(db => {
+      return db.put(
+        storeName + '_' + DATA_MODEL_VERSION,
+        Object.assign(data, { __timestamp: Date.now() }),
+        key
+      );
+    })
+    .then(_ => true)
+    .catch(e => {
+      console.log(e);
+      return false;
+    });
+}
 
 export const clearCache = async (storeName: string) => {
   const db = await getCacheDB(storeName);

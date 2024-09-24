@@ -6,7 +6,7 @@ import { Scene, UniformBuffer } from '@babylonjs/core';
 import {
   Channel,
   DataRequest,
-  ImageMetadataV2,
+  ImageMetadata,
   ImagePayload,
   ImageResponse,
   RequestType
@@ -32,7 +32,7 @@ import { Tile } from '../tile';
 import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
 
 interface ImageOptions {
-  metadata: ImageMetadataV2;
+  metadata: ImageMetadata;
   namespace: string;
 }
 
@@ -45,7 +45,7 @@ export class ImageManager extends Manager<
   private intensityRanges: Float32Array;
   private colors: Float32Array;
   private tileOptions!: UniformBuffer;
-  private metadata: ImageMetadataV2;
+  private metadata: ImageMetadata;
   private namespace: string;
 
   private selectedAttribute: Attribute;

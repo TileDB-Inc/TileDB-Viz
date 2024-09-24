@@ -8,11 +8,11 @@ import {
 } from '@babylonjs/core';
 import {
   GeometryMetadata,
+  ImageMetadata,
   PointCloudMetadata,
   TileDBTileImageOptions
 } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
-import { ImageMetadataV2 } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
@@ -53,7 +53,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private gui!: TileImageGUI;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
-  private imageMetadata!: ImageMetadataV2;
+  private imageMetadata!: ImageMetadata;
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: {
