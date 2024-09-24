@@ -19,6 +19,7 @@ import {
   PolygonShaderMaterialWebGL,
   PolygonShaderMaterialWebGPU
 } from '../../materials/polygonShaderMaterial';
+import { HIGHLIGHTED_STATE, SELECTED_STATE } from '../../constants';
 
 type GeometryData = {
   position: Float32Array;
@@ -215,7 +216,7 @@ export class GeometryContent
     }
 
     for (const idx of selection.indices ?? []) {
-      state[idx] = 1;
+      state[idx] = HIGHLIGHTED_STATE;
     }
 
     if (selection.pick) {
@@ -224,7 +225,7 @@ export class GeometryContent
         idx < selection.pick.current[1];
         ++idx
       ) {
-        state[indices[idx]] = 2;
+        state[indices[idx]] = SELECTED_STATE;
       }
 
       for (
@@ -232,7 +233,7 @@ export class GeometryContent
         idx < selection.pick.previous[1];
         ++idx
       ) {
-        state[indices[idx]] = 1;
+        state[indices[idx]] = HIGHLIGHTED_STATE;
       }
     }
 

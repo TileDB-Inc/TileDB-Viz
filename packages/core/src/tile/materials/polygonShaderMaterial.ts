@@ -6,6 +6,12 @@ import {
   ShaderLanguage
 } from '@babylonjs/core';
 import { FeatureType } from '@tiledb-inc/viz-common';
+import {
+  COLOR_GROUPS,
+  HIGHLIGHTED_STATE,
+  MAX_CATEGORIES,
+  SELECTED_STATE
+} from '../constants';
 
 export function PolygonShaderMaterialWebGPU(
   scene: Scene,
@@ -48,8 +54,8 @@ export function PolygonShaderMaterialWebGPU(
     struct PolygonOptions {
       color: vec4<f32>,
       opacity: f32,
-      colorScheme: array<vec4<f32>, 32>,
-      groupMap: array<vec4<f32>, 192>
+      colorScheme: array<vec4<f32>, ${COLOR_GROUPS.toFixed(0)}>,
+      groupMap: array<vec4<f32>, ${MAX_CATEGORIES.toFixed(0)}>
     };
 
     var<uniform> polygonOptions : PolygonOptions;
@@ -128,8 +134,8 @@ export function PolygonShaderMaterialWebGL(scene: Scene): ShaderMaterial {
     layout(std140) uniform polygonOptions {
       vec4 color;
       float opacity;
-      vec4 colorScheme[32];
-      vec4 groupMap[192];
+      vec4 colorScheme[${COLOR_GROUPS.toFixed(0)}];
+      vec4 groupMap[${MAX_CATEGORIES.toFixed(0)}];
     };
 
     flat out vec4 vColor;
@@ -154,10 +160,10 @@ export function PolygonShaderMaterialWebGL(scene: Scene): ShaderMaterial {
         vColor = color;
       #endif
 
-      if (state == 1.0) {
+      if (state == ${HIGHLIGHTED_STATE.toFixed(1)}) {
         vColor = selectionColor;
       }
-      else if (state == 2.0) {
+      else if (state == ${SELECTED_STATE.toFixed(1)}) {
         vColor = pickColor;
       }
     }
@@ -171,8 +177,8 @@ export function PolygonShaderMaterialWebGL(scene: Scene): ShaderMaterial {
     layout(std140) uniform polygonOptions {
       vec4 color;
       float opacity;
-      vec4 colorScheme[32];
-      vec4 groupMap[192];
+      vec4 colorScheme[${COLOR_GROUPS.toFixed(0)}];
+      vec4 groupMap[${MAX_CATEGORIES.toFixed(0)}];
     };
 
 

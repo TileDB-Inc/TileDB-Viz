@@ -32,6 +32,7 @@ import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';
 import { GeometryFetcher } from './geometryFetcher';
+import { COLOR_GROUPS, MAX_CATEGORIES } from '../../constants';
 
 interface GeometryOptions {
   arrayID: string;
@@ -103,12 +104,15 @@ export class GeometryManager extends Manager<
   }
 
   private initializeUniformBuffer() {
+    // To maintain support for WebGL devices the minimum limits for uniform buffers need to be respected.
+    // The miminum number of uniform vec4 is 224 for fragment shaders so the 32 and 192 limits on color scheme
+    // and group map are there to enforce these minimum limits.
     this.polygonOptions = new UniformBuffer(this.scene.getEngine());
 
     this.polygonOptions.addUniform('color', 4, 0);
     this.polygonOptions.addUniform('opacity', 1, 0);
-    this.polygonOptions.addUniform('colorScheme', 4, 32);
-    this.polygonOptions.addUniform('groupMap', 4, 192);
+    this.polygonOptions.addUniform('colorScheme', 4, COLOR_GROUPS);
+    this.polygonOptions.addUniform('groupMap', 4, MAX_CATEGORIES);
 
     this.polygonOptions.updateVector4('color', this.styleOptions.fill);
     this.polygonOptions.updateFloat('opacity', 1);
@@ -263,7 +267,7 @@ export class GeometryManager extends Manager<
         {
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
 
@@ -301,7 +305,7 @@ export class GeometryManager extends Manager<
 
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
           this.polygonOptions.updateFloatArray('groupMap', state);

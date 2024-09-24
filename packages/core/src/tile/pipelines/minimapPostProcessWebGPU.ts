@@ -99,11 +99,6 @@ export class MinimapPipelineWebGPU {
         this.postProcess.inputTexture.texture
       );
 
-      // effect.setTextureSampler(
-      //   'textureSamplerSampler',
-      //   this.postProcess.inputTexture.texture
-      // );
-
       const pointTR = {
         x: mainCamera?.orthoRight ?? 0,
         z: mainCamera?.orthoTop ?? 0
@@ -129,7 +124,6 @@ export class MinimapPipelineWebGPU {
 
       buffer.update(new Float32Array([left, 1 - top, right, 1 - bottom]));
       (effect.getEngine() as WebGPUEngine).setStorageBuffer('options', buffer);
-      //effect.setStorageBuffer('options', buffer);
     });
   }
 }
