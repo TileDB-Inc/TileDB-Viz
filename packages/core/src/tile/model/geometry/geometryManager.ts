@@ -6,7 +6,7 @@ import {
   GeometryMetadata,
   GeometryResponse
 } from '../../types';
-import { Scene, Color3 } from '@babylonjs/core';
+import { Scene, UniformBuffer, Vector4 } from '@babylonjs/core';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager } from '../manager';
 import {
@@ -32,6 +32,7 @@ import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';
 import { GeometryFetcher } from './geometryFetcher';
+import { COLOR_GROUPS, MAX_CATEGORIES } from '../../constants';
 
 interface GeometryOptions {
   arrayID: string;
@@ -44,20 +45,20 @@ export class GeometryManager extends Manager<
   Tile<GeometryDataContent, GeometryContent>
 > {
   private workerPool: WorkerPool;
+  private polygonOptions!: UniformBuffer;
   private metadata: GeometryMetadata;
   private styleOptions = {
     style: GeometryStyle.FILLED,
-    fillOpacity: 1,
-    fill: new Color3(0, 0, 1),
+    fill: new Vector4(0, 0, 1, 1),
     outlineThickness: 1,
-    outline: new Color3(1, 0, 0),
+    outline: new Vector4(1, 0, 0, 1),
     renderingGroup: 1,
 
     // This array is shared by reference so changing a value
     // should automatically update the uniform value
     colorScheme: Float32Array.from(
       colorScheme
-        .map(x => [...Object.values(hexToRgb(x)!), 255])
+        .map(x => [...Object.values(hexToRgb(x)), 255])
         .flatMap(x => x)
         .map(x => x / 255)
     ),
@@ -93,11 +94,34 @@ export class GeometryManager extends Manager<
       this.scene.getEngine().getRenderHeight()
     );
 
+    this.initializeUniformBuffer();
+
     this.registerEventListeners();
   }
 
   public get CRS(): string | undefined {
     return this.metadata.crs;
+  }
+
+  private initializeUniformBuffer() {
+    // To maintain support for WebGL devices the minimum limits for uniform buffers need to be respected.
+    // The miminum number of uniform vec4 is 224 for fragment shaders so the 32 and 192 limits on color scheme
+    // and group map are there to enforce these minimum limits.
+    this.polygonOptions = new UniformBuffer(this.scene.getEngine());
+
+    this.polygonOptions.addUniform('color', 4, 0);
+    this.polygonOptions.addUniform('opacity', 1, 0);
+    this.polygonOptions.addUniform('colorScheme', 4, COLOR_GROUPS);
+    this.polygonOptions.addUniform('groupMap', 4, MAX_CATEGORIES);
+
+    this.polygonOptions.updateVector4('color', this.styleOptions.fill);
+    this.polygonOptions.updateFloat('opacity', 1);
+    this.polygonOptions.updateFloatArray(
+      'colorScheme',
+      this.styleOptions.colorScheme
+    );
+
+    this.polygonOptions.update();
   }
 
   public registerEventListeners(): void {
@@ -187,10 +211,8 @@ export class GeometryManager extends Manager<
         attributes: data.attributes
       },
       feature: this.activeFeature,
-      fill: this.styleOptions.fill,
-      fillOpacity: this.styleOptions.fillOpacity,
       styleOptions: this.styleOptions,
-      colorScheme: this.styleOptions.colorScheme
+      UBO: this.polygonOptions
     });
   }
 
@@ -207,11 +229,14 @@ export class GeometryManager extends Manager<
           if (target[1] === 'fill' || target[1] === 'outline') {
             const color: { r: number; g: number; b: number } =
               event.detail.props.data;
-            this.styleOptions[target[1]] = new Color3(
+            Vector4.FromFloatsToRef(
               color.r / 255,
               color.g / 255,
-              color.b / 255
+              color.b / 255,
+              1,
+              this.styleOptions[target[1]]
             );
+            this.polygonOptions.updateVector4('color', this.styleOptions.fill);
           } else {
             const groupIndex = Number.parseInt(target[1]);
             const color: { r: number; g: number; b: number } =
@@ -220,12 +245,17 @@ export class GeometryManager extends Manager<
             this.styleOptions.colorScheme[4 * groupIndex] = color.r / 255;
             this.styleOptions.colorScheme[4 * groupIndex + 1] = color.g / 255;
             this.styleOptions.colorScheme[4 * groupIndex + 2] = color.b / 255;
+
+            this.polygonOptions.updateFloatArray(
+              'colorScheme',
+              this.styleOptions.colorScheme
+            );
           }
+
+          this.polygonOptions.update();
 
           for (const tile of this.visibleTiles.values()) {
             tile.data?.update({
-              fill: this.styleOptions.fill,
-              colorScheme: this.styleOptions.colorScheme,
               styleOptions: {
                 outline: this.styleOptions.outline
               }
@@ -237,18 +267,15 @@ export class GeometryManager extends Manager<
         {
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
 
           state[event.detail.props.data.category] =
             event.detail.props.data.group;
 
-          for (const tile of this.visibleTiles.values()) {
-            tile.data?.update({
-              groupMap: state
-            });
-          }
+          this.polygonOptions.updateFloatArray('groupMap', state);
+          this.polygonOptions.update();
         }
         break;
       default:
@@ -274,13 +301,15 @@ export class GeometryManager extends Manager<
         {
           this.activeFeature = this.metadata.features[event.detail.props.value];
           updateOptions.feature = this.activeFeature;
-          updateOptions.colorScheme = this.styleOptions.colorScheme;
+          updateOptions.UBO = this.polygonOptions;
+
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
-          updateOptions.groupMap = state;
+          this.polygonOptions.updateFloatArray('groupMap', state);
+          this.polygonOptions.update();
         }
         break;
       case 'renderingGroup':
@@ -307,10 +336,11 @@ export class GeometryManager extends Manager<
 
     switch (target[1]) {
       case 'fillOpacity':
-        this.styleOptions.fillOpacity = Math.max(
-          event.detail.props.value ?? 1,
-          0.01
+        this.polygonOptions.updateFloat(
+          'opacity',
+          event.detail.props.value ?? 1
         );
+        this.polygonOptions.update();
         break;
       case 'outlineWidth':
         this.styleOptions.outlineThickness = event.detail.props.value ?? 1;
@@ -319,7 +349,6 @@ export class GeometryManager extends Manager<
 
     for (const tile of this.visibleTiles.values()) {
       tile.data?.update({
-        fillOpacity: this.styleOptions.fillOpacity,
         styleOptions: {
           outlineThickness: this.styleOptions.outlineThickness
         }

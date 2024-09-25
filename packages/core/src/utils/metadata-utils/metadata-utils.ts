@@ -450,7 +450,13 @@ async function getArrayMetadata(
     await writeToCache(options.arrayID, 'arrayMetadata', arrayMetadata);
   }
 
-  return [arrayMetadata!, [options.arrayID]];
+  if (!arrayMetadata) {
+    throw new Error(
+      `Failed to load array metadata for array ${options.arrayID}`
+    );
+  }
+
+  return [arrayMetadata, [options.arrayID]];
 }
 
 async function getGroupMetadata(
@@ -497,7 +503,13 @@ async function getGroupMetadata(
     await writeToCache(options.groupID, 'memberUris', memberUris);
   }
 
-  return [groupMetadata!, memberUris!];
+  if (!groupMetadata || !memberUris) {
+    throw new Error(
+      `Failed to load group metadata for group ${options.groupID}`
+    );
+  }
+
+  return [groupMetadata, memberUris];
 }
 
 export async function getGeometryMetadata(

@@ -6,7 +6,8 @@ import {
   ArcRotateCamera,
   ShaderStore,
   ShaderLanguage,
-  StorageBuffer
+  StorageBuffer,
+  WebGPUEngine
 } from '@babylonjs/core';
 import { getCamera } from '../utils/camera-utils';
 import { getViewArea } from '../utils/helpers';
@@ -81,7 +82,10 @@ export class MinimapPipelineWebGPU {
     );
 
     this.postProcess.enablePixelPerfectMode = true;
-    const buffer = new StorageBuffer(this.scene.getEngine(), 16);
+    const buffer = new StorageBuffer(
+      this.scene.getEngine() as WebGPUEngine,
+      16
+    );
 
     this.postProcess.onApplyObservable.add((effect: Effect) => {
       const mainCamera = getCamera(this.scene, 'Main') as ArcRotateCamera;
@@ -90,7 +94,7 @@ export class MinimapPipelineWebGPU {
         return;
       }
 
-      effect.setTextureSampler(
+      (effect.getEngine() as WebGPUEngine).setTextureSampler(
         'textureSamplerSampler',
         this.postProcess.inputTexture.texture
       );
@@ -119,7 +123,7 @@ export class MinimapPipelineWebGPU {
       right = Math.max(Math.min(this.baseWidth, right), 0) / this.baseWidth;
 
       buffer.update(new Float32Array([left, 1 - top, right, 1 - bottom]));
-      effect.setStorageBuffer('options', buffer);
+      (effect.getEngine() as WebGPUEngine).setStorageBuffer('options', buffer);
     });
   }
 }

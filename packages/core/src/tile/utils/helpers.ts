@@ -2,9 +2,7 @@ export function range(start: number, end: number): Array<number> {
   return new Array(end - start).fill(0).map((_, k) => k + start);
 }
 
-export function hexToRgb(
-  hex: string
-): { r: number; g: number; b: number } | null {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
@@ -12,7 +10,7 @@ export function hexToRgb(
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
       }
-    : null;
+    : { r: 255, g: 255, b: 255 };
 }
 
 export function getViewArea(

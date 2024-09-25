@@ -6,7 +6,8 @@ import {
   TransformNode,
   UniformBuffer,
   VertexBuffer,
-  Matrix as BJSMatrix
+  Matrix as BJSMatrix,
+  WebGPUEngine
 } from '@babylonjs/core';
 import { TileContent, TileUpdateOptions } from '../tileContent';
 import { Tile } from '../tile';
@@ -111,7 +112,7 @@ export class TDB3DTileContent extends TileContent {
       const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
 
       const positionBuffer = new StorageBuffer(
-        this.scene.getEngine(),
+        this.scene.getEngine() as WebGPUEngine,
         (positions as Float32Array).byteLength
       );
       positionBuffer.update(positions as Float32Array);

@@ -32,6 +32,7 @@ import { Tile } from '../tile';
 import { PointDataContent, SceneOptions } from '../../../types';
 import { PointCloudUpdateOptions, PointTileContent } from './pointContent';
 import { PointCloudFetcher } from './pointFetcher';
+import { COLOR_GROUPS, MAX_CATEGORIES } from '../../constants';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
@@ -58,7 +59,7 @@ export class PointManager extends Manager<
     // should automatically update the uniform value
     colorScheme: Float32Array.from(
       colorScheme
-        .map(x => [...Object.values(hexToRgb(x)!), 255])
+        .map(x => [...Object.values(hexToRgb(x)), 255])
         .flatMap(x => x)
         .map(x => x / 255)
     ),
@@ -190,7 +191,7 @@ export class PointManager extends Manager<
 
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
           this.pointOptions.updateFloatArray('groupMap', state);
@@ -281,7 +282,7 @@ export class PointManager extends Manager<
         {
           let state = this.styleOptions.groupMap.get(this.activeFeature.name);
           if (!state) {
-            state = new Float32Array(768).fill(32);
+            state = new Float32Array(MAX_CATEGORIES * 4).fill(32);
             this.styleOptions.groupMap.set(this.activeFeature.name, state);
           }
 
@@ -302,9 +303,9 @@ export class PointManager extends Manager<
 
     this.pointOptions.addUniform('pointSize', 1, 0);
     this.pointOptions.addUniform('color', 4, 0);
-    this.pointOptions.addUniform('colorScheme', 4, 32);
+    this.pointOptions.addUniform('colorScheme', 4, COLOR_GROUPS);
     this.pointOptions.addUniform('pointOpacity', 1, 0);
-    this.pointOptions.addUniform('groupMap', 4, 192);
+    this.pointOptions.addUniform('groupMap', 4, MAX_CATEGORIES);
 
     this.pointOptions.updateFloat('pointSize', this.styleOptions.pointSize);
     this.pointOptions.updateVector4('color', this.styleOptions.color);

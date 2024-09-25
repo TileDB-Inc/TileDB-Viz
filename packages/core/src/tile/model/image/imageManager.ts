@@ -278,6 +278,7 @@ export class ImageManager extends Manager<
 
           const index = Number(target[2]);
 
+          this.intensityRanges[4 * index] = event.detail.props.range[0];
           this.intensityRanges[4 * index + 1] = event.detail.props.range[1];
           this.tileOptions.updateFloatArray('ranges', this.intensityRanges);
           this.tileOptions.update();

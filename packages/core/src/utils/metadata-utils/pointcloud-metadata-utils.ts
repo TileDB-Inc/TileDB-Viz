@@ -316,5 +316,13 @@ function constructPointCloudTileset(
     tileDictionary.set(tile.index[0], tile);
   }
 
-  return tileDictionary.get(encode3D(0, 0, 0, 0))!;
+  const root = tileDictionary.get(encode3D(0, 0, 0, 0));
+
+  if (!root) {
+    throw new Error(
+      'Point cloud tileset construction failed. Missing root node.'
+    );
+  }
+
+  return root;
 }

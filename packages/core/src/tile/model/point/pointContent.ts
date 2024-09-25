@@ -21,6 +21,7 @@ import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '@tiledb-inc/viz-common';
 import { TypedArray } from '../../types';
 import { PointIntersector } from './pointIntersector';
+import { HIGHLIGHTED_STATE, SELECTED_STATE } from '../../constants';
 
 type PointCloudData = {
   position: Float32Array;
@@ -295,16 +296,16 @@ export class PointTileContent
     }
 
     for (const idx of selection.indices ?? []) {
-      state[idx] = 1;
+      state[idx] = HIGHLIGHTED_STATE;
     }
 
     if (selection.pick) {
       if (selection.pick.current >= 0) {
-        state[selection.pick.current] = 2;
+        state[selection.pick.current] = SELECTED_STATE;
       }
 
       if (selection.pick.previous >= 0) {
-        state[selection.pick.previous] = 1;
+        state[selection.pick.previous] = HIGHLIGHTED_STATE;
       }
     }
 

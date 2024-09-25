@@ -1,4 +1,10 @@
-import { Engine, Scene, SceneLoader, WebGPUEngine } from '@babylonjs/core';
+import {
+  AbstractEngine,
+  Engine,
+  Scene,
+  SceneLoader,
+  WebGPUEngine
+} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
@@ -39,7 +45,7 @@ export class TileDBVisualization {
   width: string;
   height: string;
   canvas?: HTMLCanvasElement;
-  engine?: Engine;
+  engine?: AbstractEngine;
   wheelPrecision: number;
   moveSpeed: number;
   inspector?: boolean;

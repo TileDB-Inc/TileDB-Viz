@@ -1,6 +1,6 @@
 import {
+  AbstractEngine,
   Effect,
-  Engine,
   PostProcess,
   Scene,
   ShaderMaterial
@@ -155,7 +155,7 @@ class ParticleShaderMaterial {
     scene: Scene,
     model: ArrayModel,
     options: TileDBPointCloudOptions,
-    engine?: Engine
+    engine?: AbstractEngine
   ) {
     if (scene.activeCameras) {
       if (engine) {

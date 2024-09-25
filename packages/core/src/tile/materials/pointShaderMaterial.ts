@@ -7,6 +7,12 @@ import {
 } from '@babylonjs/core';
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { PointShape } from '../types';
+import {
+  COLOR_GROUPS,
+  HIGHLIGHTED_STATE,
+  MAX_CATEGORIES,
+  SELECTED_STATE
+} from '../constants';
 
 export function PointCloudMaterialWebGPU(
   scene: Scene,
@@ -58,9 +64,9 @@ export function PointCloudMaterialWebGPU(
   struct PointOptions {
     pointSize: f32,
     color: vec4<f32>,
-    colorScheme: array<vec4<f32>, 32>,
+    colorScheme: array<vec4<f32>, ${COLOR_GROUPS.toFixed(0)}>,
     pointOpacity: f32,
-    groupMap: array<vec4<f32>, 192>
+    groupMap: array<vec4<f32>, ${MAX_CATEGORIES.toFixed(0)}>
   };
 
   var<uniform> pointOptions : PointOptions;
@@ -144,9 +150,9 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
     layout(std140) uniform pointOptions {
       float pointSize;
       vec4 color;
-      vec4 colorScheme[32];
+      vec4 colorScheme[${COLOR_GROUPS.toFixed(0)}];
       float pointOpacity;
-      vec4 groupMap[192];
+      vec4 groupMap[${MAX_CATEGORIES.toFixed(0)}];
     };
 
     flat out vec4 vColor;
@@ -172,10 +178,10 @@ export function PointCloudMaterial(scene: Scene): ShaderMaterial {
         vColor = color;
       #endif
 
-      if (state == 1.0) {
+      if (state == ${HIGHLIGHTED_STATE.toFixed(1)}) {
         vColor = selectionColor;
       }
-      else if (state == 2.0) {
+      else if (state == ${SELECTED_STATE.toFixed(1)}) {
         vColor = pickColor;
       }
     }
