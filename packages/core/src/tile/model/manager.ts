@@ -4,6 +4,7 @@ import { FrameDetails, RefineStrategy } from '../../types';
 import { Traverser, TraverserOptions } from './traverser';
 import { Tile, TileState } from './tile';
 import { Fetcher } from './fetcher';
+import { TileContent } from './tileContent';
 
 export interface TileStatus<T> {
   tile?: T;
@@ -81,14 +82,17 @@ export abstract class Manager<T extends Tile<any>> {
 
           // If refine stategy of parent is `REPLACE` mark parent as `PENDING_DELETE`
           // since child tile is already visible
-          let parent = tile.parent;
-          while (parent && parent.refineStrategy === RefineStrategy.REPLACE) {
-            parent.state =
-              (parent.state | TileState.PENDING_DELETE) &
-              ~TileState.PENDING_LOAD;
-            parent.mask = parent.mask & ~camera.layerMask;
+          const parentStack = [...tile.parents];
+          let parent: Tile<any, TileContent> | undefined;
+          while ((parent = parentStack.pop()) !== undefined) {
+            if (parent.refineStrategy === RefineStrategy.REPLACE) {
+              parent.state =
+                (parent.state | TileState.PENDING_DELETE) &
+                ~TileState.PENDING_LOAD;
+              parent.mask = parent.mask & ~camera.layerMask;
 
-            parent = parent.parent;
+              parentStack.push(...parent.parents);
+            }
           }
         } else if (tile.state & TileState.LOADING) {
           // Remove load flag from self since already loading
@@ -100,15 +104,18 @@ export abstract class Manager<T extends Tile<any>> {
         if (tile.state & (TileState.PENDING_LOAD | TileState.LOADING)) {
           // To avoid holes while rendering tileset with `REPLACE` refinement strategy a parent
           // tile is not deleted until all the child nodes are visible
-          let parent = tile.parent;
-          while (parent && parent.refineStrategy === RefineStrategy.REPLACE) {
-            if (parent.state & TileState.VISIBLE) {
+          const parentStack = [...tile.parents];
+          let parent: Tile<any, TileContent> | undefined;
+          while ((parent = parentStack.pop()) !== undefined) {
+            if (
+              parent.refineStrategy === RefineStrategy.REPLACE &&
+              parent.state & TileState.VISIBLE
+            ) {
               parent.state = parent.state & ~TileState.PENDING_DELETE;
               parent.mask = parent.mask | camera.layerMask;
-              break;
+            } else {
+              parentStack.push(...parent.parents);
             }
-
-            parent = parent.parent;
           }
         }
       }

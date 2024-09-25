@@ -82,7 +82,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
         tile.children.push(...result.tiles.children);
 
         for (const child of tile.children) {
-          child.parent = tile;
+          child.parents.push(tile);
         }
       } else if (result.assets) {
         tile.data?.update({
