@@ -39,15 +39,15 @@ export async function getPointCloudMetadata(
     throw new Error('options.pointGroupID is undefined');
   }
 
-  let info: GroupInfo = await getQueryDataFromCache(
+  let info = await getQueryDataFromCache<GroupInfo>(
     options.pointGroupID,
     'info'
   );
-  let members: GroupContents = await getQueryDataFromCache(
+  let members = await getQueryDataFromCache<GroupContents>(
     options.pointGroupID,
     'members'
   );
-  let groupMetadata = await getQueryDataFromCache(
+  let groupMetadata = await getQueryDataFromCache<any>(
     options.pointGroupID,
     'groupMetadata'
   );
@@ -82,11 +82,11 @@ export async function getPointCloudMetadata(
       .sort((a, b) => a.array?.name?.localeCompare(b.array?.name ?? '') ?? 0)
       .map(x => x.array?.id as string) ?? [];
 
-  let arrayMetadata = await getQueryDataFromCache(
+  let arrayMetadata = await getQueryDataFromCache<any>(
     options.pointGroupID,
     'arrayMetadata'
   );
-  let arraySchemaResponse: ArraySchema = await getQueryDataFromCache(
+  let arraySchemaResponse = await getQueryDataFromCache<ArraySchema>(
     options.pointGroupID,
     'arraySchemaResponse'
   );
@@ -192,6 +192,7 @@ export async function getPointCloudMetadata(
     id: options.pointGroupID,
     root: root,
     name: info.name ?? options.pointGroupID,
+    namespace: options.namespace,
     attributes: attributes,
     domain: domain,
     features: features,

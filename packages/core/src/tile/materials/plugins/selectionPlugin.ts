@@ -8,9 +8,12 @@ import {
 
 export class SelectionMaterialPlugin extends MaterialPluginBase {
   private _isEnabled = false;
+  private isWebGPU = false;
 
   constructor(material: Material) {
     super(material, 'Selection', 200);
+
+    this.isWebGPU = material.getScene().getEngine().isWebGPU;
   }
 
   getClassName(): string {
@@ -26,29 +29,32 @@ export class SelectionMaterialPlugin extends MaterialPluginBase {
       case 'vertex':
         return {
           CUSTOM_VERTEX_DEFINITIONS: `
-            attribute float state;
+            attribute ${this.isWebGPU ? 'uint' : 'float'} state;
+            
+            const vec4 selectionColor = vec4(0.0, 1.0, 0.0, 1.0);
+            const vec4 pickColor = vec4(1.0, 0.0, 0.0, 1.0);
 
-            flat varying float uState;
+            flat varying vec4 vColor;
           `,
           CUSTOM_VERTEX_MAIN_END: `
-            uState = state;
+            if (state == ${this.isWebGPU ? '1u' : '1.0'}) {
+              vColor = selectionColor;
+            }
+            else if (state == ${this.isWebGPU ? '2u' : '2.0'}) {
+              vColor = pickColor;
+            }
+            else {
+              vColor = vec4(0.0);
+            }
           `
         };
       case 'fragment':
         return {
           CUSTOM_FRAGMENT_DEFINITIONS: `
-            const vec3 selectionColor = vec3(0.0, 1.0, 0.0);
-            const vec3 pickColor = vec3(1.0, 0.0, 0.0);
-
-            flat varying float uState;
+            flat varying vec4 vColor;
           `,
           CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `
-            if (uState == 1.0) {
-              diffuseColor = selectionColor;
-            }
-            else if (uState == 2.0) {
-              diffuseColor = pickColor;
-            }
+            diffuseColor = mix(diffuseColor, vColor.rgb, vColor.a);
           `
         };
       default:

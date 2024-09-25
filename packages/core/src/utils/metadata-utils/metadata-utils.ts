@@ -8,19 +8,22 @@ import {
   ImageDataContent,
   GeometryDataContent,
   TDBNonEmptyDomain,
-  ImageAssetMetadata,
   DatasetType
 } from '../../types';
 import getTileDBClient from '../getTileDBClient';
 import {
   BiomedicalAssetMetadata,
   RasterAssetMetadata,
-  ImageMetadataV2,
   ImageMetadata,
   ImageLoaderMetadata,
-  GeometryMetadata
+  GeometryMetadata,
+  ImageAssetMetadata
 } from '../../tile/types';
-import { GroupContents, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import {
+  GroupContents,
+  Datatype,
+  ArrayInfo
+} from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
 import { GeometryConfig } from '@tiledb-inc/viz-common';
 import {
@@ -152,7 +155,7 @@ export function getImageDomain(schema: ArraySchema): {
 
 export async function getImageMetadata(
   options: AssetOptions
-): Promise<ImageMetadataV2> {
+): Promise<ImageMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -174,9 +177,9 @@ export async function getImageMetadata(
   }
 
   const imageMetadata = JSON.parse(
-    (assetMetadata as ImageAssetMetadata).metadata
-  ) as ImageMetadata;
-  let schemas: ArraySchema[] = await getQueryDataFromCache(
+    (assetMetadata as BiomedicalAssetMetadata & RasterAssetMetadata).metadata
+  ) as ImageAssetMetadata;
+  let schemas: ArraySchema[] | undefined = await getQueryDataFromCache(
     options.groupID ?? options.arrayID ?? '',
     'schemas'
   );
@@ -315,6 +318,7 @@ export async function getImageMetadata(
 
   return {
     id: options.groupID ?? options.arrayID,
+    namespace: options.namespace,
     name: name,
     root: tilesetRoot,
     uris: uris,
@@ -324,7 +328,7 @@ export async function getImageMetadata(
     crs: getCRS(assetMetadata),
     pixelToCRS: getTransformationMatrix(assetMetadata, scale),
     loaderMetadata: loaderMetadata
-  } as ImageMetadataV2;
+  } as ImageMetadata;
 }
 
 // export async function getAssetMetadata(
@@ -432,7 +436,7 @@ async function getArrayMetadata(
     throw new Error('Array ID is undefined');
   }
 
-  let arrayMetadata = await getQueryDataFromCache(
+  let arrayMetadata = await getQueryDataFromCache<AssetMetadata>(
     options.arrayID,
     'arrayMetadata'
   );
@@ -446,7 +450,7 @@ async function getArrayMetadata(
     await writeToCache(options.arrayID, 'arrayMetadata', arrayMetadata);
   }
 
-  return [arrayMetadata, [options.arrayID]];
+  return [arrayMetadata!, [options.arrayID]];
 }
 
 async function getGroupMetadata(
@@ -462,11 +466,14 @@ async function getGroupMetadata(
   }
 
   // Check if the are cached result for the queries
-  let groupMetadata = await getQueryDataFromCache(
+  let groupMetadata = await getQueryDataFromCache<AssetMetadata>(
     options.groupID,
     'groupMetadata'
   );
-  let memberUris = await getQueryDataFromCache(options.groupID, 'memberUris');
+  let memberUris = await getQueryDataFromCache<string[]>(
+    options.groupID,
+    'memberUris'
+  );
 
   if (!groupMetadata || !memberUris) {
     [groupMetadata, memberUris] = await Promise.all([
@@ -490,7 +497,7 @@ async function getGroupMetadata(
     await writeToCache(options.groupID, 'memberUris', memberUris);
   }
 
-  return [groupMetadata, memberUris];
+  return [groupMetadata!, memberUris!];
 }
 
 export async function getGeometryMetadata(
@@ -507,12 +514,15 @@ export async function getGeometryMetadata(
     throw new Error('Geometry array ID is undefined');
   }
 
-  let arraySchemaResponse: ArraySchema = await getQueryDataFromCache(
+  let arraySchemaResponse = await getQueryDataFromCache<ArraySchema>(
     options.geometryArrayID,
     'arraySchemaResponse'
   );
-  let info = await getQueryDataFromCache(options.geometryArrayID, 'info');
-  let arrayMetadata = await getQueryDataFromCache(
+  let info = await getQueryDataFromCache<ArrayInfo>(
+    options.geometryArrayID,
+    'info'
+  );
+  let arrayMetadata = await getQueryDataFromCache<any>(
     options.geometryArrayID,
     'arrayMetadata'
   );
@@ -650,6 +660,7 @@ export async function getGeometryMetadata(
 
   const geometryMetadata = {
     name: info.name,
+    namespace: options.namespace,
     root: root,
     extent: extents,
     type: arrayMetadata['GeometryType'],
@@ -954,7 +965,7 @@ function getTransformationMatrix(
       {
         const metadata = JSON.parse(
           (assetMetadata as BiomedicalAssetMetadata).metadata ?? ''
-        ) as ImageMetadata;
+        ) as ImageAssetMetadata;
         const defaultScale = metadata.physicalSizeX ?? 1;
 
         pixelToCRS = matrix([

@@ -8,7 +8,7 @@
   import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
   import { ButtonProps, GUIEvent } from './types';
-  import { InfoPanelConfigEntry, InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
+  import { InfoPanelConfigEntry, InfoPanelInitializationEvent, PickResult } from '@tiledb-inc/viz-common';
 
   let config = new Map<string, InfoPanelConfigEntry>();
   let results = new Map<string, any[]>();
@@ -41,19 +41,17 @@
   function clear() {
     results = new Map<string, any[]>();
 
-    for (const [key, ] of config) {
-      window.dispatchEvent(
-        new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
-          bubbles: true,
-          detail: {
-            target: key,
-            props: {
-              command: Commands.CLEAR
-            }
+    window.dispatchEvent(
+      new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
+        bubbles: true,
+        detail: {
+          target: 'picking-tool',
+          props: {
+            command: Commands.CLEAR
           }
-        })
-      );
-    }
+        }
+      })
+    );
   }
 
   function datasetOnChange(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -63,20 +61,18 @@
   }
 
   function clearSelection() {
-    const pickAttribute = config.get(selectedDataset).pickAttribute;
-    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
     selectedItemIndex = -1;
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: selectedDataset,
+          target: 'picking-tool',
           props: {
             command: Commands.SELECT,
             data: {
-              id: -1n,
-              previousID
+              managerID: selectedDataset,
+              id: -1n
             }
           }
         }
@@ -86,7 +82,6 @@
 
   function itemOnSelect(page: number, index: number) {
     const pickAttribute = config.get(selectedDataset).pickAttribute;
-    const previousID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
 
     selectedItemIndex = page * itemsPerPage + index;
     const currentID = selectedItemIndex !== -1 ? results.get(selectedDataset)[selectedItemIndex][pickAttribute] : undefined;
@@ -95,12 +90,12 @@
       new CustomEvent<GUIEvent<ButtonProps>>(Events.BUTTON_CLICK, {
         bubbles: true,
         detail: {
-          target: selectedDataset,
+          target: 'picking-tool',
           props: {
             command: Commands.SELECT,
             data: {
-              id: currentID,
-              previousID: previousID
+              managerID: selectedDataset,
+              id: currentID ? BigInt(currentID) : undefined
             }
           }
         }
@@ -108,19 +103,21 @@
     );
   }
 
-  function itemOnPick(event: CustomEvent<GUIEvent<any[]>>) {
+  function itemOnPick(event: CustomEvent<GUIEvent<PickResult>>) {
     const target = event.detail.target.split('_');
 
-    if (target[0] !== 'geometry' || target[1] !== 'info') return;
+    if (target[0] !== 'info-panel') {
+      return;
+    }
 
-    let currentResult = results.get(target[2]) ?? [];
+    let currentResult = results.get(event.detail.props.assetID) ?? [];
 
     currentResult = [
       ...currentResult,
-      ...event.detail.props
+      ...event.detail.props.results
     ];
 
-    results.set(target[2], currentResult);
+    results.set(event.detail.props.assetID, currentResult);
 
     // Trigger UI update
     results = results;
@@ -132,13 +129,9 @@
     if (event.detail.target !== 'info-panel') {
       return;
     }
-
-    window.removeEventListener(Events.INITIALIZE, onInitialize, {
-      capture: true
-    });
     event.stopPropagation();
 
-    config = event.detail.props.config;
+    config = new Map([...config, ...event.detail.props.config]);
     selectedDataset = config.keys().next().value;
   }
 
@@ -154,6 +147,10 @@
 
   onDestroy(() => {
     window.removeEventListener(Events.PICK_OBJECT, itemOnPick, {
+      capture: true
+    });
+
+    window.removeEventListener(Events.INITIALIZE, onInitialize, {
       capture: true
     });
   });

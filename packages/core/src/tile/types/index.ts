@@ -86,7 +86,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
   _gdal?: string;
 }
 
-export interface ImageMetadata extends AssetMetadata {
+export interface ImageAssetMetadata extends AssetMetadata {
   channels: Record<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
@@ -101,7 +101,7 @@ export interface ImageMetadata extends AssetMetadata {
   axes: Array<AxesMetadata>;
 }
 
-export type ImageMetadataV2 = {
+export type ImageMetadata = {
   /**
    * Unique dataset id.
    */
@@ -111,6 +111,8 @@ export type ImageMetadataV2 = {
    * Image dataset display name.
    */
   name: string;
+
+  namespace: string;
 
   /**
    * The root of the image tileset
@@ -159,6 +161,8 @@ export type GeometryMetadata = {
    */
   name: string;
 
+  namespace: string;
+
   /**
    * The root of the geomemtry tileset.
    */
@@ -192,7 +196,10 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
+  namespace: string;
+
   id: string;
+
   /**
    * The display anme of the point cloud asset.
    */
@@ -430,6 +437,7 @@ export const enum RequestType {
   GEOMETRY_INFO = 3,
   POINT = 4,
   POINT_INFO = 5,
+  INFO = 6,
 
   INITIALIZE = 100
 }
@@ -484,6 +492,10 @@ export type TileDBSpatialPayload = {
   transformation?: number[][];
 };
 
+export type TileDBInfoPayload = TileDBPayload & {
+  domain: Domain[];
+};
+
 export type ImagePayload = TileDBPayload & {
   /**
    * The [X, Y] index of the image tile used identifying the tile in the cache.
@@ -523,21 +535,20 @@ export type GeometryPayload = TileDBPayload &
     attributes: Attribute[];
   };
 
-export interface GeometryInfoMessage {
-  tileSize: number;
-  texture: Uint32Array;
-  worldBbox: number[];
-  screenBbox: number[];
-  selectionPath?: number[];
-  arrayID: string;
-  namespace: string;
-  idAttribute: Attribute;
-  pad: number[];
-  imageCRS?: string;
-  geometryCRS?: string;
-  tiles?: number[][];
-  geotransformCoefficients: number[];
-}
+export type GeometryInfoPayload = TileDBPayload &
+  TileDBSpatialPayload & {
+    /**
+     * An optional list of polygon ids to extract from the return geometry features.
+     */
+    ids?: Set<bigint>;
+
+    /**
+     * The attribute to use as a unique polygon identifiers.
+     */
+    idAttribute?: Attribute;
+
+    geometryAttribute: Attribute;
+  };
 
 export type PointCloudPayload = TileDBPayload &
   TileDBSpatialPayload & {
@@ -545,6 +556,24 @@ export type PointCloudPayload = TileDBPayload &
     features: Feature[];
     attributes: Attribute[];
     domain: Domain[];
+
+    /**
+     * The attribute to use as a unique polygon identifiers.
+     */
+    idAttribute?: Attribute;
+  };
+
+export type PointCloudInfoPayload = TileDBPayload &
+  TileDBInfoPayload & {
+    /**
+     * An optional list of polygon ids to extract from the return geometry features.
+     */
+    ids?: Set<bigint>;
+
+    /**
+     * The attribute to use as a unique polygon identifiers.
+     */
+    idAttribute?: Attribute;
   };
 
 export interface PointInfoMessage {
@@ -595,6 +624,7 @@ export interface PointResponse extends BaseResponse {
 }
 
 export interface InfoResponse {
+  nonce: number;
   info: any[];
   ids: bigint[];
 }

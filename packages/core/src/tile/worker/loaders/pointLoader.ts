@@ -1,33 +1,25 @@
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { CancelTokenSource } from 'axios';
-import Client, { QueryData, Range } from '@tiledb-inc/tiledb-cloud';
+import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
 import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
+  PointCloudInfoPayload,
   PointCloudPayload,
-  PointInfoMessage,
   PointResponse,
   TypedArray,
   WorkerResponse
 } from '../../types';
 import { RequestType } from '../../types';
-import {
-  MathArray,
-  matrix,
-  min,
-  max,
-  multiply,
-  Matrix,
-  index,
-  identity
-} from 'mathjs';
+import { matrix, multiply, Matrix, identity } from 'mathjs';
 import { concatBuffers } from '../../utils/array-utils';
 import {
   createRGB,
   getNormalizationWindow,
-  loadCachedGeometry,
-  toTypedArray
+  loadCachedData,
+  toTypedArray,
+  transformBufferToInt64
 } from './utils';
 import proj4 from 'proj4';
 
@@ -52,9 +44,14 @@ export async function pointRequest(
     request.features.flatMap(x => x.attributes.map(y => y.name))
   );
 
+  // Add additional attributes
+  if (request.idAttribute) {
+    uniqueAttributes.add(request.idAttribute.name);
+  }
+
   request.domain.forEach(x => uniqueAttributes.add(x.name));
 
-  const cachedArrays = await loadCachedGeometry(
+  const cachedArrays = await loadCachedData(
     request.uri,
     mortonIndex.toString(),
     [
@@ -64,11 +61,16 @@ export async function pointRequest(
     ['ids']
   );
 
-  console.log(cachedArrays);
-
   if (cachedArrays) {
+    for (const [name, data] of Object.entries(cachedArrays)) {
+      result.attributes![name] = data as TypedArray;
+    }
+
     result.position = cachedArrays['position'] as Float32Array;
-    result.attributes = cachedArrays;
+    result.ids = cachedArrays['ids'] as BigInt64Array | undefined;
+
+    delete cachedArrays.positions;
+    delete cachedArrays.ids;
 
     return {
       id: id,
@@ -122,6 +124,13 @@ export async function pointRequest(
     }
 
     arrays[attribute.name] = toTypedArray(buffers[attribute.name], attribute);
+  }
+
+  if (request.idAttribute && request.idAttribute.name in buffers) {
+    result.ids = transformBufferToInt64(
+      buffers[request.idAttribute.name],
+      request.idAttribute
+    );
   }
 
   for (const domain of request.domain) {
@@ -234,8 +243,9 @@ export async function pointRequest(
     ...Object.entries(result.attributes).map(([name, array]) => {
       return writeToCache(request.uri, `${name}_${mortonIndex}`, array);
     }),
-    writeToCache(request.uri, `position_${mortonIndex}`, result.position)
-  ]);
+    writeToCache(request.uri, `position_${mortonIndex}`, result.position),
+    writeToCache(request.uri, `ids_${mortonIndex}`, result.ids)
+  ]).catch(() => console.error('Error writing point response to IndexedDB.'));
 
   return {
     id: id,
@@ -248,149 +258,67 @@ export async function pointInfoRequest(
   id: number,
   client: Client,
   tokenSource: CancelTokenSource,
-  request: PointInfoMessage
+  request: PointCloudInfoPayload
 ) {
-  const geotransformCoefficients = request.geotransformCoefficients;
-  const affineMatrix = matrix([
-    [geotransformCoefficients[1], 0, 0, geotransformCoefficients[0]],
-    [0, -geotransformCoefficients[5], 0, geotransformCoefficients[3]],
-    [0, 0, geotransformCoefficients[1], 0],
-    [0, 0, 0, 1]
-  ] as MathArray);
+  const result: InfoResponse = {
+    nonce: request.nonce,
+    ids: [],
+    info: []
+  };
 
-  const limits: { [domain: string]: { min: number; max: number } } =
-    Object.fromEntries(
-      request.domain.map(x => {
-        return [x.name, { min: x.min, max: x.max }];
-      })
-    );
+  const ranges = [
+    [request.region[0].min, request.region[0].max],
+    [request.region[1].min, request.region[1].max],
+    [request.region[2].min, request.region[2].max]
+  ];
 
-  const ranges = calculateQueryRanges(
-    [request.bbox[0], request.bbox[1], request.bbox[2]],
-    [request.bbox[3], request.bbox[4], request.bbox[5]],
-    limits,
-    affineMatrix,
-    request.imageCRS,
-    request.pointCRS
+  const query = {
+    layout: Layout.Unordered,
+    ranges: ranges,
+    bufferSize: 20_000_000,
+    cancelToken: tokenSource?.token
+  };
+
+  const generator = client.query.ReadQuery(
+    request.namespace,
+    request.uri,
+    query
   );
-
-  const ids = new Set(request.ids);
-  const pickedResult: any[] = [];
-  const pickedIds: bigint[] = [];
-
-  for (const level of request.levels) {
-    const query = {
-      layout: Layout.Unordered,
-      ranges: ranges,
-      bufferSize: 20_000_000,
-      cancelToken: tokenSource?.token
-    };
-
-    const generator = client.query.ReadQuery(request.namespace, level, query);
-    try {
-      for await (const result of generator) {
+  try {
+    for await (const response of generator) {
+      if (request.idAttribute !== undefined && request.ids !== undefined) {
         for (
           let index = 0;
-          index < (result as any)[request.idAttribute].length;
+          index < (response as any)[request.idAttribute.name].length &&
+          request.ids.size !== 0;
           ++index
         ) {
-          const entryID = BigInt((result as any)[request.idAttribute][index]);
-          if (!ids.has(entryID)) {
+          const id = BigInt(response[request.idAttribute.name][index]);
+
+          if (!request.ids.has(id)) {
             continue;
           }
 
-          pickedIds.push(entryID);
-          ids.delete(entryID);
+          result.ids.push(id);
+          request.ids.delete(id);
 
-          const info = {};
-          for (const [key, val] of Object.entries(result)) {
-            info[key] = val[index];
+          const entry: Record<string, any> = {};
+          for (const [key, val] of Object.entries(response)) {
+            entry[key] = val[index];
           }
 
-          pickedResult.push(info);
-
-          if (ids.size === 0) {
-            break;
-          }
+          result.info.push(entry);
         }
       }
-    } catch (e) {
-      self.postMessage({
-        id: id,
-        type: RequestType.CANCEL,
-        response: { nonce: request.nonce } as PointInfoResponse
-      } as WorkerResponse);
-      return;
     }
+  } catch (e) {
+    console.log(e);
+    throw new Error('Request cancelled by the user');
   }
 
-  self.postMessage({
+  return {
     id: id,
-    type: RequestType.POINT_INFO,
-    response: {
-      ids: pickedIds,
-      info: pickedResult
-    } as InfoResponse
-  } as WorkerResponse);
-}
-
-function calculateQueryRanges(
-  bboxMin: number[],
-  bboxMax: number[],
-  limits: { [domain: string]: { min: number; max: number } },
-  affineMatrix: Matrix,
-  baseCRS?: string,
-  sourceCRS?: string
-): (Range | Range[])[] {
-  // The Y and Z dimensions are swap from the octree so we need to swap the back
-  let minPoint = multiply(affineMatrix, [
-    bboxMin[0],
-    bboxMin[2],
-    bboxMin[1],
-    1
-  ]);
-  let maxPoint = multiply(affineMatrix, [
-    bboxMax[0],
-    bboxMax[2],
-    bboxMax[1],
-    1
-  ]);
-
-  [minPoint, maxPoint] = [
-    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
-    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
-  ];
-
-  if (baseCRS && sourceCRS && baseCRS !== sourceCRS) {
-    const converter = proj4(baseCRS, sourceCRS);
-
-    minPoint.subset(
-      index([true, true, true, false]),
-      converter.forward(minPoint.toArray().slice(0, 3) as number[])
-    );
-    maxPoint.subset(
-      index([true, true, true, false]),
-      converter.forward(maxPoint.toArray().slice(0, 3) as number[])
-    );
-  }
-
-  [minPoint, maxPoint] = [
-    matrix(min([minPoint.toArray(), maxPoint.toArray()], 0)),
-    matrix(max([minPoint.toArray(), maxPoint.toArray()], 0))
-  ];
-
-  return [
-    [
-      Math.max(minPoint.get([0]), limits['X'].min),
-      Math.min(maxPoint.get([0]), limits['X'].max)
-    ],
-    [
-      Math.max(minPoint.get([1]), limits['Y'].min),
-      Math.min(maxPoint.get([1]), limits['Y'].max)
-    ],
-    [
-      Math.max(minPoint.get([2]), limits['Z'].min),
-      Math.min(maxPoint.get([2]), limits['Z'].max)
-    ]
-  ];
+    type: RequestType.INFO,
+    response: result
+  } as WorkerResponse;
 }

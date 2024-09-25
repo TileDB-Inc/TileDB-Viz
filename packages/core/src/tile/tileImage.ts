@@ -12,7 +12,7 @@ import {
   TileDBTileImageOptions
 } from './types';
 import getTileDBClient from '../utils/getTileDBClient';
-import { ImageMetadataV2 } from './types';
+import { ImageMetadata } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
@@ -29,8 +29,6 @@ import { Manager } from './model/manager';
 import { Tile } from './model/tile';
 import {
   GUIEvent,
-  InfoPanelConfigEntry,
-  InfoPanelInitializationEvent,
   OptionsPanelInitializationEvent
 } from '@tiledb-inc/viz-common';
 import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
@@ -46,6 +44,7 @@ import {
 } from '../utils/cache';
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
+import { PickingTool } from './utils/picking-tool';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -53,7 +52,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private gui!: TileImageGUI;
   private workerPool: WorkerPool;
   private cameraManager!: CameraManager;
-  private imageMetadata!: ImageMetadataV2;
+  private imageMetadata!: ImageMetadata;
   private geometryMetadata: Map<string, GeometryMetadata>;
   private pointMetadata: Map<string, PointCloudMetadata>;
   private assetManagers: {
@@ -64,6 +63,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private frameDetails: FrameDetails;
   private sceneOptions: SceneOptions;
   private groupAssets: AssetEntry[];
+  private pickingTool?: PickingTool;
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -175,7 +175,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.assetManagers.push({
       manager: new ImageManager(this.scene, this.workerPool, {
         metadata: this.imageMetadata,
-        namespace: imageNamespace
+        sceneOptions: this.sceneOptions
       }),
       pickable: false,
       minimap: true
@@ -256,7 +256,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: metadata.idAttribute !== undefined,
           minimap: false
         });
 
@@ -299,7 +299,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
-          pickable: false,
+          pickable: metadata.idAttribute !== undefined,
           minimap: false
         });
 
@@ -346,6 +346,11 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       () => this.clearCache(),
       (namespace: string, groupID?: string, arrayID?: string) =>
         this.onAssetSelection(namespace, groupID, arrayID)
+    );
+
+    this.pickingTool = new PickingTool(this.scene, this.sceneOptions);
+    this.pickingTool.managers.push(
+      ...this.assetManagers.filter(x => x.pickable).map(x => x.manager)
     );
 
     this.updateEngineInfo();
@@ -468,46 +473,24 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private initializeGUI() {
-    const infoPanelConfig = new Map<string, InfoPanelConfigEntry>();
+    this.initializeGUIProperties();
 
-    // for (const [key, value] of this.geometryMetadata) {
-    //   if (!value.idAttribute) {
-    //     continue;
-    //   }
+    for (const entry of this.assetManagers) {
+      entry.manager.initializeGUIProperties();
+    }
+  }
 
-    //   infoPanelConfig.set(key, {
-    //     name: value.name,
-    //     pickAttribute: value.idAttribute.name,
-    //     attributes: value.attributes
-    //   });
-    // }
+  public initializeGUIProperties() {
+    this.cameraManager.initializeGUIProperties();
+    const projections: { value: number; name: string }[] = [];
 
-    // for (const [key, value] of this.pointMetadata) {
-    //   if (!value.idAttribute) {
-    //     continue;
-    //   }
-
-    //   infoPanelConfig.set(key, {
-    //     name: value.name,
-    //     pickAttribute: value.idAttribute.name,
-    //     attributes: value.attributes
-    //   });
-    // }
-
-    window.dispatchEvent(
-      new CustomEvent<GUIEvent<InfoPanelInitializationEvent>>(
-        Events.INITIALIZE,
-        {
-          bubbles: true,
-          detail: {
-            target: 'info-panel',
-            props: {
-              config: infoPanelConfig
-            }
-          }
-        }
-      )
-    );
+    if (this.imageMetadata.crs) {
+      // Type definitions are incorrect/incomplete for proj4
+      const projection = proj4.Proj(this.imageMetadata.crs) as any;
+      projections.push({ value: 0, name: projection.name ?? projection.title });
+    } else {
+      projections.push({ value: 0, name: 'None' });
+    }
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<OptionsPanelInitializationEvent>>(
@@ -530,25 +513,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         }
       )
     );
-
-    this.initializeGUIProperties();
-
-    for (const entry of this.assetManagers) {
-      entry.manager.initializeGUIProperties();
-    }
-  }
-
-  public initializeGUIProperties() {
-    this.cameraManager.initializeGUIProperties();
-    const projections: { value: number; name: string }[] = [];
-
-    if (this.imageMetadata.crs) {
-      // Type definitions are incorrect/incomplete for proj4
-      const projection = proj4.Proj(this.imageMetadata.crs) as any;
-      projections.push({ value: 0, name: projection.name ?? projection.title });
-    } else {
-      projections.push({ value: 0, name: 'None' });
-    }
 
     window.dispatchEvent(
       new CustomEvent<GUIEvent<ScenePanelInitializationEvent>>(
