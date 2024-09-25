@@ -151,10 +151,8 @@ export class ImageContent extends TileContent {
       return;
     }
 
-    if (this.texture) {
-      // The tile is already visible so we need to clear textures to update
-      this.texture.dispose();
-    }
+    this.texture?.dispose();
+    this.material?.dispose(true, true);
 
     this.material = this.scene.getEngine().isWebGPU
       ? ImageShaderMaterialWebGPU(
