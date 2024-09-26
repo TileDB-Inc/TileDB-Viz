@@ -17,7 +17,8 @@ import {
   ImageMetadata,
   ImageLoaderMetadata,
   GeometryMetadata,
-  ImageAssetMetadata
+  ImageAssetMetadata,
+  SOMAMultiscaleImageAssetMetadataRaw
 } from '../../tile/types';
 import {
   GroupContents,
@@ -25,7 +26,7 @@ import {
   ArrayInfo
 } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { GeometryConfig } from '@tiledb-inc/viz-common';
+import { GeometryConfig, ImageConfig } from '@tiledb-inc/viz-common';
 import {
   Feature,
   FeatureType,
@@ -39,10 +40,13 @@ import { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Tile } from '../../tile/model/tile';
 import { ImageContent } from '../../tile/model/image/imageContent';
 import { GeometryContent } from '../../tile/model/geometry/geometryContent';
-
-const WIDTH_ALIASES = ['X', 'WIDTH', '_X'];
-const HEIGHT_ALIASES = ['Y', 'HEIGHT', '_Y'];
-const CHANNEL_ALIASES = ['C', 'BANDS'];
+import { getSOMAMultiscaleImageMetadata } from './soma-metadata';
+import { toSOMAMultiscaleImageMetadata } from './parser';
+import {
+  CHANNEL_ALIASES,
+  HEIGHT_ALIASES,
+  WIDTH_ALIASES
+} from '../../tile/constants';
 
 export function tileDBUriParser(
   uri: string,
@@ -109,7 +113,10 @@ export async function getGroupContents(
     });
 }
 
-export function getImageDomain(schema: ArraySchema): {
+export function getImageDomain(
+  schema: ArraySchema,
+  aliases?: string[]
+): {
   width: [number, number];
   height: [number, number];
 } {
@@ -135,11 +142,15 @@ export function getImageDomain(schema: ArraySchema): {
       height: getDomain(schema.domain.dimensions[0].domain)
     };
   } else {
-    const widthDimension = schema.domain.dimensions.find(x =>
-      WIDTH_ALIASES.includes(x.name?.toUpperCase() ?? '')
+    const widthDimension = schema.domain.dimensions.find(
+      x =>
+        WIDTH_ALIASES.includes(x.name?.toUpperCase() ?? '') ||
+        x.name === aliases?.[0]
     );
-    const heightDimension = schema.domain.dimensions.find(x =>
-      HEIGHT_ALIASES.includes(x.name?.toUpperCase() ?? '')
+    const heightDimension = schema.domain.dimensions.find(
+      x =>
+        HEIGHT_ALIASES.includes(x.name?.toUpperCase() ?? '') ||
+        x.name === aliases?.[1]
     );
 
     if (!widthDimension || !heightDimension) {
@@ -154,7 +165,8 @@ export function getImageDomain(schema: ArraySchema): {
 }
 
 export async function getImageMetadata(
-  options: AssetOptions
+  options: AssetOptions,
+  config?: ImageConfig
 ): Promise<ImageMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
@@ -174,6 +186,17 @@ export async function getImageMetadata(
     [assetMetadata, uris] = await getArrayMetadata(options);
   } else {
     throw new Error('No asset selected.');
+  }
+
+  if (assetMetadata.soma_object_type === DatasetType.SOMA_MULTISCALE_IMAGE) {
+    return getSOMAMultiscaleImageMetadata(
+      options,
+      toSOMAMultiscaleImageMetadata(
+        assetMetadata as SOMAMultiscaleImageAssetMetadataRaw
+      ),
+      uris,
+      config
+    );
   }
 
   const imageMetadata = JSON.parse(
@@ -287,7 +310,12 @@ export async function getImageMetadata(
       }
     );
 
-  const tilesetRoot = constructImageTileset(extents, schemas);
+  const tilesetRoot = constructImageTileset(
+    extents,
+    schemas,
+    undefined,
+    config
+  );
 
   // Scale the transformation matrix to express the conversion
   // from level 0 instead of max level
@@ -330,99 +358,6 @@ export async function getImageMetadata(
     loaderMetadata: loaderMetadata
   } as ImageMetadata;
 }
-
-// export async function getAssetMetadata(
-//   options: AssetOptions
-// ): Promise<[AssetMetadata, Attribute[], Dimension[], LevelRecord[]]> {
-//   const cachedMetadata = await getQueryDataFromCache(
-//     options.groupID ?? options.arrayID ?? '',
-//     'metadata'
-//   );
-//   // if (cachedMetadata) {
-
-//   //   const levels = cachedMetadata[3] as LevelRecord[];
-//   //   const root = constructImageTileset(levels);
-
-//   //   cachedMetadata[0].root = root;
-
-//   //   return cachedMetadata;
-//   // }
-
-//   const client = getTileDBClient({
-//     ...(options.token ? { apiKey: options.token } : {}),
-//     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
-//   });
-
-//   let assetMetadata: AssetMetadata;
-//   let uris: string[];
-
-//   if (options.groupID && options.arrayID) {
-//     throw new Error(
-//       'Both groupID and arrayID specified. Please select only one asset.'
-//     );
-//   } else if (options.groupID) {
-//     [assetMetadata, uris] = await getGroupMetadata(options);
-//   } else if (options.arrayID) {
-//     [assetMetadata, uris] = await getArrayMetadata(options);
-//   } else {
-//     throw new Error('No asset selected.');
-//   }
-
-//   const metadataV2 = await getImageMetadata(options);
-//   console.log(metadataV2);
-
-//   const arraySchemaResponse = await client.ArrayApi.getArray(
-//     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-//     options.namespace,
-//     uris[0],
-//     'application/json'
-//   );
-
-//   const attributes = arraySchemaResponse.data.attributes.map((value, index) => {
-//     return {
-//       name: value.name,
-//       type: value.type as string,
-//       visible: index === 0 ? true : false
-//     } as Attribute;
-//   });
-
-//   let metadata;
-
-//   switch (assetMetadata.dataset_type) {
-//     case 'BIOIMG':
-//       metadata = getBiomedicalMetadata(
-//         assetMetadata as BiomedicalAssetMetadata,
-//         attributes,
-//         uris
-//       );
-//       break;
-//     case 'RASTER':
-//       metadata = getRasterMetadata(
-//         assetMetadata as RasterAssetMetadata,
-//         attributes,
-//         uris
-//       );
-//       break;
-//     default:
-//       if ((assetMetadata as any)._gdal) {
-//         metadata = getRasterMetadata(
-//           assetMetadata as RasterAssetMetadata,
-//           attributes,
-//           uris
-//         );
-//         break;
-//       }
-//       throw new Error(`Unknown dataset type '${assetMetadata.dataset_type}'`);
-//   }
-
-//   metadata[0].root = metadataV2.root;
-//   await writeToCache(
-//     options.groupID ?? options.arrayID ?? '',
-//     'metadata',
-//     metadata
-//   );
-//   return metadata;
-// }
 
 async function getArrayMetadata(
   options: AssetOptions
@@ -700,9 +635,11 @@ export async function getGeometryMetadata(
   return geometryMetadata;
 }
 
-function constructImageTileset(
+export function constructImageTileset(
   levels: { width: [number, number]; height: [number, number] }[],
-  schemas: ArraySchema[]
+  schemas: ArraySchema[],
+  aliases?: string[],
+  config?: ImageConfig
 ): Tile<ImageDataContent, ImageContent> {
   const DATA_TILE_SIZE = 1024;
   const ROOT_SIZE = 1024;
@@ -731,14 +668,23 @@ function constructImageTileset(
     const levelWidth = level.width[1] - level.width[0] + 1;
     const levelHeight = level.height[1] - level.height[0] + 1;
 
-    const downsample = Math.log2(Math.round(levelWidth / baseWidth));
-    const TILE_SIZE = ROOT_SIZE / 2 ** downsample;
-    const widthDimName = schemas[idx].domain.dimensions.find(x =>
-      WIDTH_ALIASES.includes(x.name ?? '')
-    );
-    const heightDimName = schemas[idx].domain.dimensions.find(x =>
-      HEIGHT_ALIASES.includes(x.name ?? '')
-    );
+    const downsample =
+      config?.isRegularPyramidalImage === true
+        ? Math.round(levelWidth / baseWidth)
+        : levelWidth / baseWidth;
+    const TILE_SIZE = ROOT_SIZE / downsample;
+    const widthDimName =
+      aliases?.[0] ??
+      schemas[idx].domain.dimensions.find(x =>
+        WIDTH_ALIASES.includes(x.name ?? '')
+      )?.name ??
+      'X';
+    const heightDimName =
+      aliases?.[1] ??
+      schemas[idx].domain.dimensions.find(x =>
+        HEIGHT_ALIASES.includes(x.name ?? '')
+      )?.name ??
+      'Y';
 
     for (let x = 0; x < Math.ceil(levelWidth / 1024); ++x) {
       for (let y = 0; y < Math.ceil(levelHeight / 1024); ++y) {
@@ -761,12 +707,12 @@ function constructImageTileset(
           uri: schemas[idx].uri ?? '',
           region: [
             {
-              dimension: widthDimName?.name ?? 'X',
+              dimension: widthDimName,
               min: dataOrigin[0],
               max: dataOrigin[0] + dataExtent[0]
             },
             {
-              dimension: heightDimName?.name ?? 'Y',
+              dimension: heightDimName,
               min: dataOrigin[1],
               max: dataOrigin[1] + dataExtent[1]
             }
@@ -777,34 +723,58 @@ function constructImageTileset(
 
         tileDictionary.set(`${idx}-${x}-${y}`, tile);
 
+        //TODO: Fix for non power of two downsample
         if (idx === 0) {
-          tile.parent = root;
+          tile.parents.push(root);
           root.children.push(tile);
         } else {
           const parentLevelWidth =
             levels[idx - 1].width[1] - levels[idx - 1].width[0] + 1;
-          const relativeDownsample = Math.log2(
-            Math.round(levelWidth / parentLevelWidth)
-          );
+          const relativeDownsample = levelWidth / parentLevelWidth;
 
-          const parent = tileDictionary.get(
-            `${idx - 1}-${Math.floor(x / 2 ** relativeDownsample)}-${Math.floor(
-              y / 2 ** relativeDownsample
-            )}`
-          );
+          // When tile overlaps with multiple parent tiles find way to detect it and add it to both parents as child
+          // TODO: Modify tile to have multiple parents. The graph will still be a DAG
 
-          if (!parent) {
-            console.log(
-              `${idx - 1}-${Math.floor(
-                x / 2 ** relativeDownsample
-              )}-${Math.floor(y / 2 ** relativeDownsample)} not found`
+          // POSIBLE SOLUTION [(x + 1) % downsample < 1] === true -> overlaps with multiple tiles
+          const overlap_x = (x + 1) % relativeDownsample;
+          const overlap_y = (y + 1) % relativeDownsample;
+
+          const x_parents: number[] = [];
+          const y_parents: number[] = [];
+
+          // Tile overlaps in the X axis with multiple parent tiles
+          if (overlap_x > 0 && overlap_x < 1) {
+            x_parents.push(
+              Math.floor(x / relativeDownsample),
+              Math.ceil(x / relativeDownsample)
             );
-            continue;
+          } else {
+            x_parents.push(Math.floor(x / relativeDownsample));
           }
 
-          tile.parent = parent;
-          parent.geometricError = errorBase / 2 ** downsample;
-          parent.children.push(tile);
+          // Tile overlaps in the Y axis with multiple parent tiles
+          if (overlap_y > 0 && overlap_y < 1) {
+            y_parents.push(
+              Math.floor(y / relativeDownsample),
+              Math.ceil(y / relativeDownsample)
+            );
+          } else {
+            y_parents.push(Math.floor(y / relativeDownsample));
+          }
+
+          for (const x_idx of x_parents) {
+            for (const y_idx of y_parents) {
+              const parent = tileDictionary.get(`${idx - 1}-${x_idx}-${y_idx}`);
+
+              if (!parent) {
+                continue;
+              }
+
+              tile.parents.push(parent);
+              parent.geometricError = errorBase / downsample;
+              parent.children.push(tile);
+            }
+          }
         }
       }
     }
@@ -848,7 +818,7 @@ function constructGeometryTileset(
         transformation
       );
       child.index = [x, y];
-      child.parent = root;
+      child.parents.push(root);
       child.refineStrategy = RefineStrategy.ADD;
       child.content.push({
         uri: uri,
@@ -929,13 +899,15 @@ function deserializeBuffer(type: string, buffer: Array<number>): any {
       return new TextDecoder('utf-16').decode(new Uint8Array(buffer));
     case Datatype.Int64:
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
+    case Datatype.Float64:
+      return Number(new Float64Array(new Uint8Array(buffer).buffer)[0]);
     default:
       console.error(`Cannot deserialize type '${type}'`);
       return undefined;
   }
 }
 
-function getDomain(domain: DomainArray): [number, number] {
+export function getDomain(domain: DomainArray): [number, number] {
   for (const values of Object.values(domain)) {
     if (values === undefined) {
       continue;
@@ -947,7 +919,7 @@ function getDomain(domain: DomainArray): [number, number] {
   return [0, 0];
 }
 
-function getCRS(assetMetadata: AssetMetadata): string | undefined {
+export function getCRS(assetMetadata: AssetMetadata): string | undefined {
   let crs: string | undefined;
 
   if (
@@ -1022,4 +994,49 @@ function getTransformationMatrix(
   }
 
   return pixelToCRS;
+}
+
+export function getColor(idx: number): {
+  red: number;
+  green: number;
+  blue: number;
+  alpha: number;
+} {
+  switch (idx) {
+    case 0:
+      return { red: 255, green: 0, blue: 0, alpha: 255 };
+    case 1:
+      return { red: 0, green: 255, blue: 0, alpha: 255 };
+    case 2:
+      return { red: 0, green: 0, blue: 255, alpha: 255 };
+    default:
+      return {
+        red: Math.floor(Math.random() * 256),
+        green: Math.floor(Math.random() * 256),
+        blue: Math.floor(Math.random() * 256),
+        alpha: 255
+      };
+  }
+}
+
+export function getNumericLimits(dtype: Datatype): {
+  min: number;
+  max: number;
+} {
+  switch (dtype) {
+    case Datatype.Uint8:
+      return { min: 0, max: 255 };
+    case Datatype.Int8:
+      return { min: -128, max: 127 };
+    case Datatype.Uint16:
+      return { min: 0, max: 65535 };
+    case Datatype.Int16:
+      return { min: -32768, max: 32767 };
+    case Datatype.Uint32:
+      return { min: 0, max: 4294967295 };
+    case Datatype.Int32:
+      return { min: -2147483648, max: 2147483647 };
+    default:
+      throw new Error(`Unknown datatype ${dtype}`);
+  }
 }

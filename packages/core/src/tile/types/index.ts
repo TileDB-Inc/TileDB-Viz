@@ -72,6 +72,24 @@ export interface LevelRecord {
   axesMapping: Map<string, Array<string>>;
 }
 
+export interface SOMAMultiscaleImageAssetMetadataRaw extends AssetMetadata {
+  soma_coordinate_space: string;
+  soma_encoding_version: number;
+  soma_multiscale_image_schema: string;
+}
+
+export interface SOMAMultiscaleImageAssetMetadata {
+  soma_coordinate_space: { name: string; units: string; scale?: number }[];
+  soma_encoding_version: number;
+  soma_multiscale_image_schema: {
+    name: string;
+    image_type: string;
+    shape: number[];
+    datatype: string;
+    axis_names: string[];
+  };
+}
+
 export interface BiomedicalAssetMetadata extends AssetMetadata {
   fmt_version: number;
   metadata?: string;

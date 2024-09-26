@@ -185,9 +185,6 @@ export class PickingTool {
           for (const tile of manager.visibleTiles.values()) {
             if (pickingRay.intersectsBox(tile.boundingInfo.boundingBox)) {
               tiles.push(tile);
-
-              console.log(tile.id);
-
               const result = tile.data?.intersector?.intersectRay(pickingRay);
 
               if (!result) {

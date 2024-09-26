@@ -82,6 +82,7 @@ export class PointTileContent
 
     this.meshes[0]._thinInstanceDataStorage.instancesCount = this.pointCount;
     this.meshes[0].layerMask = this.tile.mask;
+    this.meshes[0].renderingGroupId = 3;
     this.meshes[0].setVerticesBuffer(
       new VertexBuffer(this.scene.getEngine(), data.position, 'loc', {
         size: 3,
@@ -114,6 +115,7 @@ export class PointTileContent
       this.meshes[0].setBoundingInfo(this.tile.boundingInfo);
       this.meshes[0].material = this.material;
       this.meshes[0].layerMask = this.tile.mask;
+      this.meshes[0].renderingGroupId = 3;
     }
 
     const vertexData = new VertexData();

@@ -95,7 +95,9 @@ export type AssetConfig = {
   features?: Feature[];
 };
 
-export type ImageConfig = AssetConfig;
+export type ImageConfig = AssetConfig & {
+  isRegularPyramidalImage?: boolean;
+};
 
 export type GeometryConfig = AssetConfig & {
   /**

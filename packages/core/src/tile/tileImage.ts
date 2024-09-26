@@ -132,13 +132,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     }
 
     this.updateLoadingScreen('Loading image asset metadata', true);
-    this.imageMetadata = await getImageMetadata({
-      token: this.options.token,
-      tiledbEnv: this.options.tiledbEnv,
-      namespace: imageNamespace,
-      arrayID: imageArrayID,
-      groupID: imageGroupID
-    });
+    this.imageMetadata = await getImageMetadata(
+      {
+        token: this.options.token,
+        tiledbEnv: this.options.tiledbEnv,
+        namespace: imageNamespace,
+        arrayID: imageArrayID,
+        groupID: imageGroupID
+      },
+      this.options.sceneConfig?.imageConfigs?.[0]
+    );
 
     if (this.options.defaultChannels) {
       const defaultAttribute = this.imageMetadata.attributes.filter(

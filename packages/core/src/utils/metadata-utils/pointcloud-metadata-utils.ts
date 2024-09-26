@@ -302,17 +302,17 @@ function constructPointCloudTileset(
       transformation
     );
 
-    tile.parent =
+    tile.parents =
       lod === 0
-        ? undefined
-        : tileDictionary.get(encode3D(x / 2, y / 2, z / 2, lod - 1));
-    tile.parent?.children.push(tile);
-    if (tile.parent) {
-      tile.parent.geometricError = Math.max(
+        ? []
+        : [tileDictionary.get(encode3D(x / 2, y / 2, z / 2, lod - 1))!];
+    tile.parents.forEach(x => {
+      x.children.push(tile);
+      x.geometricError = Math.max(
         Math.abs(tileExtents.x),
         Math.abs(tileExtents.z)
       );
-    }
+    });
     tileDictionary.set(tile.index[0], tile);
   }
 

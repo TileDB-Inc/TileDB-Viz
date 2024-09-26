@@ -136,7 +136,7 @@ export function extractBVH(
     tile.geometricError =
       data.geometricError /
       getErrorScaling(data.boundingVolume, tile.boundingInfo);
-    tile.parent = parent;
+    tile.parents.push(parent!);
 
     parent?.children.push(tile);
     tiles.push(tile);

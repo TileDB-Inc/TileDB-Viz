@@ -8,11 +8,13 @@ export type TDBNonEmptyDomain = {
 
 export enum DatasetType {
   BIOIMG = 'bioimg',
-  RASTER = 'raster'
+  RASTER = 'raster',
+  SOMA_MULTISCALE_IMAGE = 'SOMAMultiscaleImage'
 }
 
 export interface AssetMetadata {
   dataset_type?: DatasetType;
+  soma_object_type?: DatasetType;
 }
 
 export interface AssetEntry {

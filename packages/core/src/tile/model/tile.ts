@@ -64,9 +64,9 @@ export class Tile<T, C extends TileContent = TileContent> {
   public children: Array<Tile<T, C>>;
 
   /**
-   * THe parent of the tile or undefined if the tile is the tileset root.
+   * The parents of the tile or empty if the tile is the tileset root.
    */
-  public parent?: Tile<T, C>;
+  public parents: Tile<T, C>[];
 
   /**
    * The tile content.
@@ -103,7 +103,7 @@ export class Tile<T, C extends TileContent = TileContent> {
     this.children = [];
     this.content = [];
     this.index = [];
-    this.parent = undefined;
+    this.parents = [];
     this.tilingScheme = TilingScheme.NONE;
     this.geometricError = 0;
     this.state = TileState.HIDDEN;

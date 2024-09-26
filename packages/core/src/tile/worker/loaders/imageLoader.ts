@@ -38,9 +38,10 @@ export async function imageRequest(
             return 'C';
           }
         });
-  if (metadata.implicitChannel) {
+  if (metadata.implicitChannel && !metadata.isWebPCompressed) {
     sourceAxes.unshift('C');
   }
+
   const axes = new Axes(sourceAxes, ['C', 'Y', 'X']);
   const width = payload.region[0].max - payload.region[0].min;
   const height = payload.region[1].max - payload.region[1].min;
@@ -202,7 +203,6 @@ export async function imageRequest(
     } catch (e) {
       console.log(e);
       throw new Error('Request cancelled by the user');
-      return;
     }
 
     const shape: number[] = [];
@@ -210,9 +210,17 @@ export async function imageRequest(
     for (const axis of sourceAxes) {
       switch (axis) {
         case 'X':
+          shape.push(
+            calculatedRanges.get(payload.region[0].dimension)![1] -
+              calculatedRanges.get(payload.region[0].dimension)![0] +
+              1
+          );
+          break;
         case 'Y':
           shape.push(
-            calculatedRanges.get(axis)![1] - calculatedRanges.get(axis)![0] + 1
+            calculatedRanges.get(payload.region[1].dimension)![1] -
+              calculatedRanges.get(payload.region[1].dimension)![0] +
+              1
           );
           break;
         case 'C':
