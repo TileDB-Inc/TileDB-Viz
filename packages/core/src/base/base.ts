@@ -122,7 +122,7 @@ export class TileDBVisualization {
     wrapperDiv.appendChild(this.canvas);
 
     const loadingScreen = document.createElement('div');
-    loadingScreen.innerHTML = '<loading-screen></loading-screen>';
+    // loadingScreen.innerHTML = '<loading-screen></loading-screen>';
 
     this.rootElement.appendChild(wrapperDiv);
     this.rootElement.appendChild(loadingScreen);
