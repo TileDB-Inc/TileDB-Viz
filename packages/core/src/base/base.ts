@@ -11,6 +11,7 @@ import '@babylonjs/inspector';
 import { RERENDER_EVT } from '../constants';
 import pubSub from '../utils/pubSub';
 import '@tiledb-inc/viz-components';
+import { waitUntilElementVisible } from '../utils/ui-helpers';
 
 export interface TileDBVisualizationBaseOptions {
   /**
@@ -122,36 +123,25 @@ export class TileDBVisualization {
     wrapperDiv.appendChild(this.canvas);
 
     const loadingScreen = document.createElement('div');
-    // loadingScreen.innerHTML = '<loading-screen></loading-screen>';
+    loadingScreen.innerHTML =
+      '<loading-screen id="viewer-loading-screen"></loading-screen>';
 
     this.rootElement.appendChild(wrapperDiv);
     this.rootElement.appendChild(loadingScreen);
 
-    if (this.engineAPI === 'WEBGL') {
-      this.engine = new Engine(this.canvas, true);
-      this.engine.doNotHandleContextLost = true;
+    waitUntilElementVisible('viewer-loading-screen', 1000, 100).then(loaded => {
+      if (!loaded) {
+        // HTML element failed to load. Remove it and emit a warning
+        console.warn('Loading screen component failed to load');
+        this.rootElement.removeChild(loadingScreen);
+      }
 
-      const engine = this.engine;
+      if (this.engineAPI === 'WEBGL') {
+        this.engine = new Engine(canvas, true);
+        this.engine.doNotHandleContextLost = true;
 
-      SceneLoader.ShowLoadingScreen = false;
+        const engine = this.engine;
 
-      this.resizeCanvas();
-
-      // window resize event handler
-      window.addEventListener('resize', () => {
-        this.engine?.resize(true);
-      });
-
-      this.createScene().then(scene => {
-        engine.runRenderLoop(() => {
-          scene.render();
-        });
-      });
-    } else {
-      this.engine = new WebGPUEngine(canvas);
-      const engine = this.engine as WebGPUEngine;
-
-      engine.initAsync().then(() => {
         SceneLoader.ShowLoadingScreen = false;
 
         this.resizeCanvas();
@@ -166,7 +156,27 @@ export class TileDBVisualization {
             scene.render();
           });
         });
-      });
-    }
+      } else {
+        this.engine = new WebGPUEngine(canvas);
+        const engine = this.engine as WebGPUEngine;
+
+        engine.initAsync().then(() => {
+          SceneLoader.ShowLoadingScreen = false;
+
+          this.resizeCanvas();
+
+          // window resize event handler
+          window.addEventListener('resize', () => {
+            this.engine?.resize(true);
+          });
+
+          this.createScene().then(scene => {
+            engine.runRenderLoop(() => {
+              scene.render();
+            });
+          });
+        });
+      }
+    });
   }
 }
