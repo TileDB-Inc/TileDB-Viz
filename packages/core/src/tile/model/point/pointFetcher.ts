@@ -44,7 +44,8 @@ export class PointCloudFetcher extends Fetcher<
       id: tile.id,
       payload: {
         index: tile.index,
-        namespace: this.metadata.namespace,
+        workspace: this.metadata.workspace,
+        teamspace: this.metadata.teamspace,
         uri: tile.content[0].uri,
         region: tile.content[0].region,
         features: this.metadata.features,
@@ -72,7 +73,8 @@ export class PointCloudFetcher extends Fetcher<
       type: RequestType.POINT_INFO,
       id: tile.id,
       payload: {
-        namespace: this.metadata.namespace,
+        workspace: this.metadata.workspace,
+        teamspace: this.metadata.teamspace,
         uri: tile.content[0].uri,
         region: boundingInfo
           ? tile.content[0].region.map((x, index) => {

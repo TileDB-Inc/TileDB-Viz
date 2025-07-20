@@ -20,7 +20,8 @@ import { ImageContent } from '../model/image/imageContent';
 import { TDB3DTileContent } from '../model/3d/3DTileContent';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string[];
@@ -130,7 +131,9 @@ export type ImageMetadata = {
    */
   name: string;
 
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   /**
    * The root of the image tileset
@@ -179,7 +182,9 @@ export type GeometryMetadata = {
    */
   name: string;
 
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   /**
    * The root of the geomemtry tileset.
@@ -214,7 +219,9 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   id: string;
 
@@ -478,9 +485,14 @@ export type TileDBPayload = {
   uri: string;
 
   /**
-   * The namespace of the array.
+   * The workspace the array belongs to.
    */
-  namespace: string;
+  workspace: string;
+
+  /**
+   * The teamspace the array belongs to.
+   */
+  teamspace: string;
 
   /**
    * The data ranges per dimension. The dimension should be the TileDB array dimension name.

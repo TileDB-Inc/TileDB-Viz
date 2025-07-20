@@ -95,7 +95,8 @@ export async function pointRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    request.namespace,
+    request.workspace,
+    request.teamspace,
     request.uri,
     query
     //arraySchema
@@ -280,7 +281,8 @@ export async function pointInfoRequest(
   };
 
   const generator = client.query.ReadQuery(
-    request.namespace,
+    request.workspace,
+    request.teamspace,
     request.uri,
     query
   );

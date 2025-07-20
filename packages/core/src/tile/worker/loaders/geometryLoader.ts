@@ -100,7 +100,8 @@ export async function geometryRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    payload.namespace,
+    payload.workspace,
+    payload.teamspace,
     payload.uri,
     query
   );
@@ -236,7 +237,8 @@ export async function geometryInfoRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    payload.namespace,
+    payload.workspace,
+    payload.teamspace,
     payload.uri,
     query
   );

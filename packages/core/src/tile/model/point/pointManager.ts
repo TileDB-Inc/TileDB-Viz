@@ -36,7 +36,8 @@ import { COLOR_GROUPS, MAX_CATEGORIES } from '../../constants';
 
 interface PointOptions {
   metadata: PointCloudMetadata;
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   sceneOptions: SceneOptions;
 }
 

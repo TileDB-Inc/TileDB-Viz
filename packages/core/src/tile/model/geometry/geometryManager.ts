@@ -36,7 +36,8 @@ import { COLOR_GROUPS, MAX_CATEGORIES } from '../../constants';
 
 interface GeometryOptions {
   arrayID: string;
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   sceneOptions: SceneOptions;
   metadata: GeometryMetadata;
 }

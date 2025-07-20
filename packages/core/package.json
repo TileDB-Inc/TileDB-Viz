@@ -46,7 +46,7 @@
     "@babylonjs/loaders": "^7.30.0",
     "@babylonjs/materials": "^7.30.0",
     "@babylonjs/serializers": "^7.30.0",
-    "@tiledb-inc/tiledb-cloud": "1.0.15-alpha.1",
+    "@tiledb-inc/tiledb-cloud": "2.0.0-alpha.1",
     "@tiledb-inc/viz-common": "workspace:packages/common",
     "@tiledb-inc/viz-components": "workspace:packages/components",
     "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",

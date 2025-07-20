@@ -46,7 +46,8 @@ export class GeometryFetcher extends Fetcher<
         index: tile.index,
         uri: tile.content[0].uri,
         region: tile.content[0].region,
-        namespace: this.metadata.namespace,
+        workspace: this.metadata.workspace,
+        teamspace: this.metadata.teamspace,
         type: this.metadata.type,
         sourceCRS: this.metadata.crs,
         targetCRS: this.sceneOptions.crs,
@@ -74,7 +75,8 @@ export class GeometryFetcher extends Fetcher<
       type: RequestType.GEOMETRY_INFO,
       id: tile.id,
       payload: {
-        namespace: this.metadata.namespace,
+        workspace: this.metadata.workspace,
+        teamspace: this.metadata.teamspace,
         uri: tile.content[0].uri,
         region: boundingInfo
           ? tile.content[0].region.map((x, index) => {

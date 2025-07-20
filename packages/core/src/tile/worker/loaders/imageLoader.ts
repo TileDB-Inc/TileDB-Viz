@@ -179,7 +179,8 @@ export async function imageRequest(
     };
 
     const generator = client.query.ReadQuery(
-      payload.namespace,
+      payload.workspace,
+      payload.teamspace,
       payload.uri,
       query,
       metadata.schema

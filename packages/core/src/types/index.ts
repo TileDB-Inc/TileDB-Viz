@@ -27,7 +27,8 @@ export interface AssetEntry {
 export interface AssetOptions {
   token: string;
   tiledbEnv?: string;
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string;
