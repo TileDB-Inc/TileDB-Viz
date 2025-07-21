@@ -48,6 +48,7 @@ import {
   WIDTH_ALIASES
 } from '../../tile/constants';
 
+//TODO: Add proper support for new TileDB URIs
 export function tileDBUriParser(
   uri: string,
   fallbackWorkspace: string,
@@ -63,11 +64,19 @@ export function tileDBUriParser(
     };
   }
 
+  if (tokens.length < 5) {
+    throw new Error(`'${uri}' is not a TileDB Uri`);
+  }
+
   if (tokens[0] !== 'tiledb:') {
     throw new Error(`'${uri}' is not a TileDB Uri`);
   }
 
-  return { workspace: tokens[2], teamspace: tokens[3], id: tokens[4] };
+  return {
+    workspace: tokens[2],
+    teamspace: tokens[3],
+    id: tokens.slice(4).join('/')
+  };
 }
 
 export async function getGroupContents(
