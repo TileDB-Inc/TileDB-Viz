@@ -219,7 +219,7 @@ export class GeometryManager extends Manager<
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
     const target = splitEventTarget(event.detail.target);
-    
+
     if (target[0] !== this.id) {
       return;
     }
