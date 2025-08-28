@@ -32,6 +32,7 @@ import proj4 from 'proj4';
 import { inv } from 'mathjs';
 import { get3DInverseTransformedBoundingInfo } from '../../utils/metadata-utils/utils';
 import { ISelectable } from '../model/tileContent';
+import { splitEventTarget } from './helpers';
 
 export class PickingTool {
   public pickCallbacks: {
@@ -107,7 +108,7 @@ export class PickingTool {
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'picking-tool') {
       return;

@@ -8,6 +8,7 @@ import { TDB3DTileMetadata } from '../../types';
 import { Tile } from '../tile';
 import { SceneOptions } from '../../../types';
 import { TDB3DTileFetcher } from './3DTileFetcher';
+import { splitEventTarget } from '../../utils/helpers';
 
 interface TileOptions {
   metadata: TDB3DTileMetadata;
@@ -99,7 +100,7 @@ export class TileManager extends Manager<Tile<string, TDB3DTileContent>> {
   }
 
   public sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>): void {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;

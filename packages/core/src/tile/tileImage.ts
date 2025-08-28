@@ -45,6 +45,7 @@ import {
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
 import { PickingTool } from './utils/picking-tool';
+import { splitEventTarget } from './utils/helpers';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -580,7 +581,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private _sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'engine') {
       return;

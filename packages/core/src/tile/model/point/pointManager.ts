@@ -9,7 +9,7 @@ import {
   PointCloudMetadata,
   PointResponse
 } from '../../types';
-import { hexToRgb } from '../../utils/helpers';
+import { hexToRgb, splitEventTarget } from '../../utils/helpers';
 import {
   ButtonProps,
   Events,
@@ -170,7 +170,7 @@ export class PointManager extends Manager<
   }
 
   private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;
@@ -209,7 +209,7 @@ export class PointManager extends Manager<
   }
 
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;
@@ -241,7 +241,7 @@ export class PointManager extends Manager<
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;

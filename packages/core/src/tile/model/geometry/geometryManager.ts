@@ -17,7 +17,7 @@ import {
   SliderProps,
   SelectProps
 } from '@tiledb-inc/viz-components';
-import { hexToRgb } from '../../utils/helpers';
+import { hexToRgb, splitEventTarget } from '../../utils/helpers';
 import {
   Feature,
   FeatureType,
@@ -218,8 +218,8 @@ export class GeometryManager extends Manager<
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
-    const target = event.detail.target.split('_');
-
+    const target = splitEventTarget(event.detail.target);
+    
     if (target[0] !== this.id) {
       return;
     }
@@ -285,7 +285,7 @@ export class GeometryManager extends Manager<
   }
 
   private selectHandler(event: CustomEvent<GUIEvent<SelectProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.id) {
       return;
@@ -329,7 +329,7 @@ export class GeometryManager extends Manager<
   }
 
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.id) {
       return;
