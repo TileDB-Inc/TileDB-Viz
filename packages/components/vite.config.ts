@@ -1,41 +1,23 @@
-import { defineConfig, LibraryFormats } from 'vite';
+import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { transform } from 'esbuild';
 import dts from 'vite-plugin-dts';
-import preprocess from 'svelte-preprocess';
+import { sveltePreprocess } from 'svelte-preprocess';
 
 const bundleComponents = process.env.BUNDLE_COMPONENTS ?? true;
-
-const PACKAGE_NAME = `viz-components`;
 
 // https://vitejs.dev/config/
 export default defineConfig({
   // root: './src',
   build: {
-    outDir: './dist',
+    outDir: './lib',
     emptyOutDir: true,
+    minify: true,
     lib: {
       entry: './src/index.ts',
-      formats: bundleComponents
-        ? (['es', 'esm', 'umd'] as LibraryFormats[])
-        : ['es'],
-      name: PACKAGE_NAME,
-      fileName: format =>
-        ({
-          es: `index.js`,
-          esm: `index.min.js`,
-          umd: `index.umd.js`
-        }[format])
+      fileName: 'index',
+      formats: ['es']
     },
-    rollupOptions: {
-      output: bundleComponents
-        ? {}
-        : {
-            inlineDynamicImports: false,
-            chunkFileNames: '[name].js',
-            manualChunks: { svelte: ['svelte'] }
-          }
-    }
   },
   plugins: [
     svelte({
@@ -43,21 +25,19 @@ export default defineConfig({
       compilerOptions: {
         customElement: true
       },
-      preprocess: preprocess({
+      preprocess: sveltePreprocess({
         scss: {
-            prependData: `@import './src/assets/_design-tokens.scss';`
+            prependData: `@use './src/assets/_design-tokens.scss';`
         }
       }),
       onwarn: (warning, handler) => {
-        const { code, frame } = warning;
-        if (code === "css-unused-selector")
-            return;
-
-        handler(warning);
+        const { code } = warning;
+        if (code!== "css_unused_selector") {
+          handler(warning);
+        }
       }
     }),
-    dts({ insertTypesEntry: true, copyDtsFiles: true, outDir: './dist' }),
-    minifyEs()
+    dts({ insertTypesEntry: true, copyDtsFiles: true, rollupTypes: true })
   ]
 });
 
@@ -70,7 +50,7 @@ function minifyEs() {
       async handler(code, chunk, outputOptions) {
         if (
           outputOptions.format === 'es' &&
-          (!bundleComponents || chunk.fileName.endsWith('.min.js'))
+          (!bundleComponents || chunk.fileName.endsWith('.js'))
         ) {
           return await transform(code, { minify: true });
         }

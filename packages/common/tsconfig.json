@@ -1,9 +1,6 @@
 {
   "extends": "../../tsconfig.build.json",
-  "include": [
-    "src",
-    "src/custom.d.ts"
-, "../core/src/tile/containers", "../core/src/tile/model/tileContent.ts"  ],
+  "include": [ "./src/**/*" ],
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
