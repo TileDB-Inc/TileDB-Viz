@@ -1,4 +1,4 @@
-import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 
 export type TileDBScene = {
   /**
