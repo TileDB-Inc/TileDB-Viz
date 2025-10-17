@@ -26,5 +26,16 @@ export default defineConfig({
       external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)],
     }
   },
-  plugins: [dts({ rollupTypes: true })]
+  plugins: [
+    dts({ rollupTypes: true }), 
+    {
+      name: "webpack5ify-webworker",
+      renderChunk: {
+        order: 'post',
+        async handler(code) {
+          return code.replaceAll('.href', '');
+        }
+      }
+    }
+  ]
 });
