@@ -6,13 +6,12 @@
 
 <script lang="ts">
   import Select from './misc/Select.component.svelte';
-  import RenderingSettings from './geometry/Settings.component.svelte';
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
-  import { GUIEvent, GUIFeaturePropertyState, GUISelectPropertyState, GUISliderPropertyState, SelectProps, colorScheme } from './types';
+  import type { GUIEvent, GUIFeaturePropertyState, GUISelectPropertyState, GUISliderPropertyState } from './types';
   import { Events } from './constants/events';
   import { createFeatureState } from './utils/helpers';
-  import { FeatureType, GeometryPanelInitializationEvent, GeometryStyle } from '@tiledb-inc/viz-common';
+  import { FeatureType, type GeometryPanelInitializationEvent, GeometryStyle } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';
   import Slider from './misc/InlineSlider.component.svelte';
 

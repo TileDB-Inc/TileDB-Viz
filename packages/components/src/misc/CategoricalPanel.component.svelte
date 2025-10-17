@@ -1,11 +1,9 @@
 <script lang="ts">
   import Checkbox from './Checkbox.component.svelte';
   import Numeric from './NumericInput.component.svelte';
-  import {
+  import type {
     GUIEvent,
     ButtonProps,
-    colorScheme,
-    SelectProps,
     GUICategoricalState
   } from '../types';
   import { Events, Commands } from '../constants/events';

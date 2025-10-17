@@ -119,7 +119,7 @@
 				left: {100 * startPositionPercentage}%;
 				right: {100 * (1 - endPositionPercentage)}%;
 			"
-      />
+      ></div>
       <div
         class="double-range__handle"
         bind:this={leftHandle}
@@ -129,7 +129,7 @@
         style="
 				left: {100 * startPositionPercentage}%
 			"
-      />
+      ></div>
       <div
         class="double-range__handle"
         data-which="end"
@@ -138,7 +138,7 @@
         style="
 				left: {100 * endPositionPercentage}%
 			"
-      />
+      ></div>
     </div>
   </div>
 </div>

@@ -30,7 +30,7 @@
       {id}
       bind:checked={value}
       on:change={onChange}
-    /><span class="tdb-toggle-slider" /></label
+    /><span class="tdb-toggle-slider"></span></label
   >
   <p class="tdb-toggle-label">{label}</p>
 </div>

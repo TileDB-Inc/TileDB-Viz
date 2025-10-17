@@ -2,7 +2,7 @@
 
 <script lang="typescript">
   import { Events } from './constants/events';
-  import { GUIEvent, SliderProps } from './types';
+  import type { GUIEvent, SliderProps } from './types';
 
   export let id;
   export let label = '';

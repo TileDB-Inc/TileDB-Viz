@@ -5,7 +5,7 @@
   import Slider from './Slider.component.svelte';
   import { rgbToHex, hexToRgb } from './utils/helpers';
   import { Events, Commands } from './constants/events';
-  import { ButtonProps, GUIEvent } from './types';
+  import type { ButtonProps, GUIEvent } from './types';
 
   export let channels = '[]';
   $: visibility = JSON.parse(channels).map(x => x.visible);

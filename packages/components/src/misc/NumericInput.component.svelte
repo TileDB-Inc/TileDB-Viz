@@ -18,6 +18,7 @@
     class="Viewer-Numeric__icon-button"
     disabled={value === min}
     on:click={e => changeGroup(-1)}
+    aria-label="decrease-button"
   >
     <svg focusable="false" viewBox="10 10 28 28" class="icon">
       <path
@@ -30,6 +31,7 @@
     class="Viewer-Numeric__icon-button"
     disabled={value === max}
     on:click={e => changeGroup(1)}
+    aria-label="increase-button"
   >
     <svg focusable="false" viewBox="0 0 48 48" class="icon">
       <path
@@ -54,6 +56,7 @@
 
     input[type='number'] {
       -moz-appearance: textfield;
+      appearance: textfield;
       width: 24px;
       background: var(--viewer-background-primary);
       border: 1px solid var(--viewer-border);

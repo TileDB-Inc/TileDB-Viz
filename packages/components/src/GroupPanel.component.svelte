@@ -5,7 +5,7 @@
   import Section from './Section.component.svelte';
   import { rangeToPagination } from './utils/helpers';
   import { Commands, Events } from './constants/events';
-  import { GUIEvent, ButtonProps } from './types';
+  import type { GUIEvent, ButtonProps } from './types';
 
   export let groups = '[]';
   export let itemsPerPage = 5;

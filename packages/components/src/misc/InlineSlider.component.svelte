@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { GUIEvent } from "@tiledb-inc/viz-common";
-    import { Events } from "../constants/events";
-  import { GUISliderPropertyState, SliderProps } from "../types";
+  import type { GUIEvent } from "@tiledb-inc/viz-common";
+  import { Events } from "../constants/events";
+  import type { GUISliderPropertyState, SliderProps } from "../types";
 
   export let formatter = (value: number) => { return value.toFixed(2); };
   export let callback = (value: number, dataset: string, property: string) => {};

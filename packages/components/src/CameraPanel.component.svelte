@@ -3,16 +3,14 @@
   import Slider from './misc/InlineSlider.component.svelte';
   import VectorInput from './misc/VectorInput.component.svelte';
   import { Events } from './constants/events';
-  import {
-    GUIPropertyState,
+  import type {
     GUISelectPropertyState,
     GUISliderPropertyState,
     GUIVectorPropertyState
   } from './types';
-  import {
+  import type {
     GUIEvent,
     CameraPanelInitializationEvent,
-    GUISelectProperty,
     EngineUpdate
   } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';

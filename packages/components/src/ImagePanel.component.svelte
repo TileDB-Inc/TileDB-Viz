@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { Events } from './constants/events';
-  import { GUIChannelPropertyState, GUISelectPropertyState } from './types';
+  import type { GUIChannelPropertyState, GUISelectPropertyState } from './types';
   import Select from './misc/Select.component.svelte';
-  import {
+  import type {
     GUIEvent,
     ImagePanelInitializationEvent
   } from '@tiledb-inc/viz-common';

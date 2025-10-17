@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { GUIVectorPropertyState } from "../types";
+  import type { GUIVectorPropertyState } from "../types";
 
-  export let callback = (value: [number, number, number], dataset: string, property: string) => {};
-  export let dataset: string = '';
   export let state: GUIVectorPropertyState;
 </script>
 

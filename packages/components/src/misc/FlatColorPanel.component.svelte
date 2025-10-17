@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Commands, Events } from '../constants/events';
-  import { ButtonProps, GUIEvent, GUIFlatColorState } from '../types';
+  import type { ButtonProps, GUIEvent, GUIFlatColorState } from '../types';
   import { hexToRgb } from '../utils/helpers';
 
   export let dataset: string = '';

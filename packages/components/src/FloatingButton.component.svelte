@@ -5,7 +5,8 @@
 
   export let backgroundimage,
     id,
-    bottom = `33px`;
+    bottom = `33px`,
+    ariaLabel = 'floating-button';
 
   function handleClick() {
     window.dispatchEvent(
@@ -21,7 +22,7 @@
   $: cssVarStyles = `--bg: url("${backgroundimage}"); --bottom: ${bottom}`;
 </script>
 
-<button class="floating-button" style={cssVarStyles} on:click={handleClick} />
+<button class="floating-button" style={cssVarStyles} on:click={handleClick} aria-label={ariaLabel}></button>
 
 <style>
   .floating-button {

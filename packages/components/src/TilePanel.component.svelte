@@ -2,16 +2,14 @@
   import { onDestroy, onMount } from 'svelte';
   import Select from './misc/Select.component.svelte';
   import { Events } from './constants/events';
-  import {
+  import type {
     GUIEvent,
     TilePanelInitializationEvent
   } from '@tiledb-inc/viz-common';
-  import {
-    GUIPropertyState,
+  import type {
     GUISelectPropertyState,
     GUISliderPropertyState
   } from './types';
-  import { setupProperties } from './utils/helpers';
   import Slider from './misc/InlineSlider.component.svelte';
 
   let datasetPropertyState: GUISelectPropertyState = {

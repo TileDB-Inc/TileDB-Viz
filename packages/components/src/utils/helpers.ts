@@ -1,6 +1,7 @@
-import { FeatureType, GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
-import { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState, GUIPropertyState, GUISelectPropertyState, GUISliderPropertyState, GUIVectorPropertyState, colorScheme } from "../types";
-import { stat } from "fs";
+import { FeatureType } from "@tiledb-inc/viz-common";
+import { colorScheme } from "../types";
+import type { GUICategoricalFeature, GUIFeatureProperty, GUIFlatColorFeature } from "@tiledb-inc/viz-common";
+import type { GUICategoricalState, GUIFeaturePropertyState, GUIFlatColorState } from "../types";
 
 export function capitalize(str: string): string {
   const firstChar = str.charAt(0);

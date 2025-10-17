@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { GUIEvent } from '@tiledb-inc/viz-common';
-  import { ButtonProps, GUIChannelPropertyState, SliderProps } from '../types';
-    import { Commands, Events } from '../constants/events';
-    import { hexToRgb } from '../utils/helpers';
+  import type { GUIEvent } from '@tiledb-inc/viz-common';
+  import type { ButtonProps, GUIChannelPropertyState, SliderProps } from '../types';
+  import { Commands, Events } from '../constants/events';
+  import { hexToRgb } from '../utils/helpers';
 
   export let state: GUIChannelPropertyState;
   export let dataset: string = '';

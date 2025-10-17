@@ -2,11 +2,11 @@
   import { onDestroy, onMount } from 'svelte';
   import Select from './misc/Select.component.svelte';
   import { Events } from './constants/events';
-  import {
+  import type {
     GUIEvent,
     ScenePanelInitializationEvent
   } from '@tiledb-inc/viz-common';
-  import { GUISelectPropertyState } from './types';
+  import type { GUISelectPropertyState } from './types';
 
   let globalState: {
     baseCRS: GUISelectPropertyState;

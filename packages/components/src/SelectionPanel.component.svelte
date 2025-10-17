@@ -5,8 +5,8 @@
 />
 
 <script lang="ts">
-  import { GUIEvent } from '@tiledb-inc/viz-common';
-  import { ButtonProps } from './types';
+  import type { GUIEvent } from '@tiledb-inc/viz-common';
+  import type { ButtonProps } from './types';
   import { Commands, Events } from './constants/events';
   import { PickingMode } from '@tiledb-inc/viz-common';
   import { onMount } from 'svelte';
@@ -148,7 +148,7 @@
   </div>
 
   <div class="anchor-bottom">
-    <button class="Viewer-SelectionPanel__option">
+    <button class="Viewer-SelectionPanel__option" aria-label="info-button">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="icon"
