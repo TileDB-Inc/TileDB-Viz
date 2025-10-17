@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "7.54.3",
+    "@babylonjs/gui": "7.54.3",
     "@babylonjs/inspector": "7.54.3",
     "@babylonjs/loaders": "7.54.3",
     "@babylonjs/materials": "7.54.3",

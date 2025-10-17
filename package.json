@@ -49,11 +49,11 @@
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "5.9.2",
     "typescript-eslint": "^8.46.0",
-    "vite": "7.1.9",
+    "vite": "7.1.10",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "3.2.4"
   },
   "dependencies": {
-    "@tiledb-inc/tiledb-cloud": "file:../TileDB-Cloud-JS"
+    "@tiledb-inc/tiledb-cloud": "github:TileDB-Inc/TileDB-Cloud-JS#xan/bundle-fix"
   }
 }

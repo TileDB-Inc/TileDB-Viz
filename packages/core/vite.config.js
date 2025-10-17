@@ -7,6 +7,7 @@ export default defineConfig({
   base: '',
   build: {
     outDir: 'lib',
+    assetsDir: '',
     emptyOutDir: true,
     lib: {
       entry: {
@@ -16,13 +17,13 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      external: ["node:child_process", ...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)]
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)],
     }
   },
   worker: {
     format: 'es',
     rollupOptions: {
-      external: ["node:child_process"]
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)],
     }
   },
   plugins: [dts({ rollupTypes: true })]

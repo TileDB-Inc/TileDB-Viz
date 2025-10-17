@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { transform } from 'esbuild';
+import pkg from "./package.json"
+import pkgRoot from './../../package.json';
 import dts from 'vite-plugin-dts';
 import { sveltePreprocess } from 'svelte-preprocess';
 
@@ -18,6 +20,9 @@ export default defineConfig({
       fileName: 'index',
       formats: ['es']
     },
+    rollupOptions: {
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(pkgRoot.dependencies)]
+    }
   },
   plugins: [
     svelte({
