@@ -29,7 +29,7 @@ import {
 import { ParticleShaderMaterial, TileDBPointCloudOptions } from '../utils';
 import { TileDBWorkerPool } from '../workers';
 import { getQueryDataFromCache } from '../../utils/cache';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ModelArray } from '@tiledb-inc/tiledb-cloud/v3';
 import { PriorityQueue } from '../utils/priority-queue';
 import { SimplePointsCloudSystem } from '../meshes/simple-point-cloud';
 import { SparseResult } from './sparse-result';
@@ -42,8 +42,9 @@ import { PointCloudAdditiveColorMaterial } from '../materials/additiveColorShade
  */
 class ArrayModel {
   groupName?: string;
-  namespace?: string;
-  arraySchema?: ArraySchema;
+  workspace?: string;
+  teamspace?: string;
+  array?: ModelArray;
   octree!: Moctree;
   bufferSize: number;
   rgbMax!: number;
@@ -94,7 +95,8 @@ class ArrayModel {
     this.scene = scene;
 
     this.groupName = options.groupName;
-    this.namespace = options.namespace;
+    this.workspace = options.workspace;
+    this.teamspace = options.teamspace;
     this.token = options.token;
     this.tiledbEnv = options.tiledbEnv;
     this.bufferSize = options.bufferSize || 200000000;
@@ -378,7 +380,7 @@ class ArrayModel {
       // check memory cache
       if (!this.particleSystems.has(block.mortonNumber)) {
         const queryCacheKey = block.mortonNumber;
-        const storeName = `${this.namespace}:${this.groupName}`;
+        const storeName = `${this.workspace}:${this.teamspace}:${this.groupName}`;
         // check indexeddb cache
         const dataFromCache = await getQueryDataFromCache<MoctreeBlock>(
           storeName,
@@ -425,7 +427,7 @@ class ArrayModel {
     zmin: number,
     zmax: number,
     conformingBounds: number[],
-    arraySchema?: ArraySchema,
+    array?: ModelArray,
     nLevels?: number,
     rgbMax?: number,
     data?: SparseResult
@@ -433,7 +435,7 @@ class ArrayModel {
     this.basePointSize = 50;
     this.rgbMax = rgbMax || 1.0;
     this.maxLevel = nLevels || 1;
-    this.arraySchema = arraySchema;
+    this.array = array;
 
     // centred on 0, 0, 0 with z being y
     const spanX = (xmax - xmin) / 2.0;
@@ -476,11 +478,12 @@ class ArrayModel {
       this.workerPool = new TileDBWorkerPool(
         {
           type: WorkerType.init,
-          namespace: this.namespace,
+          workspace: this.workspace,
+          teamspace: this.teamspace,
           token: this.token,
           tiledbEnv: this.tiledbEnv,
           groupName: this.groupName,
-          arraySchema: this.arraySchema,
+          array: this.array,
           translateX: this.translationVector.x,
           translateY: this.translationVector.y,
           translateZ: this.translationVector.z,

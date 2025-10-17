@@ -1,4 +1,4 @@
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
 import {
   Channel,
   ImageLoaderMetadata,

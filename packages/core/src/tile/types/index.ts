@@ -12,7 +12,7 @@ import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
-import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
 import { PointTileContent } from '../model/point/pointContent';
@@ -106,7 +106,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
 }
 
 export interface ImageAssetMetadata extends AssetMetadata {
-  channels: Record<string, Channel[]>;
+  channels: Map<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
   physicalSizeZ?: number;
@@ -387,6 +387,11 @@ export type TypedArray =
   | Uint8ClampedArray
   | Float32Array;
 
+export type TypedArray64Bit =
+  | BigInt64Array
+  | BigUint64Array
+  | Float64Array;
+
 export type TypedArrayInterface =
   | typeof Int8Array
   | typeof Uint8Array
@@ -397,7 +402,7 @@ export type TypedArrayInterface =
   | typeof Uint8ClampedArray
   | typeof Float32Array;
 
-export const types = {
+export const types: Record<string, {}> = {
   uint8: {
     bytes: Uint8Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,

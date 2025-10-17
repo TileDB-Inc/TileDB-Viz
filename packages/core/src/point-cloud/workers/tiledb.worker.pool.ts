@@ -33,6 +33,7 @@ class TileDBWorkerPool {
         type: 'module',
         name: w.toString()
       });
+
       worker.onmessage = this.onData.bind(this);
       worker.postMessage(this.initRequest);
       this.workers.push(worker);
@@ -57,7 +58,7 @@ class TileDBWorkerPool {
       );
 
       const queryCacheKey = block.mortonNumber;
-      const storeName = `${this.initRequest.namespace}:${this.initRequest.groupName}`;
+      const storeName = `${this.initRequest.workspace}:${this.initRequest.teamspace}:${this.initRequest.groupName}`;
       this.callbackFn(block);
       await writeToCache(storeName, queryCacheKey, block);
     } else if (m.type === WorkerType.idle) {
@@ -100,6 +101,7 @@ class TileDBWorkerPool {
             name: k
           }
         );
+
         newWorker.postMessage(this.initRequest); // message to initalize the tiledb client
         newWorker.onmessage = this.onData.bind(this);
         this.workers[parseInt(k)] = newWorker;

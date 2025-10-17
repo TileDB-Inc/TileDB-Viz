@@ -3,7 +3,7 @@ import {
   OGC3DTilesBoundingVolume,
   OGC3DTilesTile,
   OGC3DTilesTileset
-} from '@tiledb-inc/viz-common/src/types/3DTiles/index';
+} from '@tiledb-inc/viz-common';
 import { RefineStrategy, SceneOptions } from '../../../types';
 import proj4 from 'proj4';
 import { Matrix } from 'mathjs';

@@ -20,11 +20,8 @@ import {
   ImageAssetMetadata,
   SOMAMultiscaleImageAssetMetadataRaw
 } from '../../tile/types';
-import {
-  GroupContents,
-  Datatype,
-  ArrayInfo
-} from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { Datatype, ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/v3';
+import type { GroupContents, ArrayInfo } from '@tiledb-inc/tiledb-cloud/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
 import { GeometryConfig, ImageConfig } from '@tiledb-inc/viz-common';
 import {
@@ -36,7 +33,6 @@ import {
 import { getQueryDataFromCache, writeToCache } from '../cache';
 import proj4 from 'proj4';
 import { MathArray, Matrix, matrix, multiply } from 'mathjs';
-import { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Tile } from '../../tile/model/tile';
 import { ImageContent } from '../../tile/model/image/imageContent';
 import { GeometryContent } from '../../tile/model/geometry/geometryContent';
@@ -948,6 +944,8 @@ function deserializeBuffer(type: string, buffer: Array<number>): any {
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
     case Datatype.Float64:
       return Number(new Float64Array(new Uint8Array(buffer).buffer)[0]);
+    case Datatype.Int32:
+      return new Int32Array(new Uint8Array(buffer).buffer)[0];
     default:
       console.error(`Cannot deserialize type '${type}'`);
       return undefined;

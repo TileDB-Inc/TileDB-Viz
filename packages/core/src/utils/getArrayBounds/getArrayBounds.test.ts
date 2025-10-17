@@ -1,5 +1,6 @@
 import getArrayBounds from './getArrayBounds';
 import data from '../../../../../__mocks__/point-cloud-data.json';
+import { describe, it, expect } from 'vitest';
 
 describe('getArrayBounds', () => {
   it('returns array bounds', () => {

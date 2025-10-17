@@ -1,4 +1,5 @@
 import addUnitToDimension from './addUnitToDimension';
+import { describe, it, expect } from 'vitest';
 
 describe('addUnitToDimension()', () => {
   it('should add unit to number dimension', () => {

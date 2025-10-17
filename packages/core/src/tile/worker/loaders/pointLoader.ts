@@ -1,7 +1,7 @@
 import { FeatureType } from '@tiledb-inc/viz-common';
 import { CancelTokenSource } from 'axios';
 import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
-import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,
@@ -9,6 +9,7 @@ import {
   PointCloudPayload,
   PointResponse,
   TypedArray,
+  TypedArray64Bit,
   WorkerResponse
 } from '../../types';
 import { RequestType } from '../../types';
@@ -99,14 +100,13 @@ export async function pointRequest(
     request.teamspace,
     request.uri,
     query
-    //arraySchema
   );
 
   const buffers: { [attribute: string]: ArrayBuffer } = {};
-  const arrays: { [attribute: string]: TypedArray } = {};
+  const arrays: { [attribute: string]: TypedArray | TypedArray64Bit } = {};
 
   try {
-    for await (const results of generator) {
+    for await (const results of generator as AsyncGenerator<Record<string, ArrayBuffer>, void, unknown>) {
       for (const attribute of uniqueAttributes) {
         buffers[attribute] = concatBuffers(
           results[attribute],
@@ -203,7 +203,7 @@ export async function pointRequest(
           );
 
           result.attributes[feature.name] = createRGB(
-            feature.attributes.map(x => arrays[x.name]),
+            feature.attributes.map(x => arrays[x.name] as TypedArray),
             feature.attributes.map((x, idx) =>
               x.normalize ? normalizationWindows[idx] : undefined
             )

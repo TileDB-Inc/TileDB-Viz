@@ -1,4 +1,5 @@
 import { tileDBUriParser } from './metadata-utils';
+import { describe, it, expect } from 'vitest';
 
 describe('tileDBUriParser', () => {
   it('TileDB Uri', () => {

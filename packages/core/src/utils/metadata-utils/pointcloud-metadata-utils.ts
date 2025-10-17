@@ -19,11 +19,8 @@ import { FeatureType } from '@tiledb-inc/viz-common';
 import { Feature } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
 import { getQueryDataFromCache, writeToCache } from '../cache';
-import {
-  ArraySchema,
-  GroupContents,
-  GroupInfo
-} from '@tiledb-inc/tiledb-cloud/lib/v1';
+import type { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
+import type { GroupContents, GroupInfo } from '@tiledb-inc/tiledb-cloud/v1';
 
 export async function getPointCloudMetadata(
   options: AssetOptions,
@@ -106,7 +103,6 @@ export async function getPointCloudMetadata(
         uris[0]
       ).then((response: any) => response.data),
       client.ArrayApi.getArray(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         options.workspace,
         options.teamspace,
         uris[0],
