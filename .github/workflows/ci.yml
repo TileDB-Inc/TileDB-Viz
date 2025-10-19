@@ -5,26 +5,12 @@ jobs:
     name: Test and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set Node.js 18.x
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - name: Set Node.js 22.x
+        uses: actions/setup-node@v6
         with:
-          node-version: 18.x
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: set version 4.9.2
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: --version # will run `yarn install` command
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: install # will run `yarn install` command
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: build # will run `yarn build` command
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: test # will run `yarn test` command
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: lint # will run `yarn lint` command
+          node-version: 22
+      - run: npm ci
+      - run : npm run build
+      - run: npm run test
+      - run: npm run lint
