@@ -1,6 +1,9 @@
 # Build files
 packages/**/lib
 
+# env files
+**/.env.ts
+
 # Test coverage
 packages/**/coverage
 
