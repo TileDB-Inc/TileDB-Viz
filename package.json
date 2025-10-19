@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
+  "type": "module",
   "workspaces": [
     "packages/common",
     "packages/components",
@@ -24,14 +25,14 @@
     "build:components": "npm run build -w packages/components",
     "build:core": "npm run build -w packages/core",
     "build:react": "npm run build -w packages/react",
-    "g:tsc": "cd $INIT_CWD && tsc",
     "typedoc": "typedoc --plugin typedoc-plugin-markdown --tsconfig ./tsconfig.json",
     "quarto": "quarto render ./quarto/ --fail-if-warnings",
-    "g:eslint": "cd $INIT_CWD && eslint",
-    "g:parcel": "cd $INIT_CWD && parcel",
     "storybook": "npm run storybook -w packages/react",
-    "lint": "yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
-    "lint:fix": "yarn workspace @tiledb-inc/viz-common lint:fix && yarn workspace @tiledb-inc/viz-core lint:fix && yarn workspace @tiledb-inc/viz-react lint:fix"
+    "lint": "npm run lint -w packages/common && npm run lint -w packages/core && npm run lint -w packages/react",
+    "lint:common": "npm run lint -w packages/common",
+    "lint:core": "npm run lint -w packages/core",
+    "lint:react": "npm run lint -w packages/react",
+    "lint:fix": "npm run lint:fix -w packages/common && npm run lint:fix -w packages/core && npm run lint:fix -w packages/react"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

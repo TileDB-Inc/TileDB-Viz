@@ -79,8 +79,6 @@ export function ImageShaderMaterialWebGPU(
     }
   );
 
-  material;
-
   material.backFaceCulling = false;
 
   return material;

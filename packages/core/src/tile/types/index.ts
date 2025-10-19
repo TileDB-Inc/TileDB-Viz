@@ -337,9 +337,8 @@ export type GeometryLoaderMetadata = {
   additionalAttributes?: Attribute[];
 };
 
-export type PointCloudLoaderMetadata = {
-  // TODO: move crs and attributes here
-};
+// TODO: move crs and attributes here
+export type PointCloudLoaderMetadata = object;
 
 export type TDB3DTileMetadata = {
   /**
@@ -402,7 +401,7 @@ export type TypedArrayInterface =
   | typeof Uint8ClampedArray
   | typeof Float32Array;
 
-export const types: Record<string, {}> = {
+export const types: Record<string, object> = {
   uint8: {
     bytes: Uint8Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,

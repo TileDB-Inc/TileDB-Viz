@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { TileImageVisualization } from '../TileImage';
 import { TOKEN, TILEDB_ENDPOINT } from '../.env';
-import { FeatureType } from '@tiledb-inc/viz-common';
 
 const meta = {
   title: 'Tile Renderer',

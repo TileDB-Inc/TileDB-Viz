@@ -10,12 +10,23 @@ import { defineConfig } from "eslint/config";
 export default defineConfig([
   {
     files: ["**/*.{ts,tsx}"],
-    plugins: { js },
+    ignores: ["**/.env.*.ts", "!.storybook"],
+    plugins: { js, pluginReact },
     extends: ["js/recommended"],
-    languageOptions: { globals: globals.browser }
+    languageOptions: { 
+      globals: globals.browser,
+      parserOptions: {
+        project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+      }
+    },
+    settings: {
+      react: {
+        version: "detect"
+      }
+    }
   },
   tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
+  storybook.configs["flat/recommended"],
   {
     rules: {
       '@typescript-eslint/explicit-module-boundary-types': 'off',

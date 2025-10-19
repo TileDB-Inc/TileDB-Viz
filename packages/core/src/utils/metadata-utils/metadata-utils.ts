@@ -513,7 +513,6 @@ export async function getGeometryMetadata(
   if (!arraySchemaResponse || !info || !arrayMetadata) {
     [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
       client.ArrayApi.getArray(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         options.workspace,
         options.teamspace,
         options.geometryArrayID,
