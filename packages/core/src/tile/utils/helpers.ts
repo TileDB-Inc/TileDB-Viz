@@ -48,3 +48,25 @@ export function getViewArea(
 
   return [bottom, top, left, right];
 }
+
+export function splitEventTarget(target: string): string[] {
+  const tokens = target.split('_');
+
+  if (tokens.length === 0) {
+    throw new Error('[TileDB-Viz][splitEventTarget] Event target is empty');
+  }
+
+  // New ids have the format of ast_<hex string>, grp_<hex_string> or arr_<hex_string>
+  // Target for asset managers always starts with the ID of the resource so the first token should be `ast`, `grp` or `arr`
+  if (['ast', 'grp', 'arr'].includes(tokens[0])) {
+    if (tokens.length <= 1) {
+      throw new Error(
+        `[TileDB-Viz][splitEventTarget] Event target '${target}' is too short`
+      );
+    }
+
+    return [tokens.slice(0, 2).join('_'), ...tokens.slice(2)];
+  }
+
+  return tokens;
+}

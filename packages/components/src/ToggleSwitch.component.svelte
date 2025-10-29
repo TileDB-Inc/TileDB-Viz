@@ -2,7 +2,7 @@
 
 <script lang="typescript">
   import { Events } from './constants/events';
-  import {GUIEvent, ButtonProps } from './types';
+  import type {GUIEvent, ButtonProps } from './types';
 
   export let id: string = '';
   export let command: string = '';
@@ -33,12 +33,13 @@
     class={`Viewer-ToggleSwitch__button ${
       value ? 'Viewer-ToggleSwitch__button--active' : ''
     }`}
+    aria-label="toggle-button"
   >
     <div
       class={`Viewer-ToggleSwitch__ball ${
         value ? 'Viewer-ToggleSwitch__ball--active' : ''
       }`}
-    />
+    ></div>
   </button>
   <p class="Viewer-ToggleSwitch__label">{label}</p>
 </div>

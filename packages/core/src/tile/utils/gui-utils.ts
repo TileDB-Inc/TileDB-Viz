@@ -17,7 +17,8 @@ class TileImageGUI {
   private uiWrapper!: HTMLDivElement;
   private clearCache: () => void;
   private assetSelectionCallback: (
-    namespace: string,
+    workspace: string,
+    teamspace: string,
     groupID?: string,
     arrayID?: string
   ) => void;
@@ -29,7 +30,8 @@ class TileImageGUI {
     assets: AssetEntry[],
     clearCache: () => void,
     assetSelectionCallback: (
-      namespace: string,
+      workspace: string,
+      teamspace: string,
       groupID?: string,
       arrayID?: string
     ) => void

@@ -7,7 +7,7 @@ import {
   WorkerResponse,
   types
 } from '../../types';
-import { Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Layout } from '@tiledb-inc/tiledb-cloud/v3';
 import { Axes, transpose } from '../../utils';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
 import { getWebPRanges } from './utils';
@@ -179,10 +179,10 @@ export async function imageRequest(
     };
 
     const generator = client.query.ReadQuery(
-      payload.namespace,
+      payload.workspace,
+      payload.teamspace,
       payload.uri,
-      query,
-      metadata.schema
+      query
     );
 
     tokenSource.token.throwIfRequested();
@@ -193,7 +193,7 @@ export async function imageRequest(
     );
 
     try {
-      for await (const rawResult of generator) {
+      for await (const rawResult of generator as AsyncGenerator<ArrayBuffer, void, unknown>) {
         const result: ImageDataArray = (types as any)[
           format.toLowerCase()
         ].create((rawResult as any)[payload.attribute.name]);

@@ -1,4 +1,5 @@
 import isNumber from './isNumber';
+import { describe, it, expect } from 'vitest';
 
 describe('isNumber()', () => {
   it('should return true if argument is number', () => {

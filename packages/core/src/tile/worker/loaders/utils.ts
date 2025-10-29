@@ -1,7 +1,7 @@
 import { Domain } from '../../../types';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { getQueryDataFromCache } from '../../../utils/cache';
-import { TypedArray } from '../../types';
+import { TypedArray, TypedArray64Bit } from '../../types';
 import { Attribute } from '@tiledb-inc/viz-common';
 
 export function transformBufferToInt64(
@@ -51,7 +51,7 @@ export function toNumericalArray(
 export function toTypedArray(
   buffer: ArrayBuffer,
   attribute: Attribute | Domain
-): TypedArray {
+): TypedArray | TypedArray64Bit {
   switch (attribute.type) {
     case Datatype.Int8:
       return new Int8Array(buffer);
@@ -154,7 +154,7 @@ export function getNormalizationWindow(
 }
 
 export function createRGB(
-  input: TypedArray[],
+  input: Array<TypedArray>,
   normalizationWindows: Array<{ min: number; max: number } | undefined>
 ): Float32Array {
   const output = new Float32Array(3 * input[0].length);

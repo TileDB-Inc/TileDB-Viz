@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.build.json",
-  "include": ["src", "src/stories/assets/*.json"],
+  "include": ["src", "src/stories/assets/*.json", "src/.env.ts"],
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",

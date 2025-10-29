@@ -1,6 +1,6 @@
 <script lang="ts">    
-  import { GUIEvent } from "@tiledb-inc/viz-common";
-  import { GUISelectPropertyState, SelectProps } from "../types";
+  import type { GUIEvent } from "@tiledb-inc/viz-common";
+  import type { GUISelectPropertyState, SelectProps } from "../types";
   import { Events } from "../constants/events";
 
   export let callback = (value: number, dataset: string, property: string) => {};

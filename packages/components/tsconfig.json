@@ -1,9 +1,10 @@
 {
+  "extends": "@tsconfig/svelte/tsconfig.json",
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Svelte",
   "_version": "5.0.0",
   "compilerOptions": {
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "es2022",
     
     /**
@@ -28,12 +29,10 @@
      */
     "allowJs": true,
     "checkJs": false,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "composite": true
   },
   "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts",
-    "src/**/*.js"
+    "src/**/*"
   ],
-  "references": [{ "path": "./tsconfig.node.json" }]
 }

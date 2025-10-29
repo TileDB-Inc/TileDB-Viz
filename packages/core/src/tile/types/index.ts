@@ -12,7 +12,7 @@ import { SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
-import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
 import { PointTileContent } from '../model/point/pointContent';
@@ -20,7 +20,8 @@ import { ImageContent } from '../model/image/imageContent';
 import { TDB3DTileContent } from '../model/3d/3DTileContent';
 
 export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   arrayID?: string;
   groupID?: string;
   geometryArrayID?: string[];
@@ -105,7 +106,7 @@ export interface RasterAssetMetadata extends AssetMetadata {
 }
 
 export interface ImageAssetMetadata extends AssetMetadata {
-  channels: Record<string, Channel[]>;
+  channels: Map<string, Channel[]>;
   physicalSizeX?: number;
   physicalSizeY?: number;
   physicalSizeZ?: number;
@@ -130,7 +131,9 @@ export type ImageMetadata = {
    */
   name: string;
 
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   /**
    * The root of the image tileset
@@ -179,7 +182,9 @@ export type GeometryMetadata = {
    */
   name: string;
 
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   /**
    * The root of the geomemtry tileset.
@@ -214,7 +219,9 @@ export type GeometryMetadata = {
 };
 
 export type PointCloudMetadata = {
-  namespace: string;
+  workspace: string;
+
+  teamspace: string;
 
   id: string;
 
@@ -330,9 +337,8 @@ export type GeometryLoaderMetadata = {
   additionalAttributes?: Attribute[];
 };
 
-export type PointCloudLoaderMetadata = {
-  // TODO: move crs and attributes here
-};
+// TODO: move crs and attributes here
+export type PointCloudLoaderMetadata = object;
 
 export type TDB3DTileMetadata = {
   /**
@@ -380,6 +386,11 @@ export type TypedArray =
   | Uint8ClampedArray
   | Float32Array;
 
+export type TypedArray64Bit =
+  | BigInt64Array
+  | BigUint64Array
+  | Float64Array;
+
 export type TypedArrayInterface =
   | typeof Int8Array
   | typeof Uint8Array
@@ -390,7 +401,7 @@ export type TypedArrayInterface =
   | typeof Uint8ClampedArray
   | typeof Float32Array;
 
-export const types = {
+export const types: Record<string, object> = {
   uint8: {
     bytes: Uint8Array.BYTES_PER_ELEMENT,
     format: Constants.TEXTUREFORMAT_RED_INTEGER,
@@ -478,9 +489,14 @@ export type TileDBPayload = {
   uri: string;
 
   /**
-   * The namespace of the array.
+   * The workspace the array belongs to.
    */
-  namespace: string;
+  workspace: string;
+
+  /**
+   * The teamspace the array belongs to.
+   */
+  teamspace: string;
 
   /**
    * The data ranges per dimension. The dimension should be the TileDB array dimension name.

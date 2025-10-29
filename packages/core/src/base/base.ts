@@ -2,12 +2,8 @@ import {
   AbstractEngine,
   Engine,
   Scene,
-  SceneLoader,
   WebGPUEngine
 } from '@babylonjs/core';
-import '@babylonjs/loaders/glTF';
-import '@babylonjs/core/Debug/debugLayer';
-import '@babylonjs/inspector';
 import { RERENDER_EVT } from '../constants';
 import pubSub from '../utils/pubSub';
 import '@tiledb-inc/viz-components';
@@ -139,11 +135,10 @@ export class TileDBVisualization {
       if (this.engineAPI === 'WEBGL') {
         this.engine = new Engine(canvas, true);
         this.engine.doNotHandleContextLost = true;
+        this.engine.hideLoadingUI();
 
         const engine = this.engine as Engine;
         engine.disableUniformBuffers = false;
-
-        SceneLoader.ShowLoadingScreen = false;
 
         this.resizeCanvas();
 
@@ -162,8 +157,6 @@ export class TileDBVisualization {
         const engine = this.engine as WebGPUEngine;
 
         engine.initAsync().then(() => {
-          SceneLoader.ShowLoadingScreen = false;
-
           this.resizeCanvas();
 
           // window resize event handler

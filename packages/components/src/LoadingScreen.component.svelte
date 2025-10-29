@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Events } from './constants/events';
-  import { GUIEvent } from './types';
+  import type { GUIEvent } from './types';
 
   let status = 'Initializing canvas';
   let display: boolean = true;

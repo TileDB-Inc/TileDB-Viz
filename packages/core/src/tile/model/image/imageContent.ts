@@ -10,7 +10,7 @@ import {
   UniformBuffer
 } from '@babylonjs/core';
 import { TypedArray } from '../../types';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import {
   ImageShaderMaterial,
   ImageShaderMaterialWebGPU

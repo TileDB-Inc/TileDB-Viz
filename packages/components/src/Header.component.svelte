@@ -12,7 +12,7 @@
 
 <h5 class="Viewer-Header">
   <span><slot /></span>
-  <button class="Viewer-Header__button" on:click={onClick}>
+  <button class="Viewer-Header__button" on:click={onClick} aria-label="header-toggle">
     <svg
       class={visibleContent ? 'Viewer-Header__icon' : 'Viewer-Header__icon--rotated'}
       width="20"

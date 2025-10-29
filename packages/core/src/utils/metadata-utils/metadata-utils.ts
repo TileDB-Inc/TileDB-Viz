@@ -20,11 +20,8 @@ import {
   ImageAssetMetadata,
   SOMAMultiscaleImageAssetMetadataRaw
 } from '../../tile/types';
-import {
-  GroupContents,
-  Datatype,
-  ArrayInfo
-} from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { Datatype, ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/v3';
+import type { GroupContents, ArrayInfo } from '@tiledb-inc/tiledb-cloud/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
 import { GeometryConfig, ImageConfig } from '@tiledb-inc/viz-common';
 import {
@@ -36,7 +33,6 @@ import {
 import { getQueryDataFromCache, writeToCache } from '../cache';
 import proj4 from 'proj4';
 import { MathArray, Matrix, matrix, multiply } from 'mathjs';
-import { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/lib/v1';
 import { Tile } from '../../tile/model/tile';
 import { ImageContent } from '../../tile/model/image/imageContent';
 import { GeometryContent } from '../../tile/model/geometry/geometryContent';
@@ -48,21 +44,35 @@ import {
   WIDTH_ALIASES
 } from '../../tile/constants';
 
+//TODO: Add proper support for new TileDB URIs
 export function tileDBUriParser(
   uri: string,
-  fallbackNamespace: string
-): { namespace: string; id: string } {
+  fallbackWorkspace: string,
+  fallbackTeamspace: string
+): { workspace: string; teamspace: string; id: string } {
   const tokens = uri.split('/');
 
   if (tokens.length === 1) {
-    return { namespace: fallbackNamespace, id: uri };
+    return {
+      workspace: fallbackWorkspace,
+      teamspace: fallbackTeamspace,
+      id: uri
+    };
+  }
+
+  if (tokens.length < 5) {
+    throw new Error(`'${uri}' is not a TileDB Uri`);
   }
 
   if (tokens[0] !== 'tiledb:') {
     throw new Error(`'${uri}' is not a TileDB Uri`);
   }
 
-  return { namespace: tokens[2], id: tokens[3] };
+  return {
+    workspace: tokens[2],
+    teamspace: tokens[3],
+    id: tokens.slice(4).join('/')
+  };
 }
 
 export async function getGroupContents(
@@ -77,13 +87,14 @@ export async function getGroupContents(
     return [];
   }
 
-  const { namespace, id: baseGroup } = tileDBUriParser(
-    options.namespace,
-    options.baseGroup
-  );
+  const {
+    workspace,
+    teamspace,
+    id: baseGroup
+  } = tileDBUriParser(options.workspace, options.teamspace, options.baseGroup);
 
   return await client.groups
-    .getGroupContents(namespace, baseGroup)
+    .getGroupContents(workspace, teamspace, baseGroup)
     .then((value: GroupContents) => {
       if (!value.entries) {
         return [];
@@ -106,7 +117,7 @@ export async function getGroupContents(
             return {
               namespace: entry.array?.namespace ?? '',
               name: entry.array?.name ?? '',
-              arrayID: entry.array?.id ?? ''
+              arrayID: entry.array?.asset_id ?? ''
             } as AssetEntry;
           })
       ];
@@ -211,7 +222,8 @@ export async function getImageMetadata(
     schemas = await Promise.all(
       uris.map(x => {
         return client.ArrayApi.getArray(
-          options.namespace,
+          options.workspace,
+          options.teamspace,
           x,
           'application/json'
         ).then(y => {
@@ -335,18 +347,20 @@ export async function getImageMetadata(
   let name = '';
   if (options.groupID) {
     name = await client.groups.API.getGroup(
-      options.namespace,
+      options.workspace,
+      options.teamspace,
       options.groupID
     ).then(x => x.data.name ?? '');
   } else if (options.arrayID) {
     name = await client
-      .info(options.namespace, schemas[0].uri ?? '')
+      .info(options.workspace, options.teamspace, schemas[0].uri ?? '')
       .then(x => x.data.name ?? '');
   }
 
   return {
     id: options.groupID ?? options.arrayID,
-    namespace: options.namespace,
+    workspace: options.workspace,
+    teamspace: options.teamspace,
     name: name,
     root: tilesetRoot,
     uris: uris,
@@ -378,7 +392,8 @@ async function getArrayMetadata(
 
   if (!arrayMetadata) {
     arrayMetadata = await client.ArrayApi.getArrayMetaDataJson(
-      options.namespace,
+      options.workspace,
+      options.teamspace,
       options.arrayID
     ).then((response: any) => response.data);
 
@@ -418,7 +433,11 @@ async function getGroupMetadata(
 
   if (!groupMetadata || !memberUris) {
     [groupMetadata, memberUris] = await Promise.all([
-      client.groups.V2API.getGroupMetadata(options.namespace, options.groupID)
+      client.groups.V2API.getGroupMetadata(
+        options.workspace,
+        options.teamspace,
+        options.groupID
+      )
         .then((response: any) => response.data.entries)
         .then((data: any) => {
           return data.reduce((map: any, obj: any) => {
@@ -426,11 +445,28 @@ async function getGroupMetadata(
             return map;
           }, {});
         }),
-      client.groups.API.getGroupContents(options.namespace, options.groupID)
-        .then((response: any) => response.data.entries)
-        .then((data: any) => {
-          data.sort((a: any, b: any) => a.array.size - b.array.size);
-          return data.map((a: any) => a.array.id);
+      client.groups.API.getGroupContents(
+        options.workspace,
+        options.teamspace,
+        options.groupID
+      )
+        .then(response => response.data.entries)
+        .then(data => {
+          if (data?.every(v => v.array?.size !== undefined)) {
+            data?.sort((a: any, b: any) => a.array.size - b.array.size);
+          } else {
+            console.warn(
+              'Array sizes are not set yet. Falling back to name order'
+            );
+
+            data?.sort(
+              (a: any, b: any) =>
+                parseInt(b.array.name.substring(2)) -
+                parseInt(a.array.name.substring(2))
+            );
+          }
+
+          return data?.map((a: any) => a.array.asset_id);
         })
     ]);
 
@@ -477,14 +513,17 @@ export async function getGeometryMetadata(
   if (!arraySchemaResponse || !info || !arrayMetadata) {
     [arraySchemaResponse, info, arrayMetadata] = await Promise.all([
       client.ArrayApi.getArray(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        options.namespace,
+        options.workspace,
+        options.teamspace,
         options.geometryArrayID,
         'application/json'
       ).then(x => x.data),
-      client.info(options.namespace, options.geometryArrayID).then(x => x.data),
+      client
+        .info(options.workspace, options.teamspace, options.geometryArrayID)
+        .then(x => x.data),
       client.ArrayApi.getArrayMetaDataJson(
-        options.namespace,
+        options.workspace,
+        options.teamspace,
         options.geometryArrayID
       ).then(x => x.data as any)
     ]);
@@ -550,7 +589,8 @@ export async function getGeometryMetadata(
   }
 
   const extents = await client.ArrayApi.getArrayNonEmptyDomainJson(
-    options.namespace,
+    options.workspace,
+    options.teamspace,
     options.geometryArrayID
   )
     .then(x => x.data as TDBNonEmptyDomain)
@@ -591,7 +631,8 @@ export async function getGeometryMetadata(
       : new Map(
           (
             await client.loadEnumerationsRequest(
-              options.namespace,
+              options.workspace,
+              options.teamspace,
               options.geometryArrayID,
               { enumerations: [...enumarations.values()] }
             )
@@ -607,7 +648,8 @@ export async function getGeometryMetadata(
 
   const geometryMetadata = {
     name: info.name,
-    namespace: options.namespace,
+    workspace: options.workspace,
+    teamspace: options.teamspace,
     root: root,
     extent: extents,
     type: arrayMetadata['GeometryType'],
@@ -901,6 +943,8 @@ function deserializeBuffer(type: string, buffer: Array<number>): any {
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
     case Datatype.Float64:
       return Number(new Float64Array(new Uint8Array(buffer).buffer)[0]);
+    case Datatype.Int32:
+      return new Int32Array(new Uint8Array(buffer).buffer)[0];
     default:
       console.error(`Cannot deserialize type '${type}'`);
       return undefined;

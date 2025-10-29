@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Events } from './constants/events';
-  import { GUIEvent, GUISliderPropertyState, SliderProps } from './types';
+  import type { GUIEvent, GUISliderPropertyState, SliderProps } from './types';
 
   export let state: GUISliderPropertyState;
 
@@ -43,6 +43,7 @@
     <button
       class="Viewer-ZoomControl__button"
       on:click={() => {state.value = Math.min(state.value + state.property.step, state.property.max); onClick()}}
+      aria-label="zoom-in-button"
     >
       <svg
         width="20"
@@ -61,6 +62,7 @@
     <button
       class="Viewer-ZoomControl__button"
       on:click={() => {state.value = Math.max(state.value - state.property.step, state.property.min); onClick()}}
+      aria-label="zoom-out-button"
     >
       <svg
         width="20"
@@ -97,6 +99,7 @@
     <button
       class="Viewer-ZoomControl__button"
       on:click={() => {state.value = state.property.default; onClick()}}
+      aria-label="zoom-reset-button"
     >
       <svg
         width="20"

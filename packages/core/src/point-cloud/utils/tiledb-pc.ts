@@ -1,4 +1,9 @@
-import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import {
+  Layout,
+  ModelArray,
+  NonEmptyDomain,
+  QueryType
+} from '@tiledb-inc/tiledb-cloud/v3';
 import { TileDBVisualizationBaseOptions } from '../../base';
 import { getQueryDataFromCache, writeToCache } from '../../utils/cache';
 import getArrayBounds from '../../utils/getArrayBounds';
@@ -56,9 +61,13 @@ export interface TileDBPointCloudOptions
    */
   bbox?: { X: number[]; Y: number[]; Z: number[] };
   /**
-   * Namespace of the array/group registered in TileDB Cloud (if mode === "cloud")
+   * Workspace of the array/group registered in TileDB Cloud (if mode === "cloud")
    */
-  namespace?: string;
+  workspace?: string;
+  /**
+   * Workspace of the array/group registered in TileDB Cloud (if mode === "cloud")
+   */
+  teamspace?: string;
   /**
    * Name of the array registered in TileDB Cloud (if mode === "cloud")
    */
@@ -230,7 +239,11 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
 
   const queryCacheKey = 0; // TODO need to include partial ranges
 
-  const storeName = `${options.namespace}:${options.arrayName}`;
+  const storeName = getStoreName(
+    options.workspace!,
+    options.teamspace!,
+    options.arrayName!
+  );
 
   const dataFromCache = await getQueryDataFromCache<SparseResult>(
     storeName,
@@ -242,9 +255,8 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   }
 
   for await (const results of tiledbClient.query.ReadQuery(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    options.namespace!,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    options.workspace!,
+    options.teamspace!,
     options.arrayName!,
     query
   )) {
@@ -318,15 +330,22 @@ export function setPointCloudSwitches(mode?: string) {
   return { isTime, isClass, isTopo, isGltf };
 }
 
-export function getStoreName(namespace: string, arrayName: string) {
-  return `${namespace}:${arrayName}`;
+export function getStoreName(
+  workspace: string,
+  teamspace: string,
+  arrayName: string
+) {
+  return `${workspace}:${teamspace}:${arrayName}`;
 }
 
 export async function getNonEmptyDomain(
   options: TileDBPointCloudOptions
 ): Promise<number[]> {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const storeName = getStoreName(options.namespace!, options.groupName!);
+  const storeName = getStoreName(
+    options.workspace!,
+    options.teamspace!,
+    options.groupName!
+  );
   const key = 0;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache<number[]>(storeName, key);
@@ -341,27 +360,30 @@ export async function getNonEmptyDomain(
     }
     const tiledbClient = getTileDBClient(config);
 
-    const resp = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace!,
+    const nonEmptyDomain = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
+      options.workspace!,
+      options.teamspace!,
       options.groupName + '_0', // naming convention for groups of multi-resolution arrays
       'application/json'
-    );
+    ).then(response => response.data as NonEmptyDomain);
 
-    writeToCache(storeName, key, resp.data.nonEmptyDomain.float32);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return resp.data.nonEmptyDomain.float32!;
+    writeToCache(storeName, key, nonEmptyDomain.nonEmptyDomain?.float32);
+
+    return nonEmptyDomain.nonEmptyDomain!.float32!;
   } else {
     return dataFromCache;
   }
 }
 
-export async function getArraySchema(options: TileDBPointCloudOptions) {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const storeName = getStoreName(options.namespace!, options.groupName!);
+export async function getArraySchema(options: TileDBPointCloudOptions): Promise<ModelArray> {
+  const storeName = getStoreName(
+    options.workspace!,
+    options.teamspace!,
+    options.groupName!
+  );
   const key = -2;
   // we might have the data cached
-  const dataFromCache = await getQueryDataFromCache<ArraySchema | undefined>(
+  const dataFromCache = await getQueryDataFromCache<ModelArray | undefined>(
     storeName,
     key
   );
@@ -376,15 +398,16 @@ export async function getArraySchema(options: TileDBPointCloudOptions) {
     }
     const tiledbClient = getTileDBClient(config);
 
-    const arraySchemaResponse = await tiledbClient.ArrayApi.getArray(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace!,
+    const array = await tiledbClient.query.ArrayOpen(
+      options.workspace!,
+      options.teamspace!,
       options.groupName + '_0',
-      'application/json'
+      QueryType.Read
     );
-    writeToCache(storeName, key, arraySchemaResponse.data);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return arraySchemaResponse.data;
+
+    writeToCache(storeName, key, array);
+
+    return array;
   } else {
     return dataFromCache;
   }
@@ -393,8 +416,11 @@ export async function getArraySchema(options: TileDBPointCloudOptions) {
 export async function getArrayMetadata(
   options: TileDBPointCloudOptions
 ): Promise<[Map<string, number>, Array<number>, Array<number>, number]> {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const storeName = getStoreName(options.namespace!, options.groupName!);
+  const storeName = getStoreName(
+    options.workspace!,
+    options.teamspace!,
+    options.groupName!
+  );
   const key = -1;
   // we might have the data cached
   const dataFromCache = await getQueryDataFromCache<any>(storeName, key);
@@ -409,21 +435,20 @@ export async function getArrayMetadata(
     }
     const tiledbClient = getTileDBClient(config);
     const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace!,
+      options.workspace!,
+      options.teamspace!,
       options.groupName + '_0' // naming convention for groups of multi-resolution arrays
     );
 
     const contents = await tiledbClient.groups.getGroupContents(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      options.namespace!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.workspace!,
+      options.teamspace!,
       options.groupName!
     );
     if (!contents.entries) {
       console.warn('TileDB Group does not contain any array data');
     }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     const nLevels = contents.entries!.length;
 
     interface OctantData {

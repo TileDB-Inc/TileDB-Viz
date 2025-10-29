@@ -7,8 +7,8 @@
 <script lang="ts">
   import { Events, Commands } from './constants/events';
   import { onMount, onDestroy } from 'svelte';
-  import { ButtonProps, GUIEvent } from './types';
-  import { InfoPanelConfigEntry, InfoPanelInitializationEvent, PickResult } from '@tiledb-inc/viz-common';
+  import type { ButtonProps, GUIEvent } from './types';
+  import type { InfoPanelConfigEntry, InfoPanelInitializationEvent, PickResult } from '@tiledb-inc/viz-common';
 
   let config = new Map<string, InfoPanelConfigEntry>();
   let results = new Map<string, any[]>();
@@ -232,7 +232,7 @@
     {/if}
   </div>
   <div class="Viewer-DataTable__controls">
-    <button class="Viewer-DataTable__button" on:click={clearSelection}>
+    <button class="Viewer-DataTable__button" on:click={clearSelection} aria-label="clear-selection-button">
       Clear selection
     </button>
     <div class="Viewer-DataTable__horizontal-container">
@@ -262,6 +262,7 @@
             class="Viewer-DataTable__icon-button"
             value={'-1'}
             on:click={pageOnChange}
+            aria-label="previous-page-button"
           >
             <svg class="icon left" viewBox="0 0 48 48">
               <path
@@ -274,6 +275,7 @@
             class="Viewer-DataTable__icon-button"
             value="1"
             on:click={pageOnChange}
+            aria-label="next-page-button"
           >
             <svg class="icon right" viewBox="0 0 48 48">
               <path

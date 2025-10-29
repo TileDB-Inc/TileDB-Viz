@@ -10,7 +10,7 @@ export type EngineUpdate = {
   value: any;
 };
 
-type InfoPanelConfigEntry = {
+export type InfoPanelConfigEntry = {
   /**
    * The asset display name
    */

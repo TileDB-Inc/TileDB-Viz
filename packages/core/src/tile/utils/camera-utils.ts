@@ -21,6 +21,7 @@ import {
   CameraPanelInitializationEvent,
   EngineUpdate
 } from '@tiledb-inc/viz-common';
+import { splitEventTarget } from './helpers';
 
 const MINIMAP_OFFSET = 60;
 const MINIMAP_MAX_SIZE = 200;
@@ -168,7 +169,7 @@ export class CameraManager {
   }
 
   private textboxHandler(event: CustomEvent<GUIEvent<TextBoxProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'camera') {
       return;
@@ -200,7 +201,7 @@ export class CameraManager {
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'camera') {
       return;
@@ -214,7 +215,7 @@ export class CameraManager {
   }
 
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'camera') {
       return;

@@ -1,5 +1,5 @@
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { Matrix, multiply } from 'mathjs';
 
 export function deserializeBuffer(type: string, buffer: Array<number>): any {
@@ -12,6 +12,8 @@ export function deserializeBuffer(type: string, buffer: Array<number>): any {
       return new TextDecoder('utf-16').decode(new Uint8Array(buffer));
     case Datatype.Int64:
       return Number(new BigInt64Array(new Uint8Array(buffer).buffer)[0]);
+    case Datatype.Int32:
+      return new Int32Array(new Uint8Array(buffer).buffer)[0];
     default:
       console.error(`Cannot deserialize type '${type}'`);
       return undefined;

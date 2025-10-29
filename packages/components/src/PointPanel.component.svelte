@@ -3,7 +3,7 @@
   import Slider from './misc/InlineSlider.component.svelte';
   import FlatColorPanel from './misc/FlatColorPanel.component.svelte';
   import CategoricalPanel from './misc/CategoricalPanel.component.svelte';
-  import {
+  import type {
     GUIEvent,
     GUIFeaturePropertyState,
     GUISelectPropertyState,
@@ -13,7 +13,7 @@
   import { createFeatureState } from './utils/helpers';
   import {
     FeatureType,
-    PointPanelInitializationEvent,
+    type PointPanelInitializationEvent,
     PointShape
   } from '@tiledb-inc/viz-common';
   import { onDestroy, onMount } from 'svelte';

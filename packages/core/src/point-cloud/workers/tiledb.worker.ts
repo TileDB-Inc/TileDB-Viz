@@ -1,5 +1,5 @@
 import TileDBClient, { TileDBQuery, QueryData } from '@tiledb-inc/tiledb-cloud';
-import { ArraySchema, Layout } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { Layout, ModelArray } from '@tiledb-inc/tiledb-cloud/v3';
 
 import {
   DataRequest,
@@ -12,9 +12,10 @@ import { MoctreeBlock } from '../octree';
 import buffersToSparseResult from '../utils/buffersToSparseResult';
 import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
 
-let namespace = '';
+let workspace = '';
+let teamspace = '';
 let groupName = '';
-let arraySchema: ArraySchema;
+let array: ModelArray;
 let translateX = 0;
 let translateY = 0;
 let translateZ = 0;
@@ -28,9 +29,10 @@ self.onmessage = async (e: MessageEvent) => {
   const m = e.data as WorkerRequest;
   if (m.type === WorkerType.init) {
     const o = m as InitialRequest;
-    namespace = o.namespace;
+    workspace = o.workspace;
+    teamspace = o.teamspace;
     groupName = o.groupName;
-    arraySchema = o.arraySchema;
+    array     = o.array;
     translateX = o.translateX;
     translateY = o.translateY;
     translateZ = o.translateZ;
@@ -93,11 +95,11 @@ async function fetchData(block: MoctreeBlock) {
   } as QueryData;
 
   for await (const results of tiledbQuery.ReadQuery(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    namespace,
+    workspace,
+    teamspace,
     groupName + '_' + block.lod,
     queryData,
-    arraySchema
+    array
   )) {
     returnData(block, results as SparseResultRaw);
   }

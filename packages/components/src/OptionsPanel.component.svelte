@@ -3,8 +3,8 @@
   import Slider from './misc/InlineSlider.component.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { Commands, Events } from './constants/events';
-  import { GUIEvent, ButtonProps, GUISliderPropertyState } from './types/index';
-  import { OptionsPanelInitializationEvent } from '@tiledb-inc/viz-common';
+  import type { GUIEvent, ButtonProps, GUISliderPropertyState } from './types/index';
+  import type { OptionsPanelInitializationEvent } from '@tiledb-inc/viz-common';
 
   let tiles = 0;
   let diskSpace = 0;
@@ -112,7 +112,7 @@
         <p class="Viewer-Settings__label">
           Cached tiles: {tiles}
         </p>
-        <button class="Viewer-Settings__button" on:click={clearCache}>
+        <button class="Viewer-Settings__button" on:click={clearCache} aria-label="settings-button">
           <svg
             width="20"
             height="20"
@@ -176,25 +176,6 @@
     &__option {
       display: flex;
       flex-direction: row;
-    }
-
-    &__horizontalInputGroup {
-      display: flex;
-      gap: 6px;
-      justify-content: space-evenly;
-
-      input {
-        border: 1px solid var(--viewer-border);
-        border-radius: 6px;
-        padding: 6px;
-        margin: 0;
-        height: 20px;
-        font-style: normal;
-        font-weight: normal;
-        font-size: 14px;
-        color: rgba(0, 0, 0, 0.87);
-        width: 100px;
-      }
     }
 
     &__header {

@@ -30,6 +30,7 @@ import { ImageDataContent, SceneOptions } from '../../../types';
 import { Tile } from '../tile';
 import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { ImageFetcher, ImageFetchOptions } from './imageFetcher';
+import { splitEventTarget } from '../../utils/helpers';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -228,7 +229,7 @@ export class ImageManager extends Manager<
   }
 
   private buttonHandler(event: CustomEvent<GUIEvent<ButtonProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;
@@ -263,7 +264,7 @@ export class ImageManager extends Manager<
   }
 
   private sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== this.metadata.id) {
       return;

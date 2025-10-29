@@ -1,5 +1,5 @@
 import { Events, Commands } from './constants/events';
-import { GUIEvent, ButtonProps, SliderProps, TextBoxProps, SelectProps } from './types/index';
+import type { GUIEvent, ButtonProps, SliderProps, TextBoxProps, SelectProps } from './types/index';
 
 export { default as FloatingButton } from './FloatingButton.component.svelte';
 export { default as MenuPanel } from './Menu.component.svelte';

@@ -33,7 +33,7 @@ import {
 } from './utils';
 import { clearCache } from '../utils/cache';
 import getTileDBClient from '../utils/getTileDBClient';
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ModelArray } from '@tiledb-inc/tiledb-cloud/v3';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
 import { MeshDepthMaterial } from './materials/depthShaderMaterial';
@@ -49,7 +49,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
   private model!: ArrayModel;
   private conformingBounds!: number[];
   private activeCamera!: number;
-  private arraySchema!: ArraySchema;
+  private array!: ModelArray;
   private gizmoManager!: GizmoManager;
   private renderTargets: RenderTargetTexture[] = [];
   private pipeline!: SPSHighQualitySplats;
@@ -75,8 +75,8 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
 
   attachKeys() {
     const clearIndexedDB = () => {
-      if (this.options.namespace && this.options.groupName) {
-        const storeName = `${this.options.namespace}:${this.options.groupName}`;
+      if (this.options.workspace && this.options.teamspace && this.options.groupName) {
+        const storeName = `${this.options.workspace}:${this.options.teamspace}:${this.options.groupName}`;
 
         clearCache(storeName);
       }
@@ -235,7 +235,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
         const [octantMetadata, octreeBounds, conformingBounds, levels] =
           await getArrayMetadata(this.options);
 
-        this.arraySchema = await getArraySchema(this.options);
+        this.array = await getArraySchema(this.options);
 
         this.conformingBounds = [
           conformingBounds[0],
@@ -254,7 +254,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
           octreeBounds[2],
           octreeBounds[5],
           this.conformingBounds,
-          this.arraySchema,
+          this.array,
           levels,
           this.options.rgbMax || 1.0
         );
@@ -279,7 +279,7 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
             pcData.zmin,
             pcData.zmax,
             this.conformingBounds,
-            this.arraySchema,
+            this.array,
             1,
             this.options.rgbMax || 1.0,
             pcData.data as SparseResult

@@ -1,4 +1,4 @@
-import { openDB } from 'idb/with-async-ittr';
+import { openDB } from 'idb';
 
 const DB_NAME = 'TILEDB_VIZ_CACHE';
 let DB_VERSION = 3;

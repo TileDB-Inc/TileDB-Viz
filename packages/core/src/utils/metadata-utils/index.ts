@@ -1,3 +1,3 @@
-import { getGroupContents } from './metadata-utils';
+import { getGroupContents, tileDBUriParser } from './metadata-utils';
 
-export { getGroupContents };
+export { getGroupContents, tileDBUriParser };

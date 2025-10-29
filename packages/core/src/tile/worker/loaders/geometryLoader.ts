@@ -8,7 +8,7 @@ import {
   WorkerResponse
 } from '../../types';
 import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
-import { Datatype, Layout } from '@tiledb-inc/tiledb-cloud/lib/v2';
+import { Datatype, Layout } from '@tiledb-inc/tiledb-cloud/v3';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
 import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
@@ -100,7 +100,8 @@ export async function geometryRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    payload.namespace,
+    payload.workspace,
+    payload.teamspace,
     payload.uri,
     query
   );
@@ -236,7 +237,8 @@ export async function geometryInfoRequest(
   } as QueryData;
 
   const generator = client.query.ReadQuery(
-    payload.namespace,
+    payload.workspace,
+    payload.teamspace,
     payload.uri,
     query
   );

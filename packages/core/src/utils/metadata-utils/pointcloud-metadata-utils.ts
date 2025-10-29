@@ -19,11 +19,8 @@ import { FeatureType } from '@tiledb-inc/viz-common';
 import { Feature } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
 import { getQueryDataFromCache, writeToCache } from '../cache';
-import {
-  ArraySchema,
-  GroupContents,
-  GroupInfo
-} from '@tiledb-inc/tiledb-cloud/lib/v1';
+import type { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
+import type { GroupContents, GroupInfo } from '@tiledb-inc/tiledb-cloud/v1';
 
 export async function getPointCloudMetadata(
   options: AssetOptions,
@@ -54,12 +51,19 @@ export async function getPointCloudMetadata(
 
   if (!info || !members || !groupMetadata) {
     [info, members, groupMetadata] = await Promise.all([
-      client.groups.API.getGroup(options.namespace, options.pointGroupID).then(
-        x => x.data
+      client.groups.API.getGroup(
+        options.workspace,
+        options.teamspace,
+        options.pointGroupID
+      ).then(x => x.data),
+      client.groups.getGroupContents(
+        options.workspace,
+        options.teamspace,
+        options.pointGroupID
       ),
-      client.groups.getGroupContents(options.namespace, options.pointGroupID),
       client.groups.V2API.getGroupMetadata(
-        options.namespace,
+        options.workspace,
+        options.teamspace,
         options.pointGroupID
       )
         .then((response: any) => response.data.entries ?? [])
@@ -93,12 +97,14 @@ export async function getPointCloudMetadata(
 
   if (!arrayMetadata || !arraySchemaResponse) {
     [arrayMetadata, arraySchemaResponse] = await Promise.all([
-      client.ArrayApi.getArrayMetaDataJson(options.namespace, uris[0]).then(
-        (response: any) => response.data
-      ),
+      client.ArrayApi.getArrayMetaDataJson(
+        options.workspace,
+        options.teamspace,
+        uris[0]
+      ).then((response: any) => response.data),
       client.ArrayApi.getArray(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        options.namespace,
+        options.workspace,
+        options.teamspace,
         uris[0],
         'application/json'
       ).then(x => x.data)
@@ -192,7 +198,8 @@ export async function getPointCloudMetadata(
     id: options.pointGroupID,
     root: root,
     name: info.name ?? options.pointGroupID,
-    namespace: options.namespace,
+    workspace: options.workspace,
+    teamspace: options.teamspace,
     attributes: attributes,
     domain: domain,
     features: features,
@@ -218,9 +225,14 @@ export async function getPointCloudMetadata(
       ? new Map()
       : new Map(
           (
-            await client.loadEnumerationsRequest(options.namespace, uris[0], {
-              enumerations: [...enumarations.values()]
-            })
+            await client.loadEnumerationsRequest(
+              options.workspace,
+              options.teamspace,
+              uris[0],
+              {
+                enumerations: [...enumarations.values()]
+              }
+            )
           ).map(x => {
             return [
               x.name,

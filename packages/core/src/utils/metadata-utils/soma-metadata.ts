@@ -1,4 +1,4 @@
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
 import {
   Channel,
   ImageLoaderMetadata,
@@ -42,7 +42,8 @@ export async function getSOMAMultiscaleImageMetadata(
     schemas = await Promise.all(
       uris.map(x => {
         return client.ArrayApi.getArray(
-          options.namespace,
+          options.workspace,
+          options.teamspace,
           x,
           'application/json'
         ).then(y => {
@@ -185,7 +186,8 @@ export async function getSOMAMultiscaleImageMetadata(
 
   return {
     id: options.groupID,
-    namespace: options.namespace,
+    workspace: options.workspace,
+    teamspace: options.teamspace,
     name: metadata.soma_multiscale_image_schema.name,
     root: tilesetRoot,
     uris: uris,

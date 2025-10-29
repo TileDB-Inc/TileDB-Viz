@@ -7,7 +7,7 @@
     "incremental": true,
     "jsx": "react",
     "module": "es2022",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noEmitOnError": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,

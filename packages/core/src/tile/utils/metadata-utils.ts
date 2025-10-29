@@ -34,7 +34,7 @@ export function getBiomedicalMetadata(
     ) as Array<LevelFallback>;
 
     imageMetadata.axes = [];
-    imageMetadata.channels = new Map();
+    imageMetadata.channels = new Map<string, Channel[]>();
 
     for (const level of levels) {
       const axes = [...level.axes];

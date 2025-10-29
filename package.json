@@ -2,10 +2,13 @@
   "name": "@tiledb-inc/viz",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "yarn@3.6.3",
   "license": "MIT",
+  "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/common",
+    "packages/components",
+    "packages/core",
+    "packages/react"
   ],
   "repository": {
     "type": "git",
@@ -16,43 +19,42 @@
     "email": "support@tiledb.com"
   },
   "scripts": {
-    "test": "yarn workspace @tiledb-inc/viz-core test",
-    "build": "yarn workspace @tiledb-inc/viz-common build && yarn workspace @tiledb-inc/viz-components build && yarn workspace @tiledb-inc/viz-core build && yarn workspace @tiledb-inc/viz-react build",
-    "g:tsc": "cd $INIT_CWD && tsc",
+    "test": "npm run test -w packages/core",
+    "build": "npm run build -w packages/common && npm run build -w packages/components && npm run build -w packages/core && npm run build -w packages/react",
+    "build:common": "npm run build -w packages/common",
+    "build:components": "npm run build -w packages/components",
+    "build:core": "npm run build -w packages/core",
+    "build:react": "npm run build -w packages/react",
     "typedoc": "typedoc --plugin typedoc-plugin-markdown --tsconfig ./tsconfig.json",
     "quarto": "quarto render ./quarto/ --fail-if-warnings",
-    "g:eslint": "cd $INIT_CWD && eslint",
-    "g:parcel": "cd $INIT_CWD && parcel",
-    "storybook": "yarn workspace @tiledb-inc/viz-react storybook --ci",
-    "lint": "yarn workspace @tiledb-inc/viz-core lint && yarn workspace @tiledb-inc/viz-react lint",
-    "lint:fix": "yarn workspace @tiledb-inc/viz-common lint:fix && yarn workspace @tiledb-inc/viz-core lint:fix && yarn workspace @tiledb-inc/viz-react lint:fix"
+    "storybook": "npm run storybook -w packages/react",
+    "lint": "npm run lint -w packages/common && npm run lint -w packages/core && npm run lint -w packages/react",
+    "lint:common": "npm run lint -w packages/common",
+    "lint:core": "npm run lint -w packages/core",
+    "lint:react": "npm run lint -w packages/react",
+    "lint:fix": "npm run lint:fix -w packages/common && npm run lint:fix -w packages/core && npm run lint:fix -w packages/react"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.13",
-    "@parcel/optimizer-data-url": "2.9.3",
-    "@parcel/packager-ts": "2.9.3",
-    "@parcel/transformer-inline-string": "2.9.3",
-    "@parcel/transformer-typescript-types": "2.9.3",
-    "@types/jest": "^29.0.0",
-    "@types/node": "^18.11.18",
-    "@typescript-eslint/eslint-plugin": "^5.33.1",
-    "@typescript-eslint/parser": "^5.33.1",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^28.1.3",
-    "jest-environment-jsdom": "^29.0.1",
-    "parcel": "2.9.3",
-    "prettier": "^2.7.1",
-    "sass": "^1.64.1",
-    "ts-node": "^10.9.1",
-    "typedoc": "^0.23.24",
-    "typedoc-plugin-markdown": "^3.14.0",
-    "typescript": "4.7.4",
-    "vite-plugin-dts": "^3.3.1"
+    "@babel/core": "^7.28.4",
+    "@eslint/js": "^9.37.0",
+    "@types/node": "^24.7.0",
+    "eslint": "9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "sass": "^1.93.2",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.28.13",
+    "typedoc-plugin-markdown": "^4.9.0",
+    "typescript": "5.9.2",
+    "typescript-eslint": "^8.46.0",
+    "vite": "7.1.10",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "3.2.4"
   },
   "dependencies": {
-    "node-sass": "^9.0.0",
-    "svelte-preprocess": "^5.0.4"
+    "@tiledb-inc/tiledb-cloud": "github:TileDB-Inc/TileDB-Cloud-JS#xan/bundle-fix"
   }
 }

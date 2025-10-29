@@ -45,6 +45,7 @@ import {
 import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
 import { PickingTool } from './utils/picking-tool';
+import { splitEventTarget } from './utils/helpers';
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -115,19 +116,30 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     light.specular = new Color3(0.1, 0.1, 0.1);
     light.intensity = 1;
 
-    let imageNamespace = this.options.namespace;
+    let imageWorkspace = this.options.workspace;
+    let imageTeamspace = this.options.teamspace;
     let imageArrayID: string | undefined = undefined;
     let imageGroupID: string | undefined = undefined;
 
     if (this.options.arrayID) {
-      ({ namespace: imageNamespace, id: imageArrayID } = tileDBUriParser(
+      ({
+        workspace: imageWorkspace,
+        teamspace: imageTeamspace,
+        id: imageArrayID
+      } = tileDBUriParser(
         this.options.arrayID,
-        this.options.namespace
+        this.options.workspace,
+        this.options.teamspace
       ));
     } else if (this.options.groupID) {
-      ({ namespace: imageNamespace, id: imageGroupID } = tileDBUriParser(
+      ({
+        workspace: imageWorkspace,
+        teamspace: imageTeamspace,
+        id: imageGroupID
+      } = tileDBUriParser(
         this.options.groupID,
-        this.options.namespace
+        this.options.workspace,
+        this.options.teamspace
       ));
     }
 
@@ -136,7 +148,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       {
         token: this.options.token,
         tiledbEnv: this.options.tiledbEnv,
-        namespace: imageNamespace,
+        workspace: imageWorkspace,
+        teamspace: imageTeamspace,
         arrayID: imageArrayID,
         groupID: imageGroupID
       },
@@ -217,7 +230,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.groupAssets = await getGroupContents({
       token: this.options.token,
       tiledbEnv: this.options.tiledbEnv,
-      namespace: this.options.namespace,
+      workspace: this.options.workspace,
+      teamspace: this.options.teamspace,
       baseGroup: this.options.baseGroup
     });
 
@@ -235,14 +249,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           }`,
           true
         );
-        const { namespace, id } = tileDBUriParser(
+        const { workspace, teamspace, id } = tileDBUriParser(
           geometryArrayID,
-          this.options.namespace
+          this.options.workspace,
+          this.options.teamspace
         );
 
         const metadata = await getGeometryMetadata(
           {
-            namespace: namespace,
+            workspace: workspace,
+            teamspace: teamspace,
             token: this.options.token,
             tiledbEnv: this.options.tiledbEnv,
             geometryArrayID: id
@@ -255,7 +271,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.assetManagers.push({
           manager: new GeometryManager(this.scene, this.workerPool, {
             arrayID: id,
-            namespace: namespace,
+            workspace: workspace,
+            teamspace: teamspace,
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
@@ -279,14 +296,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
           }`,
           true
         );
-        const { namespace, id } = tileDBUriParser(
+        const { workspace, teamspace, id } = tileDBUriParser(
           pointGroupID,
-          this.options.namespace
+          this.options.workspace,
+          this.options.teamspace
         );
 
         const metadata = await getPointCloudMetadata(
           {
-            namespace: namespace,
+            workspace: workspace,
+            teamspace: teamspace,
             token: this.options.token,
             tiledbEnv: this.options.tiledbEnv,
             pointGroupID: id
@@ -298,7 +317,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         this.pointMetadata.set(id, metadata);
         this.assetManagers.push({
           manager: new PointManager(this.scene, this.workerPool, {
-            namespace: namespace,
+            workspace: workspace,
+            teamspace: teamspace,
             metadata: metadata,
             sceneOptions: this.sceneOptions
           }),
@@ -347,8 +367,12 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.rootElement,
       this.groupAssets,
       () => this.clearCache(),
-      (namespace: string, groupID?: string, arrayID?: string) =>
-        this.onAssetSelection(namespace, groupID, arrayID)
+      (
+        workspace: string,
+        teamspace: string,
+        groupID?: string,
+        arrayID?: string
+      ) => this.onAssetSelection(workspace, teamspace, groupID, arrayID)
     );
 
     this.pickingTool = new PickingTool(this.scene, this.sceneOptions);
@@ -442,7 +466,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private onAssetSelection(
-    namespace: string,
+    workspace: string,
+    teamspace: string,
     groupID?: string,
     arrayID?: string
   ) {
@@ -450,7 +475,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.clearScene();
     this.options.groupID = groupID;
     this.options.arrayID = arrayID;
-    this.options.namespace = namespace;
+    this.options.workspace = workspace;
+    this.options.teamspace = teamspace;
     this.initializeScene().then(() =>
       this.scene.getEngine().runRenderLoop(() => this.scene.render())
     );
@@ -555,7 +581,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private _sliderHandler(event: CustomEvent<GUIEvent<SliderProps>>) {
-    const target = event.detail.target.split('_');
+    const target = splitEventTarget(event.detail.target);
 
     if (target[0] !== 'engine') {
       return;

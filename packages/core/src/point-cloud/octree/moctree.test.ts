@@ -8,6 +8,7 @@ import {
   MoctreeBlock
 } from './moctree';
 import { buffersToTransformedResult } from '../utils/buffersToSparseResult';
+import { describe, test, expect } from 'vitest';
 
 describe('moctree tests', () => {
   test('morton ordering', () => {

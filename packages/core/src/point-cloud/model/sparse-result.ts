@@ -1,4 +1,4 @@
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/lib/v1';
+import { ModelArray } from '@tiledb-inc/tiledb-cloud/v3';
 import { MoctreeBlock } from '../octree';
 
 interface SparsePoint {
@@ -49,9 +49,10 @@ interface WorkerResponse {
 }
 
 interface InitialRequest extends WorkerRequest {
-  namespace: string;
+  workspace: string;
+  teamspace: string;
   groupName: string;
-  arraySchema: ArraySchema;
+  array: ModelArray;
   tiledbEnv: string;
   token: string;
   translateX: number;

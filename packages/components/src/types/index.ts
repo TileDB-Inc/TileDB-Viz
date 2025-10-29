@@ -1,4 +1,4 @@
-import { GUIChannelProperty, GUIDualSliderProperty, GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
+import type { GUIChannelProperty, GUIDualSliderProperty, GUIFeatureProperty, GUIProperty, GUISelectProperty, GUISliderProperty, GUIVectorProperty } from "@tiledb-inc/viz-common";
 
 export type Theme = 'system' | 'light' | 'dark';
 
