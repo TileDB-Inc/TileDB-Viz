@@ -5,29 +5,16 @@ on:
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Set Node.js 22.x
+        uses: actions/setup-node@v6
         with:
-          fetch-depth: 0
-      # Setup .npmrc file to publish to npm
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: set version 4.9.2
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: --version
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: install
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: build
-      - uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: config set npmAuthToken ${{ secrets.NPM_TOKEN }}
+      - run: npm ci
+      - run: npm run build
       # Publish packages
       - run: ./scripts/publish.sh common && ./scripts/publish.sh components && ./scripts/publish.sh core && ./scripts/publish.sh react
