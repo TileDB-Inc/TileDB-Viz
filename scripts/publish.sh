@@ -10,12 +10,12 @@ jq ".version=\"$GIT_TAG_VERSION\"" package.json > $TMP_PACKAGE_JSON && mv $TMP_P
 if [[ $GIT_TAG_VERSION == *"beta"* ]];
 then
 echo "Publishing beta version $GIT_TAG_VERSION";
-yarn npm publish --access public --tag beta
+npm publish --access public --tag beta
 elif [[ $GIT_TAG_VERSION == *"alpha"* ]];
 then
 echo "Publishing alpha version $GIT_TAG_VERSION";
-yarn npm publish --access public --tag alpha
+npm publish --access public --tag alpha
 else
 echo "Publishing new version $GIT_TAG_VERSION";
-yarn npm publish --access public
+npm publish --access public
 fi
