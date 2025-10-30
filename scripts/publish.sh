@@ -6,7 +6,7 @@ export TMP_PACKAGE_JSON=/tmp/package_$PACKAGE_FOLDER.json
 echo Publishing @tiledb-inc/viz-$PACKAGE_FOLDER@$GIT_TAG_VERSION
 cd packages/$PACKAGE_FOLDER
 # Update package.json's version with the tag from the release
-jq ".version=\"$GIT_TAG_VERSION\"" package.json > $TMP_PACKAGE_JSON && mv $TMP_PACKAGE_JSON package.json
+jq --arg GIT_TAG_VERSION "$GIT_TAG_VERSION" '.version=$GIT_TAG_VERSION | if .dependencies."@tiledb-inc/viz-core"? then .dependencies."@tiledb-inc/viz-core"=$GIT_TAG_VERSION else . end | if .dependencies."@tiledb-inc/viz-components"? then .dependencies."@tiledb-inc/viz-components"=$GIT_TAG_VERSION else . end | if .dependencies."@tiledb-inc/viz-common"? then .dependencies."@tiledb-inc/viz-common"=$GIT_TAG_VERSION else . end' package.json > $TMP_PACKAGE_JSON && mv $TMP_PACKAGE_JSON package.json
 if [[ $GIT_TAG_VERSION == *"beta"* ]];
 then
 echo "Publishing beta version $GIT_TAG_VERSION";
