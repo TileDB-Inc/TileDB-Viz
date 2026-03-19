@@ -15,7 +15,7 @@ export const TileImageVisualization: React.FC<
 > = props => {
   const { className, ...rest } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBTileImageVisualization>();
+  const instanceRef = React.useRef<TileDBTileImageVisualization | undefined>(undefined);
 
   React.useEffect(() => {
     if (instanceRef.current) {

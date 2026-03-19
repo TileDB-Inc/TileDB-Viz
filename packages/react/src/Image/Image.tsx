@@ -15,7 +15,7 @@ export const ImageVisualization: React.FC<
 > = props => {
   const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBImageVisualization>();
+  const instanceRef = React.useRef<TileDBImageVisualization | undefined>(undefined);
 
   React.useEffect(() => {
     if (instanceRef.current) {
