@@ -18,34 +18,24 @@ export const TileImageVisualization: React.FC<
   const instanceRef = React.useRef<TileDBTileImageVisualization | undefined>(undefined);
 
   React.useEffect(() => {
-    if (instanceRef.current) {
-      /**
-       * Destroy current canvas on prop change
-       */
-      instanceRef.current?.destroy();
+    if (!rootDivElementRef.current) {
+      return;
     }
-    if (rootDivElementRef.current) {
-      /**
-       * Create visualization instance
-       */
-      instanceRef.current = new TileDBTileImageVisualization({
-        ...rest,
-        rootElement: rootDivElementRef.current
-      });
 
-      /**
-       * Render canvas
-       */
-      instanceRef.current?.render();
+    instanceRef.current?.destroy();
 
-      /**
-       * Destroy canvas on unmount
-       */
-      return () => {
-        instanceRef.current?.destroy();
-      };
-    }
-  }, [props]);
+    const instance = new TileDBTileImageVisualization({
+      ...rest,
+      rootElement: rootDivElementRef.current
+    });
+    instanceRef.current = instance;
+    instance.render();
+
+    return () => {
+      instance.destroy();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, Object.values(rest));
 
   return (
     <div

@@ -2,7 +2,7 @@
 packages/**/lib
 
 # env files
-**/.env.ts
+**/dev-env.ts
 
 # Test coverage
 packages/**/coverage

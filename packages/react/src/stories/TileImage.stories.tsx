@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { TileImageVisualization } from '../TileImage';
-import { TOKEN, TILEDB_ENDPOINT } from '../.env';
+import { TOKEN, TILEDB_ENDPOINT } from '../dev-env';
 
 const meta = {
   title: 'Tile Renderer',

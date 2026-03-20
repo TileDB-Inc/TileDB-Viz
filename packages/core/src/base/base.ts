@@ -48,6 +48,7 @@ export class TileDBVisualization {
   inspector?: boolean;
   rootElement: HTMLElement;
   engineAPI: 'WEBGL' | 'WEBGPU';
+  private destroyed = false;
 
   constructor(options: TileDBVisualizationBaseOptions) {
     this.width = options.width || '100%';
@@ -77,6 +78,7 @@ export class TileDBVisualization {
   }
 
   destroy() {
+    this.destroyed = true;
     this.engine?.dispose();
     this.canvas?.remove();
     pubSub.removeAllListeners(RERENDER_EVT);
@@ -125,7 +127,10 @@ export class TileDBVisualization {
     this.rootElement.appendChild(wrapperDiv);
     this.rootElement.appendChild(loadingScreen);
 
+    this.destroyed = false;
     waitUntilElementVisible('viewer-loading-screen', 1000, 100).then(loaded => {
+      if (this.destroyed) return;
+
       if (!loaded) {
         // HTML element failed to load. Remove it and emit a warning
         console.warn('Loading screen component failed to load');
@@ -148,6 +153,10 @@ export class TileDBVisualization {
         });
 
         this.createScene().then(scene => {
+          if (this.destroyed) {
+            engine.dispose();
+            return;
+          }
           engine.runRenderLoop(() => {
             scene.render();
           });
@@ -157,6 +166,11 @@ export class TileDBVisualization {
         const engine = this.engine as WebGPUEngine;
 
         engine.initAsync().then(() => {
+          if (this.destroyed) {
+            engine.dispose();
+            return;
+          }
+
           this.resizeCanvas();
 
           // window resize event handler
@@ -165,6 +179,10 @@ export class TileDBVisualization {
           });
 
           this.createScene().then(scene => {
+            if (this.destroyed) {
+              engine.dispose();
+              return;
+            }
             engine.runRenderLoop(() => {
               scene.render();
             });
