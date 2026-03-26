@@ -15,7 +15,7 @@ export const MbrsVisualization: React.FC<
 > = props => {
   const { className } = props;
   const rootDivElementRef = React.useRef<HTMLDivElement>(null);
-  const instanceRef = React.useRef<TileDBMBRSVisualization>();
+  const instanceRef = React.useRef<TileDBMBRSVisualization | undefined>(undefined);
 
   React.useEffect(() => {
     if (instanceRef.current) {
