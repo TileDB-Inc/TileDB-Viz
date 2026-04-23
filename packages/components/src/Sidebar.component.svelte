@@ -75,7 +75,7 @@
     box-shadow: var(--viewer-shadow-small);
     overflow-y: auto;
     padding: 16px 10px;
-    max-height: calc(100vh - 32px);
+    max-height: calc(100% - 32px);
 		direction: ltr;
   }
 
