@@ -3,7 +3,8 @@ import {
   Channel,
   ImageLoaderMetadata,
   ImageMetadata,
-  SOMAMultiscaleImageAssetMetadata
+  SOMAMultiscaleImageAssetMetadata,
+  TileDBImageMetadata
 } from '../../tile';
 import { getQueryDataFromCache, writeToCache } from '../cache';
 import { AssetOptions, Dimension, Domain } from '../../types';
@@ -23,7 +24,7 @@ export async function getSOMAMultiscaleImageMetadata(
   metadata: SOMAMultiscaleImageAssetMetadata,
   uris: string[],
   config?: ImageConfig
-): Promise<ImageMetadata> {
+): Promise<TileDBImageMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})

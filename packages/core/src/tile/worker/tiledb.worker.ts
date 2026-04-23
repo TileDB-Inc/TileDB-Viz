@@ -14,6 +14,7 @@ import Client from '@tiledb-inc/tiledb-cloud';
 import { geometryInfoRequest, geometryRequest } from './loaders/geometryLoader';
 import { pointInfoRequest, pointRequest } from './loaders/pointLoader';
 import { imageRequest } from './loaders/imageLoader';
+import { svsImageRequest } from './loaders/svsImageLoader';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -29,6 +30,24 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
     return;
   } else {
     switch (event.data.type) {
+      case RequestType.SVSIMAGE:
+        cancelSignal = false;
+        currentId = event.data.id;
+        tokenSource = CancelToken.source();
+
+        svsImageRequest(
+          event.data.id,
+          tokenSource,
+          event.data.payload
+        ).catch(_ => {
+          self.postMessage({
+            id: event.data.id,
+            type: RequestType.CANCEL,
+            response: { nonce: event.data.payload.nonce }
+          } as WorkerResponse);
+        });
+
+        break;
       case RequestType.IMAGE:
         cancelSignal = false;
         currentId = event.data.id;

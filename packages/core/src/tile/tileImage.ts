@@ -46,6 +46,13 @@ import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
 import { TileManager } from './model/3d/3DTileManager';
 import { PickingTool } from './utils/picking-tool';
 import { splitEventTarget } from './utils/helpers';
+import axios from 'axios';
+import { AssetFactoryContext, getAssetFactory } from './factories';
+
+function setupAxios(): void {
+  axios.defaults.withCredentials = true;
+  axios.defaults.timeout = 120000;
+}
 
 export class TileDBTileImageVisualization extends TileDBVisualization {
   private scene!: Scene;
@@ -65,6 +72,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   private sceneOptions: SceneOptions;
   private groupAssets: AssetEntry[];
   private pickingTool?: PickingTool;
+  private cacheKeys: string[];
 
   constructor(options: TileDBTileImageOptions) {
     super(options);
@@ -90,6 +98,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.geometryMetadata = new Map();
     this.pointMetadata = new Map();
     this.assetManagers = [];
+    this.cacheKeys = [];
     this.frameDetails = {
       zoom: 0.25,
       level: -2,
@@ -107,6 +116,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private async initializeScene() {
+    setupAxios();
+    
     const light = new DirectionalLight(
       'Global Light',
       new Vector3(0.5, -1, 0.5),
@@ -116,88 +127,129 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     light.specular = new Color3(0.1, 0.1, 0.1);
     light.intensity = 1;
 
-    let imageWorkspace = this.options.workspace;
-    let imageTeamspace = this.options.teamspace;
-    let imageArrayID: string | undefined = undefined;
-    let imageGroupID: string | undefined = undefined;
+    // let imageWorkspace = this.options.workspace;
+    // let imageTeamspace = this.options.teamspace;
+    // let imageArrayID: string | undefined = undefined;
+    // let imageGroupID: string | undefined = undefined;
 
-    if (this.options.arrayID) {
-      ({
-        workspace: imageWorkspace,
-        teamspace: imageTeamspace,
-        id: imageArrayID
-      } = tileDBUriParser(
-        this.options.arrayID,
-        this.options.workspace,
-        this.options.teamspace
-      ));
-    } else if (this.options.groupID) {
-      ({
-        workspace: imageWorkspace,
-        teamspace: imageTeamspace,
-        id: imageGroupID
-      } = tileDBUriParser(
-        this.options.groupID,
-        this.options.workspace,
-        this.options.teamspace
-      ));
-    }
+    const ctx: AssetFactoryContext = {
+      scene: this.scene,
+      workerPool: this.workerPool,
+      sceneOptions: this.sceneOptions,
+      workspace: this.options.workspace,
+      teamspace: this.options.teamspace,
+      token: this.options.token,
+      tiledbEnv: this.options.tiledbEnv
+    };
 
-    this.updateLoadingScreen('Loading image asset metadata', true);
-    this.imageMetadata = await getImageMetadata(
-      {
-        token: this.options.token,
-        tiledbEnv: this.options.tiledbEnv,
-        workspace: imageWorkspace,
-        teamspace: imageTeamspace,
-        arrayID: imageArrayID,
-        groupID: imageGroupID
-      },
-      this.options.sceneConfig?.imageConfigs?.[0]
-    );
+    for (const [index, asset] of (this.options.assets ?? []).entries()) {
+      this.updateLoadingScreen(
+        `Loading asset ${index + 1} of ${(this.options.assets ?? []).length}`,
+        true
+      );
 
-    if (this.options.defaultChannels) {
-      const defaultAttribute = this.imageMetadata.attributes.filter(
-        x => x.visible
-      )[0].name;
-
-      for (const entry of this.imageMetadata.channels.get(defaultAttribute) ??
-        []) {
-        entry.visible = false;
+      const factory = getAssetFactory(asset.type);
+      if (!factory) {
+        console.warn(
+          `No factory registered for asset type: ${asset.type}`
+        );
+        continue;
       }
 
-      for (const entry of this.options.defaultChannels) {
-        const channel = this.imageMetadata.channels
-          .get(defaultAttribute)
-          ?.at(entry.index);
+      try {
+        const result = await factory(asset, ctx);
+        this.assetManagers.push({
+          manager: result.manager,
+          pickable: result.pickable,
+          minimap: result.minimap
+        });
 
-        if (!channel) {
-          continue;
+        if (result.cacheKeys) {
+          this.cacheKeys.push(...result.cacheKeys);
+          await initializeCacheDB(result.cacheKeys);
         }
-
-        channel.visible = true;
-        channel.intensity = entry.intensity ?? channel.intensity;
-        channel.color = entry.color
-          ? {
-              red: entry.color.r,
-              green: entry.color.g,
-              blue: entry.color.b,
-              alpha: 1.0
-            }
-          : channel.color;
+      } catch (e) {
+        console.warn(`Failed to load asset ${index}:`, e);
       }
     }
 
-    this.assetManagers.push({
-      manager: new ImageManager(this.scene, this.workerPool, {
-        metadata: this.imageMetadata,
-        sceneOptions: this.sceneOptions
-      }),
-      pickable: false,
-      minimap: true
-    });
+    // if (this.options.arrayID) {
+    //   ({
+    //     workspace: imageWorkspace,
+    //     teamspace: imageTeamspace,
+    //     id: imageArrayID
+    //   } = tileDBUriParser(
+    //     this.options.arrayID,
+    //     this.options.workspace,
+    //     this.options.teamspace
+    //   ));
+    // } else if (this.options.groupID) {
+    //   ({
+    //     workspace: imageWorkspace,
+    //     teamspace: imageTeamspace,
+    //     id: imageGroupID
+    //   } = tileDBUriParser(
+    //     this.options.groupID,
+    //     this.options.workspace,
+    //     this.options.teamspace
+    //   ));
+    // }
 
-    await initializeCacheDB(this.imageMetadata.uris);
+    // this.updateLoadingScreen('Loading image asset metadata', true);
+    // this.imageMetadata = await getImageMetadata(
+    //   {
+    //     token: this.options.token,
+    //     tiledbEnv: this.options.tiledbEnv,
+    //     workspace: imageWorkspace,
+    //     teamspace: imageTeamspace,
+    //     arrayID: imageArrayID,
+    //     groupID: imageGroupID
+    //   },
+    //   this.options.sceneConfig?.imageConfigs?.[0]
+    // );
+
+    // if (this.options.defaultChannels) {
+    //   const defaultAttribute = this.imageMetadata.attributes.filter(
+    //     x => x.visible
+    //   )[0].name;
+
+    //   for (const entry of this.imageMetadata.channels.get(defaultAttribute) ??
+    //     []) {
+    //     entry.visible = false;
+    //   }
+
+    //   for (const entry of this.options.defaultChannels) {
+    //     const channel = this.imageMetadata.channels
+    //       .get(defaultAttribute)
+    //       ?.at(entry.index);
+
+    //     if (!channel) {
+    //       continue;
+    //     }
+
+    //     channel.visible = true;
+    //     channel.intensity = entry.intensity ?? channel.intensity;
+    //     channel.color = entry.color
+    //       ? {
+    //           red: entry.color.r,
+    //           green: entry.color.g,
+    //           blue: entry.color.b,
+    //           alpha: 1.0
+    //         }
+    //       : channel.color;
+    //   }
+    // }
+
+    // this.assetManagers.push({
+    //   manager: new ImageManager(this.scene, this.workerPool, {
+    //     metadata: this.imageMetadata,
+    //     sceneOptions: this.sceneOptions
+    //   }),
+    //   pickable: false,
+    //   minimap: true
+    // });
+
+    // await initializeCacheDB(this.imageMetadata.uris);
 
     // Draw image tileset
     // const explore = (tile: ImageTile) => {
@@ -216,16 +268,16 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     // explore(this.metadata.root);
 
     // Everthing should be transformed to the image coordinate system if it exists
-    this.sceneOptions.crs = this.imageMetadata.crs;
+    // this.sceneOptions.crs = this.imageMetadata.crs;
 
     // The transformation matrix is defined at base level of the image
     // The scene units are bases on the smallest level se we need to adjust the scaling coefficients
-    this.sceneOptions.transformation = this.imageMetadata.pixelToCRS
-      ? inv(this.imageMetadata.pixelToCRS)
-      : undefined;
-    this.sceneOptions.extents.encapsulateBoundingInfo(
-      this.imageMetadata.root.boundingInfo
-    );
+    // this.sceneOptions.transformation = this.imageMetadata.pixelToCRS
+    //   ? inv(this.imageMetadata.pixelToCRS)
+    //   : undefined;
+    // this.sceneOptions.extents.encapsulateBoundingInfo(
+    //   this.imageMetadata.root.boundingInfo
+    // );
 
     this.groupAssets = await getGroupContents({
       token: this.options.token,
@@ -422,7 +474,8 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
   }
 
   private updateEngineInfo() {
-    const uris = [...this.imageMetadata.uris];
+    // const uris = [...this.imageMetadata.uris];
+    const uris = [];
     for (const metadata of this.pointMetadata.values()) {
       uris.push(...metadata.uris);
     }
@@ -484,7 +537,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
   private clearCache() {
     // Clear image tiles
-    clearMultiCache(this.imageMetadata.uris);
+    // clearMultiCache(this.imageMetadata.uris);
     clearMultiCache(
       [this.options.arrayID ?? this.options.groupID ?? ''].map(
         x => x.split('/').at(-1)!
@@ -513,7 +566,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     this.cameraManager.initializeGUIProperties();
     const projections: { value: number; name: string }[] = [];
 
-    if (this.imageMetadata.crs) {
+    if (this.imageMetadata?.crs) {
       // Type definitions are incorrect/incomplete for proj4
       const projection = proj4.Proj(this.imageMetadata.crs) as any;
       projections.push({ value: 0, name: projection.name ?? projection.title });

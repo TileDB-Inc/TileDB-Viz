@@ -8,7 +8,8 @@ import {
   DataRequest,
   ImageMetadata,
   ImageResponse,
-  RequestType
+  RequestType,
+  TileDBImageMetadata
 } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Manager } from '../manager';
@@ -31,6 +32,7 @@ import { Tile } from '../tile';
 import { ImagePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { ImageFetcher, ImageFetchOptions } from './imageFetcher';
 import { splitEventTarget } from '../../utils/helpers';
+import { Fetcher } from '../fetcher';
 
 interface ImageOptions {
   metadata: ImageMetadata;
@@ -53,12 +55,13 @@ export class ImageManager extends Manager<
   constructor(
     scene: Scene,
     workerPool: WorkerPool,
-    imageOptions: ImageOptions
+    imageOptions: ImageOptions,
+    fetcher?: Fetcher<Tile<ImageDataContent, ImageContent>, any>
   ) {
     super(
       imageOptions.metadata.root,
       scene,
-      new ImageFetcher(workerPool, imageOptions.metadata)
+      fetcher ?? new ImageFetcher(workerPool, imageOptions.metadata as TileDBImageMetadata)
     );
 
     this.workerPool = workerPool;

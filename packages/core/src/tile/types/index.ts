@@ -8,7 +8,7 @@ import {
   PointDataContent,
   ImageDataContent
 } from '../../types';
-import { SceneConfig } from '@tiledb-inc/viz-common';
+import { AssetEntry, ImageConfig, SceneConfig } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
@@ -37,6 +37,21 @@ export interface TileDBTileImageOptions extends TileDBVisualizationBaseOptions {
   features?: Feature[];
   sceneConfig?: SceneConfig;
   tileUris?: string[];
+
+  /**
+   * Asset definitions. Each entry specifies an asset type and its options.
+   */
+  assets?: AssetEntry[];
+}
+
+export interface ImageAsset {
+  uri: string;
+  defaultChannels?: {
+    index: number;
+    color?: { r: number; g: number; b: number };
+    intensity?: number;
+  }[];
+  config?: ImageConfig;
 }
 
 export interface Channel {
@@ -131,10 +146,6 @@ export type ImageMetadata = {
    */
   name: string;
 
-  workspace: string;
-
-  teamspace: string;
-
   /**
    * The root of the image tileset
    */
@@ -156,11 +167,6 @@ export type ImageMetadata = {
   extraDimensions: Dimension[];
 
   /**
-   *
-   */
-  uris: string[];
-
-  /**
    * The coordinate system of the image
    */
   crs?: string;
@@ -169,11 +175,35 @@ export type ImageMetadata = {
    * An affine matrix to convert from pixel coordinates back to physical coordinates
    */
   pixelToCRS?: Matrix;
+};
+
+export type TileDBImageMetadata = ImageMetadata & {
+  /**
+   * The TileDB workspace the image belongs to
+   */
+  workspace: string;
 
   /**
-   * Cnfiguration options for loading the tiles
+   * The TileDB teamspace the image belongs to
+   */
+  teamspace: string;
+
+  /**
+   * The URIs for each image level
+   */
+  uris: string[];
+
+  /**
+   * Configuration options for loading the tiles
    */
   loaderMetadata?: Map<string, ImageLoaderMetadata>;
+};
+
+export type SVSImageMetadata = ImageMetadata & {
+  /**
+   * The URI of the SVS image
+   */
+  uri: string;
 };
 
 export type GeometryMetadata = {
@@ -467,6 +497,7 @@ export const enum RequestType {
   POINT = 4,
   POINT_INFO = 5,
   INFO = 6,
+  SVSIMAGE = 7,
 
   INITIALIZE = 100
 }
@@ -481,6 +512,29 @@ export interface InitializationPayload {
   token: string;
   basePath?: string;
 }
+
+export type SVSImagePayload = {
+  buffer: Uint8ClampedArray;
+
+  width: number;
+
+  height: number;
+
+  /**
+   * The [X, Y] index of the image tile used identifying the tile in the cache.
+   */
+  index: number[];
+
+  /**
+   * The ranges of channels that should be loaded.
+   */
+  channelRanges: number[];
+
+  /**
+   * A nonce value to destinguish between different requests for the same tile
+   */
+  nonce: number;
+};
 
 export type TileDBPayload = {
   /**

@@ -18,7 +18,8 @@ import {
   ImageLoaderMetadata,
   GeometryMetadata,
   ImageAssetMetadata,
-  SOMAMultiscaleImageAssetMetadataRaw
+  SOMAMultiscaleImageAssetMetadataRaw,
+  TileDBImageMetadata
 } from '../../tile/types';
 import { Datatype, ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/v3';
 import type { GroupContents, ArrayInfo } from '@tiledb-inc/tiledb-cloud/v1';
@@ -178,7 +179,7 @@ export function getImageDomain(
 export async function getImageMetadata(
   options: AssetOptions,
   config?: ImageConfig
-): Promise<ImageMetadata> {
+): Promise<TileDBImageMetadata> {
   const client = getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
@@ -370,7 +371,7 @@ export async function getImageMetadata(
     crs: getCRS(assetMetadata),
     pixelToCRS: getTransformationMatrix(assetMetadata, scale),
     loaderMetadata: loaderMetadata
-  } as ImageMetadata;
+  } as TileDBImageMetadata;
 }
 
 async function getArrayMetadata(
@@ -887,7 +888,7 @@ function constructGeometryTileset(
   return root;
 }
 
-function getBoundingInfo(
+export function getBoundingInfo(
   extent: number[],
   converter?: proj4.Converter,
   transformation?: Matrix

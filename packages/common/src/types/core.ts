@@ -270,3 +270,31 @@ export enum TilingScheme {
 }
 
 //#endregion
+
+//#region Asset Entry Types
+
+export enum AssetType {
+  IMAGE = 'IMAGE',
+  SVS_IMAGE = 'SVS_IMAGE',
+  GEOMETRY = 'GEOMETRY',
+  POINT_CLOUD = 'POINT_CLOUD',
+  TILESET_3D = 'TILESET_3D',
+  LOCAL_POINT_CLOUD = 'LOCAL_POINT_CLOUD'
+}
+
+export type AssetEntry<T = unknown> = {
+  type: AssetType;
+  options: T;
+};
+
+export type ImageAssetOptions = ImageConfig & {
+  uri: string;
+  token?: string; 
+  defaultChannels?: {
+    index: number;
+    color?: { r: number; g: number; b: number };
+    intensity?: number;
+  }[];
+};
+
+//#endregion

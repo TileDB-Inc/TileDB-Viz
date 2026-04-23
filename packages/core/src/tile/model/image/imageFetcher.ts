@@ -3,7 +3,7 @@ import { ImageDataContent } from '../../../types';
 import { BaseFetcherOptions, Fetcher } from '../fetcher';
 import { Tile } from '../tile';
 import { ImageContent } from './imageContent';
-import { ImageMetadata, ImagePayload, RequestType } from '../../types';
+import { ImageMetadata, ImagePayload, RequestType, TileDBImageMetadata } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Attribute } from '@tiledb-inc/viz-common';
 
@@ -17,9 +17,9 @@ export class ImageFetcher extends Fetcher<
   ImageFetchOptions
 > {
   private workerPool: WorkerPool;
-  private metadata: ImageMetadata;
+  private metadata: TileDBImageMetadata;
 
-  constructor(workerPool: WorkerPool, metadata: ImageMetadata) {
+  constructor(workerPool: WorkerPool, metadata: TileDBImageMetadata) {
     super();
 
     this.workerPool = workerPool;
