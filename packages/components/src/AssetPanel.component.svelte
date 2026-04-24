@@ -332,7 +332,7 @@
     top: 0;
     right: 0;
     width: 48px;
-    height: 100vh;
+    height: 100%;
     background: var(--viewer-background-primary);
     display: flex;
     flex-direction: column;
