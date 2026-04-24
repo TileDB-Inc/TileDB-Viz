@@ -31,7 +31,7 @@ registerAssetFactory(
             headers: { Authorization: `Bearer ${opts.token}` }
         }).then(response => response.arrayBuffer()).then(buffer => new File([buffer as BlobPart], "image.svs")).then(file => openslide.open(file)) : await openslide.open(opts.uri);
         const extent = await image.getLevelDimensions(0);
-        const extent_max = await image.getLevelDimensions(await image.getLevelCount());
+        const extent_max = await image.getLevelDimensions(await image.getLevelCount() - 1);
         ctx.sceneOptions.extents.encapsulateBoundingInfo(
             new BoundingInfo(new Vector3(0, 0, 0), new Vector3(extent[0], extent[1], 0))
         );
@@ -105,6 +105,10 @@ registerAssetFactory(
                 [0, 0, 0, 1]
             ] as MathArray)
         };
+
+        ctx.sceneOptions.extents.encapsulateBoundingInfo(
+            metadata.root.boundingInfo
+        );
 
         return {
             manager: new ImageManager(ctx.scene, ctx.workerPool, {
