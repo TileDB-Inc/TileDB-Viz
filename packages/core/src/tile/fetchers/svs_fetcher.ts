@@ -32,8 +32,9 @@ export class SVSImageFetcher extends Fetcher<
     const level = Number.parseInt(tile.content[0].uri);
     const width = region[0].max - region[0].min;
     const height = region[1].max - region[1].min;
+    this.image.getLevelDownsample(level) 
 
-    this.image.readRegion(region[0].min, region[1].min, level, width, height).then(buffer => {
+    this.image.getLevelDownsample(level).then(factor => this.image.readRegion(region[0].min * Math.round(factor), region[1].min * Math.round(factor), level, width, height)).then(buffer => {
       this.workerPool.postMessage({
             type: RequestType.SVSIMAGE,
             id: tile.id,
@@ -113,7 +114,7 @@ export function constructImageTileset(
         const tile = new Tile<ImageDataContent, ImageContent>();
         tile.boundingInfo = getBoundingInfo(physicalExtent);
         tile.content.push({
-          uri: `${idx}`,
+          uri: `${levels.length - idx - 1}`,
           region: [
             {
               dimension: 'x',

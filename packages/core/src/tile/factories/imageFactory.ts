@@ -30,8 +30,8 @@ registerAssetFactory(
         const image = opts.token ? await fetch(opts.uri, {
             headers: { Authorization: `Bearer ${opts.token}` }
         }).then(response => response.arrayBuffer()).then(buffer => new File([buffer as BlobPart], "image.svs")).then(file => openslide.open(file)) : await openslide.open(opts.uri);
-        const extent = await image.getLevelDimensions(0);
-        const extent_max = await image.getLevelDimensions(await image.getLevelCount() - 1);
+        const extent = await image.getLevelDimensions(await image.getLevelCount() - 1);
+        const extent_max = await image.getLevelDimensions(0);
         ctx.sceneOptions.extents.encapsulateBoundingInfo(
             new BoundingInfo(new Vector3(0, 0, 0), new Vector3(extent[0], extent[1], 0))
         );
@@ -45,7 +45,7 @@ registerAssetFactory(
             id: opts.uri,
             uri: opts.uri,
             name: opts.name ?? "",
-            root: constructImageTileset(await Promise.all(Array.from({ length: await image.getLevelCount() }, (_, i) => i).map(async (i) => {
+            root: constructImageTileset(await Promise.all(Array.from({ length: await image.getLevelCount() }, (_, i) => i).reverse().map(async (i) => {
                 const extent = await image.getLevelDimensions(i);
                 return {
                     width: [0, extent[0] - 1],
