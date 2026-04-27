@@ -55,6 +55,6 @@
     "vitest": "3.2.4"
   },
   "dependencies": {
-    "@tiledb-inc/tiledb-cloud": "github:TileDB-Inc/TileDB-Cloud-JS"
+    "@tiledb-inc/tiledb-cloud": "2.0.0-alpha.6"
   }
 }
