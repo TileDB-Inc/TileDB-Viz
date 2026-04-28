@@ -409,6 +409,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       this.sceneOptions.extents
     );
     // TODO: Make it user configurable in the UI
+    this.cameraManager.lowerZoomLimit = 2 ** (-5);
     this.cameraManager.upperZoomLimit = 2 ** 10;
 
     this.scene.getEngine().onResizeObservable.add(() => {
