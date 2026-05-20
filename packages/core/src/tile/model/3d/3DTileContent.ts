@@ -56,7 +56,7 @@ export class TDB3DTileContent extends TileContent {
       @group(0) @binding(1) var<uniform> params : Params;
 
       ${
-        data.targetCRS
+        (data.sourceCRS && data.targetCRS)
           ? `${shaderBuilder(
               proj4.Proj(data.sourceCRS),
               proj4.Proj(data.targetCRS)
@@ -124,7 +124,7 @@ export class TDB3DTileContent extends TileContent {
         params.addMatrix(
           'transformation',
           BJSMatrix.FromArray(
-            data.transformation.toArray().flatMap(x => x) as number[]
+            data.transformation.toArray().flatMap(x => x.valueOf()) as number[]
           ).transpose()
         );
       } else {

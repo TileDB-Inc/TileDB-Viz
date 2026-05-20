@@ -21,19 +21,15 @@ export class WorkerPool {
   private status: boolean[] = [];
   private taskMap: Map<number, number>;
   private messageQueue: DataRequest[] = [];
-  private initilizeMessage: DataRequest;
+  private token: string;
+  private basePath?: string;
 
   constructor(options?: WorkerPoolOptions) {
     this.poolSize = options?.poolSize ?? window.navigator.hardwareConcurrency;
     this.taskMap = new Map();
     this.callbacks = new Map();
-    this.initilizeMessage = {
-      type: RequestType.INITIALIZE,
-      payload: {
-        token: options?.token ?? '',
-        basePath: options?.basePath
-      } as InitializationPayload
-    } as DataRequest;
+    this.token = options?.token ?? '';
+    this.basePath = options?.basePath;
 
     for (let index = 0; index < this.poolSize - 1; index++) {
       const worker = new Worker(new URL('tiledb.worker', import.meta.url), {
@@ -42,9 +38,16 @@ export class WorkerPool {
       });
 
       worker.onmessage = this.onMessage.bind(this);
-      worker.postMessage(this.initilizeMessage);
+      worker.postMessage({
+        type: RequestType.INITIALIZE,
+        payload: {
+          index: index,
+          token: this.token,
+          basePath: this.basePath
+        } as InitializationPayload
+      } as DataRequest);
       this.workers.push(worker);
-      this.status.push(false);
+      this.status.push(true);
     }
 
     // const worker = new Worker(
@@ -62,6 +65,13 @@ export class WorkerPool {
 
   private async onMessage(event: MessageEvent<WorkerResponse>) {
     const response = event.data;
+
+    if (response.type === RequestType.INITIALIZE) {
+      console.log(`Initialized ${response.id}`);
+      this.status[response.id] = false;
+      return;
+    }
+
     const workerIndex = this.taskMap.get(response.id);
 
     if (workerIndex === undefined) {
@@ -110,6 +120,7 @@ export class WorkerPool {
     let dispached = false;
     for (const [index, status] of this.status.entries()) {
       if (!status && index !== this.poolSize - 1) {
+        console.log(`Assigned to ${index}`);
         this.workers[index].postMessage(request, transferables ?? []);
         this.status[index] = true;
         this.taskMap.set(request.id, index);
@@ -138,10 +149,17 @@ export class WorkerPool {
           }
         );
 
-        newWorker.postMessage(this.initilizeMessage);
+        newWorker.postMessage({
+          type: RequestType.INITIALIZE,
+          payload: {
+            index: index,
+            token: this.token,
+            basePath: this.basePath
+          } as InitializationPayload
+        } as DataRequest);
         newWorker.onmessage = this.onMessage.bind(this);
         this.workers[index] = newWorker;
-        this.status[index] = false;
+        this.status[index] = true;
       }
     }
   }

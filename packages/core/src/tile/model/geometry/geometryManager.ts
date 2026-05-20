@@ -25,9 +25,9 @@ import {
   GUICategoricalFeature,
   GUIFeature,
   InfoPanelInitializationEvent,
-  InfoPanelConfigEntry
+  InfoPanelConfigEntry,
+  GeometryPanelInitializationEvent
 } from '@tiledb-inc/viz-common';
-import { GeometryPanelInitializationEvent } from '@tiledb-inc/viz-common';
 import { GeometryContent, GeometryUpdateOptions } from './geometryContent';
 import { Tile } from '../tile';
 import { GeometryDataContent, SceneOptions } from '../../../types';

@@ -1,4 +1,4 @@
-import { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
+import type { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
 import {
   Channel,
   ImageLoaderMetadata,
@@ -16,7 +16,7 @@ import {
   getImageDomain,
   getNumericLimits
 } from './metadata-utils';
-import { Attribute, ImageConfig } from '@tiledb-inc/viz-common';
+import { Attribute, Datatype, ImageConfig } from '@tiledb-inc/viz-common';
 import { MathArray, matrix, Matrix } from 'mathjs';
 
 export async function getSOMAMultiscaleImageMetadata(
@@ -170,7 +170,7 @@ export async function getSOMAMultiscaleImageMetadata(
       return [
         attribute.name,
         new Array(channelCount).fill(undefined).map<Channel>((_, index) => {
-          const { min, max } = getNumericLimits(attribute.type);
+          const { min, max } = getNumericLimits(attribute.type as Datatype);
           return {
             name: `Channel ${index}`,
             color: getColor(index),

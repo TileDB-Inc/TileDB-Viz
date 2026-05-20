@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { TileImageVisualization } from '../TileImage';
 import { TOKEN, TILEDB_ENDPOINT } from '../.env';
+import { AssetEntry, AssetType, ImageAssetOptions } from '@tiledb-inc/viz-common';
 
 const meta = {
   title: 'Tile Renderer',
@@ -22,11 +23,28 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
  
-export const BiomedicalImage = {
+// export const BiomedicalImage = {
+//   args: {
+//     workspace: 'ws_d1440k28dqd8hudfo97g',
+//     teamspace: 'ts_d1440k28dqd8hudfo9b0',
+//     groupID: 'ast_d1sf40q8dqd43ohkrlcg',
+//     width: '100vw',
+//     height: '100vh'
+//   },
+// } satisfies Story;
+
+export const LocalSVS = {
   args: {
-    workspace: 'ws_d0uoi9d0ucni1u8h7o7g',
-    teamspace: 'ts_d1f5rqeuc9m8hld9hae0',
-    groupID: 'ast_d1sbir8jg42iapho7g5g',
+    workspace: 'ws_d1440k28dqd8hudfo97g',
+    teamspace: 'ts_d1440k28dqd8hudfo9b0',
+    assets: [
+      {
+        type: AssetType.SVS_IMAGE,
+        options: {
+          uri: "http://localhost:3000/api/tiles/svs/download?tileId=jp2k-33003-0f15e456-de5a-4e95-b07c-ecadbbcac4fc"
+        }
+      } as AssetEntry<ImageAssetOptions>
+    ],
     width: '100vw',
     height: '100vh'
   },

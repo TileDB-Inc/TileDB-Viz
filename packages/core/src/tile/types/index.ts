@@ -8,11 +8,11 @@ import {
   PointDataContent,
   ImageDataContent
 } from '../../types';
-import { AssetEntry, ImageConfig, SceneConfig } from '@tiledb-inc/viz-common';
+import { AssetEntry, ImageConfig, SceneConfig, Datatype } from '@tiledb-inc/viz-common';
 import { OperationResult } from '@tiledb-inc/viz-common';
 import { Feature, Attribute } from '@tiledb-inc/viz-common';
 import { Matrix } from 'mathjs';
-import { ArraySchema, Datatype } from '@tiledb-inc/tiledb-cloud/v3';
+import type { ArraySchema } from '@tiledb-inc/tiledb-cloud/v3';
 import { GeometryContent } from '../model/geometry/geometryContent';
 import { Tile } from '../model/tile';
 import { PointTileContent } from '../model/point/pointContent';
@@ -509,6 +509,7 @@ export interface DataRequest {
 }
 
 export interface InitializationPayload {
+  index: number;
   token: string;
   basePath?: string;
 }

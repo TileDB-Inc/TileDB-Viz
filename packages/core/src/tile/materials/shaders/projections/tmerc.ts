@@ -5,9 +5,9 @@ import proj4 from 'proj4';
 import { EPSLN } from './constants';
 
 export class Tmerc {
-  private projection: proj4.InterfaceProjection;
+  private projection: proj4.ProjectionDefinition;
 
-  constructor(projection: proj4.InterfaceProjection) {
+  constructor(projection: proj4.ProjectionDefinition) {
     this.projection = projection;
   }
 

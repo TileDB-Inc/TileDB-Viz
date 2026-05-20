@@ -1,5 +1,5 @@
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
+import { Datatype } from '@tiledb-inc/viz-common';
 import { Matrix, multiply } from 'mathjs';
 
 export function deserializeBuffer(type: string, buffer: Array<number>): any {

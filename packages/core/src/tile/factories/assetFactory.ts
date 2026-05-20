@@ -4,7 +4,6 @@ import { SceneOptions } from '../../types';
 import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
 import { WorkerPool } from '../worker/tiledb.worker.pool';
-import { Fetcher } from '../model/fetcher';
 
 export type AssetFactoryContext = {
   scene: Scene;

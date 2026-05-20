@@ -14,18 +14,19 @@ import getTileDBClient from '../getTileDBClient';
 import {
   BiomedicalAssetMetadata,
   RasterAssetMetadata,
-  ImageMetadata,
   ImageLoaderMetadata,
   GeometryMetadata,
   ImageAssetMetadata,
   SOMAMultiscaleImageAssetMetadataRaw,
   TileDBImageMetadata
 } from '../../tile/types';
-import { Datatype, ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/v3';
+import type { ArraySchema, DomainArray } from '@tiledb-inc/tiledb-cloud/v3';
 import type { GroupContents, ArrayInfo } from '@tiledb-inc/tiledb-cloud/v1';
 import { BoundingInfo, Vector3 } from '@babylonjs/core';
-import { GeometryConfig, ImageConfig } from '@tiledb-inc/viz-common';
 import {
+  Datatype,
+  GeometryConfig,
+  ImageConfig,
   Feature,
   FeatureType,
   Attribute,

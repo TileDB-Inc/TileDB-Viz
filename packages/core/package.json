@@ -42,16 +42,15 @@
     "@babylonjs/serializers": "7.54.3", 
     "@tiledb-inc/viz-common": "0.0.1",
     "@tiledb-inc/viz-components": "0.0.1",
-    "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",
-    "earcut": "2.2.4",
     "geometry-extrude": "0.2.1",
     "idb": "^8.0.3",
-    "mathjs": "^14.8.2",
-    "proj4": "^2.19.10",
-    "axios": "^1.12.2",
+    "mathjs": "15.2.0",
+    "proj4": "2.20.8",
+    "axios": "1.16.1",
     "@conflux-xyz/openslide-wasm":"2.3.0"
   },
   "devDependencies": {
+    "@tiledb-inc/wkx": "https://github.com/TileDB-Inc/wkx",
     "@babel/core": "^7.12.0",
     "@babel/preset-env": "^7.18.10",
     "@babel/preset-typescript": "^7.18.6"

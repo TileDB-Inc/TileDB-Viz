@@ -23,10 +23,9 @@ import {
   Events,
   GUIEvent
 } from '@tiledb-inc/viz-components';
-import { PickingMode, PickResult } from '@tiledb-inc/viz-common';
 import { Manager } from '../model/manager';
 import { Tile } from '../model/tile';
-import { InfoPanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { InfoPanelInitializationEvent, PickingMode, PickResult } from '@tiledb-inc/viz-common';
 import { SceneOptions } from '../../types';
 import proj4 from 'proj4';
 import { inv } from 'mathjs';

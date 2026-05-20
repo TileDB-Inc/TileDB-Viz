@@ -1,8 +1,7 @@
 import { Domain } from '../../../types';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { getQueryDataFromCache } from '../../../utils/cache';
 import { TypedArray, TypedArray64Bit } from '../../types';
-import { Attribute } from '@tiledb-inc/viz-common';
+import { Attribute, Datatype } from '@tiledb-inc/viz-common';
 
 export function transformBufferToInt64(
   buffer: ArrayBuffer,

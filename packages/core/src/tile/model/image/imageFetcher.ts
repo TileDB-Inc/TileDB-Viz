@@ -3,7 +3,7 @@ import { ImageDataContent } from '../../../types';
 import { BaseFetcherOptions, Fetcher } from '../fetcher';
 import { Tile } from '../tile';
 import { ImageContent } from './imageContent';
-import { ImageMetadata, ImagePayload, RequestType, TileDBImageMetadata } from '../../types';
+import { ImagePayload, RequestType, TileDBImageMetadata } from '../../types';
 import { WorkerPool } from '../../worker/tiledb.worker.pool';
 import { Attribute } from '@tiledb-inc/viz-common';
 

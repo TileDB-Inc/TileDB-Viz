@@ -17,13 +17,13 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)],
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)].filter((value) => value !== "@tiledb-inc/wkx"),
     }
   },
   worker: {
     format: 'es',
     rollupOptions: {
-      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)],
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)].filter((value) => value !== "@tiledb-inc/wkx"),
     }
   },
   plugins: [

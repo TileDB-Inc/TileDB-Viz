@@ -1,8 +1,7 @@
 import { Mesh, Scene, ISceneLoaderAsyncResult } from '@babylonjs/core';
 import { Manager } from '../manager';
-import { GUIEvent } from '@tiledb-inc/viz-common';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
-import { TilePanelInitializationEvent } from '@tiledb-inc/viz-common';
+import { TilePanelInitializationEvent, GUIEvent } from '@tiledb-inc/viz-common';
 import { TDB3DTileContent } from './3DTileContent';
 import { TDB3DTileMetadata } from '../../types';
 import { Tile } from '../tile';

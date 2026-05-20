@@ -1,4 +1,47 @@
-import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
+export enum Datatype {
+  Int32 =  'INT32',
+  Int64 =  'INT64',
+  Float32 =  'FLOAT32',
+  Float64 =  'FLOAT64',
+  Char =  'CHAR',
+  Int8 =  'INT8',
+  Uint8 =  'UINT8',
+  Int16 =  'INT16',
+  Uint16 =  'UINT16',
+  Uint32 =  'UINT32',
+  Uint64 =  'UINT64',
+  StringAscii =  'STRING_ASCII',
+  StringUtf8 =  'STRING_UTF8',
+  StringUtf16 =  'STRING_UTF16',
+  StringUtf32 =  'STRING_UTF32',
+  StringUcs2 =  'STRING_UCS2',
+  StringUcs4 =  'STRING_UCS4',
+  Any =  'ANY',
+  DatetimeYear =  'DATETIME_YEAR',
+  DatetimeMonth =  'DATETIME_MONTH',
+  DatetimeWeek =  'DATETIME_WEEK',
+  DatetimeDay =  'DATETIME_DAY',
+  DatetimeHr =  'DATETIME_HR',
+  DatetimeMin =  'DATETIME_MIN',
+  DatetimeSec =  'DATETIME_SEC',
+  DatetimeMs =  'DATETIME_MS',
+  DatetimeUs =  'DATETIME_US',
+  DatetimeNs =  'DATETIME_NS',
+  DatetimePs =  'DATETIME_PS',
+  DatetimeFs =  'DATETIME_FS',
+  DatetimeAs =  'DATETIME_AS',
+  TimeHr =  'TIME_HR',
+  TimeMin =  'TIME_MIN',
+  TimeSec =  'TIME_SEC',
+  TimeMs =  'TIME_MS',
+  TimeUs =  'TIME_US',
+  TimeNs =  'TIME_NS',
+  TimePs =  'TIME_PS',
+  TimeFs =  'TIME_FS',
+  TimeAs =  'TIME_AS',
+  Blob =  'BLOB',
+  Bool = 'BOOL'
+};
 
 export type TileDBScene = {
   /**
@@ -280,7 +323,7 @@ export enum AssetType {
   POINT_CLOUD = 'POINT_CLOUD',
   TILESET_3D = 'TILESET_3D',
   LOCAL_POINT_CLOUD = 'LOCAL_POINT_CLOUD'
-}
+};
 
 export type AssetEntry<T = unknown> = {
   type: AssetType;
@@ -295,6 +338,20 @@ export type ImageAssetOptions = ImageConfig & {
     color?: { r: number; g: number; b: number };
     intensity?: number;
   }[];
+};
+
+export type GeometryAssetOptions = AssetConfig & {
+  uri: string;
+  token?: string;
+};
+
+export type PointCloudAssetOptions = AssetConfig & {
+  uri: string;
+  token?: string;
+};
+
+export type TilesetAssetOptions = AssetConfig & {
+  uri: string;
 };
 
 //#endregion

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Slider from '../misc/InlineSlider.component.svelte';
-    import Select from '../misc/Select.component.svelte';
+  import Select from '../misc/Select.component.svelte';
   import { GUISelectPropertyState, GUISliderPropertyState } from '../types';
   import { GeometryStyle } from '@tiledb-inc/viz-common';
 

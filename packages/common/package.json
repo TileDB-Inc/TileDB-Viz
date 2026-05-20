@@ -35,8 +35,5 @@
     "build": "vite build",
     "lint": "eslint './src/**/*.{ts,tsx}'",
     "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix"
-  },
-  "dependencies": {
-    "@babylonjs/core": "7.54.3"
   }
 }

@@ -10,7 +10,6 @@ import {
   UniformBuffer
 } from '@babylonjs/core';
 import { TypedArray } from '../../types';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import {
   ImageShaderMaterial,
   ImageShaderMaterialWebGPU
@@ -18,6 +17,7 @@ import {
 import { TileContent, TileUpdateOptions } from '../tileContent';
 import { ImageDataContent } from '../../../types';
 import { Tile } from '../tile';
+import { Datatype } from '@tiledb-inc/viz-common';
 
 export type ImageUpdateOptions = TileUpdateOptions & {
   UBO?: UniformBuffer;
@@ -32,7 +32,7 @@ export type ImageUpdateOptions = TileUpdateOptions & {
 };
 
 const textureOptions: Map<
-  Datatype,
+  string,
   {
     format: number;
     filtering: number;

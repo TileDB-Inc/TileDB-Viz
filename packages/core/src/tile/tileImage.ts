@@ -17,33 +17,21 @@ import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
 import { Events, SliderProps } from '@tiledb-inc/viz-components';
 import { WorkerPool } from './worker/tiledb.worker.pool';
-import {
-  getGeometryMetadata,
-  getGroupContents,
-  getImageMetadata,
-  tileDBUriParser
-} from '../utils/metadata-utils/metadata-utils';
-import { ImageManager } from './model/image/imageManager';
 import { CameraManager } from './utils/camera-utils';
 import { Manager } from './model/manager';
 import { Tile } from './model/tile';
 import {
   GUIEvent,
-  OptionsPanelInitializationEvent
+  OptionsPanelInitializationEvent,
+  ScenePanelInitializationEvent
 } from '@tiledb-inc/viz-common';
-import { ScenePanelInitializationEvent } from '@tiledb-inc/viz-common';
 import proj4 from 'proj4';
-import { inv, max } from 'mathjs';
-import { getPointCloudMetadata } from '../utils/metadata-utils/pointcloud-metadata-utils';
-import { PointManager } from './model/point/pointManager';
-import { GeometryManager } from './model/geometry/geometryManager';
+import { max } from 'mathjs';
 import {
   clearMultiCache,
   getTileCount,
   initializeCacheDB
 } from '../utils/cache';
-import { load3DTileset } from '../utils/metadata-utils/3DTiles/3DTileLoader';
-import { TileManager } from './model/3d/3DTileManager';
 import { PickingTool } from './utils/picking-tool';
 import { splitEventTarget } from './utils/helpers';
 import axios from 'axios';
@@ -127,11 +115,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
     light.specular = new Color3(0.1, 0.1, 0.1);
     light.intensity = 1;
 
-    // let imageWorkspace = this.options.workspace;
-    // let imageTeamspace = this.options.teamspace;
-    // let imageArrayID: string | undefined = undefined;
-    // let imageGroupID: string | undefined = undefined;
-
     const ctx: AssetFactoryContext = {
       scene: this.scene,
       workerPool: this.workerPool,
@@ -156,8 +139,7 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
         continue;
       }
 
-      try {
-        const result = await factory(asset, ctx);
+      await factory(asset, ctx).then(result => {
         this.assetManagers.push({
           manager: result.manager,
           pickable: result.pickable,
@@ -166,90 +148,10 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
         if (result.cacheKeys) {
           this.cacheKeys.push(...result.cacheKeys);
-          await initializeCacheDB(result.cacheKeys);
+          return initializeCacheDB(result.cacheKeys);
         }
-      } catch (e) {
-        console.warn(`Failed to load asset ${index}:`, e);
-      }
+      }).catch(err => console.warn(`Failed to load asset. Error: ${err}:`, err));
     }
-
-    // if (this.options.arrayID) {
-    //   ({
-    //     workspace: imageWorkspace,
-    //     teamspace: imageTeamspace,
-    //     id: imageArrayID
-    //   } = tileDBUriParser(
-    //     this.options.arrayID,
-    //     this.options.workspace,
-    //     this.options.teamspace
-    //   ));
-    // } else if (this.options.groupID) {
-    //   ({
-    //     workspace: imageWorkspace,
-    //     teamspace: imageTeamspace,
-    //     id: imageGroupID
-    //   } = tileDBUriParser(
-    //     this.options.groupID,
-    //     this.options.workspace,
-    //     this.options.teamspace
-    //   ));
-    // }
-
-    // this.updateLoadingScreen('Loading image asset metadata', true);
-    // this.imageMetadata = await getImageMetadata(
-    //   {
-    //     token: this.options.token,
-    //     tiledbEnv: this.options.tiledbEnv,
-    //     workspace: imageWorkspace,
-    //     teamspace: imageTeamspace,
-    //     arrayID: imageArrayID,
-    //     groupID: imageGroupID
-    //   },
-    //   this.options.sceneConfig?.imageConfigs?.[0]
-    // );
-
-    // if (this.options.defaultChannels) {
-    //   const defaultAttribute = this.imageMetadata.attributes.filter(
-    //     x => x.visible
-    //   )[0].name;
-
-    //   for (const entry of this.imageMetadata.channels.get(defaultAttribute) ??
-    //     []) {
-    //     entry.visible = false;
-    //   }
-
-    //   for (const entry of this.options.defaultChannels) {
-    //     const channel = this.imageMetadata.channels
-    //       .get(defaultAttribute)
-    //       ?.at(entry.index);
-
-    //     if (!channel) {
-    //       continue;
-    //     }
-
-    //     channel.visible = true;
-    //     channel.intensity = entry.intensity ?? channel.intensity;
-    //     channel.color = entry.color
-    //       ? {
-    //           red: entry.color.r,
-    //           green: entry.color.g,
-    //           blue: entry.color.b,
-    //           alpha: 1.0
-    //         }
-    //       : channel.color;
-    //   }
-    // }
-
-    // this.assetManagers.push({
-    //   manager: new ImageManager(this.scene, this.workerPool, {
-    //     metadata: this.imageMetadata,
-    //     sceneOptions: this.sceneOptions
-    //   }),
-    //   pickable: false,
-    //   minimap: true
-    // });
-
-    // await initializeCacheDB(this.imageMetadata.uris);
 
     // Draw image tileset
     // const explore = (tile: ImageTile) => {
@@ -267,140 +169,18 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
 
     // explore(this.metadata.root);
 
-    // Everthing should be transformed to the image coordinate system if it exists
-    // this.sceneOptions.crs = this.imageMetadata.crs;
-
-    // The transformation matrix is defined at base level of the image
-    // The scene units are bases on the smallest level se we need to adjust the scaling coefficients
-    // this.sceneOptions.transformation = this.imageMetadata.pixelToCRS
-    //   ? inv(this.imageMetadata.pixelToCRS)
-    //   : undefined;
-    // this.sceneOptions.extents.encapsulateBoundingInfo(
-    //   this.imageMetadata.root.boundingInfo
-    // );
-
-    this.groupAssets = await getGroupContents({
-      token: this.options.token,
-      tiledbEnv: this.options.tiledbEnv,
-      workspace: this.options.workspace,
-      teamspace: this.options.teamspace,
-      baseGroup: this.options.baseGroup
-    });
+    // this.groupAssets = await getGroupContents({
+    //   token: this.options.token,
+    //   tiledbEnv: this.options.tiledbEnv,
+    //   workspace: this.options.workspace,
+    //   teamspace: this.options.teamspace,
+    //   baseGroup: this.options.baseGroup
+    // });
 
     // Force enable uniform buffers for the material to work properly
     // this.scene.getEngine().disableUniformBuffers = false;
 
-    if (this.options.geometryArrayID) {
-      for (const [
-        index,
-        geometryArrayID
-      ] of this.options.geometryArrayID.entries()) {
-        this.updateLoadingScreen(
-          `Loading geometry asset metadata ${index + 1} out of ${
-            this.options.geometryArrayID.length
-          }`,
-          true
-        );
-        const { workspace, teamspace, id } = tileDBUriParser(
-          geometryArrayID,
-          this.options.workspace,
-          this.options.teamspace
-        );
-
-        const metadata = await getGeometryMetadata(
-          {
-            workspace: workspace,
-            teamspace: teamspace,
-            token: this.options.token,
-            tiledbEnv: this.options.tiledbEnv,
-            geometryArrayID: id
-          },
-          undefined,
-          this.sceneOptions
-        );
-
-        this.geometryMetadata.set(id, metadata);
-        this.assetManagers.push({
-          manager: new GeometryManager(this.scene, this.workerPool, {
-            arrayID: id,
-            workspace: workspace,
-            teamspace: teamspace,
-            metadata: metadata,
-            sceneOptions: this.sceneOptions
-          }),
-          pickable: metadata.idAttribute !== undefined,
-          minimap: false
-        });
-
-        this.sceneOptions.extents.encapsulateBoundingInfo(
-          metadata.root.boundingInfo
-        );
-
-        await initializeCacheDB([id]);
-      }
-    }
-
-    if (this.options.pointGroupID) {
-      for (const [index, pointGroupID] of this.options.pointGroupID.entries()) {
-        this.updateLoadingScreen(
-          `Loading point cloud asset metadata ${index + 1} out of ${
-            this.options.pointGroupID.length
-          }`,
-          true
-        );
-        const { workspace, teamspace, id } = tileDBUriParser(
-          pointGroupID,
-          this.options.workspace,
-          this.options.teamspace
-        );
-
-        const metadata = await getPointCloudMetadata(
-          {
-            workspace: workspace,
-            teamspace: teamspace,
-            token: this.options.token,
-            tiledbEnv: this.options.tiledbEnv,
-            pointGroupID: id
-          },
-          this.options.sceneConfig?.pointConfigs?.at(index),
-          this.sceneOptions
-        );
-
-        this.pointMetadata.set(id, metadata);
-        this.assetManagers.push({
-          manager: new PointManager(this.scene, this.workerPool, {
-            workspace: workspace,
-            teamspace: teamspace,
-            metadata: metadata,
-            sceneOptions: this.sceneOptions
-          }),
-          pickable: metadata.idAttribute !== undefined,
-          minimap: false
-        });
-
-        await initializeCacheDB(metadata.uris);
-      }
-    }
-
     // proj4.defs("EPSG:4978","+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs");
-    if (this.options.tileUris) {
-      if (!this.scene.getEngine().isWebGPU) {
-        console.warn('3D Tiles overlay are only supported using WebGPU');
-      } else {
-        for (const tileURI of this.options.tileUris) {
-          const tileset = await load3DTileset(tileURI, this.sceneOptions);
-
-          this.assetManagers.push({
-            manager: new TileManager(this.scene, {
-              metadata: tileset,
-              sceneOptions: this.sceneOptions
-            }),
-            pickable: false,
-            minimap: false
-          });
-        }
-      }
-    }
 
     //Extract scene dimensions to use for camera initialization
     this.cameraManager = new CameraManager(

@@ -16,9 +16,7 @@ import {
   PointCloudMaterial,
   PointCloudMaterialWebGPU
 } from '../../materials/pointShaderMaterial';
-import { Feature } from '@tiledb-inc/viz-common';
-import { FeatureType } from '@tiledb-inc/viz-common';
-import { PointShape } from '@tiledb-inc/viz-common';
+import { FeatureType, Feature, PointShape } from '@tiledb-inc/viz-common';
 import { TypedArray } from '../../types';
 import { PointIntersector } from './pointIntersector';
 import { HIGHLIGHTED_STATE, SELECTED_STATE } from '../../constants';

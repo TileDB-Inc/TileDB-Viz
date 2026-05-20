@@ -5,8 +5,8 @@ import {
   SVSImagePayload,
   WorkerResponse,
 } from '../../types';
-import { Datatype } from '@tiledb-inc/tiledb-cloud/v3';
 import { Axes, transpose } from '../../utils';
+import { Datatype } from '@tiledb-inc/viz-common';
 
 type ImageDataArray = Uint8Array | Int8Array | Uint16Array | Float32Array;
 

@@ -101,7 +101,7 @@ async function fetchData(block: MoctreeBlock) {
     queryData,
     array
   )) {
-    returnData(block, results as SparseResultRaw);
+    returnData(block, results as unknown as SparseResultRaw);
   }
 
   self.postMessage({

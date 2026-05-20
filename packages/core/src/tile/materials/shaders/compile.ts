@@ -24,8 +24,8 @@ import { toWGSLArray } from './projections/common/helpers';
 import { Geocent } from './projections/geocent';
 
 export function shaderBuilder(
-  sourceProjection: proj4.InterfaceProjection,
-  targetProjection: proj4.InterfaceProjection
+  sourceProjection: proj4.ProjectionDefinition,
+  targetProjection: proj4.ProjectionDefinition
 ): string {
   // Get source projection dependencies
   const sourceProjectionShader = getProjection(sourceProjection as any);
@@ -88,7 +88,7 @@ export function shaderBuilder(
 }
 
 function getProjection(
-  projection: proj4.InterfaceProjection & { names: string[] },
+  projection: proj4.ProjectionDefinition & { names: string[] },
   names?: string[]
 ): BaseProjection {
   names = names ?? projection.names;
@@ -110,8 +110,8 @@ function getProjection(
 
 function getTransform(
   suffix: string,
-  sourceProjection: proj4.InterfaceProjection,
-  targetProjection: proj4.InterfaceProjection
+  sourceProjection: proj4.ProjectionDefinition,
+  targetProjection: proj4.ProjectionDefinition
 ): string {
   const sourceProjectionShader = getProjection(sourceProjection as any);
   const targetProjectionShader = getProjection(targetProjection as any);
@@ -171,8 +171,8 @@ function getTransform(
 }
 
 function checkNotWGS(
-  source: proj4.InterfaceProjection,
-  dest: proj4.InterfaceProjection
+  source: proj4.ProjectionDefinition,
+  dest: proj4.ProjectionDefinition
 ) {
   return (
     ((source.datum.datum_type === PJD_3PARAM ||
