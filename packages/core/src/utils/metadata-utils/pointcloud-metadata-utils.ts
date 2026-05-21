@@ -23,7 +23,7 @@ export async function getPointCloudMetadata(
   config?: PointConfig,
   sceneOptions?: SceneOptions
 ): Promise<PointCloudMetadata> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });

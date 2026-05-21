@@ -25,7 +25,7 @@ export async function getSOMAMultiscaleImageMetadata(
   uris: string[],
   config?: ImageConfig
 ): Promise<TileDBImageMetadata> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });

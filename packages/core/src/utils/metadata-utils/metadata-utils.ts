@@ -80,7 +80,7 @@ export function tileDBUriParser(
 export async function getGroupContents(
   options: AssetOptions
 ): Promise<AssetEntry[]> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
@@ -181,7 +181,7 @@ export async function getImageMetadata(
   options: AssetOptions,
   config?: ImageConfig
 ): Promise<TileDBImageMetadata> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
@@ -378,7 +378,7 @@ export async function getImageMetadata(
 async function getArrayMetadata(
   options: AssetOptions
 ): Promise<[AssetMetadata, string[]]> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
@@ -414,7 +414,7 @@ async function getArrayMetadata(
 async function getGroupMetadata(
   options: AssetOptions
 ): Promise<[AssetMetadata, string[]]> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });
@@ -490,7 +490,7 @@ export async function getGeometryMetadata(
   config?: GeometryConfig,
   sceneOptions?: SceneOptions
 ): Promise<GeometryMetadata> {
-  const client = getTileDBClient({
+  const client = await getTileDBClient({
     ...(options.token ? { apiKey: options.token } : {}),
     ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
   });

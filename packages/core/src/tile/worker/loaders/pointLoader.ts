@@ -1,7 +1,8 @@
-import { FeatureType } from '@tiledb-inc/viz-common';
+import { Datatype, FeatureType } from '@tiledb-inc/viz-common';
 import { CancelTokenSource } from 'axios';
-import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
-import { Layout, Datatype } from '@tiledb-inc/tiledb-cloud/v3';
+import type Client from '@tiledb-inc/tiledb-cloud';
+import type { QueryData } from '@tiledb-inc/tiledb-cloud';
+import { Layout } from '@tiledb-inc/tiledb-cloud/v3';
 import { writeToCache } from '../../../utils/cache';
 import {
   InfoResponse,

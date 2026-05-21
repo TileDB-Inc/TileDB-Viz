@@ -23,7 +23,7 @@ export default defineConfig({
   worker: {
     format: 'es',
     rollupOptions: {
-      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)].filter((value) => value !== "@tiledb-inc/wkx"),
+      external: [...Object.keys(pkg.dependencies), ...Object.keys(rootPkg.dependencies)].filter((value) => !["@tiledb-inc/wkx", "@tiledb-inc/tiledb-cloud"].includes(value)),
     }
   },
   plugins: [

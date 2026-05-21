@@ -7,15 +7,16 @@ import {
   TypedArray,
   WorkerResponse
 } from '../../types';
-import Client, { QueryData } from '@tiledb-inc/tiledb-cloud';
-import { Datatype, Layout } from '@tiledb-inc/tiledb-cloud/v3';
+import type Client from '@tiledb-inc/tiledb-cloud';
+import type { QueryData } from '@tiledb-inc/tiledb-cloud';
+import { Layout } from '@tiledb-inc/tiledb-cloud/v3';
 import { getQueryDataFromCache, writeToCache } from '../../../utils/cache';
 import { RequestType, OutputGeometry } from '../../types';
 import proj4 from 'proj4';
 import { CancelTokenSource } from 'axios';
 import { parsePolygon } from '../parsers';
 import { matrix, Matrix, identity } from 'mathjs';
-import { Attribute, Feature, FeatureType } from '@tiledb-inc/viz-common';
+import { Attribute, Datatype, Feature, FeatureType } from '@tiledb-inc/viz-common';
 import { toNumericalArray, transformBufferToInt64 } from './utils';
 
 export async function geometryRequest(

@@ -11,7 +11,6 @@ import {
   PointCloudMetadata,
   TileDBTileImageOptions
 } from './types';
-import getTileDBClient from '../utils/getTileDBClient';
 import { ImageMetadata } from './types';
 import { AssetEntry, FrameDetails, SceneOptions } from '../types';
 import TileImageGUI from './utils/gui-utils';
@@ -70,13 +69,6 @@ export class TileDBTileImageVisualization extends TileDBVisualization {
       extents: new BoundingInfo(Vector3.ZeroReadOnly, Vector3.ZeroReadOnly)
     };
     this.groupAssets = [];
-
-    if (options.token || options.tiledbEnv) {
-      getTileDBClient({
-        ...(options.token ? { apiKey: options.token } : {}),
-        ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
-      });
-    }
 
     this.workerPool = new WorkerPool({
       token: options.token,

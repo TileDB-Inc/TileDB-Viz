@@ -10,6 +10,7 @@ import {
 } from '../types';
 import axios, { CancelTokenSource } from 'axios';
 import type Client from '@tiledb-inc/tiledb-cloud';
+import getTileDBClient from '../../utils/getTileDBClient';
 
 let tiledbClient: Client | undefined = undefined;
 let cancelSignal = false;
@@ -22,14 +23,11 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
     case RequestType.INITIALIZE:
       {
         const payload = event.data.payload as InitializationPayload;
-        import('../../utils/getTileDBClient')
-          .then(
-            x =>
-              (tiledbClient = x.default({
-                ...(payload.token ? { apiKey: payload.token } : {}),
-                ...(payload.basePath ? { basePath: payload.basePath } : {})
-              }))
-          )
+        getTileDBClient({
+          ...(payload.token ? { apiKey: payload.token } : {}),
+          ...(payload.basePath ? { basePath: payload.basePath } : {})
+        })
+          .then(client => (tiledbClient = client))
           .finally(() =>
             self.postMessage({
               id: payload.index,
@@ -59,7 +57,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       break;
     case RequestType.IMAGE:
       if (!tiledbClient) {
-        console.warn("TileDB is not initialized");
+        console.warn('TileDB is not initialized');
         return;
       }
 
@@ -87,7 +85,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       break;
     case RequestType.GEOMETRY:
       if (!tiledbClient) {
-        console.warn("TileDB client is not initialized");
+        console.warn('TileDB client is not initialized');
         return;
       }
 
@@ -122,7 +120,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       break;
     case RequestType.POINT:
       if (!tiledbClient) {
-        console.warn("TileDB client is not initialized");
+        console.warn('TileDB client is not initialized');
         return;
       }
 
@@ -157,7 +155,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       break;
     case RequestType.GEOMETRY_INFO:
       if (!tiledbClient) {
-        console.warn("TileDB client is not initialized");
+        console.warn('TileDB client is not initialized');
         return;
       }
 
@@ -187,7 +185,7 @@ self.onmessage = function (event: MessageEvent<DataRequest>) {
       break;
     case RequestType.POINT_INFO:
       if (!tiledbClient) {
-        console.warn("TileDB client is not initialized");
+        console.warn('TileDB client is not initialized');
         return;
       }
 

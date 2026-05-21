@@ -32,7 +32,6 @@ import {
   TileDBPointCloudOptions
 } from './utils';
 import { clearCache } from '../utils/cache';
-import getTileDBClient from '../utils/getTileDBClient';
 import { ModelArray } from '@tiledb-inc/tiledb-cloud/v3';
 import { SPSHighQualitySplats } from './pipelines/high-quality-splats';
 import { SparseResult } from './model/sparse-result';
@@ -60,13 +59,6 @@ class TileDBPointCloudVisualization extends TileDBVisualization {
     super(options);
     this.options = options;
     this.activeCamera = 0;
-
-    if (options.token || options.tiledbEnv) {
-      getTileDBClient({
-        ...(options.token ? { apiKey: options.token } : {}),
-        ...(options.tiledbEnv ? { basePath: options.tiledbEnv } : {})
-      });
-    }
   }
 
   static async clearCache(storeName: string) {

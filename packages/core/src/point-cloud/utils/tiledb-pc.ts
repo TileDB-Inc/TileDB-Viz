@@ -212,7 +212,7 @@ export async function loadPointCloud(options: TileDBPointCloudOptions) {
   if (options.tiledbEnv) {
     config.basePath = options.tiledbEnv;
   }
-  const tiledbClient = getTileDBClient(config);
+  const tiledbClient = await getTileDBClient(config);
 
   let ranges: number[][] = [];
   if (options.bbox) {
@@ -358,7 +358,7 @@ export async function getNonEmptyDomain(
     if (options.tiledbEnv) {
       config.basePath = options.tiledbEnv;
     }
-    const tiledbClient = getTileDBClient(config);
+    const tiledbClient = await getTileDBClient(config);
 
     const nonEmptyDomain = await tiledbClient.ArrayApi.getArrayNonEmptyDomain(
       options.workspace!,
@@ -396,7 +396,7 @@ export async function getArraySchema(options: TileDBPointCloudOptions): Promise<
     if (options.tiledbEnv) {
       config.basePath = options.tiledbEnv;
     }
-    const tiledbClient = getTileDBClient(config);
+    const tiledbClient = await getTileDBClient(config);
 
     const array = await tiledbClient.query.ArrayOpen(
       options.workspace!,
@@ -433,7 +433,7 @@ export async function getArrayMetadata(
     if (options.tiledbEnv) {
       config.basePath = options.tiledbEnv;
     }
-    const tiledbClient = getTileDBClient(config);
+    const tiledbClient = await getTileDBClient(config);
     const resp = await tiledbClient.ArrayApi.getArrayMetaDataJson(
       options.workspace!,
       options.teamspace!,
